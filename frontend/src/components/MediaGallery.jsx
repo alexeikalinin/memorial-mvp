@@ -103,7 +103,8 @@ function MediaGallery({ memorialId, onReload }) {
       try {
         const response = await aiAPI.getAnimationStatus({
           provider: provider,
-          task_id: taskId
+          task_id: taskId,
+          media_id: mediaId  // Передаем media_id для поиска video_id в БД
         })
 
         const status = response.data.status
@@ -122,10 +123,22 @@ function MediaGallery({ memorialId, onReload }) {
               }
             }))
             
+            // Сбрасываем состояние анимации
+            setAnimating(null)
+            
             // Обновляем медиа, чтобы показать новое видео
             setTimeout(() => {
               loadMedia()
               if (onReload) onReload()
+              
+              // Очищаем статус анимации через 3 секунды (после показа плашки)
+              setTimeout(() => {
+                setAnimationStatus(prev => {
+                  const newStatus = { ...prev }
+                  delete newStatus[mediaId]
+                  return newStatus
+                })
+              }, 3000)
             }, 1000)
             
             return
@@ -145,14 +158,25 @@ function MediaGallery({ memorialId, onReload }) {
             }
             return
           }
-        } else if (status === 'failed' || status === 'error' || error) {
-          // Ошибка анимации
+        } else if (status === 'failed' || status === 'error') {
+          // Ошибка анимации (только если статус явно failed/error)
           setAnimationStatus(prev => ({
             ...prev,
             [mediaId]: {
               ...prev[mediaId],
               status: 'failed',
               message: error || 'Ошибка при создании анимации'
+            }
+          }))
+          return
+        } else if (error && status !== 'processing' && status !== 'pending') {
+          // Ошибка, но не при обработке
+          setAnimationStatus(prev => ({
+            ...prev,
+            [mediaId]: {
+              ...prev[mediaId],
+              status: 'failed',
+              message: error
             }
           }))
           return

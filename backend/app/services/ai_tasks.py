@@ -99,39 +99,89 @@ async def upload_photo_to_heygen(image_url: str) -> Optional[str]:
     """
     Загрузить фото в HeyGen и получить talking_photo_id.
     
+    Пробуем разные endpoints для загрузки фото.
+    
     Returns:
         talking_photo_id или None если не удалось
     """
     if not settings.HEYGEN_API_KEY:
+        print("Warning: HEYGEN_API_KEY not configured")
         return None
     
+    # Пробуем endpoint /talking_photo (без /upload)
+    # Может быть, это правильный endpoint
     try:
-        # Сначала скачиваем изображение
         async with httpx.AsyncClient() as client:
-            image_response = await client.get(image_url, timeout=30.0)
+            # Сначала скачиваем изображение
+            print(f"📥 Downloading image from: {image_url}")
+            image_response = await client.get(image_url, timeout=30.0, follow_redirects=True)
             image_response.raise_for_status()
             image_data = image_response.content
             
-            # Загружаем в HeyGen
-            upload_url = f"{settings.HEYGEN_API_URL}/talking_photo/upload"
+            if not image_data:
+                print("Warning: Downloaded image is empty")
+                return None
+            
+            print(f"✅ Downloaded image, size: {len(image_data)} bytes")
+            
+            # Пробуем разные endpoints для загрузки фото
+            # Вариант 1: POST /talking_photo/create
+            upload_urls = [
+                f"{settings.HEYGEN_API_URL}/talking_photo/create",
+                f"{settings.HEYGEN_API_URL}/talking_photo",
+                f"{settings.HEYGEN_API_URL}/talking_photo/upload",
+            ]
+            
             headers = {
                 "X-Api-Key": settings.HEYGEN_API_KEY,
             }
+            
+            # Определяем MIME тип
+            content_type = "image/jpeg"
+            if image_url.lower().endswith('.png'):
+                content_type = "image/png"
+            
             files = {
-                "photo": ("photo.jpg", image_data, "image/jpeg")
+                "photo": ("photo.jpg", image_data, content_type)
             }
             
-            upload_response = await client.post(upload_url, headers=headers, files=files, timeout=30.0)
-            if upload_response.status_code == 200:
-                result = upload_response.json()
-                talking_photo_id = result.get("data", {}).get("talking_photo_id") or result.get("talking_photo_id")
-                if talking_photo_id:
-                    print(f"Successfully uploaded photo to HeyGen, got talking_photo_id: {talking_photo_id}")
-                    return talking_photo_id
+            # Пробуем каждый endpoint
+            for upload_url in upload_urls:
+                try:
+                    print(f"📤 Trying to upload to HeyGen: {upload_url}")
+                    upload_response = await client.post(upload_url, headers=headers, files=files, timeout=60.0)
+                    
+                    print(f"📥 HeyGen upload response status: {upload_response.status_code}")
+                    
+                    if upload_response.status_code == 200:
+                        result = upload_response.json()
+                        print(f"✅ HeyGen upload response: {result}")
+                        talking_photo_id = (
+                            result.get("data", {}).get("talking_photo_id") or 
+                            result.get("talking_photo_id") or 
+                            result.get("data", {}).get("id") or 
+                            result.get("id") or
+                            result.get("data", {}).get("talking_photo", {}).get("id") if isinstance(result.get("data", {}).get("talking_photo"), dict) else None
+                        )
+                        if talking_photo_id:
+                            print(f"✅ Successfully uploaded photo to HeyGen, got talking_photo_id: {talking_photo_id}")
+                            return talking_photo_id
+                        else:
+                            print(f"⚠️  Warning: HeyGen response does not contain talking_photo_id: {result}")
+                    elif upload_response.status_code not in [404, 405]:
+                        # Если не 404/405, логируем ошибку
+                        error_text = upload_response.text
+                        print(f"⚠️  HeyGen upload failed {upload_response.status_code}: {error_text}")
+                except Exception as e:
+                    print(f"⚠️  Error trying {upload_url}: {e}")
+                    continue
     except Exception as e:
-        print(f"Warning: Failed to upload photo to HeyGen: {e}")
-        # Продолжаем без talking_photo_id, попробуем использовать photo_url
+        print(f"⚠️  Error uploading photo to HeyGen: {e}")
+        import traceback
+        traceback.print_exc()
     
+    # Если не удалось загрузить, возвращаем None
+    print(f"⚠️  Could not upload photo to HeyGen, will try to use photo_url directly")
     return None
 
 
@@ -160,12 +210,35 @@ async def animate_photo_heygen(
         "Content-Type": "application/json"
     }
     
-    # Пытаемся сначала загрузить фото и получить talking_photo_id
+    # Проверяем, является ли URL localhost - HeyGen не может получить к нему доступ
+    if "localhost" in image_url or "127.0.0.1" in image_url:
+        # Пытаемся использовать PUBLIC_API_URL если он настроен
+        public_api_url = getattr(settings, 'PUBLIC_API_URL', None)
+        if public_api_url:
+            # Заменяем localhost на публичный URL
+            public_image_url = image_url.replace("http://localhost:8000", public_api_url).replace("http://127.0.0.1:8000", public_api_url)
+            print(f"Replacing localhost URL with public URL: {image_url} -> {public_image_url}")
+            image_url = public_image_url
+        else:
+            raise ValueError(
+                f"❌ HeyGen cannot access localhost URLs!\n\n"
+                f"Решение:\n"
+                f"1. Установите ngrok: brew install ngrok\n"
+                f"2. Запустите: ngrok http 8000\n"
+                f"3. Скопируйте HTTPS URL (например: https://abc123.ngrok-free.app)\n"
+                f"4. Добавьте в backend/.env: PUBLIC_API_URL=https://abc123.ngrok-free.app\n\n"
+                f"Или используйте S3 хранилище для медиа-файлов.\n\n"
+                f"Текущий URL: {image_url}"
+            )
+    
+    # Пытаемся загрузить фото и получить talking_photo_id
+    # Если не получится, используем photo_url напрямую
     talking_photo_id = await upload_photo_to_heygen(image_url)
     
-    # Формируем payload для HeyGen API
+    # Формируем character payload для HeyGen
     if talking_photo_id:
-        # Используем talking_photo_id если получили
+        # Используем talking_photo_id если получили (предпочтительный способ)
+        print(f"✅ Using talking_photo_id: {talking_photo_id}")
         character_payload = {
             "type": "talking_photo",
             "talking_photo": {
@@ -173,7 +246,8 @@ async def animate_photo_heygen(
             }
         }
     else:
-        # Fallback на photo_url
+        # Fallback: используем photo_url напрямую
+        print(f"📸 Using photo_url directly: {image_url}")
         character_payload = {
             "type": "talking_photo",
             "talking_photo": {
@@ -181,15 +255,27 @@ async def animate_photo_heygen(
             }
         }
     
+    # Формируем payload для HeyGen API
+    # Важно: voice должен быть правильного формата для HeyGen
+    # HeyGen использует свои собственные voice_id, не ElevenLabs
+    voice_payload = {
+        "type": "text",
+        "input_text": script or "Hello, I'm here to share memories with you."
+    }
+    
+    # HeyGen voice_id (не ElevenLabs!)
+    # Если указан voice_id, используем его, иначе используем дефолтный голос HeyGen
+    if voice_id:
+        voice_payload["voice_id"] = voice_id
+    # Не используем ELEVENLABS_VOICE_ID для HeyGen, так как это разные сервисы
+    
+    # Формируем payload для HeyGen API v2
+    # Важно: проверяем правильный формат согласно документации HeyGen
     payload = {
         "video_inputs": [
             {
                 "character": character_payload,
-                "voice": {
-                    "type": "text",
-                    "input_text": script or "Hello, I'm here to share memories with you.",
-                    "voice_id": voice_id or settings.ELEVENLABS_VOICE_ID or "default"
-                }
+                "voice": voice_payload
             }
         ],
         "dimension": {
@@ -198,18 +284,35 @@ async def animate_photo_heygen(
         }
     }
     
+    print(f"📦 HeyGen payload structure:")
+    print(f"   character: {character_payload}")
+    print(f"   voice: {voice_payload}")
+    print(f"   Full payload keys: {list(payload.keys())}")
+    
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, headers=headers, timeout=30.0)
+            print(f"🚀 Sending request to HeyGen: {url}")
+            print(f"   Payload: {payload}")
+            response = await client.post(url, json=payload, headers=headers, timeout=60.0)
+            
+            print(f"📥 HeyGen response status: {response.status_code}")
+            
+            if response.status_code != 200:
+                error_text = response.text
+                print(f"❌ HeyGen API error {response.status_code}: {error_text}")
+                raise ValueError(f"HeyGen API error: {response.status_code} - {error_text}")
+            
             response.raise_for_status()
             result = response.json()
             # Логируем ответ для отладки
-            print(f"HeyGen create video response: {result}")
+            print(f"✅ HeyGen create video response: {result}")
             return result
     except httpx.HTTPStatusError as e:
         error_detail = e.response.text if e.response else str(e)
+        print(f"❌ HTTP error creating video in HeyGen: {e.response.status_code} - {error_detail}")
         raise ValueError(f"HeyGen API error: {e.response.status_code} - {error_detail}")
     except httpx.RequestError as e:
+        print(f"❌ Request error creating video in HeyGen: {e}")
         raise ValueError(f"HeyGen API request failed: {str(e)}")
 
 
@@ -221,7 +324,14 @@ async def get_heygen_video_status(video_id: str) -> Dict:
         Dict с полями: status, video_url (если готово), error (если ошибка)
     """
     if not settings.HEYGEN_API_KEY:
-        raise ValueError("HEYGEN_API_KEY not configured")
+        print("Warning: HEYGEN_API_KEY not configured")
+        return {
+            "data": {
+                "status": "error",
+                "video_url": None
+            },
+            "error": "HEYGEN_API_KEY not configured"
+        }
     
     # HeyGen API v2 использует endpoint /v2/video/{video_id} для проверки статуса
     url = f"{settings.HEYGEN_API_URL}/video/{video_id}"
@@ -237,14 +347,15 @@ async def get_heygen_video_status(video_id: str) -> Dict:
             print(f"HeyGen status check - URL: {url}, Status: {response.status_code}")
             
             # Если 404, возможно видео еще не создано или ID неверный
+            # Это нормальная ситуация на ранних этапах обработки
             if response.status_code == 404:
-                print(f"HeyGen 404 - video_id: {video_id}")
+                print(f"HeyGen 404 - video_id: {video_id} (video may still be processing)")
                 return {
                     "data": {
-                        "status": "not_found",
+                        "status": "processing",  # Возвращаем processing вместо not_found
                         "video_url": None
                     },
-                    "error": "Video not found. It may still be processing or the ID is incorrect."
+                    "error": None  # Не возвращаем ошибку, так как это нормально
                 }
             
             response.raise_for_status()
@@ -253,13 +364,15 @@ async def get_heygen_video_status(video_id: str) -> Dict:
             return result
     except httpx.HTTPStatusError as e:
         # Для 404 возвращаем структурированный ответ вместо исключения
+        # 404 может означать, что видео еще обрабатывается
         if e.response.status_code == 404:
+            print(f"HeyGen 404 exception - video_id: {video_id} (video may still be processing)")
             return {
                 "data": {
-                    "status": "not_found",
+                    "status": "processing",  # Возвращаем processing вместо not_found
                     "video_url": None
                 },
-                "error": "Video not found"
+                "error": None  # Не возвращаем ошибку, так как это нормально
             }
         error_detail = e.response.text if e.response else str(e)
         raise ValueError(f"HeyGen API error: {e.response.status_code} - {error_detail}")
@@ -286,20 +399,27 @@ async def animate_photo(
         result = await animate_photo_heygen(image_url, script, voice_id)
         # HeyGen может вернуть video_id в разных местах
         # Проверяем все возможные варианты структуры ответа
+        # Пытаемся извлечь video_id из разных мест ответа
         video_id = (
             result.get("data", {}).get("video_id") or 
             result.get("data", {}).get("id") or
             result.get("video_id") or 
             result.get("id") or
-            result.get("data", {}).get("video", {}).get("id")
+            result.get("data", {}).get("video", {}).get("id") or
+            result.get("data", {}).get("video_id") or
+            result.get("video", {}).get("id") if isinstance(result.get("video"), dict) else None
         )
         
         if not video_id:
             # Логируем полный ответ для отладки
-            print(f"ERROR: Could not extract video_id from HeyGen response: {result}")
+            print(f"❌ ERROR: Could not extract video_id from HeyGen response!")
+            print(f"   Full response: {result}")
+            print(f"   Response keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+            if isinstance(result, dict) and "data" in result:
+                print(f"   Data keys: {list(result['data'].keys()) if isinstance(result['data'], dict) else 'Not a dict'}")
             raise ValueError(f"HeyGen API did not return video_id. Response: {result}")
         
-        print(f"HeyGen video_id extracted: {video_id}")
+        print(f"✅ HeyGen video_id extracted: {video_id}")
         return {
             "provider": "heygen",
             "task_id": video_id,
@@ -328,41 +448,90 @@ async def get_animation_status(provider: str, task_id: str) -> Dict:
     if provider == "heygen":
         try:
             result = await get_heygen_video_status(task_id)
+            
+            # Проверяем, что result - это словарь
+            if not isinstance(result, dict):
+                print(f"Warning: HeyGen returned non-dict result: {type(result)}")
+                return {
+                    "status": "processing",
+                    "video_url": None,
+                    "error": None
+                }
+            
             # Обрабатываем разные форматы ответа HeyGen
             if "data" in result:
                 data = result.get("data", {})
+                if not isinstance(data, dict):
+                    data = {}
                 status = data.get("status", "unknown")
                 # Если статус not_found, возвращаем processing (возможно еще обрабатывается)
                 if status == "not_found":
                     status = "processing"
+                # Не возвращаем error, если статус processing (это нормально)
+                error = result.get("error") if status not in ("processing", "pending") else None
                 return {
                     "status": status,
                     "video_url": data.get("video_url") or data.get("url"),
-                    "error": result.get("error")
+                    "error": error
                 }
             else:
                 # Прямой формат ответа
+                status = result.get("status", "unknown")
+                # Не возвращаем error, если статус processing
+                error = result.get("error") if status not in ("processing", "pending") else None
                 return {
-                    "status": result.get("status", "unknown"),
+                    "status": status,
                     "video_url": result.get("video_url") or result.get("url"),
-                    "error": result.get("error")
+                    "error": error
                 }
         except ValueError as e:
             # Если ошибка 404, возвращаем processing вместо ошибки
-            if "404" in str(e) or "not found" in str(e).lower():
+            error_str = str(e).lower()
+            if "404" in error_str or "not found" in error_str:
                 return {
                     "status": "processing",
                     "video_url": None,
                     "error": None
                 }
             raise
+        except Exception as e:
+            # Обработка любых других исключений
+            print(f"Error in get_animation_status for HeyGen: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "video_url": None,
+                "error": f"Error checking animation status: {str(e)}"
+            }
     else:  # d-id
-        result = await get_did_talk_status(task_id)
-        return {
-            "status": result.get("status", "unknown"),
-            "video_url": result.get("result_url"),
-            "error": result.get("error")
-        }
+        try:
+            result = await get_did_talk_status(task_id)
+            return {
+                "status": result.get("status", "unknown"),
+                "video_url": result.get("result_url"),
+                "error": result.get("error")
+            }
+        except ValueError as e:
+            # Если ошибка 404, возвращаем processing вместо ошибки
+            error_str = str(e).lower()
+            if "404" in error_str or "not found" in error_str:
+                return {
+                    "status": "processing",
+                    "video_url": None,
+                    "error": None
+                }
+            raise
+        except Exception as e:
+            # Обработка любых других исключений
+            print(f"Error in get_animation_status for D-ID: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "status": "error",
+                "video_url": None,
+                "error": f"Error checking animation status: {str(e)}"
+            }
 
 
 # ========== OpenAI (LLM + Embeddings) ==========

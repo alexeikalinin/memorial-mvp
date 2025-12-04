@@ -137,7 +137,8 @@ class PhotoAnimateResponse(BaseModel):
 
 
 class AnimationStatusRequest(BaseModel):
-    task_id: str
+    task_id: str  # Может быть Celery task ID или HeyGen video_id
+    media_id: Optional[int] = None  # Если указан, используется для поиска video_id в БД
     provider: Optional[str] = None  # Если не указан, определяется автоматически
 
 

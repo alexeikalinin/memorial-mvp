@@ -68,18 +68,31 @@ async def animate_photo(
         image_url = media.file_url
     else:
         # Для локальной разработки - используем API endpoint для получения медиа
-        # ВАЖНО: Для HeyGen нужен публичный URL, localhost не работает!
-        # Варианты:
-        # 1. Использовать ngrok или другой туннель: https://your-ngrok-url.ngrok.io/api/v1/media/{media.id}
-        # 2. Загрузить в S3 и использовать S3 URL
-        # 3. Использовать PUBLIC_API_URL из настроек, если указан
+        # ВАЖНО: D-ID требует, чтобы URL заканчивался на .jpg, .jpeg или .png
+        # Поэтому добавляем расширение файла к URL
         public_api_url = getattr(settings, 'PUBLIC_API_URL', None)
-        if public_api_url:
-            image_url = f"{public_api_url}/api/v1/media/{media.id}"
+        
+        # Определяем расширение файла из file_name
+        file_extension = ""
+        if media.file_name:
+            # Извлекаем расширение из имени файла
+            if '.' in media.file_name:
+                file_extension = "." + media.file_name.rsplit('.', 1)[1].lower()
+                # Проверяем, что это валидное расширение для изображения
+                if file_extension not in ['.jpg', '.jpeg', '.png']:
+                    file_extension = '.jpg'  # Fallback на .jpg
+            else:
+                file_extension = '.jpg'  # Fallback на .jpg
         else:
-            # Fallback на localhost (не будет работать с HeyGen, но для тестирования)
-            image_url = f"http://localhost:8000/api/v1/media/{media.id}"
-            print(f"⚠️ WARNING: Using localhost URL for image. HeyGen requires a public URL!")
+            file_extension = '.jpg'  # Fallback на .jpg
+        
+        if public_api_url:
+            # Используем PUBLIC_API_URL с расширением файла
+            image_url = f"{public_api_url}/api/v1/media/{media.id}{file_extension}"
+        else:
+            # Fallback на localhost (не будет работать с внешними сервисами, но для тестирования)
+            image_url = f"http://localhost:8000/api/v1/media/{media.id}{file_extension}"
+            print(f"⚠️ WARNING: Using localhost URL for image. External services require a public URL!")
             print(f"   Set PUBLIC_API_URL in .env (e.g., https://your-ngrok-url.ngrok.io) or use S3")
         print(f"Using API endpoint for image: {image_url}")
     
@@ -414,34 +427,92 @@ async def get_animation_status_endpoint(
     Проверить статус задачи анимации фото.
     
     Если provider не указан, определяется автоматически из записи в БД.
+    task_id может быть либо Celery task ID, либо HeyGen/D-ID video_id.
     """
+    # Валидация входных данных
+    if not request.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="task_id is required"
+        )
+    
     # Определяем provider
     provider = request.provider
     if not provider:
-        # Пытаемся определить из БД по task_id
-        # В реальности нужно хранить provider в БД, пока используем настройки
         provider = "heygen" if settings.USE_HEYGEN else "d-id"
     
+    # Проблема: request.task_id может быть Celery task ID, а не HeyGen video_id
+    # Worker сохраняет HeyGen video_id в media.animation_task_id
+    # Нужно найти media и получить video_id из БД
+    
+    video_id = request.task_id  # По умолчанию используем task_id
+    
+    # Если указан media_id, используем его для поиска
+    if request.media_id:
+        media = db.query(Media).filter(Media.id == request.media_id).first()
+        if media and media.animation_task_id:
+            video_id = media.animation_task_id
+            print(f"Using media_id={request.media_id}, found video_id in DB: {video_id}")
+        else:
+            print(f"Media {request.media_id} not found or animation_task_id is None")
+    else:
+        # Пытаемся найти media по animation_task_id (может быть уже HeyGen video_id)
+        media = db.query(Media).filter(Media.animation_task_id == request.task_id).first()
+        if media and media.animation_task_id:
+            video_id = media.animation_task_id
+            print(f"Found media by animation_task_id, using video_id: {video_id}")
+        else:
+            # Не нашли - возможно task_id это уже HeyGen video_id
+            print(f"Media not found, using task_id as video_id: {request.task_id}")
+    
+    print(f"Checking animation status: provider={provider}, video_id={video_id}")
+    
     try:
-        status_result = await get_animation_status(provider, request.task_id)
+        status_result = await get_animation_status(provider, video_id)
+        
+        # Проверяем, что status_result - это словарь
+        if not isinstance(status_result, dict):
+            print(f"Warning: get_animation_status returned non-dict: {type(status_result)}")
+            status_result = {
+                "status": "processing",
+                "video_url": None,
+                "error": None
+            }
+        
+        status = status_result.get("status", "unknown")
+        error = status_result.get("error")
+        
+        # Не возвращаем error, если статус processing/pending (это нормально)
+        if status in ("processing", "pending") and error:
+            error = None
         
         return AnimationStatusResponse(
-            task_id=request.task_id,
-            status=status_result.get("status", "unknown"),
+            task_id=request.task_id,  # Возвращаем оригинальный task_id для совместимости
+            status=status,
             video_url=status_result.get("video_url"),
-            error=status_result.get("error"),
+            error=error,
             provider=provider
         )
     
     except ValueError as e:
+        error_msg = str(e)
+        print(f"ValueError in get_animation_status_endpoint: {error_msg}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=error_msg
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error checking animation status: {str(e)}"
+        error_msg = str(e)
+        print(f"Exception in get_animation_status_endpoint: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        # Возвращаем ошибку в формате ответа, а не выбрасываем исключение
+        return AnimationStatusResponse(
+            task_id=request.task_id,
+            status="error",
+            video_url=None,
+            error=f"Error checking animation status: {error_msg}",
+            provider=provider
         )
 
 

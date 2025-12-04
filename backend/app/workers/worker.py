@@ -53,17 +53,25 @@ def animate_photo_task(self, media_id: int, image_url: str, script: str = None):
             
             # Запуск анимации через унифицированный интерфейс
             try:
+                print(f"🎬 Starting animation for media_id={media_id}, image_url={image_url}")
                 result = await animate_photo(image_url, script)
                 provider = result.get("provider")
                 task_id = result.get("task_id")
                 
-                if not task_id:
-                    return {"status": "error", "message": "Failed to start animation"}
+                print(f"📋 Animation result: provider={provider}, task_id={task_id}")
+                print(f"   Full result: {result}")
                 
-                # Сохраняем task_id и provider в БД
+                if not task_id:
+                    error_msg = "Failed to start animation - no task_id returned"
+                    print(f"❌ {error_msg}")
+                    return {"status": "error", "message": error_msg}
+                
+                # Сохраняем task_id (это HeyGen video_id) и provider в БД
+                print(f"💾 Saving video_id={task_id} to media.animation_task_id for media_id={media_id}")
                 media.animation_task_id = task_id
                 # TODO: Добавить поле provider в модель Media
                 db.commit()
+                print(f"✅ Successfully saved video_id to database")
                 
                 # Ожидание завершения анимации (polling)
                 # В production лучше использовать webhook

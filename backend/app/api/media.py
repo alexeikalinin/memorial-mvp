@@ -17,12 +17,21 @@ router = APIRouter(prefix="/media", tags=["media"])
 UPLOAD_DIR = Path("uploads")
 
 
-@router.get("/{media_id}")
+@router.get("/{media_id_path:path}")  # Используем path для поддержки расширений
 async def get_media_file(
-    media_id: int,
+    media_id_path: str,  # Может быть "10" или "10.jpg"
     thumbnail: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
+    # Извлекаем media_id из пути (убираем расширение если есть)
+    media_id_str = media_id_path.split('.')[0]
+    try:
+        media_id = int(media_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid media ID"
+        )
     """
     Получить медиа-файл по ID.
     
