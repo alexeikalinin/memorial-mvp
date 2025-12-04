@@ -1,0 +1,195 @@
+.family-tree {
+  width: 100%;
+}
+
+.tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.tree-header h2 {
+  color: #2c3e50;
+}
+
+.relationship-form {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.relationship-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.relationship-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.relationship-form input,
+.relationship-form select,
+.relationship-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.relationship-form small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.tree-section,
+.relationships-section {
+  margin-bottom: 2rem;
+}
+
+.tree-section h3,
+.relationships-section h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.tree-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  min-height: 200px;
+  overflow-x: auto;
+}
+
+.tree-node {
+  margin-bottom: 1rem;
+}
+
+.node-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-width: 200px;
+  display: inline-block;
+}
+
+.node-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.node-card.spouse {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  margin-left: 1rem;
+}
+
+.node-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.node-date {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.spouses {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.children {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid #ddd;
+}
+
+.relationships-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.relationship-item {
+  background: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid #3498db;
+}
+
+.relationship-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.relationship-type {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.relationship-name {
+  color: #34495e;
+  font-size: 1.1rem;
+}
+
+.relationship-notes {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.btn-delete {
+  padding: 0.5rem 1rem;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #7f8c8d;
+}
+
+.empty-state p {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.hint {
+  font-size: 0.9rem !important;
+  font-style: italic;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #7f8c8d;
+}
+
