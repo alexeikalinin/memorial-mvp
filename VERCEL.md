@@ -6,24 +6,22 @@
 
 ## 1. Настройка проекта в Vercel
 
-### Root Directory (обязательно)
+В **корне репозитория** лежит `vercel.json`: в нём заданы сборка из папки `frontend/`, вывод в `frontend/dist` и правила для SPA (все маршруты отдают `index.html`). При деплое с корня репо **ничего в настройках Vercel менять не нужно** — достаточно подключить репозиторий и задеплоить.
 
-В репозитории фронтенд лежит в папке `frontend/`. В Vercel нужно указать корень сборки:
+### Вариант А: деплой с корня (рекомендуется)
 
-1. **Project Settings** → **General** → **Root Directory**
-2. Указать: **`frontend`**
-3. Сохранить.
+- **Root Directory** оставьте пустым (корень репо).
+- Сборка и вывод заданы в `vercel.json`: `installCommand`/`buildCommand` заходят в `frontend/`, `outputDirectory` = `frontend/dist`.
 
-Без этого Vercel будет собирать из корня репозитория и сборка упадёт (нет `package.json` в корне).
+### Вариант Б: Root Directory = `frontend`
 
-### Сборка (обычно по умолчанию)
+Если в **Project Settings** → **General** → **Root Directory** указать **`frontend`**:
 
-- **Framework Preset:** Vite  
-- **Build Command:** `npm run build`  
-- **Output Directory:** `dist`  
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
 - **Install Command:** `npm install`
 
-Если Root Directory = `frontend`, команды выполняются уже из `frontend/`, менять ничего не нужно.
+Тогда используется `frontend/vercel.json` (только rewrites для SPA).
 
 ---
 
