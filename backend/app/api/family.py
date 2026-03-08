@@ -264,21 +264,31 @@ async def get_family_tree(
         for rel in spouse_rels:
             spouse_memorial = db.query(Memorial).filter(Memorial.id == rel.related_memorial_id).first()
             if spouse_memorial:
+                spouse_photo_url = (
+                    f"/api/v1/media/{spouse_memorial.cover_photo_id}?thumbnail=small"
+                    if spouse_memorial.cover_photo_id else None
+                )
                 spouses.append(FamilyTreeNode(
                     memorial_id=spouse_memorial.id,
                     name=spouse_memorial.name,
                     birth_date=spouse_memorial.birth_date,
                     death_date=spouse_memorial.death_date,
                     relationship_type=RelationshipType.SPOUSE,
+                    cover_photo_url=spouse_photo_url,
                     children=[],
                     spouses=[]
                 ))
-        
+
+        cover_photo_url = (
+            f"/api/v1/media/{node_memorial.cover_photo_id}?thumbnail=small"
+            if node_memorial.cover_photo_id else None
+        )
         return FamilyTreeNode(
             memorial_id=node_memorial.id,
             name=node_memorial.name,
             birth_date=node_memorial.birth_date,
             death_date=node_memorial.death_date,
+            cover_photo_url=cover_photo_url,
             children=children,
             spouses=spouses
         )

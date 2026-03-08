@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     HEYGEN_API_KEY: str = ""
     HEYGEN_API_URL: str = "https://api.heygen.com/v2"
     USE_HEYGEN: bool = False  # Использовать HeyGen вместо D-ID
+    HEYGEN_TALKING_PHOTO_ID: str = ""  # ID talking_photo, созданного через веб-интерфейс (опционально)
     
     # ElevenLabs
     ELEVENLABS_API_KEY: str = ""
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     QDRANT_URL: str = "http://localhost:6333"  # Локальный или Qdrant Cloud URL
     QDRANT_API_KEY: str = ""  # Опционально, для Qdrant Cloud
     QDRANT_COLLECTION_NAME: str = "memorial-memories"
+    QDRANT_LOCAL_PATH: str = ""  # Если задан — локальный файловый режим (без сервера)
     
     # AWS S3
     S3_BUCKET_NAME: str = ""
@@ -63,6 +65,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
     PUBLIC_API_URL: str = ""  # Публичный URL для доступа к API (для HeyGen и других внешних сервисов)
+    PUBLIC_FRONTEND_URL: str = "http://localhost:5173"  # Публичный URL фронтенда (для QR-кодов)
     
     # File Upload
     MAX_UPLOAD_SIZE: int = 104857600  # 100MB

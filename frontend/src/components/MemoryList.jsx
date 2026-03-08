@@ -1,24 +1,104 @@
-import { useState, useEffect } from 'react'
-import { memorialsAPI } from '../api/client'
+import { useState, useEffect, useRef } from 'react'
+import { memorialsAPI, aiAPI } from '../api/client'
 import './MemoryList.css'
 
 function MemoryList({ memorialId, onReload }) {
   const [memories, setMemories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ title: '', content: '' })
+  const [formData, setFormData] = useState({ title: '', content: '', event_date: '' })
   const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [editFormData, setEditFormData] = useState({ title: '', content: '' })
+  const [editFormData, setEditFormData] = useState({ title: '', content: '', event_date: '' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+
+  // Аудио-транскрипция
+  const [showAudio, setShowAudio] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [audioBlob, setAudioBlob] = useState(null)
+  const [audioUrl, setAudioUrl] = useState(null)
+  const [transcribing, setTranscribing] = useState(false)
+  const mediaRecorderRef = useRef(null)
+  const chunksRef = useRef([])
 
   useEffect(() => {
-    loadMemories()
-  }, [memorialId])
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  const loadMemories = async () => {
+  useEffect(() => {
+    loadMemories(debouncedQuery)
+  }, [memorialId, debouncedQuery])
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      chunksRef.current = []
+      recorder.ondataavailable = (e) => chunksRef.current.push(e.data)
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        setAudioBlob(blob)
+        setAudioUrl(URL.createObjectURL(blob))
+        stream.getTracks().forEach((t) => t.stop())
+      }
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      setIsRecording(true)
+    } catch {
+      alert('Нет доступа к микрофону. Разрешите доступ в браузере.')
+    }
+  }
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop()
+    setIsRecording(false)
+  }
+
+  const handleAudioFileSelect = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setAudioBlob(file)
+    setAudioUrl(URL.createObjectURL(file))
+  }
+
+  const handleTranscribe = async () => {
+    if (!audioBlob) return
+    setTranscribing(true)
+    try {
+      const file = audioBlob instanceof File
+        ? audioBlob
+        : new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
+      const response = await aiAPI.transcribe(file)
+      const text = response.data.text
+      setFormData((prev) => ({
+        ...prev,
+        content: prev.content ? prev.content + '\n\n' + text : text,
+      }))
+      setShowAudio(false)
+      setAudioBlob(null)
+      setAudioUrl(null)
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Ошибка при транскрипции')
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  const resetAudio = () => {
+    setAudioBlob(null)
+    setAudioUrl(null)
+    if (isRecording) {
+      mediaRecorderRef.current?.stop()
+      setIsRecording(false)
+    }
+  }
+
+  const loadMemories = async (q = '') => {
     try {
       setLoading(true)
-      const response = await memorialsAPI.getMemories(memorialId)
+      const response = await memorialsAPI.getMemories(memorialId, q || null)
       setMemories(response.data)
     } catch (err) {
       console.error('Error loading memories:', err)
@@ -31,20 +111,20 @@ function MemoryList({ memorialId, onReload }) {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await memorialsAPI.createMemory(memorialId, formData)
-      setFormData({ title: '', content: '' })
+      const submitData = {
+        ...formData,
+        event_date: formData.event_date ? `${formData.event_date}T00:00:00Z` : null,
+      }
+      await memorialsAPI.createMemory(memorialId, submitData)
+      setFormData({ title: '', content: '', event_date: '' })
       setShowForm(false)
-      await loadMemories()
+      await loadMemories(debouncedQuery)
       if (onReload) onReload()
     } catch (err) {
       alert(err.response?.data?.detail || 'Ошибка при добавлении воспоминания')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (loading) {
-    return <div className="loading">Загрузка воспоминаний...</div>
   }
 
   return (
@@ -58,6 +138,24 @@ function MemoryList({ memorialId, onReload }) {
           {showForm ? 'Отмена' : 'Добавить воспоминание'}
         </button>
       </div>
+
+      <div className="memory-search">
+        <input
+          type="text"
+          placeholder="Поиск по воспоминаниям..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        {searchQuery && (
+          <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
+        )}
+      </div>
+      {searchQuery && !loading && (
+        <p className="search-results-count">Найдено: {memories.length} воспоминаний</p>
+      )}
+
+      {loading && <div className="loading">Загрузка воспоминаний...</div>}
 
       {showForm && (
         <form onSubmit={handleSubmit} className="memory-form">
@@ -86,6 +184,79 @@ function MemoryList({ memorialId, onReload }) {
               placeholder="Расскажите о человеке, его жизни, характере, важных событиях..."
             />
           </div>
+
+          {/* Аудио-транскрипция */}
+          <div className="audio-transcribe-section">
+            <button
+              type="button"
+              className="btn-audio-toggle"
+              onClick={() => { setShowAudio(!showAudio); resetAudio() }}
+            >
+              🎙️ {showAudio ? 'Скрыть' : 'Добавить голосовое воспоминание'}
+            </button>
+
+            {showAudio && (
+              <div className="audio-controls">
+                <p className="audio-hint">
+                  Запишите рассказ голосом или загрузите аудиофайл — он будет преобразован в текст и добавлен в воспоминание.
+                </p>
+                <div className="audio-buttons">
+                  {!audioBlob && (
+                    <>
+                      {!isRecording ? (
+                        <button type="button" className="btn-record" onClick={startRecording}>
+                          🔴 Начать запись
+                        </button>
+                      ) : (
+                        <button type="button" className="btn-record recording" onClick={stopRecording}>
+                          ⏹️ Остановить запись
+                        </button>
+                      )}
+                      <label className="btn-upload-audio">
+                        📁 Загрузить аудио
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          onChange={handleAudioFileSelect}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                    </>
+                  )}
+                  {audioBlob && (
+                    <div className="audio-preview">
+                      <audio controls src={audioUrl} className="audio-player-small" />
+                      <div className="audio-preview-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={handleTranscribe}
+                          disabled={transcribing}
+                        >
+                          {transcribing ? '⏳ Транскрибирую...' : '✍️ Преобразовать в текст'}
+                        </button>
+                        <button type="button" className="btn btn-secondary" onClick={resetAudio}>
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="event_date">Когда это было (опционально)</label>
+            <input
+              type="date"
+              id="event_date"
+              value={formData.event_date}
+              onChange={(e) =>
+                setFormData({ ...formData, event_date: e.target.value })
+              }
+            />
+          </div>
           <button
             type="submit"
             className="btn btn-primary"
@@ -96,14 +267,20 @@ function MemoryList({ memorialId, onReload }) {
         </form>
       )}
 
-      {memories.length === 0 ? (
+      {!loading && memories.length === 0 ? (
         <div className="empty-state">
-          <p>Пока нет добавленных воспоминаний</p>
-          <p className="hint">
-            Добавьте воспоминания, чтобы ИИ-аватар мог отвечать на вопросы
-          </p>
+          {searchQuery ? (
+            <p>Ничего не найдено по запросу «{searchQuery}»</p>
+          ) : (
+            <>
+              <p>Пока нет добавленных воспоминаний</p>
+              <p className="hint">
+                Добавьте воспоминания, чтобы ИИ-аватар мог отвечать на вопросы
+              </p>
+            </>
+          )}
         </div>
-      ) : (
+      ) : !loading && (
         <div className="memories">
           {memories.map((memory) => (
             <div key={memory.id} className="memory-card">
@@ -113,10 +290,14 @@ function MemoryList({ memorialId, onReload }) {
                     e.preventDefault()
                     setSubmitting(true)
                     try {
-                      await memorialsAPI.updateMemory(memorialId, memory.id, editFormData)
+                      const submitData = {
+                        ...editFormData,
+                        event_date: editFormData.event_date ? `${editFormData.event_date}T00:00:00Z` : null,
+                      }
+                      await memorialsAPI.updateMemory(memorialId, memory.id, submitData)
                       setEditingId(null)
-                      setEditFormData({ title: '', content: '' })
-                      await loadMemories()
+                      setEditFormData({ title: '', content: '', event_date: '' })
+                      await loadMemories(debouncedQuery)
                       if (onReload) onReload()
                     } catch (err) {
                       alert(err.response?.data?.detail || 'Ошибка при обновлении воспоминания')
@@ -150,6 +331,17 @@ function MemoryList({ memorialId, onReload }) {
                       required
                     />
                   </div>
+                  <div className="form-group">
+                    <label htmlFor={`edit-event-date-${memory.id}`}>Когда это было</label>
+                    <input
+                      type="date"
+                      id={`edit-event-date-${memory.id}`}
+                      value={editFormData.event_date}
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, event_date: e.target.value })
+                      }
+                    />
+                  </div>
                   <div className="form-actions">
                     <button type="submit" className="btn btn-primary" disabled={submitting}>
                       {submitting ? 'Сохранение...' : 'Сохранить'}
@@ -171,6 +363,14 @@ function MemoryList({ memorialId, onReload }) {
                   {memory.title && <h3>{memory.title}</h3>}
                   <p>{memory.content}</p>
                   <div className="memory-meta">
+                    {memory.event_date && (
+                      <span className="event-date">
+                        {new Date(memory.event_date).toLocaleDateString('ru-RU', {
+                          year: 'numeric',
+                          month: 'long',
+                        })}
+                      </span>
+                    )}
                     <span>
                       Добавлено:{' '}
                       {new Date(memory.created_at).toLocaleDateString('ru-RU')}
@@ -183,6 +383,9 @@ function MemoryList({ memorialId, onReload }) {
                           setEditFormData({
                             title: memory.title || '',
                             content: memory.content,
+                            event_date: memory.event_date
+                              ? new Date(memory.event_date).toISOString().split('T')[0]
+                              : '',
                           })
                         }}
                       >
@@ -194,7 +397,7 @@ function MemoryList({ memorialId, onReload }) {
                           if (confirm('Удалить это воспоминание?')) {
                             try {
                               await memorialsAPI.deleteMemory(memorialId, memory.id)
-                              await loadMemories()
+                              await loadMemories(debouncedQuery)
                               if (onReload) onReload()
                             } catch (err) {
                               alert(err.response?.data?.detail || 'Ошибка при удалении воспоминания')

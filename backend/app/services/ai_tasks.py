@@ -39,7 +39,7 @@ async def animate_photo_did(
         "source_url": image_url,
         "script": {
             "type": "text",
-            "input": script or "Hello, I'm here to share memories with you."
+            "input": script or "Привет, я здесь, чтобы поделиться воспоминаниями с тобой."
         }
     }
     
@@ -99,7 +99,9 @@ async def upload_photo_to_heygen(image_url: str) -> Optional[str]:
     """
     Загрузить фото в HeyGen и получить talking_photo_id.
     
-    Пробуем разные endpoints для загрузки фото.
+    Согласно документации HeyGen, для Photo Avatars API нужно:
+    1. Создать talking_photo через POST /v2/talking_photo с photo_url в JSON
+    2. Или загрузить файл напрямую
     
     Returns:
         talking_photo_id или None если не удалось
@@ -108,80 +110,133 @@ async def upload_photo_to_heygen(image_url: str) -> Optional[str]:
         print("Warning: HEYGEN_API_KEY not configured")
         return None
     
-    # Пробуем endpoint /talking_photo (без /upload)
-    # Может быть, это правильный endpoint
     try:
         async with httpx.AsyncClient() as client:
-            # Сначала скачиваем изображение
-            print(f"📥 Downloading image from: {image_url}")
-            image_response = await client.get(image_url, timeout=30.0, follow_redirects=True)
-            image_response.raise_for_status()
-            image_data = image_response.content
-            
-            if not image_data:
-                print("Warning: Downloaded image is empty")
-                return None
-            
-            print(f"✅ Downloaded image, size: {len(image_data)} bytes")
-            
-            # Пробуем разные endpoints для загрузки фото
-            # Вариант 1: POST /talking_photo/create
-            upload_urls = [
-                f"{settings.HEYGEN_API_URL}/talking_photo/create",
-                f"{settings.HEYGEN_API_URL}/talking_photo",
-                f"{settings.HEYGEN_API_URL}/talking_photo/upload",
-            ]
-            
             headers = {
                 "X-Api-Key": settings.HEYGEN_API_KEY,
+                "Content-Type": "application/json"
             }
             
-            # Определяем MIME тип
-            content_type = "image/jpeg"
-            if image_url.lower().endswith('.png'):
-                content_type = "image/png"
+            # Пробуем разные варианты endpoints для создания talking_photo
+            # Возможно, нужен другой путь или версия API
+            possible_endpoints = [
+                f"{settings.HEYGEN_API_URL}/talking_photo",  # v2
+                f"{settings.HEYGEN_API_URL.replace('/v2', '/v1')}/talking_photo",  # v1
+                f"https://api.heygen.com/v1/talking_photo",  # v1 напрямую
+                f"{settings.HEYGEN_API_URL}/photo_avatars",  # альтернативный путь
+                f"{settings.HEYGEN_API_URL}/avatars/photo",  # еще один вариант
+            ]
             
-            files = {
-                "photo": ("photo.jpg", image_data, content_type)
+            create_payload = {
+                "photo_url": image_url
             }
             
-            # Пробуем каждый endpoint
-            for upload_url in upload_urls:
+            talking_photo_id = None
+            
+            for create_url in possible_endpoints:
                 try:
-                    print(f"📤 Trying to upload to HeyGen: {upload_url}")
-                    upload_response = await client.post(upload_url, headers=headers, files=files, timeout=60.0)
+                    print(f"📤 Trying to create talking_photo: {create_url}")
+                    print(f"   Payload: {create_payload}")
                     
-                    print(f"📥 HeyGen upload response status: {upload_response.status_code}")
+                    create_response = await client.post(
+                        create_url, 
+                        json=create_payload, 
+                        headers=headers, 
+                        timeout=60.0
+                    )
+            
+                    print(f"📥 HeyGen create response status: {create_response.status_code}")
                     
-                    if upload_response.status_code == 200:
-                        result = upload_response.json()
-                        print(f"✅ HeyGen upload response: {result}")
+                    if create_response.status_code in [200, 201]:
+                        result = create_response.json()
+                        print(f"✅ HeyGen create response: {result}")
+                        
+                        # Извлекаем talking_photo_id из разных возможных мест в ответе
                         talking_photo_id = (
                             result.get("data", {}).get("talking_photo_id") or 
+                            result.get("data", {}).get("id") or
                             result.get("talking_photo_id") or 
-                            result.get("data", {}).get("id") or 
                             result.get("id") or
                             result.get("data", {}).get("talking_photo", {}).get("id") if isinstance(result.get("data", {}).get("talking_photo"), dict) else None
                         )
+                        
                         if talking_photo_id:
-                            print(f"✅ Successfully uploaded photo to HeyGen, got talking_photo_id: {talking_photo_id}")
+                            print(f"✅ Successfully created talking_photo via {create_url}, got ID: {talking_photo_id}")
                             return talking_photo_id
                         else:
-                            print(f"⚠️  Warning: HeyGen response does not contain talking_photo_id: {result}")
-                    elif upload_response.status_code not in [404, 405]:
+                            print(f"⚠️  Warning: Response does not contain talking_photo_id: {result}")
+                    elif create_response.status_code not in [404, 405]:
                         # Если не 404/405, логируем ошибку
-                        error_text = upload_response.text
-                        print(f"⚠️  HeyGen upload failed {upload_response.status_code}: {error_text}")
+                        error_text = create_response.text[:500]
+                        print(f"⚠️  HeyGen create failed {create_response.status_code}: {error_text}")
+                        # Продолжаем пробовать другие endpoints
                 except Exception as e:
-                    print(f"⚠️  Error trying {upload_url}: {e}")
+                    print(f"⚠️  Error trying {create_url}: {e}")
                     continue
+            
+            # Если ни один endpoint не сработал, пробуем загрузить файл
+            if not talking_photo_id:
+                print(f"⚠️  All JSON endpoints failed, trying file upload...")
+                
+                # Если JSON не сработал, пробуем загрузить файл напрямую
+                print(f"🔄 Trying to upload file directly...")
+                try:
+                    # Скачиваем изображение
+                    print(f"📥 Downloading image from: {image_url}")
+                    image_response = await client.get(image_url, timeout=30.0, follow_redirects=True)
+                    image_response.raise_for_status()
+                    image_data = image_response.content
+                    
+                    if not image_data:
+                        print("Warning: Downloaded image is empty")
+                        return None
+                    
+                    print(f"✅ Downloaded image, size: {len(image_data)} bytes")
+                    
+                    # Пробуем загрузить через multipart/form-data
+                    upload_headers = {
+                        "X-Api-Key": settings.HEYGEN_API_KEY,
+                    }
+                    
+                    content_type = "image/jpeg"
+                    if image_url.lower().endswith('.png'):
+                        content_type = "image/png"
+                    
+                    files = {
+                        "photo": ("photo.jpg", image_data, content_type)
+                    }
+                    
+                    upload_response = await client.post(
+                        create_url, 
+                        headers=upload_headers, 
+                        files=files, 
+                        timeout=60.0
+                    )
+                    
+                    print(f"📥 HeyGen upload response status: {upload_response.status_code}")
+                    
+                    if upload_response.status_code in [200, 201]:
+                        upload_result = upload_response.json()
+                        print(f"✅ HeyGen upload response: {upload_result}")
+                        talking_photo_id = (
+                            upload_result.get("data", {}).get("talking_photo_id") or 
+                            upload_result.get("talking_photo_id") or 
+                            upload_result.get("data", {}).get("id") or 
+                            upload_result.get("id")
+                        )
+                        if talking_photo_id:
+                            print(f"✅ Successfully uploaded photo, got talking_photo_id: {talking_photo_id}")
+                            return talking_photo_id
+                except Exception as upload_error:
+                    print(f"⚠️  Error uploading file: {upload_error}")
+                    
     except Exception as e:
-        print(f"⚠️  Error uploading photo to HeyGen: {e}")
+        print(f"⚠️  Error creating talking_photo in HeyGen: {e}")
         import traceback
         traceback.print_exc()
     
-    # Если не удалось загрузить, возвращаем None
-    print(f"⚠️  Could not upload photo to HeyGen, will try to use photo_url directly")
+    # Если не удалось создать, возвращаем None
+    print(f"⚠️  Could not create talking_photo in HeyGen")
     return None
 
 
@@ -232,8 +287,14 @@ async def animate_photo_heygen(
             )
     
     # Пытаемся загрузить фото и получить talking_photo_id
-    # Если не получится, используем photo_url напрямую
-    talking_photo_id = await upload_photo_to_heygen(image_url)
+    # Сначала проверяем, есть ли готовый talking_photo_id в настройках
+    talking_photo_id = None
+    if hasattr(settings, 'HEYGEN_TALKING_PHOTO_ID') and settings.HEYGEN_TALKING_PHOTO_ID:
+        print(f"✅ Using pre-configured talking_photo_id from settings: {settings.HEYGEN_TALKING_PHOTO_ID}")
+        talking_photo_id = settings.HEYGEN_TALKING_PHOTO_ID
+    else:
+        # Пытаемся создать talking_photo через API
+        talking_photo_id = await upload_photo_to_heygen(image_url)
     
     # Формируем character payload для HeyGen
     if talking_photo_id:
@@ -246,21 +307,29 @@ async def animate_photo_heygen(
             }
         }
     else:
-        # Fallback: используем photo_url напрямую
-        print(f"📸 Using photo_url directly: {image_url}")
+        # Если не удалось создать talking_photo, пробуем использовать photo_url напрямую
+        # Но HeyGen требует talking_photo_id, поэтому это может не сработать
+        print(f"⚠️  Could not create talking_photo_id. HeyGen requires talking_photo_id for video generation.")
+        print(f"📸 Attempting to use photo_url directly (may fail): {image_url}")
+        
+        # Пробуем разные форматы payload
+        # Вариант 1: Стандартный формат с photo_url
         character_payload = {
             "type": "talking_photo",
             "talking_photo": {
                 "photo_url": image_url
             }
         }
+        
+        # Если это не сработает, возможно нужно использовать другой тип character
+        # или создать talking_photo через веб-интерфейс HeyGen заранее
     
     # Формируем payload для HeyGen API
     # Важно: voice должен быть правильного формата для HeyGen
     # HeyGen использует свои собственные voice_id, не ElevenLabs
     voice_payload = {
         "type": "text",
-        "input_text": script or "Hello, I'm here to share memories with you."
+        "input_text": script or "Привет, я здесь, чтобы поделиться воспоминаниями с тобой."
     }
     
     # HeyGen voice_id (не ElevenLabs!)
@@ -300,6 +369,15 @@ async def animate_photo_heygen(
             if response.status_code != 200:
                 error_text = response.text
                 print(f"❌ HeyGen API error {response.status_code}: {error_text}")
+                
+                # Если ошибка связана с talking_photo_id, предлагаем решение
+                if "talking_photo_id" in error_text.lower() or "field required" in error_text.lower():
+                    print(f"\n⚠️  ВАЖНО: HeyGen требует talking_photo_id, но endpoint для его создания не работает.")
+                    print(f"   Возможные решения:")
+                    print(f"   1. Создайте talking_photo через веб-интерфейс HeyGen (https://app.heygen.com/)")
+                    print(f"   2. Используйте D-ID вместо HeyGen (установите USE_HEYGEN=false в .env)")
+                    print(f"   3. Обратитесь в поддержку HeyGen для получения правильного endpoint\n")
+                
                 raise ValueError(f"HeyGen API error: {response.status_code} - {error_text}")
             
             response.raise_for_status()
@@ -868,14 +946,17 @@ def get_vector_db_client():
         from qdrant_client.models import Distance, VectorParams
         
         # Инициализация Qdrant клиента
-        if settings.QDRANT_API_KEY:
+        if settings.QDRANT_LOCAL_PATH:
+            # Локальный файловый режим (без сервера, без Docker)
+            client = QdrantClient(path=settings.QDRANT_LOCAL_PATH)
+        elif settings.QDRANT_API_KEY:
             # Qdrant Cloud
             client = QdrantClient(
                 url=settings.QDRANT_URL,
                 api_key=settings.QDRANT_API_KEY
             )
         else:
-            # Локальный Qdrant
+            # Локальный сервер Qdrant
             client = QdrantClient(url=settings.QDRANT_URL)
         
         # Создание коллекции, если не существует
@@ -977,92 +1058,326 @@ async def upsert_memory_embedding(
 
 
 async def search_similar_memories(
-    memorial_id: int,
     query_embedding: List[float],
     top_k: int = 5,
-    min_score: float = 0.5
+    min_score: float = 0.5,
+    memorial_ids: Optional[List[int]] = None,
+    memorial_id: Optional[int] = None,
 ) -> List[Dict]:
     """
     Найти похожие воспоминания в векторной БД (Qdrant или Pinecone).
-    
+
     Args:
-        memorial_id: ID мемориала
         query_embedding: Embedding запроса
         top_k: Количество результатов
         min_score: Минимальный score для включения в результаты
-    
+        memorial_ids: Список ID мемориалов для поиска (включает родственников)
+        memorial_id: Deprecated — используй memorial_ids. Для обратной совместимости.
+
     Returns:
-        Список словарей с полями: id, score, text, memory_id, title
+        Список словарей с полями: id, score, text, memory_id, title, source_memorial_id
     """
+    # Совместимость: если передан memorial_id, оборачиваем в список
+    if memorial_ids is None:
+        if memorial_id is not None:
+            memorial_ids = [memorial_id]
+        else:
+            raise ValueError("Either memorial_ids or memorial_id must be provided")
+
     try:
         if settings.VECTOR_DB_PROVIDER == "qdrant":
             try:
                 from qdrant_client.models import Filter, FieldCondition, MatchValue
             except ImportError:
                 raise ValueError("qdrant-client not installed. Run: pip install qdrant-client")
-            
+
             client = get_vector_db_client()
-            
+
             # Запрашиваем без фильтра (Qdrant Cloud требует индекс для фильтрации)
-            # Фильтруем по memorial_id в коде
+            # Фильтруем по memorial_ids в коде. Умножаем лимит на кол-во мемориалов
             results = client.search(
                 collection_name=settings.QDRANT_COLLECTION_NAME,
                 query_vector=query_embedding,
-                limit=top_k * 10,  # Запрашиваем больше для фильтрации по memorial_id
+                limit=top_k * 10 * len(memorial_ids),
                 score_threshold=min_score
             )
-            
-            # Фильтруем результаты по memorial_id и score в коде
+
+            # Фильтруем результаты по memorial_ids и score в коде
             filtered_results = []
             for result in results:
-                if (result.payload.get("memorial_id") == memorial_id and 
+                result_memorial_id = result.payload.get("memorial_id")
+                if (result_memorial_id in memorial_ids and
                     result.score >= min_score):
                     filtered_results.append({
                         "id": str(result.id),
                         "score": result.score,
                         "text": result.payload.get("text", ""),
                         "memory_id": result.payload.get("memory_id"),
-                        "title": result.payload.get("title", "")
+                        "title": result.payload.get("title", ""),
+                        "source_memorial_id": result_memorial_id,
                     })
-                    if len(filtered_results) >= top_k:
+                    if len(filtered_results) >= top_k * len(memorial_ids):
                         break
-            
+
             return filtered_results
-        
+
         else:  # Pinecone
             pc = get_vector_db_client()
             index = pc.Index(settings.PINECONE_INDEX_NAME)
-            
+
             results = index.query(
                 vector=query_embedding,
-                top_k=top_k * 2,
+                top_k=top_k * 2 * len(memorial_ids),
                 include_metadata=True,
-                filter={"memorial_id": memorial_id}
+                filter={"memorial_id": {"$in": memorial_ids}}
             )
-            
+
             filtered_results = [
                 {
                     "id": match.id,
                     "score": match.score,
                     "text": match.metadata.get("text", ""),
                     "memory_id": match.metadata.get("memory_id"),
-                    "title": match.metadata.get("title", "")
+                    "title": match.metadata.get("title", ""),
+                    "source_memorial_id": match.metadata.get("memorial_id"),
                 }
                 for match in results.matches
                 if match.score >= min_score
-            ][:top_k]
-            
+            ][:top_k * len(memorial_ids)]
+
             return filtered_results
-    
+
     except Exception as e:
         print(f"Error searching vector DB: {e}")
         return []
 
 
+async def sync_family_memories(memorial_id: int, db, dry_run: bool = False) -> Dict:
+    """
+    Memory Sync Agent — находит упоминания родственников в воспоминаниях
+    и создаёт "отражённые" воспоминания (source="family_sync") в мемориалах родственников.
+
+    Args:
+        memorial_id: ID мемориала-источника
+        db: SQLAlchemy сессия
+        dry_run: Если True — только анализирует, не создаёт записей
+
+    Returns:
+        {created, skipped, details}
+    """
+    if not settings.OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY not configured")
+
+    from openai import AsyncOpenAI
+    import json as _json
+
+    from app.models import Memorial, Memory, FamilyRelationship
+
+    # Загружаем источник
+    source_memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not source_memorial:
+        raise ValueError(f"Memorial {memorial_id} not found")
+
+    memories = db.query(Memory).filter(Memory.memorial_id == memorial_id).all()
+    if not memories:
+        return {"created": 0, "skipped": 0, "details": []}
+
+    # Загружаем родственников
+    relationships = db.query(FamilyRelationship).filter(
+        FamilyRelationship.memorial_id == memorial_id
+    ).all()
+    if not relationships:
+        return {"created": 0, "skipped": 0, "details": [], "message": "No family relationships found"}
+
+    relatives = []
+    for rel in relationships:
+        related = db.query(Memorial).filter(Memorial.id == rel.related_memorial_id).first()
+        if related:
+            relatives.append({
+                "memorial_id": rel.related_memorial_id,
+                "name": related.name,
+                "relationship_type": rel.relationship_type.value,
+            })
+
+    if not relatives:
+        return {"created": 0, "skipped": 0, "details": []}
+
+    relative_list_str = ", ".join(
+        f"{r['name']} ({r['relationship_type']})" for r in relatives
+    )
+
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+    created = 0
+    skipped = 0
+    details = []
+
+    for memory in memories:
+        prompt = (
+            f"Анализируй воспоминание человека по имени {source_memorial.name}.\n"
+            f"Родственники: {relative_list_str}.\n"
+            f"Текст воспоминания: \"{memory.content}\"\n\n"
+            "Найди явные или косвенные упоминания родственников из списка. "
+            "Для каждого упоминания верни JSON-массив объектов вида:\n"
+            '[{"related_name": "имя", "memorial_id": ID, "reflected_text": "переформулированный текст от лица родственника", "should_sync": true/false}]\n'
+            "Если упоминаний нет — верни пустой массив [].\n"
+            "Только JSON, никаких объяснений."
+        )
+
+        try:
+            resp = await client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+                max_tokens=1000,
+            )
+            raw = resp.choices[0].message.content.strip()
+            # Убираем возможные markdown-блоки
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            matches = _json.loads(raw)
+        except Exception as e:
+            print(f"GPT analysis failed for memory {memory.id}: {e}")
+            continue
+
+        for match in matches:
+            if not match.get("should_sync"):
+                continue
+
+            target_id = match.get("memorial_id")
+            reflected_text = match.get("reflected_text", "").strip()
+            related_name = match.get("related_name", "")
+
+            if not target_id or not reflected_text:
+                continue
+
+            # Проверяем дубликат
+            attribution = f"family_sync_from_{memorial_id}_mem_{memory.id}"
+            existing = db.query(Memory).filter(
+                Memory.memorial_id == target_id,
+                Memory.source == "family_sync",
+                Memory.embedding_id == attribution,
+            ).first()
+
+            detail = {
+                "source_memory_id": memory.id,
+                "target_memorial_id": target_id,
+                "related_name": related_name,
+                "reflected_text": reflected_text[:100],
+            }
+
+            if existing:
+                skipped += 1
+                detail["status"] = "skipped_duplicate"
+                details.append(detail)
+                continue
+
+            if dry_run:
+                skipped += 1
+                detail["status"] = "dry_run"
+                details.append(detail)
+                continue
+
+            # Создаём отражённое воспоминание
+            new_memory = Memory(
+                memorial_id=target_id,
+                title=f"Общее воспоминание с {source_memorial.name}",
+                content=reflected_text,
+                source="family_sync",
+                # Используем embedding_id как attribution-метку (до создания реального вектора)
+                embedding_id=attribution,
+            )
+            db.add(new_memory)
+            db.flush()  # получаем id
+
+            # Создаём embedding
+            try:
+                embedding = await get_embedding(reflected_text)
+                vector_id = await upsert_memory_embedding(
+                    memory_id=new_memory.id,
+                    memorial_id=target_id,
+                    text=reflected_text,
+                    embedding=embedding,
+                    title=new_memory.title,
+                )
+                new_memory.embedding_id = vector_id
+            except Exception as emb_err:
+                print(f"Embedding failed for synced memory: {emb_err}")
+                # Оставляем attribution как embedding_id
+
+            created += 1
+            detail["status"] = "created"
+            details.append(detail)
+
+    if not dry_run and created > 0:
+        db.commit()
+
+    return {"created": created, "skipped": skipped, "details": details}
+
+
+# ========== AI Agents ==========
+
+async def build_avatar_persona(
+    memories: List[Dict],
+    memorial_name: str
+) -> str:
+    """
+    Smart Avatar Persona Agent — строит системный промпт-личность аватара из всех воспоминаний.
+
+    Используется вместо стандартного промпта в generate_rag_response для более точного
+    отыгрывания образа человека.
+
+    Args:
+        memories: Список словарей с полями title и content
+        memorial_name: Имя человека
+
+    Returns:
+        Готовый system prompt для передачи в generate_rag_response
+    """
+    if not settings.OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY not configured")
+
+    from openai import AsyncOpenAI
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+    memories_text = "\n\n".join(
+        f"[{m.get('title', 'Воспоминание')}]\n{m.get('content', '')}"
+        for m in memories
+    )
+
+    system_prompt = "Ты — помощник по созданию ИИ-аватаров для мемориального сервиса."
+    user_prompt = (
+        f"На основе следующих воспоминаний о человеке по имени {memorial_name}, "
+        "составь системный промпт для ИИ-аватара. Промпт должен:\n"
+        "1. Описывать личность, характер, привычки и ценности этого человека\n"
+        "2. Указывать его профессию, увлечения, важные события жизни\n"
+        "3. Задавать стиль общения (как он говорил, что любил повторять)\n"
+        "4. Включать правила: не придумывать факты, отвечать от первого лица, быть эмпатичным\n\n"
+        f"Воспоминания:\n{memories_text}\n\n"
+        "Напиши только системный промпт, без пояснений."
+    )
+
+    try:
+        response = await client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.5,
+            max_tokens=800,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        raise ValueError(f"OpenAI API error: {str(e)}")
+
+
 async def delete_memory_embedding(memory_id: int, memorial_id: int) -> bool:
     """
     Удалить embedding воспоминания из векторной БД (Qdrant или Pinecone).
-    
+
     Returns:
         True если успешно
     """

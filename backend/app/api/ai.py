@@ -7,7 +7,7 @@ from typing import Optional
 from pathlib import Path
 
 from app.db import get_db
-from app.models import Memorial, Media, Memory, MediaType
+from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship
 from app.schemas import (
     PhotoAnimateRequest,
     PhotoAnimateResponse,
@@ -24,11 +24,14 @@ from app.services.ai_tasks import (
     create_custom_voice_elevenlabs,
     animate_photo,
     get_animation_status,
+    build_avatar_persona,
+    sync_family_memories,
 )
 from app.workers.worker import animate_photo_task, create_memory_embedding_task
 from app.config import settings
 import os
 import uuid
+import tempfile
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -119,11 +122,10 @@ async def animate_photo(
             # Fallback: попытка синхронного выполнения (не рекомендуется для production)
             # Для MVP можно использовать, но лучше запустить Redis
             try:
-                # Прямой вызов функции анимации (синхронно)
-                from app.services.ai_tasks import animate_photo
-                import asyncio
-                
-                result = asyncio.run(animate_photo(image_url, request.prompt))
+                # Прямой вызов функции анимации (await — уже в async-контексте FastAPI)
+                from app.services.ai_tasks import animate_photo as _animate_photo_svc
+
+                result = await _animate_photo_svc(image_url, request.prompt)
                 provider = result.get("provider", "heygen" if settings.USE_HEYGEN else "d-id")
                 task_id = result.get("task_id")
                 
@@ -174,7 +176,26 @@ async def avatar_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Memorial not found"
         )
-    
+
+    # Определяем список мемориалов для RAG-поиска (основной + родственники)
+    search_memorial_ids = [request.memorial_id]
+    family_memorial_map = {}  # {memorial_id: (name, relationship_type)}
+
+    if request.include_family_memories:
+        family_rels = db.query(FamilyRelationship).filter(
+            FamilyRelationship.memorial_id == request.memorial_id
+        ).all()
+        for rel in family_rels:
+            related = db.query(Memorial).filter(
+                Memorial.id == rel.related_memorial_id
+            ).first()
+            if related:
+                search_memorial_ids.append(rel.related_memorial_id)
+                family_memorial_map[rel.related_memorial_id] = (
+                    related.name,
+                    rel.relationship_type.value,
+                )
+
     # Получаем все воспоминания (не только с embeddings)
     all_memories = db.query(Memory).filter(
         Memory.memorial_id == request.memorial_id
@@ -308,10 +329,10 @@ async def avatar_chat(
         # Поиск релевантных воспоминаний в векторной БД
         # Понижаем порог для лучшего поиска, особенно для общих вопросов
         similar_memories = await search_similar_memories(
-            memorial_id=request.memorial_id,
+            memorial_ids=search_memorial_ids,
             query_embedding=question_embedding,
             top_k=5,
-            min_score=0.2  # Еще более понижен порог для общих вопросов
+            min_score=0.1  # Низкий порог — длинные тексты дают размытые embeddings
         )
         
         print(f"🔍 Found {len(similar_memories)} similar memories for question: '{request.question}'")
@@ -328,17 +349,27 @@ async def avatar_chat(
         # ВАЖНО: Всегда получаем полный текст из БД, так как в векторной БД
         # текст может быть обрезанным (например, только 1000 символов в Qdrant payload)
         context_chunks = []
+        has_family_context = False
         for mem in similar_memories:
             memory_id = mem.get("memory_id")
+            source_memorial_id = mem.get("source_memorial_id")
             if memory_id:
                 # Всегда получаем полный текст из БД для гарантии полноты контекста
                 memory = db.query(Memory).filter(Memory.id == memory_id).first()
                 if memory:
+                    text = memory.content
+                    # Добавляем метку, если воспоминание от родственника
+                    if source_memorial_id and source_memorial_id != request.memorial_id and source_memorial_id in family_memorial_map:
+                        rel_name, rel_type = family_memorial_map[source_memorial_id]
+                        label = f"[Из воспоминаний {rel_name} ({rel_type})]: "
+                        text = label + text
+                        has_family_context = True
                     context_chunks.append({
-                        "text": memory.content,  # Полный текст из БД
+                        "text": text,
                         "memory_id": memory.id,
                         "score": mem.get("score", 0),
-                        "title": memory.title
+                        "title": memory.title,
+                        "source_memorial_id": source_memorial_id,
                     })
                     print(f"✅ Added context chunk: Memory #{memory.id}, text length: {len(memory.content)} chars")
                 else:
@@ -358,11 +389,56 @@ async def avatar_chat(
         
         print(f"📝 Created {len(context_chunks)} context chunks for RAG")
         
+        # Smart Avatar Persona Agent: строим системный промпт из всех воспоминаний.
+        # Результат кэшируется в Redis на 1 час, чтобы не вызывать GPT-4 каждый раз.
+        # Кэш инвалидируется при добавлении нового воспоминания.
+        persona_prompt = None
+        if request.use_persona and all_memories:
+            redis_key = f"persona:{request.memorial_id}"
+            try:
+                import redis.asyncio as aioredis
+                redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+                persona_prompt = await redis_client.get(redis_key)
+                if persona_prompt:
+                    print(f"✅ Persona loaded from Redis cache for memorial {request.memorial_id}")
+                else:
+                    persona_prompt = await build_avatar_persona(
+                        memories=[{"title": m.title, "content": m.content} for m in all_memories],
+                        memorial_name=memorial.name,
+                    )
+                    await redis_client.setex(redis_key, 3600, persona_prompt)
+                    print(f"✅ Persona built and cached in Redis for memorial {request.memorial_id}")
+                await redis_client.aclose()
+            except Exception as e:
+                print(f"Warning: Redis unavailable, building persona without cache: {e}")
+                try:
+                    persona_prompt = await build_avatar_persona(
+                        memories=[{"title": m.title, "content": m.content} for m in all_memories],
+                        memorial_name=memorial.name,
+                    )
+                except Exception as e2:
+                    print(f"Warning: Could not build avatar persona: {e2}")
+
+        # Если в контексте есть воспоминания родственников — дополняем system prompt
+        if has_family_context:
+            family_note = (
+                "\n\nНекоторые воспоминания в контексте принадлежат родственникам "
+                "(помечены \"[Из воспоминаний ...]\"). "
+                "Используй их как события, о которых ты помнишь или знаешь от близких. "
+                "Не приписывай чужие воспоминания себе напрямую: скажи \"мы вместе...\" "
+                "или \"по словам жены/мужа/сына...\"."
+            )
+            if persona_prompt:
+                persona_prompt = persona_prompt + family_note
+            else:
+                persona_prompt = family_note
+
         # Генерация ответа через OpenAI с улучшенным RAG
         answer, source_ids = await generate_rag_response(
             question=request.question,
             context_chunks=context_chunks,
-            memorial_name=memorial.name
+            memorial_name=memorial.name,
+            system_prompt=persona_prompt,
         )
         
         # Формируем читаемые источники
@@ -601,3 +677,83 @@ async def upload_voice(
             detail=f"Error creating custom voice: {str(e)}"
         )
 
+
+@router.post("/transcribe")
+async def transcribe_audio(
+    audio_file: UploadFile = File(...),
+    language: str = "ru",
+):
+    """
+    Транскрибировать аудио через OpenAI Whisper.
+    Принимает MP3/WAV/M4A/WebM, возвращает текст.
+    Используется для добавления голосовых воспоминаний.
+    """
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OpenAI API key not configured"
+        )
+
+    # Допустимые форматы Whisper
+    allowed_audio = {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg"}
+    suffix = Path(audio_file.filename or "audio.webm").suffix.lstrip(".").lower()
+    if not suffix:
+        suffix = "webm"
+
+    contents = await audio_file.read()
+    if len(contents) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пустой аудиофайл"
+        )
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
+
+        from openai import OpenAI
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+        with open(tmp_path, "rb") as f:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f,
+                language=language,
+            )
+
+        return {"text": transcript.text, "language": language}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка транскрипции: {str(e)}"
+        )
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+@router.post("/family/sync-memories/{memorial_id}")
+async def sync_family_memories_endpoint(
+    memorial_id: int,
+    dry_run: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Memory Sync Agent: находит упоминания родственников в воспоминаниях мемориала
+    и создаёт "отражённые" воспоминания (source="family_sync") в мемориалах родственников.
+
+    dry_run=true — только анализирует, не записывает в БД.
+    """
+    try:
+        result = await sync_family_memories(memorial_id=memorial_id, db=db, dry_run=dry_run)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка синхронизации: {str(e)}"
+        )

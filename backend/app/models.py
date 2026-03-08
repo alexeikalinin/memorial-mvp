@@ -52,12 +52,18 @@ class Memorial(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_public = Column(Boolean, default=False)
     voice_id = Column(String(255), nullable=True)  # ID кастомного голоса в ElevenLabs
+    cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Связи
     owner = relationship("User", back_populates="memorials")
-    media = relationship("Media", back_populates="memorial", cascade="all, delete-orphan")
+    media = relationship(
+        "Media",
+        foreign_keys="[Media.memorial_id]",
+        back_populates="memorial",
+        cascade="all, delete-orphan",
+    )
     memories = relationship("Memory", back_populates="memorial", cascade="all, delete-orphan")
     relationships_from = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.memorial_id", back_populates="memorial", cascade="all, delete-orphan")
     relationships_to = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.related_memorial_id", back_populates="related_memorial", cascade="all, delete-orphan")
@@ -81,7 +87,11 @@ class Media(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Связи
-    memorial = relationship("Memorial", back_populates="media")
+    memorial = relationship(
+        "Memorial",
+        foreign_keys="[Media.memorial_id]",
+        back_populates="media",
+    )
 
 
 class Memory(Base):
@@ -94,6 +104,7 @@ class Memory(Base):
     content = Column(Text, nullable=False)  # Текст воспоминания
     embedding_id = Column(String(255), nullable=True)  # ID вектора в Pinecone
     source = Column(String(100), nullable=True)  # Источник: "user", "document", "transcription"
+    event_date = Column(DateTime(timezone=True), nullable=True)  # Дата события в воспоминании
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

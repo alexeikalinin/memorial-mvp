@@ -42,9 +42,12 @@ export default apiClient
 
 // API методы
 export const memorialsAPI = {
+  list: () => apiClient.get('/memorials/'),
   create: (data) => apiClient.post('/memorials/', data),
   get: (id) => apiClient.get(`/memorials/${id}`),
   update: (id, data) => apiClient.patch(`/memorials/${id}`, data),
+  delete: (id) => apiClient.delete(`/memorials/${id}`),
+  getQR: (id) => apiClient.get(`/memorials/${id}/qr`, { responseType: 'blob' }),
   uploadMedia: (memorialId, file) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -53,20 +56,35 @@ export const memorialsAPI = {
     })
   },
   getMedia: (memorialId) => apiClient.get(`/memorials/${memorialId}/media`),
+  deleteMedia: (memorialId, mediaId) => apiClient.delete(`/memorials/${memorialId}/media/${mediaId}`),
   createMemory: (memorialId, data) =>
     apiClient.post(`/memorials/${memorialId}/memories`, data),
   updateMemory: (memorialId, memoryId, data) =>
     apiClient.patch(`/memorials/${memorialId}/memories/${memoryId}`, data),
   deleteMemory: (memorialId, memoryId) =>
     apiClient.delete(`/memorials/${memorialId}/memories/${memoryId}`),
-  getMemories: (memorialId) =>
-    apiClient.get(`/memorials/${memorialId}/memories`),
+  getMemories: (memorialId, q = null) =>
+    apiClient.get(`/memorials/${memorialId}/memories`, q ? { params: { q } } : {}),
+  setCover: (memorialId, mediaId) =>
+    apiClient.patch(`/memorials/${memorialId}/cover`, { media_id: mediaId }),
+  getTimeline: (memorialId) =>
+    apiClient.get(`/memorials/${memorialId}/timeline`),
 }
 
 export const aiAPI = {
   animatePhoto: (data) => apiClient.post('/ai/photo/animate', data),
   getAnimationStatus: (data) => apiClient.post('/ai/animation/status', data),
   chat: (data) => apiClient.post('/ai/avatar/chat', data),
+  syncFamilyMemories: (memorialId, dryRun = false) =>
+    apiClient.post(`/ai/family/sync-memories/${memorialId}?dry_run=${dryRun}`),
+  transcribe: (audioFile, language = 'ru') => {
+    const formData = new FormData()
+    formData.append('audio_file', audioFile)
+    formData.append('language', language)
+    return apiClient.post('/ai/transcribe', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
   uploadVoice: (memorialId, file, voiceName) => {
     const formData = new FormData()
     formData.append('audio_file', file)

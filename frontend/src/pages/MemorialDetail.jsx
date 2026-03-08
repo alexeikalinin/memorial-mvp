@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { memorialsAPI, aiAPI, mediaAPI } from '../api/client'
+import { useParams, useNavigate } from 'react-router-dom'
+import { memorialsAPI } from '../api/client'
 import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
+import LifeTimeline from '../components/LifeTimeline'
 import './MemorialDetail.css'
 
 function MemorialDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [memorial, setMemorial] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -22,6 +24,7 @@ function MemorialDetail() {
     is_public: false,
   })
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadMemorial()
@@ -48,6 +51,41 @@ function MemorialDetail() {
       setError(err.response?.data?.detail || 'Ошибка при загрузке мемориала')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm(`Удалить мемориал "${memorial.name}"? Это действие нельзя отменить.`)) return
+    setDeleting(true)
+    try {
+      await memorialsAPI.delete(id)
+      navigate('/')
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Ошибка при удалении мемориала')
+      setDeleting(false)
+    }
+  }
+
+  const handleDownloadQR = async () => {
+    try {
+      const response = await memorialsAPI.getQR(id)
+      const url = URL.createObjectURL(response.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `memorial_${id}_qr.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Ошибка при загрузке QR-кода. Убедитесь, что установлен пакет qrcode[pil].')
+    }
+  }
+
+  const handleSetCover = async (mediaId) => {
+    try {
+      await memorialsAPI.setCover(id, mediaId)
+      await loadMemorial()
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Ошибка при установке обложки')
     }
   }
 
@@ -175,18 +213,44 @@ function MemorialDetail() {
           ) : (
             <>
               <h1>{memorial.name}</h1>
-              <button
-                className="btn-edit-header"
-                onClick={() => setEditing(true)}
-                title="Редактировать мемориал"
-              >
-                ✏️
-              </button>
+              <div className="header-actions">
+                <button
+                  className="btn-edit-header"
+                  onClick={() => setEditing(true)}
+                  title="Редактировать мемориал"
+                >
+                  Редактировать
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleDownloadQR}
+                  title="Скачать QR-код"
+                >
+                  QR-код
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  title="Удалить мемориал"
+                >
+                  {deleting ? 'Удаление...' : 'Удалить'}
+                </button>
+              </div>
             </>
           )}
         </div>
         {!editing && (
           <>
+            {memorial.cover_photo_id && (
+              <div className="cover-photo-header">
+                <img
+                  src={`/api/v1/media/${memorial.cover_photo_id}?thumbnail=medium`}
+                  alt={memorial.name}
+                  className="cover-photo-img"
+                />
+              </div>
+            )}
             {memorial.description && <p className="description">{memorial.description}</p>}
             {(memorial.birth_date || memorial.death_date) && (
               <div className="dates">
@@ -227,17 +291,35 @@ function MemorialDetail() {
         >
           Семейное дерево
         </button>
+        <button
+          className={activeTab === 'timeline' ? 'active' : ''}
+          onClick={() => setActiveTab('timeline')}
+        >
+          Хронология
+        </button>
       </div>
 
       <div className="tab-content">
         {activeTab === 'media' && (
-          <MediaGallery memorialId={id} onReload={loadMemorial} />
+          <MediaGallery
+            memorialId={id}
+            onReload={loadMemorial}
+            coverPhotoId={memorial.cover_photo_id}
+            onSetCover={handleSetCover}
+          />
         )}
         {activeTab === 'memories' && (
           <MemoryList memorialId={id} onReload={loadMemorial} />
         )}
-        {activeTab === 'chat' && <AvatarChat memorialId={id} />}
+        {activeTab === 'chat' && (
+          <AvatarChat
+            memorialId={id}
+            coverPhotoId={memorial.cover_photo_id}
+            memorialName={memorial.name}
+          />
+        )}
         {activeTab === 'family' && <FamilyTree memorialId={id} />}
+        {activeTab === 'timeline' && <LifeTimeline memorialId={id} />}
       </div>
     </div>
   )

@@ -48,15 +48,17 @@ class MemorialUpdate(BaseModel):
     death_date: Optional[datetime] = None
     is_public: Optional[bool] = None
     voice_id: Optional[str] = None
+    cover_photo_id: Optional[int] = None
 
 
 class MemorialResponse(MemorialBase):
     id: int
     owner_id: int
     voice_id: Optional[str] = None
+    cover_photo_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -91,6 +93,7 @@ class MediaResponse(MediaBase):
 class MemoryBase(BaseModel):
     title: Optional[str] = None
     content: str = Field(..., min_length=1)
+    event_date: Optional[datetime] = None  # Дата события (когда это было)
 
 
 class MemoryCreate(MemoryBase):
@@ -100,16 +103,17 @@ class MemoryCreate(MemoryBase):
 class MemoryUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
     content: Optional[str] = Field(None, min_length=1)
+    event_date: Optional[datetime] = None
 
 
 class MemoryResponse(MemoryBase):
     id: int
     memorial_id: int
-    embedding_id: Optional[str] = None  # Добавляем embedding_id в ответ
+    embedding_id: Optional[str] = None
     source: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -118,7 +122,38 @@ class MemorialDetailResponse(MemorialResponse):
     """Мемориал с медиа и воспоминаниями."""
     media: List[MediaResponse] = []
     memories: List[MemoryResponse] = []
-    
+
+    class Config:
+        from_attributes = True
+
+
+class MemorialListItem(BaseModel):
+    """Краткая информация о мемориале для списка."""
+    id: int
+    name: str
+    description: Optional[str] = None
+    birth_date: Optional[datetime] = None
+    death_date: Optional[datetime] = None
+    is_public: bool
+    cover_photo_id: Optional[int] = None
+    memories_count: int = 0
+    media_count: int = 0
+    created_at: datetime
+
+
+class SetCoverRequest(BaseModel):
+    media_id: Optional[int] = None  # None чтобы снять обложку
+
+
+class TimelineItem(BaseModel):
+    id: int
+    year: int
+    date_label: str
+    type: str
+    title: Optional[str] = None
+    content: str
+    event_date: datetime
+
     class Config:
         from_attributes = True
 
@@ -154,6 +189,8 @@ class AvatarChatRequest(BaseModel):
     memorial_id: int
     question: str = Field(..., min_length=1)
     include_audio: bool = False  # Генерировать ли аудио-ответ через ElevenLabs
+    use_persona: bool = True  # Использовать Smart Avatar Persona Agent для системного промпта
+    include_family_memories: bool = False  # Включить воспоминания родственников в RAG-поиск
 
 
 class AvatarChatResponse(BaseModel):
@@ -202,6 +239,7 @@ class FamilyTreeNode(BaseModel):
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
     relationship_type: Optional[RelationshipType] = None  # Тип связи с родительским узлом
+    cover_photo_url: Optional[str] = None  # URL фото обложки для аватара в дереве
     children: List["FamilyTreeNode"] = []
     spouses: List["FamilyTreeNode"] = []
     

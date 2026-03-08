@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { memorialsAPI, aiAPI } from '../api/client'
 import './MediaGallery.css'
 
-function MediaGallery({ memorialId, onReload }) {
+function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
   const [media, setMedia] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -39,6 +39,23 @@ function MediaGallery({ memorialId, onReload }) {
     } finally {
       setUploading(false)
       e.target.value = '' // Сброс input
+    }
+  }
+
+  const handleDelete = async (mediaId) => {
+    if (!window.confirm('Вы уверены, что хотите удалить этот файл? Это действие нельзя отменить.')) {
+      return
+    }
+
+    try {
+      await memorialsAPI.deleteMedia(memorialId, mediaId)
+      // Обновляем список медиа
+      loadMedia()
+      if (onReload) onReload()
+    } catch (err) {
+      const errorDetail = err.response?.data?.detail || 'Ошибка при удалении файла'
+      alert(`Ошибка: ${errorDetail}`)
+      console.error('Error deleting media:', err)
     }
   }
 
@@ -322,34 +339,69 @@ function MediaGallery({ memorialId, onReload }) {
                   <p>{item.file_name}</p>
                 </div>
               )}
+              {coverPhotoId === item.id && (
+                <div className="cover-badge">Обложка</div>
+              )}
               <div className="media-actions">
-                {item.media_type === 'photo' && !item.is_animated && (
-                  <>
-                    <button
-                      className="btn-animate"
-                      onClick={() => handleAnimate(item.id)}
-                      disabled={animating === item.id || animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending'}
-                    >
-                      {animating === item.id ? 'Запуск...' : 
-                       animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending' ? 'Обработка...' :
-                       'Оживить фото'}
-                    </button>
-                    {animationStatus[item.id] && (
-                      <div className="animation-status">
-                        {animationStatus[item.id].status === 'processing' || animationStatus[item.id].status === 'pending' ? (
-                          <span className="status-processing">⏳ {animationStatus[item.id].message || 'Обработка...'}</span>
-                        ) : animationStatus[item.id].status === 'completed' ? (
-                          <span className="status-completed">✅ Анимация готова!</span>
-                        ) : animationStatus[item.id].status === 'failed' || animationStatus[item.id].status === 'error' ? (
-                          <span className="status-error">❌ {animationStatus[item.id].message || 'Ошибка'}</span>
-                        ) : null}
-                      </div>
-                    )}
-                  </>
-                )}
-                {item.is_animated && (
-                  <span className="animated-badge">✅ Оживлено</span>
-                )}
+                <div className="media-actions-left">
+                  {item.media_type === 'photo' && (
+                    <>
+                      {onSetCover && (
+                        coverPhotoId === item.id ? (
+                          <button
+                            className="btn-cover active"
+                            onClick={() => onSetCover(null)}
+                            title="Снять обложку"
+                          >
+                            Снять обложку
+                          </button>
+                        ) : (
+                          <button
+                            className="btn-cover"
+                            onClick={() => onSetCover(item.id)}
+                            title="Сделать обложкой"
+                          >
+                            Обложка
+                          </button>
+                        )
+                      )}
+                    </>
+                  )}
+                  {item.media_type === 'photo' && !item.is_animated && (
+                    <>
+                      <button
+                        className="btn-animate"
+                        onClick={() => handleAnimate(item.id)}
+                        disabled={animating === item.id || animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending'}
+                      >
+                        {animating === item.id ? 'Запуск...' :
+                         animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending' ? 'Обработка...' :
+                         'Оживить фото'}
+                      </button>
+                      {animationStatus[item.id] && (
+                        <div className="animation-status">
+                          {animationStatus[item.id].status === 'processing' || animationStatus[item.id].status === 'pending' ? (
+                            <span className="status-processing">⏳ {animationStatus[item.id].message || 'Обработка...'}</span>
+                          ) : animationStatus[item.id].status === 'completed' ? (
+                            <span className="status-completed">✅ Анимация готова!</span>
+                          ) : animationStatus[item.id].status === 'failed' || animationStatus[item.id].status === 'error' ? (
+                            <span className="status-error">❌ {animationStatus[item.id].message || 'Ошибка'}</span>
+                          ) : null}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {item.is_animated && (
+                    <span className="animated-badge">✅ Оживлено</span>
+                  )}
+                </div>
+                <button
+                  className="btn-delete"
+                  onClick={() => handleDelete(item.id)}
+                  title="Удалить файл"
+                >
+                  🗑️
+                </button>
               </div>
             </div>
           ))}

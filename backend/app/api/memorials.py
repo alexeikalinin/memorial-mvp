@@ -2,8 +2,10 @@
 API endpoints для работы с мемориалами, медиа и воспоминаниями.
 """
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi.responses import StreamingResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import os
 import uuid
 from pathlib import Path
@@ -14,11 +16,14 @@ from app.schemas import (
     MemorialCreate,
     MemorialResponse,
     MemorialDetailResponse,
+    MemorialListItem,
     MemorialUpdate,
     MediaResponse,
     MemoryCreate,
     MemoryResponse,
     MemoryUpdate,
+    SetCoverRequest,
+    TimelineItem,
 )
 from app.config import settings
 from app.services.media_service import (
@@ -61,6 +66,37 @@ def get_media_type_from_mime(mime_type: str) -> MediaType:
         return MediaType.DOCUMENT
 
 
+@router.get("/", response_model=List[MemorialListItem])
+async def list_memorials(
+    db: Session = Depends(get_db),
+    owner_id: int = 1,  # TODO: получать из токена
+):
+    """
+    Получить список всех мемориалов пользователя.
+    """
+    memorials = (
+        db.query(Memorial)
+        .filter(Memorial.owner_id == owner_id)
+        .order_by(Memorial.created_at.desc())
+        .all()
+    )
+    return [
+        MemorialListItem(
+            id=m.id,
+            name=m.name,
+            description=m.description,
+            birth_date=m.birth_date,
+            death_date=m.death_date,
+            is_public=m.is_public,
+            cover_photo_id=m.cover_photo_id,
+            memories_count=len(m.memories),
+            media_count=len(m.media),
+            created_at=m.created_at,
+        )
+        for m in memorials
+    ]
+
+
 @router.post("/", response_model=MemorialResponse, status_code=status.HTTP_201_CREATED)
 async def create_memorial(
     memorial: MemorialCreate,
@@ -93,6 +129,93 @@ async def get_memorial(
             detail="Memorial not found"
         )
     return memorial
+
+
+@router.delete("/{memorial_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_memorial(
+    memorial_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Удалить мемориал и все связанные данные (медиа, воспоминания, embeddings).
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Memorial not found"
+        )
+
+    # Удаляем медиафайлы с диска
+    for media in memorial.media:
+        try:
+            if media.file_path and not settings.USE_S3:
+                file_path = Path(media.file_path)
+                if file_path.exists():
+                    file_path.unlink()
+            if media.thumbnail_path:
+                thumb_path = Path(media.thumbnail_path)
+                if thumb_path.exists():
+                    thumb_path.unlink()
+        except Exception as e:
+            print(f"Warning: Error deleting media file: {e}")
+
+    # Удаляем embeddings из векторной БД
+    for memory in memorial.memories:
+        if memory.embedding_id:
+            try:
+                from app.services.ai_tasks import delete_memory_embedding
+                import asyncio
+                asyncio.run(delete_memory_embedding(memory.id, memorial_id))
+            except Exception as e:
+                print(f"Warning: Error deleting embedding for memory {memory.id}: {e}")
+
+    db.delete(memorial)
+    db.commit()
+    return None
+
+
+@router.get("/{memorial_id}/qr")
+async def get_qr_code(
+    memorial_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Получить QR-код для публичной страницы мемориала (PNG).
+    """
+    from io import BytesIO
+    try:
+        import qrcode
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="QR code library not installed. Run: pip install 'qrcode[pil]'"
+        )
+
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Memorial not found"
+        )
+
+    frontend_url = settings.PUBLIC_FRONTEND_URL.rstrip("/")
+    url = f"{frontend_url}/m/{memorial_id}"
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="image/png",
+        headers={"Content-Disposition": f"attachment; filename=memorial_{memorial_id}_qr.png"},
+    )
 
 
 @router.patch("/{memorial_id}", response_model=MemorialResponse)
@@ -259,6 +382,92 @@ async def get_memorial_media(
     return memorial.media
 
 
+@router.delete("/{memorial_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_media(
+    memorial_id: int,
+    media_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Удалить медиа-файл мемориала.
+    Удаляет файл с диска (или из S3), миниатюры и запись из БД.
+    """
+    # Проверка существования мемориала
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Memorial not found"
+        )
+    
+    # Проверка существования медиа
+    media = db.query(Media).filter(
+        Media.id == media_id,
+        Media.memorial_id == memorial_id
+    ).first()
+    
+    if not media:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media not found"
+        )
+    
+    # Удаление файлов с диска
+    try:
+        # Удаление основного файла
+        if media.file_path and not settings.USE_S3:
+            file_path = Path(media.file_path)
+            if file_path.exists():
+                file_path.unlink()
+                print(f"✅ Deleted main file: {file_path}")
+        
+        # Удаление миниатюр (если есть)
+        if media.thumbnail_path:
+            thumbnail_path = Path(media.thumbnail_path)
+            if thumbnail_path.exists():
+                thumbnail_path.unlink()
+                print(f"✅ Deleted thumbnail: {thumbnail_path}")
+        
+        # Удаление всех миниатюр для фото (small, medium, large)
+        if media.media_type == MediaType.PHOTO:
+            file_path = Path(media.file_path)
+            for size in ["small", "medium", "large"]:
+                thumbnail_path = THUMBNAILS_DIR / f"{file_path.stem}_{size}.jpg"
+                if thumbnail_path.exists():
+                    thumbnail_path.unlink()
+                    print(f"✅ Deleted thumbnail {size}: {thumbnail_path}")
+        
+        # Удаление анимированного видео (если есть)
+        if media.is_animated and media.file_url:
+            # Если это анимированное фото, оригинальный файл может быть заменен видео
+            # Проверяем, есть ли видео-файл
+            if media.file_path and not settings.USE_S3:
+                video_path = Path(media.file_path)
+                if video_path.exists() and video_path.suffix in ['.mp4', '.mov', '.webm']:
+                    video_path.unlink()
+                    print(f"✅ Deleted animated video: {video_path}")
+        
+        # Удаление из S3 если используется
+        if settings.USE_S3 and media.file_path:
+            try:
+                from app.services.s3_service import delete_file_from_s3
+                delete_file_from_s3(media.file_path)
+                print(f"✅ Deleted file from S3: {media.file_path}")
+            except Exception as s3_error:
+                print(f"⚠️  Warning: Failed to delete from S3: {s3_error}")
+        
+    except Exception as file_error:
+        print(f"⚠️  Warning: Error deleting files: {file_error}")
+        # Продолжаем удаление записи из БД даже если файлы не удалились
+    
+    # Удаление записи из БД
+    db.delete(media)
+    db.commit()
+    
+    print(f"✅ Deleted media {media_id} from memorial {memorial_id}")
+    return None
+
+
 @router.post("/{memorial_id}/memories", response_model=MemoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_memory(
     memorial_id: int,
@@ -320,7 +529,16 @@ async def create_memory(
                 print(f"Warning: Failed to create embedding synchronously: {sync_error}")
         else:
             print(f"Warning: Failed to queue embedding task: {e}")
-    
+
+    # Инвалидируем кэш персоны аватара — воспоминания изменились
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL)
+        r.delete(f"persona:{memorial_id}")
+        r.close()
+    except Exception:
+        pass  # Redis недоступен — кэш истечёт сам по TTL
+
     return db_memory
 
 
@@ -459,10 +677,11 @@ async def delete_memory(
 @router.get("/{memorial_id}/memories", response_model=List[MemoryResponse])
 async def get_memorial_memories(
     memorial_id: int,
+    q: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     """
-    Получить все воспоминания мемориала.
+    Получить воспоминания мемориала. Поддерживает поиск через ?q=текст.
     """
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
     if not memorial:
@@ -470,5 +689,84 @@ async def get_memorial_memories(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Memorial not found"
         )
-    return memorial.memories
+    query = db.query(Memory).filter(Memory.memorial_id == memorial_id)
+    if q:
+        pattern = f"%{q}%"
+        query = query.filter(
+            or_(Memory.title.ilike(pattern), Memory.content.ilike(pattern))
+        )
+    return query.all()
+
+
+@router.patch("/{memorial_id}/cover", response_model=MemorialResponse)
+async def set_cover_photo(
+    memorial_id: int,
+    body: SetCoverRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Установить фото обложки мемориала. Передайте media_id=null чтобы снять обложку.
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+
+    if body.media_id is not None:
+        media = db.query(Media).filter(
+            Media.id == body.media_id,
+            Media.memorial_id == memorial_id,
+        ).first()
+        if not media:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Media not found in this memorial"
+            )
+
+    memorial.cover_photo_id = body.media_id
+    db.commit()
+    db.refresh(memorial)
+    return memorial
+
+
+_MONTHS_RU = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+]
+
+
+@router.get("/{memorial_id}/timeline", response_model=List[TimelineItem])
+async def get_timeline(
+    memorial_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Хронологическая лента воспоминаний с датами событий.
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+
+    memories = (
+        db.query(Memory)
+        .filter(Memory.memorial_id == memorial_id, Memory.event_date.isnot(None))
+        .order_by(Memory.event_date)
+        .all()
+    )
+
+    items = []
+    for m in memories:
+        month_name = _MONTHS_RU[m.event_date.month - 1]
+        date_label = f"{month_name} {m.event_date.year}"
+        items.append(
+            TimelineItem(
+                id=m.id,
+                year=m.event_date.year,
+                date_label=date_label,
+                type="memory",
+                title=m.title,
+                content=m.content,
+                event_date=m.event_date,
+            )
+        )
+    return items
 

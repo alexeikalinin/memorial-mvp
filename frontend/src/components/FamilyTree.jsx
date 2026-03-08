@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { familyAPI, memorialsAPI } from '../api/client'
 import './FamilyTree.css'
@@ -16,10 +16,23 @@ function FamilyTree({ memorialId }) {
   })
   const [availableMemorials, setAvailableMemorials] = useState([])
   const [submitting, setSubmitting] = useState(false)
+  const [zoom, setZoom] = useState(1)
+  const zoomContainerRef = useRef(null)
 
   useEffect(() => {
     loadData()
   }, [memorialId])
+
+  useEffect(() => {
+    const container = zoomContainerRef.current
+    if (!container) return
+    const handleWheel = (e) => {
+      e.preventDefault()
+      setZoom(prev => Math.min(2, Math.max(0.5, prev + (e.deltaY > 0 ? -0.1 : 0.1))))
+    }
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [])
 
   const loadData = async () => {
     try {
@@ -64,7 +77,6 @@ function FamilyTree({ memorialId }) {
 
   const handleDeleteRelationship = async (relationshipId) => {
     if (!confirm('Удалить эту связь?')) return
-    
     try {
       await familyAPI.deleteRelationship(relationshipId)
       await loadData()
@@ -73,42 +85,106 @@ function FamilyTree({ memorialId }) {
     }
   }
 
-  const renderTreeNode = (node, level = 0) => {
+  const getInitials = (name) => {
+    if (!name) return '?'
+    return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+  }
+
+  const RELATION_LABELS = {
+    child: 'Ребёнок',
+    spouse: 'Супруг/а',
+    root: 'Страница',
+  }
+
+  const renderTreeNode = (node, level = 0, relationLabel = null) => {
     if (!node) return null
+
+    const isDeceased = !!node.death_date
+    const effectiveLabel = relationLabel || (level === 0 ? 'root' : null)
 
     return (
       <div key={node.memorial_id} className="tree-node" style={{ marginLeft: `${level * 40}px` }}>
-        <div
-          className="node-card"
-          onClick={() => navigate(`/memorials/${node.memorial_id}`)}
-        >
-          <div className="node-name">{node.name}</div>
-          {node.birth_date && (
-            <div className="node-date">
-              {new Date(node.birth_date).getFullYear()}
-              {node.death_date && ` - ${new Date(node.death_date).getFullYear()}`}
+        <div className="node-row">
+          <div
+            className={`node-card${isDeceased ? ' node-card--deceased' : ''}${level === 0 ? ' node-card--root' : ''}`}
+            onClick={() => navigate(`/memorials/${node.memorial_id}`)}
+            aria-label={`Перейти к мемориалу: ${node.name}`}
+          >
+            {effectiveLabel && (
+              <span className={`node-relation-badge node-relation-badge--${effectiveLabel}`}>
+                {RELATION_LABELS[effectiveLabel]}
+              </span>
+            )}
+            <div className="node-body">
+              <div className={`node-avatar${isDeceased ? ' node-avatar--deceased' : ''}`}>
+                {node.cover_photo_url ? (
+                  <img
+                    src={node.cover_photo_url}
+                    alt={node.name}
+                    className="node-avatar-img"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                  />
+                ) : null}
+                <span
+                  className="node-avatar-initials"
+                  style={node.cover_photo_url ? { display: 'none' } : {}}
+                >{getInitials(node.name)}</span>
+              </div>
+              <div className="node-info">
+                <div className="node-name">{node.name}</div>
+                {node.birth_date && (
+                  <div className="node-date">
+                    {new Date(node.birth_date).getFullYear()}
+                    {node.death_date && ` — ${new Date(node.death_date).getFullYear()}`}
+                  </div>
+                )}
+              </div>
+              {isDeceased && <span className="node-candle">∞</span>}
             </div>
-          )}
-        </div>
-        
-        {node.spouses && node.spouses.length > 0 && (
-          <div className="spouses">
-            {node.spouses.map((spouse) => (
-              <div key={spouse.memorial_id} className="spouse-node">
-                <div
-                  className="node-card spouse"
-                  onClick={() => navigate(`/memorials/${spouse.memorial_id}`)}
-                >
-                  <div className="node-name">{spouse.name}</div>
+          </div>
+
+          {node.spouses && node.spouses.length > 0 && node.spouses.map((spouse) => (
+            <div key={spouse.memorial_id} className="spouse-group">
+              <div className="marriage-connector">
+                <div className="marriage-line" />
+                <span className="marriage-symbol">∞</span>
+                <div className="marriage-line" />
+              </div>
+              <div
+                className="node-card spouse"
+                onClick={() => navigate(`/memorials/${spouse.memorial_id}`)}
+                aria-label={`Перейти к мемориалу: ${spouse.name}`}
+              >
+                <span className="node-relation-badge node-relation-badge--spouse">
+                  {RELATION_LABELS.spouse}
+                </span>
+                <div className="node-body">
+                  <div className="node-avatar">
+                    {spouse.cover_photo_url ? (
+                      <img
+                        src={spouse.cover_photo_url}
+                        alt={spouse.name}
+                        className="node-avatar-img"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                      />
+                    ) : null}
+                    <span
+                      className="node-avatar-initials"
+                      style={spouse.cover_photo_url ? { display: 'none' } : {}}
+                    >{getInitials(spouse.name)}</span>
+                  </div>
+                  <div className="node-info">
+                    <div className="node-name">{spouse.name}</div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
         {node.children && node.children.length > 0 && (
           <div className="children">
-            {node.children.map((child) => renderTreeNode(child, level + 1))}
+            {node.children.map((child) => renderTreeNode(child, level + 1, 'child'))}
           </div>
         )}
       </div>
@@ -190,13 +266,20 @@ function FamilyTree({ memorialId }) {
       <div className="tree-section">
         <h3>Визуализация дерева</h3>
         {tree && tree.root ? (
-          <div className="tree-container">
-            {renderTreeNode(tree.root)}
+          <div className="tree-container" ref={zoomContainerRef}>
+            <div className="tree-zoom-hint">Scroll to zoom · {Math.round(zoom * 100)}%</div>
+            <div
+              className="zoom-wrapper"
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+            >
+              {renderTreeNode(tree.root)}
+            </div>
           </div>
         ) : (
           <div className="empty-state">
-            <p>Семейное дерево пусто</p>
-            <p className="hint">Добавьте связи с другими мемориалами, чтобы построить дерево</p>
+            <div className="empty-tree-icon">🌳</div>
+            <p>Здесь будет жить история вашей семьи</p>
+            <p className="hint">Добавьте первую связь, чтобы начать строить дерево</p>
           </div>
         )}
       </div>
@@ -239,4 +322,3 @@ function FamilyTree({ memorialId }) {
 }
 
 export default FamilyTree
-

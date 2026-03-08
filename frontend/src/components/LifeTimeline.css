@@ -1,0 +1,101 @@
+.life-timeline {
+  width: 100%;
+}
+
+.timeline-title {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.timeline-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.timeline-empty .hint {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+}
+
+.timeline-line-container {
+  position: relative;
+  padding-left: 2.5rem;
+  border-left: 2px solid #E8E0F0;
+}
+
+.timeline-year-label {
+  position: absolute;
+  left: -1.1rem;
+  transform: translateX(-50%);
+  background: #7C6FA0;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  /* positioned relative to the line */
+  position: relative;
+  left: -3.5rem;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+
+.timeline-entry {
+  position: relative;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -2.87rem;
+  top: 0.4rem;
+  width: 12px;
+  height: 12px;
+  background: #7C6FA0;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #7C6FA0;
+  flex-shrink: 0;
+}
+
+.timeline-card {
+  background: #fff;
+  border: 1px solid #E8E0F0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  flex: 1;
+  box-shadow: 0 2px 8px rgba(124, 111, 160, 0.07);
+  transition: box-shadow 0.2s;
+}
+
+.timeline-card:hover {
+  box-shadow: 0 4px 16px rgba(124, 111, 160, 0.15);
+}
+
+.timeline-date {
+  font-size: 0.8rem;
+  color: #7C6FA0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timeline-card-title {
+  margin: 0.4rem 0 0.5rem;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.timeline-card-content {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
