@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { memorialsAPI, aiAPI } from '../api/client'
+import { memorialsAPI, aiAPI, getMediaUrl as getApiMediaUrl } from '../api/client'
 import './MediaGallery.css'
 
 function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
@@ -284,9 +284,9 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
   const getMediaUrl = (mediaItem) => {
     if (mediaItem.file_url) return mediaItem.file_url
     if (mediaItem.thumbnail_path) {
-      return `/api/v1/media/${mediaItem.id}?thumbnail=medium`
+      return getApiMediaUrl(mediaItem.id, 'medium')
     }
-    return `/api/v1/media/${mediaItem.id}`
+    return getApiMediaUrl(mediaItem.id)
   }
 
   if (loading) {

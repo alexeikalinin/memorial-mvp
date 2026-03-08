@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { memorialsAPI } from '../api/client'
+import { memorialsAPI, getMediaUrl } from '../api/client'
 import AvatarChat from '../components/AvatarChat'
 import './MemorialPublic.css'
 
@@ -59,7 +59,7 @@ function MemorialPublic() {
         {memorial.cover_photo_id && (
           <div className="public-cover-photo">
             <img
-              src={`/api/v1/media/${memorial.cover_photo_id}?thumbnail=medium`}
+              src={getMediaUrl(memorial.cover_photo_id, 'medium')}
               alt={memorial.name}
               className="public-cover-img"
             />
@@ -134,7 +134,7 @@ function MemorialPublic() {
           <div className="public-photos">
             {photos.map((p) => (
               <div key={p.id} className="public-photo-item">
-                <img src={`/api/v1/media/${p.id}`} alt={p.file_name} />
+                <img src={getMediaUrl(p.id)} alt={p.file_name} />
               </div>
             ))}
           </div>

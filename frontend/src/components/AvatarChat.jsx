@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { aiAPI, memorialsAPI } from '../api/client'
+import { aiAPI, memorialsAPI, getMediaUrl } from '../api/client'
 import './AvatarChat.css'
 
 // Запись аудио для клона голоса
@@ -212,7 +212,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
         <div className="chat-header-title">
           {coverPhotoId ? (
             <img
-              src={`/api/v1/media/${coverPhotoId}?thumbnail=small`}
+              src={getMediaUrl(coverPhotoId, 'small')}
               alt={memorialName || 'Аватар'}
               className="chat-avatar-img"
             />
@@ -375,7 +375,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
               <div className="message-avatar">
                 {coverPhotoId ? (
                   <img
-                    src={`/api/v1/media/${coverPhotoId}?thumbnail=small`}
+                    src={getMediaUrl(coverPhotoId, 'small')}
                     alt={memorialName || 'Аватар'}
                     className="message-avatar-img"
                   />

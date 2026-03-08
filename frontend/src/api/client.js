@@ -2,6 +2,13 @@ import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
+/** URL для отображения медиа (картинки/видео). Учитывает VITE_API_URL для продакшена (Vercel + отдельный backend). */
+export const getMediaUrl = (mediaId, thumbnail = null) => {
+  if (!mediaId) return ''
+  const base = API_BASE_URL
+  return thumbnail ? `${base}/media/${mediaId}?thumbnail=${thumbnail}` : `${base}/media/${mediaId}`
+}
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { memorialsAPI } from '../api/client'
+import { memorialsAPI, getMediaUrl } from '../api/client'
 import './Home.css'
 
 function Home() {
@@ -45,7 +45,7 @@ function Home() {
                 {memorial.cover_photo_id && (
                   <div className="card-cover">
                     <img
-                      src={`/api/v1/media/${memorial.cover_photo_id}?thumbnail=small`}
+                      src={getMediaUrl(memorial.cover_photo_id, 'small')}
                       alt={memorial.name}
                       className="card-cover-img"
                     />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { memorialsAPI } from '../api/client'
+import { memorialsAPI, getMediaUrl } from '../api/client'
 import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
@@ -245,7 +245,7 @@ function MemorialDetail() {
             {memorial.cover_photo_id && (
               <div className="cover-photo-header">
                 <img
-                  src={`/api/v1/media/${memorial.cover_photo_id}?thumbnail=medium`}
+                  src={getMediaUrl(memorial.cover_photo_id, 'medium')}
                   alt={memorial.name}
                   className="cover-photo-img"
                 />
