@@ -459,16 +459,16 @@ async def avatar_chat(
                 # Используем кастомный голос мемориала, если он есть
                 voice_id = memorial.voice_id or settings.ELEVENLABS_VOICE_ID
                 audio_bytes = await generate_speech_elevenlabs(answer, voice_id=voice_id)
-                
+
                 # Сохранение аудио-файла
                 audio_dir = Path("uploads/audio")
                 audio_dir.mkdir(exist_ok=True)
                 audio_filename = f"chat_{request.memorial_id}_{hash(request.question)}.mp3"
                 audio_path = audio_dir / audio_filename
-                
+
                 with open(audio_path, "wb") as f:
                     f.write(audio_bytes)
-                
+
                 # В production это должен быть S3 URL
                 # Для локальной разработки используем относительный путь (будет работать с frontend)
                 if settings.USE_S3:
@@ -476,14 +476,41 @@ async def avatar_chat(
                 else:
                     # Используем относительный путь - frontend добавит базовый URL автоматически
                     audio_url = f"/api/v1/media/audio/{audio_filename}"
-            
+
             except Exception as e:
                 # Если генерация аудио не удалась, продолжаем без него
                 print(f"Error generating audio: {e}")
-        
+
+        # Запуск анимации говорящей головы (async, опционально)
+        animation_task_id = None
+        animation_provider = None
+        if audio_url and memorial.cover_photo_id:
+            try:
+                cover_media = db.query(Media).filter(Media.id == memorial.cover_photo_id).first()
+                if cover_media:
+                    public_image_url = f"{settings.PUBLIC_API_URL}/api/v1/media/{cover_media.id}"
+                    # Формируем публичный audio_url для D-ID (нужен абсолютный URL)
+                    if audio_url.startswith("/"):
+                        public_audio_url = f"{settings.PUBLIC_API_URL}{audio_url}"
+                    else:
+                        public_audio_url = audio_url
+                    anim_result = await animate_photo(
+                        image_url=public_image_url,
+                        script=answer,
+                        audio_url=public_audio_url,
+                    )
+                    animation_task_id = anim_result.get("task_id")
+                    animation_provider = anim_result.get("provider")
+                    print(f"✅ Animation started: task_id={animation_task_id}, provider={animation_provider}")
+            except Exception as e:
+                # Анимация опциональна — не ломаем чат при ошибке
+                print(f"Warning: could not start animation: {e}")
+
         return AvatarChatResponse(
             answer=answer,
             audio_url=audio_url,
+            animation_task_id=animation_task_id,
+            animation_provider=animation_provider,
             sources=sources
         )
     
@@ -664,9 +691,16 @@ async def upload_voice(
         # Удаляем временный файл при ошибке
         if temp_path.exists():
             temp_path.unlink()
+        error_str = str(e)
+        # Понятное сообщение для платного плана ElevenLabs
+        if "paid_plan_required" in error_str or "payment_required" in error_str or "instant_voice_cloning" in error_str:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Клонирование голоса требует платного плана ElevenLabs. Обновите подписку на elevenlabs.io или используйте стандартный голос аватара."
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=error_str
         )
     except Exception as e:
         # Удаляем временный файл при ошибке

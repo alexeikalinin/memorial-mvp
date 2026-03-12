@@ -22,8 +22,8 @@ function MemorialPublic() {
           memorialsAPI.getMedia(id),
         ])
         setMemorial(memRes.data)
-        setMemories(memoriesRes.data)
-        setPhotos(mediaRes.data.filter((m) => m.media_type === 'photo'))
+        setMemories(Array.isArray(memoriesRes.data) ? memoriesRes.data : [])
+        setPhotos(Array.isArray(mediaRes.data) ? mediaRes.data.filter((m) => m.media_type === 'photo') : [])
       } catch (err) {
         setError(err.response?.data?.detail || 'Мемориал не найден')
       } finally {

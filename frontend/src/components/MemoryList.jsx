@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { memorialsAPI, aiAPI } from '../api/client'
+import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
 import './MemoryList.css'
 
-function MemoryList({ memorialId, onReload }) {
+function MemoryList({ memorialId, memorialName, onReload }) {
   const [memories, setMemories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -12,6 +12,10 @@ function MemoryList({ memorialId, onReload }) {
   const [editFormData, setEditFormData] = useState({ title: '', content: '', event_date: '' })
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [sharePanel, setSharePanel] = useState(null)
+  const [sharingLoading, setSharingLoading] = useState(false)
+  const [urlCopied, setUrlCopied] = useState(false)
+  const [textCopied, setTextCopied] = useState(false)
 
   // Аудио-транскрипция
   const [showAudio, setShowAudio] = useState(false)
@@ -95,13 +99,55 @@ function MemoryList({ memorialId, onReload }) {
     }
   }
 
+  const handleShareInvite = async () => {
+    setSharingLoading(true)
+    try {
+      const res = await invitesAPI.create(memorialId, {})
+      const url = res.data.invite_url
+      const name = memorialName || 'этого человека'
+      const text = `Я пишу воспоминания о ${name}. Расскажи и ты о нём: ${url}`
+      setSharePanel({ url, text })
+      setUrlCopied(false)
+      setTextCopied(false)
+    } catch {
+      alert('Не удалось создать ссылку. Попробуйте ещё раз.')
+    } finally {
+      setSharingLoading(false)
+    }
+  }
+
+  const handleCopyUrl = async () => {
+    await navigator.clipboard.writeText(sharePanel.url)
+    setUrlCopied(true)
+    setTimeout(() => setUrlCopied(false), 2000)
+  }
+
+  const handleCopyText = async () => {
+    await navigator.clipboard.writeText(sharePanel.text)
+    setTextCopied(true)
+    setTimeout(() => setTextCopied(false), 2000)
+  }
+
+  const handleNativeShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Воспоминания о ${memorialName || 'близком человеке'}`,
+        text: sharePanel.text,
+        url: sharePanel.url,
+      })
+    } else {
+      handleCopyText()
+    }
+  }
+
   const loadMemories = async (q = '') => {
     try {
       setLoading(true)
       const response = await memorialsAPI.getMemories(memorialId, q || null)
-      setMemories(response.data)
+      setMemories(Array.isArray(response.data) ? response.data : [])
     } catch (err) {
       console.error('Error loading memories:', err)
+      setMemories([])
     } finally {
       setLoading(false)
     }
@@ -131,13 +177,49 @@ function MemoryList({ memorialId, onReload }) {
     <div className="memory-list">
       <div className="memory-header">
         <h2>Воспоминания</h2>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? 'Отмена' : 'Добавить воспоминание'}
-        </button>
+        <div className="memory-header-actions">
+          <button
+            className="btn btn-share"
+            onClick={handleShareInvite}
+            disabled={sharingLoading}
+          >
+            {sharingLoading ? '...' : '🔗 Пригласить друга'}
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? 'Отмена' : 'Добавить воспоминание'}
+          </button>
+        </div>
       </div>
+
+      {sharePanel && (
+        <div className="share-panel">
+          <div className="share-panel-header">
+            <span>Поделитесь — пусть близкие тоже расскажут о {memorialName || 'нём'}</span>
+            <button className="share-panel-close" onClick={() => setSharePanel(null)}>✕</button>
+          </div>
+          <div className="share-url-row">
+            <span className="share-url-text">{sharePanel.url}</span>
+            <button className="btn btn-copy" onClick={handleCopyUrl}>
+              {urlCopied ? '✓ Скопировано' : 'Копировать'}
+            </button>
+          </div>
+          <div className="share-message-section">
+            <p className="share-message-label">или отправьте готовое сообщение:</p>
+            <p className="share-message-text">«{sharePanel.text}»</p>
+            <div className="share-actions">
+              <button className="btn btn-copy" onClick={handleCopyText}>
+                {textCopied ? '✓ Скопировано' : 'Скопировать текст'}
+              </button>
+              <button className="btn btn-primary" onClick={handleNativeShare}>
+                Поделиться
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="memory-search">
         <input

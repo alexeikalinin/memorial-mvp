@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     QDRANT_URL: str = "http://localhost:6333"  # Локальный или Qdrant Cloud URL
     QDRANT_API_KEY: str = ""  # Опционально, для Qdrant Cloud
     QDRANT_COLLECTION_NAME: str = "memorial-memories"
-    QDRANT_LOCAL_PATH: str = ""  # Если задан — локальный файловый режим (без сервера)
+    QDRANT_LOCAL_PATH: str = ""  # Пустая строка = использовать QDRANT_URL (cloud). Задай путь для локальной разработки.
     
     # AWS S3
     S3_BUCKET_NAME: str = ""
@@ -59,11 +59,17 @@ class Settings(BaseSettings):
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
+
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_USERNAME: str = ""  # Имя бота без @, для deep links
+    BOT_API_BASE_URL: str = "http://localhost:8000/api/v1"
     
     # Application
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    # Локальная разработка + прод фронт на Vercel (можно дописать через env CORS_ORIGINS)
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://memorial-mvp.vercel.app"
     PUBLIC_API_URL: str = ""  # Публичный URL для доступа к API (для HeyGen и других внешних сервисов)
     PUBLIC_FRONTEND_URL: str = "http://localhost:5173"  # Публичный URL фронтенда (для QR-кодов)
     

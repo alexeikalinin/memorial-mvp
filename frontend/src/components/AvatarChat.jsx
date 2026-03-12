@@ -57,6 +57,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [includeAudio, setIncludeAudio] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [uploadingVoice, setUploadingVoice] = useState(false)
@@ -81,7 +82,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
     try {
       const saved = localStorage.getItem(storageKey)
       if (saved) {
-        setMessages(JSON.parse(saved))
+        const parsed = JSON.parse(saved)
+        setMessages(Array.isArray(parsed) ? parsed : [])
       }
     } catch (e) {
       // ignore corrupt data
@@ -98,6 +100,47 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
       }
     }
   }, [messages, storageKey])
+
+  // Polling анимации: каждые 5 сек проверяем статус для pending сообщений
+  useEffect(() => {
+    const pendingMessages = messages.filter(
+      (m) => m.role === 'assistant' && m.animationTaskId && m.videoStatus === 'pending'
+    )
+    if (pendingMessages.length === 0) return
+
+    const interval = setInterval(async () => {
+      for (const msg of pendingMessages) {
+        try {
+          const res = await aiAPI.getAnimationStatus({
+            task_id: msg.animationTaskId,
+            provider: msg.animationProvider,
+          })
+          const { status, video_url } = res.data
+          if (status === 'completed' && video_url) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.animationTaskId === msg.animationTaskId
+                  ? { ...m, videoUrl: video_url, videoStatus: 'ready' }
+                  : m
+              )
+            )
+          } else if (status === 'error' || status === 'failed') {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.animationTaskId === msg.animationTaskId
+                  ? { ...m, videoStatus: 'error' }
+                  : m
+              )
+            )
+          }
+        } catch (err) {
+          console.warn('Animation status poll error:', err)
+        }
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [messages])
 
   useEffect(() => {
     const checkVoice = async () => {
@@ -138,7 +181,13 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
       setVoiceName('')
       setShowVoicePanel(false)
     } catch (err) {
-      alert(err.response?.data?.detail || 'Ошибка при клонировании голоса')
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || 'Ошибка при клонировании голоса'
+      if (status === 402) {
+        alert(`⚠️ ${detail}`)
+      } else {
+        alert(detail)
+      }
     } finally {
       setUploadingVoice(false)
     }
@@ -165,6 +214,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
         role: 'assistant',
         text: response.data.answer,
         audioUrl: response.data.audio_url,
+        animationTaskId: response.data.animation_task_id || null,
+        animationProvider: response.data.animation_provider || null,
+        videoUrl: null,
+        videoStatus: response.data.animation_task_id ? 'pending' : null,
         sources: response.data.sources || [],
       }
 
@@ -207,7 +260,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
   }
 
   return (
-    <div className="avatar-chat">
+    <div className={`avatar-chat${isFullscreen ? ' avatar-chat--fullscreen' : ''}`}>
       <div className="chat-header">
         <div className="chat-header-title">
           {coverPhotoId ? (
@@ -232,13 +285,19 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
             />
             Генерировать аудио
           </label>
-          <label className="audio-toggle">
+          <label className="audio-toggle family-memories-toggle">
             <input
               type="checkbox"
               checked={includeFamilyMemories}
               onChange={(e) => setIncludeFamilyMemories(e.target.checked)}
             />
             Воспоминания родственников
+            <span className="info-trigger" title="Подсказка" tabIndex={0}>?</span>
+            <span className="info-tooltip">
+              <strong>Галочка включена:</strong> ответы ищутся и по воспоминаниям этого человека, и по воспоминаниям родственников (из их мемориалов), где он упоминается.
+              <br />
+              <strong>Галочка выключена:</strong> используются только воспоминания выбранного члена семьи.
+            </span>
           </label>
           <button
             className="btn-clear-history"
@@ -247,6 +306,14 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
             title="Синхронизировать воспоминания с семьёй"
           >
             {syncing ? '⏳ Синхронизация...' : '🔄 Синхр. с семьёй'}
+          </button>
+          <button
+            className="btn-fullscreen"
+            onClick={() => setIsFullscreen((v) => !v)}
+            title={isFullscreen ? 'Свернуть' : 'На весь экран'}
+          >
+            {isFullscreen ? '⛶' : '⛶'}
+            {isFullscreen ? 'Свернуть' : 'На весь экран'}
           </button>
           {messages.length > 0 && (
             <button className="btn-clear-history" onClick={handleClearHistory} title="Очистить историю">
@@ -283,8 +350,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
             <button className="btn-close-panel" onClick={() => { setShowVoicePanel(false); voiceRecorder.reset() }}>✕</button>
           </div>
           <p className="voice-clone-hint">
-            Загрузите запись голоса (минимум 1 минута чистой речи без шума).
-            Аватар будет отвечать голосом этого человека.
+            Аватар будет отвечать голосом этого человека. Нужна минимум 1 минута чистой речи без шума.
           </p>
           <div className="voice-clone-name">
             <input
@@ -297,7 +363,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
           </div>
           <div className="voice-clone-options">
             <div className="voice-clone-option">
-              <p className="option-label">Записать прямо сейчас:</p>
+              <p className="option-label">Записать прямо сейчас <span className="option-hint">(если человек жив)</span>:</p>
               {!voiceRecorder.audioBlob ? (
                 <div className="record-controls">
                   {!voiceRecorder.isRecording ? (
@@ -332,7 +398,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
             </div>
             <div className="voice-clone-divider">или</div>
             <div className="voice-clone-option">
-              <p className="option-label">Загрузить готовый файл (MP3, WAV, M4A):</p>
+              <p className="option-label">Загрузить запись <span className="option-hint">(если голос сохранился)</span>:</p>
+              <p className="option-sublabel">MP3, WAV, M4A</p>
               <label className="btn-upload-voice">
                 {uploadingVoice ? '⏳ Клонирование...' : '📁 Выбрать файл'}
                 <input
@@ -369,7 +436,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
           </div>
         )}
 
-        {messages.map((msg, idx) => (
+        {(Array.isArray(messages) ? messages : []).map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}>
             {msg.role === 'assistant' && (
               <div className="message-avatar">
@@ -388,7 +455,22 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
             )}
             <div className="message-content">
               <p>{msg.text}</p>
-              {msg.audioUrl && (
+              {msg.videoUrl ? (
+                <div className="video-container">
+                  <video
+                    controls
+                    autoPlay
+                    src={msg.videoUrl}
+                    className="avatar-video"
+                  >
+                    Ваш браузер не поддерживает видео.
+                  </video>
+                </div>
+              ) : msg.videoStatus === 'pending' ? (
+                <div className="video-loading">
+                  <span className="video-loading-icon">🎬</span> Видео генерируется...
+                </div>
+              ) : msg.audioUrl ? (
                 <div className="audio-container">
                   <audio
                     controls
@@ -399,8 +481,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
                     Ваш браузер не поддерживает аудио.
                   </audio>
                 </div>
-              )}
-              {msg.sources && msg.sources.length > 0 && (
+              ) : null}
+              {Array.isArray(msg.sources) && msg.sources.length > 0 && (
                 <div className="sources">
                   <strong>Источники:</strong>
                   <ul>

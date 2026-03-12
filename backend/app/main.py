@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import engine, Base
-from app.api import health, memorials, ai, media, s3, embeddings, family
+from app.api import health, memorials, ai, media, s3, embeddings, family, invites
 
 # Создание таблиц в БД (для dev; в production используйте Alembic миграции)
 Base.metadata.create_all(bind=engine)
@@ -35,6 +35,7 @@ app.include_router(media.router, prefix=settings.API_V1_PREFIX)
 app.include_router(s3.router, prefix=settings.API_V1_PREFIX)
 app.include_router(embeddings.router, prefix=settings.API_V1_PREFIX)
 app.include_router(family.router, prefix=settings.API_V1_PREFIX)
+app.include_router(invites.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { memorialsAPI, getMediaUrl } from '../api/client'
+import { memorialsAPI, invitesAPI, getMediaUrl } from '../api/client'
 import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
@@ -25,6 +25,14 @@ function MemorialDetail() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Invite modal state
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteLabel, setInviteLabel] = useState('')
+  const [creatingInvite, setCreatingInvite] = useState(false)
+  const [createdInviteUrl, setCreatedInviteUrl] = useState(null)
+  const [inviteList, setInviteList] = useState([])
+  const [inviteListLoading, setInviteListLoading] = useState(false)
 
   useEffect(() => {
     loadMemorial()
@@ -118,6 +126,47 @@ function MemorialDetail() {
       }
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const openInviteModal = async () => {
+    setShowInviteModal(true)
+    setCreatedInviteUrl(null)
+    setInviteLabel('')
+    setInviteListLoading(true)
+    try {
+      const res = await invitesAPI.list(id)
+      setInviteList(res.data)
+    } catch {
+      setInviteList([])
+    } finally {
+      setInviteListLoading(false)
+    }
+  }
+
+  const handleCreateInvite = async () => {
+    setCreatingInvite(true)
+    try {
+      const res = await invitesAPI.create(id, { label: inviteLabel || null })
+      setCreatedInviteUrl(res.data.invite_url)
+      setInviteList(prev => [...prev, res.data])
+    } catch {
+      alert('Ошибка при создании ссылки')
+    } finally {
+      setCreatingInvite(false)
+    }
+  }
+
+  const handleRevokeInvite = async (token) => {
+    if (!confirm('Отозвать эту ссылку? Она перестанет работать.')) return
+    try {
+      await invitesAPI.revoke(token)
+      setInviteList(prev => prev.filter(i => i.token !== token))
+      if (createdInviteUrl && createdInviteUrl.includes(token)) {
+        setCreatedInviteUrl(null)
+      }
+    } catch {
+      alert('Ошибка при отзыве ссылки')
     }
   }
 
@@ -229,6 +278,13 @@ function MemorialDetail() {
                   QR-код
                 </button>
                 <button
+                  className="btn btn-secondary"
+                  onClick={openInviteModal}
+                  title="Пригласить родственника"
+                >
+                  Пригласить
+                </button>
+                <button
                   className="btn btn-danger"
                   onClick={handleDelete}
                   disabled={deleting}
@@ -309,7 +365,7 @@ function MemorialDetail() {
           />
         )}
         {activeTab === 'memories' && (
-          <MemoryList memorialId={id} onReload={loadMemorial} />
+          <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} />
         )}
         {activeTab === 'chat' && (
           <AvatarChat
@@ -321,6 +377,76 @@ function MemorialDetail() {
         {activeTab === 'family' && <FamilyTree memorialId={id} />}
         {activeTab === 'timeline' && <LifeTimeline memorialId={id} />}
       </div>
+
+      {showInviteModal && (
+        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content invite-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Пригласить родственника</h3>
+              <button className="modal-close" onClick={() => setShowInviteModal(false)}>✕</button>
+            </div>
+
+            <div className="invite-form">
+              <label>Имя приглашённого (необязательно)</label>
+              <input
+                type="text"
+                value={inviteLabel}
+                onChange={e => setInviteLabel(e.target.value)}
+                placeholder="Например: Папа, Тётя Маша"
+              />
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateInvite}
+                disabled={creatingInvite}
+              >
+                {creatingInvite ? 'Создание...' : 'Создать ссылку'}
+              </button>
+            </div>
+
+            {createdInviteUrl && (
+              <div className="invite-created">
+                <p>Ссылка создана:</p>
+                <div className="invite-url-row">
+                  <code className="invite-url">{createdInviteUrl}</code>
+                  <button
+                    className="btn-copy"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdInviteUrl)
+                        .then(() => alert('Ссылка скопирована!'))
+                    }}
+                  >
+                    Копировать
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="invite-list-section">
+              <h4>Активные ссылки</h4>
+              {inviteListLoading ? (
+                <p className="invite-list-empty">Загрузка...</p>
+              ) : inviteList.length === 0 ? (
+                <p className="invite-list-empty">Нет активных ссылок</p>
+              ) : (
+                <ul className="invite-list">
+                  {inviteList.map(inv => (
+                    <li key={inv.token} className="invite-item">
+                      <span className="invite-item-label">{inv.label || 'Без имени'}</span>
+                      <span className="invite-item-uses">{inv.uses_count} переходов</span>
+                      <button
+                        className="btn-revoke"
+                        onClick={() => handleRevokeInvite(inv.token)}
+                      >
+                        Отозвать
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@
 Сервисы для работы с AI-задачами: D-ID/HeyGen, OpenAI, ElevenLabs, Qdrant/Pinecone.
 """
 import httpx
+from pathlib import Path
 from typing import Optional, List, Dict, Tuple
 from app.config import settings
 
@@ -12,38 +13,49 @@ async def animate_photo_did(
     image_url: str,
     script: Optional[str] = None,
     voice_id: Optional[str] = None,
-    webhook_url: Optional[str] = None
+    webhook_url: Optional[str] = None,
+    audio_url: Optional[str] = None,
 ) -> Dict:
     """
     Оживить фото через D-ID API.
-    
+
     Args:
         image_url: URL изображения
         script: Текст для озвучки (опционально)
         voice_id: ID голоса (опционально)
         webhook_url: URL для webhook'а при завершении (опционально)
-    
+        audio_url: URL готового аудио для lip-sync (если передан, используется вместо TTS)
+
     Returns:
         Dict с task_id и статусом
     """
     if not settings.DID_API_KEY:
         raise ValueError("DID_API_KEY not configured")
-    
+
     url = f"{settings.DID_API_URL}/talks"
     headers = {
         "Authorization": f"Basic {settings.DID_API_KEY}",
         "Content-Type": "application/json"
     }
-    
-    payload = {
-        "source_url": image_url,
-        "script": {
+
+    if audio_url:
+        # Используем готовое аудио (ElevenLabs) для lip-sync
+        script_payload = {
+            "type": "audio",
+            "audio_url": audio_url,
+        }
+    else:
+        script_payload = {
             "type": "text",
             "input": script or "Привет, я здесь, чтобы поделиться воспоминаниями с тобой."
         }
+
+    payload = {
+        "source_url": image_url,
+        "script": script_payload,
     }
-    
-    if voice_id:
+
+    if voice_id and not audio_url:
         payload["config"] = {
             "voice": voice_id
         }
@@ -464,12 +476,16 @@ async def animate_photo(
     image_url: str,
     script: Optional[str] = None,
     voice_id: Optional[str] = None,
-    webhook_url: Optional[str] = None
+    webhook_url: Optional[str] = None,
+    audio_url: Optional[str] = None,
 ) -> Dict:
     """
     Унифицированный интерфейс для анимации фото.
     Использует HeyGen если USE_HEYGEN=true, иначе D-ID.
-    
+
+    Args:
+        audio_url: Готовое аудио для lip-sync (ElevenLabs). Поддерживается только D-ID.
+
     Returns:
         Dict с полями: provider, task_id, status
     """
@@ -504,7 +520,7 @@ async def animate_photo(
             "status": "processing"
         }
     else:
-        result = await animate_photo_did(image_url, script, voice_id, webhook_url)
+        result = await animate_photo_did(image_url, script, voice_id, webhook_url, audio_url)
         return {
             "provider": "d-id",
             "task_id": result.get("id"),

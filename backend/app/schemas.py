@@ -196,6 +196,8 @@ class AvatarChatRequest(BaseModel):
 class AvatarChatResponse(BaseModel):
     answer: str
     audio_url: Optional[str] = None
+    animation_task_id: Optional[str] = None
+    animation_provider: Optional[str] = None  # "d-id" или "heygen"
     sources: List[str] = []  # Список использованных фрагментов воспоминаний
 
 
@@ -251,4 +253,30 @@ class FamilyTreeResponse(BaseModel):
     """Семейное дерево мемориала."""
     root: FamilyTreeNode
     total_nodes: int
+
+
+# Invite Schemas
+class InviteCreate(BaseModel):
+    label: Optional[str] = None
+    expires_days: Optional[int] = None  # None = бессрочный
+
+
+class InviteResponse(BaseModel):
+    token: str
+    label: Optional[str] = None
+    invite_url: str
+    expires_at: Optional[datetime] = None
+    uses_count: int
+    permissions: Dict
+
+    class Config:
+        from_attributes = True
+
+
+class InviteValidateResponse(BaseModel):
+    memorial_id: int
+    memorial_name: str
+    cover_photo_id: Optional[int] = None
+    label: Optional[str] = None
+    permissions: Dict
 

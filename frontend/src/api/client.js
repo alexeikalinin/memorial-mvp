@@ -121,6 +121,17 @@ export const embeddingsAPI = {
     apiClient.get(`/embeddings/memorials/${memorialId}/status`),
 }
 
+export const invitesAPI = {
+  create: (memorialId, data) =>
+    apiClient.post(`/invites/memorials/${memorialId}/create`, data),
+  list: (memorialId) =>
+    apiClient.get(`/invites/memorials/${memorialId}/list`),
+  validate: (token) =>
+    apiClient.get(`/invites/validate/${token}`),
+  revoke: (token) =>
+    apiClient.delete(`/invites/${token}`),
+}
+
 export const familyAPI = {
   createRelationship: (memorialId, data) =>
     apiClient.post(`/family/memorials/${memorialId}/relationships`, data),

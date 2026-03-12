@@ -1,7 +1,7 @@
 """
 SQLAlchemy модели для базы данных.
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -67,6 +67,7 @@ class Memorial(Base):
     memories = relationship("Memory", back_populates="memorial", cascade="all, delete-orphan")
     relationships_from = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.memorial_id", back_populates="memorial", cascade="all, delete-orphan")
     relationships_to = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.related_memorial_id", back_populates="related_memorial", cascade="all, delete-orphan")
+    invites = relationship("MemorialInvite", back_populates="memorial", cascade="all, delete-orphan")
 
 
 class Media(Base):
@@ -139,4 +140,20 @@ class FamilyRelationship(Base):
     __table_args__ = (
         UniqueConstraint('memorial_id', 'related_memorial_id', 'relationship_type', name='uq_relationship'),
     )
+
+
+class MemorialInvite(Base):
+    """Инвайт-токен для доступа родственников к мемориалу без регистрации."""
+    __tablename__ = "memorial_invites"
+
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    label = Column(String(100), nullable=True)  # "Папа", "Тётя Маша"
+    permissions = Column(JSON, default={"add_memories": True, "chat": True, "view_media": True})
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # None = бессрочный
+    uses_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    memorial = relationship("Memorial", back_populates="invites")
 

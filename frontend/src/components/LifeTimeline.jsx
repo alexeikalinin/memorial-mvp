@@ -8,8 +8,11 @@ function LifeTimeline({ memorialId }) {
 
   useEffect(() => {
     memorialsAPI.getTimeline(memorialId)
-      .then((res) => setItems(res.data))
-      .catch((err) => console.error('Error loading timeline:', err))
+      .then((res) => setItems(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => {
+        console.error('Error loading timeline:', err)
+        setItems([])
+      })
       .finally(() => setLoading(false))
   }, [memorialId])
 

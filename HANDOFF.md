@@ -1,80 +1,52 @@
 # Handoff — Memorial MVP
-> Обновлено: 2026-03-08 — конец сессии (лимиты Claude Code исчерпаны)
+> Обновлено: 2026-03-12
 
----
+## Что сейчас делается
+Реализован Telegram-бот для чата с AI-аватаром через RAG-пайплайн.
 
-## СТОП-ТОЧКА
-
-Все запланированные задачи **выполнены**, код изменён, но **не протестирован в браузере**.
-
----
-
-## Что было сделано в этой сессии
-
-### 1. Улучшение читаемости семейного дерева ✅
-**Файлы:** `frontend/src/components/FamilyTree.jsx`, `frontend/src/components/FamilyTree.css`
-
-- `renderTreeNode(node, level, relationLabel)` — новый параметр `relationLabel`
-- Бейджи на карточках: синий «Ребёнок», розовый «Супруг/а», серо-лиловый «Страница»
-- `.node-body` обёртка (flex row) внутри карточки — бейдж стоит над аватар+именем
-- Умершие карточки: `grayscale(85%) brightness(0.88) opacity: 0.82` (было почти незаметно)
-- Линия детей: `3px solid` + горизонтальные засечки `::before` у каждого ребёнка
-- Линия брака: `32px` шире, символ ∞ крупнее и розовый
-
-### 2. Family Memory Synchronization (Layer 1 + Layer 2) ✅
-**Файлы:** `backend/app/schemas.py`, `backend/app/services/ai_tasks.py`, `backend/app/api/ai.py`, `frontend/src/components/AvatarChat.jsx`, `frontend/src/api/client.js`
-
-- Cross-memorial RAG: чекбокс «Воспоминания родственников» в чате аватара
-- `include_family_memories: bool` в `AvatarChatRequest`
-- `search_similar_memories()` теперь принимает список `memorial_ids`
-- Memory Sync Agent: `POST /ai/family/sync-memories/{id}?dry_run=true`
-- Кнопка «🔄 Синхр. с семьёй» в `AvatarChat.jsx`
-
----
+## Последнее действие
+Создан модуль `backend/bot/` (5 файлов): main.py, handlers.py, session.py, keyboards.py, api_client.py.
+Обновлены config.py (3 новых поля), requirements.txt (python-telegram-bot==20.7), .env.example.
 
 ## Следующий шаг
-
-1. Запустить стек (см. ниже)
-2. Открыть мемориал → вкладка «Семейное дерево»
-   - Проверить бейджи на карточках (Ребёнок / Супруг/а / Страница)
-   - Умершие карточки должны быть заметно тусклее живых
-   - Горизонтальные засечки у детей
-3. Открыть вкладку «Чат» → проверить чекбокс и кнопку синхронизации
-
----
+1. Добавить `TELEGRAM_BOT_TOKEN=...` в `backend/.env`
+2. Установить зависимость: `pip install python-telegram-bot==20.7`
+3. Запустить бота: `cd backend && source .venv/bin/activate && python -m bot.main`
+4. Для аудио в dev: запустить ngrok → `PUBLIC_API_URL=https://xxxx.ngrok.io` в .env
 
 ## Незавершённые задачи
-
-- [ ] Верификация семейного дерева в браузере
-- [ ] Верификация cross-memorial RAG (создать 2 мемориала, связать, включить чекбокс)
-- [ ] Верификация Memory Sync Agent (кнопка + dry_run режим)
-
----
+- Deep link кнопка на фронте (в SharePanel) — опционально
+- Webhook-режим для production (сейчас только long polling)
 
 ## Изменённые файлы (текущая сессия)
-
-| Файл | Изменение |
-|------|-----------|
-| `frontend/src/components/FamilyTree.jsx` | Бейджи, node-body, relationLabel |
-| `frontend/src/components/FamilyTree.css` | Стили бейджей, коннекторы, deceased |
-| `backend/app/schemas.py` | `include_family_memories` поле |
-| `backend/app/services/ai_tasks.py` | Cross-memorial search, sync_family_memories() |
-| `backend/app/api/ai.py` | avatar_chat обновлён, новый endpoint sync-memories |
-| `frontend/src/components/AvatarChat.jsx` | Чекбокс + кнопка синхронизации |
-| `frontend/src/api/client.js` | syncFamilyMemories() метод |
-
----
+- `backend/app/config.py` — +TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_USERNAME, BOT_API_BASE_URL
+- `backend/requirements.txt` — +python-telegram-bot==20.7
+- `backend/.env.example` — добавлены Telegram-переменные
+- `backend/bot/__init__.py` — создан
+- `backend/bot/main.py` — точка входа, polling loop
+- `backend/bot/handlers.py` — хэндлеры /start /change /voice /family /help + текст
+- `backend/bot/session.py` — Redis/in-memory сессия пользователя
+- `backend/bot/keyboards.py` — inline keyboards (мемориалы, настройки)
+- `backend/bot/api_client.py` — HTTP-клиент к FastAPI
 
 ## Запуск стека
-
 ```bash
+# Терминал 1: Backend API
 cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
+
+# Терминал 2: Telegram Bot
+cd backend && source .venv/bin/activate && python -m bot.main
+
+# Фронтенд
 cd frontend && npm run dev
+
+# Опционально: ngrok для публичных аудио-URL
+ngrok http 8000
 ```
 
 ## Критический контекст
-
-- Qdrant работает локально: `QDRANT_LOCAL_PATH=./qdrant_storage` в `backend/.env`
-- Аутентификации нет — `owner_id=1` хардкод везде
-- Карточка FamilyTree теперь `flex-direction: column` → внутри `.node-body { display: flex; align-items: center; gap: 0.7rem }`
-- `min_score` в avatar_chat = 0.1 (было 0.2, понижено для длинных текстов с размытым embedding)
+- audio_url из API приходит как `/api/v1/media/audio/file.mp3` (относительный)
+- build_audio_url() в api_client.py делает его абсолютным через PUBLIC_API_URL или BOT_API_BASE_URL
+- Telegram скачивает аудио по URL сам — нужен публичный URL (ngrok в dev)
+- Сессия хранится в Redis (ключ `tg:{chat_id}`), fallback — in-memory dict
+- owner_id=1 хардкод в API, аутентификации нет — все мемориалы доступны боту

@@ -42,7 +42,7 @@ function FamilyTree({ memorialId }) {
         familyAPI.getRelationships(memorialId),
       ])
       setTree(treeRes.data)
-      setRelationships(relsRes.data)
+      setRelationships(Array.isArray(relsRes.data) ? relsRes.data : [])
     } catch (err) {
       console.error('Error loading family tree:', err)
     } finally {
@@ -182,7 +182,7 @@ function FamilyTree({ memorialId }) {
           ))}
         </div>
 
-        {node.children && node.children.length > 0 && (
+        {Array.isArray(node.children) && node.children.length > 0 && (
           <div className="children">
             {node.children.map((child) => renderTreeNode(child, level + 1, 'child'))}
           </div>

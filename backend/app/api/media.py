@@ -17,6 +17,27 @@ router = APIRouter(prefix="/media", tags=["media"])
 UPLOAD_DIR = Path("uploads")
 
 
+@router.get("/audio/{filename}")
+async def get_audio_file(filename: str):
+    """
+    Получить аудио-файл по имени файла.
+    Используется для обслуживания сгенерированных аудио из чата.
+    """
+    audio_path = UPLOAD_DIR / "audio" / filename
+
+    if not audio_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Audio file not found"
+        )
+
+    return FileResponse(
+        audio_path,
+        media_type="audio/mpeg",
+        filename=filename
+    )
+
+
 @router.get("/{media_id_path:path}")  # Используем path для поддержки расширений
 async def get_media_file(
     media_id_path: str,  # Может быть "10" или "10.jpg"
@@ -73,27 +94,6 @@ async def get_media_file(
         file_path,
         media_type=mime_type,
         filename=media.file_name
-    )
-
-
-@router.get("/audio/{filename}")
-async def get_audio_file(filename: str):
-    """
-    Получить аудио-файл по имени файла.
-    Используется для обслуживания сгенерированных аудио из чата.
-    """
-    audio_path = UPLOAD_DIR / "audio" / filename
-    
-    if not audio_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Audio file not found"
-        )
-    
-    return FileResponse(
-        audio_path,
-        media_type="audio/mpeg",
-        filename=filename
     )
 
 

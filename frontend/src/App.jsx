@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import MemorialCreate from './pages/MemorialCreate'
 import MemorialDetail from './pages/MemorialDetail'
 import MemorialPublic from './pages/MemorialPublic'
+import ContributePage from './pages/ContributePage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/memorials/new" element={<MemorialCreate />} />
           <Route path="/memorials/:id" element={<MemorialDetail />} />
           <Route path="/m/:id" element={<MemorialPublic />} />
+          <Route path="/contribute/:token" element={<ContributePage />} />
         </Routes>
       </Layout>
     </Router>

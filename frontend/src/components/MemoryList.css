@@ -308,3 +308,128 @@
   flex-wrap: wrap;
 }
 
+/* Header actions */
+.memory-header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-share {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #86efac;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-share:hover {
+  background: #dcfce7;
+}
+
+.btn-share:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Share Panel */
+.share-panel {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.share-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #14532d;
+  gap: 1rem;
+}
+
+.share-panel-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6b7280;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.share-panel-close:hover {
+  color: #374151;
+}
+
+.share-url-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border: 1px solid #d1fae5;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.share-url-text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: #374151;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+.btn-copy {
+  background: #fff;
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: 0.35rem 0.75rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-copy:hover {
+  background: #dcfce7;
+}
+
+.share-message-section {
+  margin-top: 0.75rem;
+}
+
+.share-message-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.share-message-text {
+  background: #fff;
+  border: 1px solid #d1fae5;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+}
+
+.share-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+

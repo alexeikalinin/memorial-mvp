@@ -17,9 +17,10 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
     try {
       setLoading(true)
       const response = await memorialsAPI.getMedia(memorialId)
-      setMedia(response.data)
+      setMedia(Array.isArray(response.data) ? response.data : [])
     } catch (err) {
       console.error('Error loading media:', err)
+      setMedia([])
     } finally {
       setLoading(false)
     }
