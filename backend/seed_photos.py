@@ -9,9 +9,10 @@
 
 import sys
 import io
+import os
 import requests
 
-BASE_URL = "http://localhost:8000/api/v1"
+BASE_URL = os.environ.get("SEED_BASE_URL", "http://localhost:8000/api/v1")
 
 # Каждый персонаж: (memorial_id, gender, portrait_num)
 # Подобраны числа для нужного возраста/внешности из randomuser.me/api/portraits

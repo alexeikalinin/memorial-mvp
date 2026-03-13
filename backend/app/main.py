@@ -10,6 +10,22 @@ from app.api import health, memorials, ai, media, s3, embeddings, family, invite
 # Создание таблиц в БД (для dev; в production используйте Alembic миграции)
 Base.metadata.create_all(bind=engine)
 
+# Создание дефолтного пользователя (owner_id=1) если не существует
+from app.db import SessionLocal
+from app.models import User
+def _ensure_default_user():
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.id == 1).first():
+            user = User(id=1, email="admin@memorial.app", username="admin", hashed_password="unused", is_active=True)
+            db.add(user)
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+_ensure_default_user()
+
 # Создание FastAPI приложения
 app = FastAPI(
     title="Memorial MVP API",
