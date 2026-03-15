@@ -143,5 +143,7 @@ export const familyAPI = {
     apiClient.delete(`/family/relationships/${relationshipId}`),
   getFamilyTree: (memorialId, maxDepth = 3) =>
     apiClient.get(`/family/memorials/${memorialId}/tree`, { params: { max_depth: maxDepth } }),
+  getHiddenConnections: (memorialId, maxDepth = 6) =>
+    apiClient.get(`/family/memorials/${memorialId}/hidden-connections`, { params: { max_depth: maxDepth } }),
 }
 

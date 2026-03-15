@@ -259,6 +259,28 @@ class FamilyTreeResponse(BaseModel):
     total_nodes: int
 
 
+# Скрытые родственные связи
+class ConnectionStep(BaseModel):
+    """Один шаг в цепочке родства."""
+    memorial_id: int
+    name: str
+    relationship_label: str  # «мать», «супруг», «ребёнок», «брат/сестра»
+
+
+class HiddenConnection(BaseModel):
+    """Неочевидная родственная связь через несколько поколений."""
+    target_memorial_id: int
+    target_name: str
+    path: List[ConnectionStep]   # цепочка от текущего до target
+    hops: int                    # длина цепочки (1 = прямая связь, 2+ = скрытая)
+    connection_summary: str      # «Троюродный брат через Людмилу Ковалёву и Николая Морозова»
+
+
+class HiddenConnectionsResponse(BaseModel):
+    hidden: List[HiddenConnection]   # hops >= 2
+    direct: List[HiddenConnection]   # hops == 1 (прямые, для справки)
+
+
 # Invite Schemas
 class InviteCreate(BaseModel):
     label: Optional[str] = None

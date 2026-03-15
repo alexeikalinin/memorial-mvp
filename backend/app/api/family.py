@@ -14,6 +14,9 @@ from app.schemas import (
     FamilyRelationshipResponse,
     FamilyTreeResponse,
     FamilyTreeNode,
+    ConnectionStep,
+    HiddenConnection,
+    HiddenConnectionsResponse,
 )
 
 router = APIRouter(prefix="/family", tags=["family"])
@@ -329,9 +332,105 @@ async def get_family_tree(
         )
     
     total_nodes = count_nodes(root)
-    
+
     return FamilyTreeResponse(
         root=root,
         total_nodes=total_nodes
     )
+
+
+REL_LABELS = {
+    "parent": "родитель",
+    "child": "ребёнок",
+    "spouse": "супруг/супруга",
+    "sibling": "брат/сестра",
+}
+
+REL_LABELS_REVERSE = {
+    "parent": "ребёнок",
+    "child": "родитель",
+    "spouse": "супруг/супруга",
+    "sibling": "брат/сестра",
+}
+
+
+@router.get("/memorials/{memorial_id}/hidden-connections", response_model=HiddenConnectionsResponse)
+async def get_hidden_connections(
+    memorial_id: int,
+    max_depth: int = Query(6, ge=2, le=10),
+    db: Session = Depends(get_db),
+):
+    """
+    Найти все родственные связи (прямые и скрытые) через BFS по всему графу.
+
+    Возвращает:
+    - direct: прямые связи (1 хоп)
+    - hidden: неочевидные связи (2+ хопов) — например, троюродные через смену фамилии
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+
+    # Загружаем все связи одним запросом (нужны оба направления)
+    all_rels = db.query(FamilyRelationship).all()
+
+    # Строим неориентированный граф: node_id → [(neighbor_id, rel_type, direction)]
+    graph: Dict[int, List[tuple]] = defaultdict(list)
+    for rel in all_rels:
+        graph[rel.memorial_id].append((rel.related_memorial_id, rel.relationship_type.value, "forward"))
+        graph[rel.related_memorial_id].append((rel.memorial_id, rel.relationship_type.value, "reverse"))
+
+    # BFS: для каждого узла храним путь ConnectionStep[]
+    visited: Dict[int, List[ConnectionStep]] = {memorial_id: []}
+    queue: List[int] = [memorial_id]
+    all_names: Dict[int, str] = {memorial.id: memorial.name}
+
+    while queue:
+        current = queue.pop(0)
+        current_path = visited[current]
+        if len(current_path) >= max_depth:
+            continue
+        for neighbor_id, rel_type, direction in graph[current]:
+            if neighbor_id in visited:
+                continue
+            label = REL_LABELS.get(rel_type, rel_type) if direction == "forward" else REL_LABELS_REVERSE.get(rel_type, rel_type)
+            if neighbor_id not in all_names:
+                m = db.query(Memorial.id, Memorial.name).filter(Memorial.id == neighbor_id).first()
+                all_names[neighbor_id] = m.name if m else f"Мемориал #{neighbor_id}"
+            step = ConnectionStep(
+                memorial_id=current,
+                name=all_names[current],
+                relationship_label=label,
+            )
+            visited[neighbor_id] = current_path + [step]
+            queue.append(neighbor_id)
+
+    def _make_summary(path: List[ConnectionStep], target_name: str) -> str:
+        if not path:
+            return "прямая связь"
+        parts = " → ".join(f"{s.name} ({s.relationship_label})" for s in path)
+        return f"{parts} → {target_name}"
+
+    direct: List[HiddenConnection] = []
+    hidden: List[HiddenConnection] = []
+
+    for node_id, path in visited.items():
+        if node_id == memorial_id:
+            continue
+        hops = len(path)
+        target_name = all_names.get(node_id, f"Мемориал #{node_id}")
+        conn = HiddenConnection(
+            target_memorial_id=node_id,
+            target_name=target_name,
+            path=path,
+            hops=hops,
+            connection_summary=_make_summary(path, target_name),
+        )
+        if hops == 1:
+            direct.append(conn)
+        else:
+            hidden.append(conn)
+
+    hidden.sort(key=lambda c: c.hops)
+    return HiddenConnectionsResponse(hidden=hidden, direct=direct)
 

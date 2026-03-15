@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { familyAPI, memorialsAPI, getMediaUrl } from '../api/client'
+import HiddenConnections from './HiddenConnections'
 import './FamilyTree.css'
 
 function FamilyTree({ memorialId }) {
@@ -336,6 +337,8 @@ function FamilyTree({ memorialId }) {
           </div>
         )}
       </div>
+
+      <HiddenConnections memorialId={memorialId} />
     </div>
   )
 }
