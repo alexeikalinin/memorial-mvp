@@ -1,7 +1,7 @@
 """
 SQLAlchemy модели для базы данных.
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -49,7 +49,7 @@ class Memorial(Base):
     description = Column(Text, nullable=True)
     birth_date = Column(DateTime(timezone=True), nullable=True)
     death_date = Column(DateTime(timezone=True), nullable=True)
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     is_public = Column(Boolean, default=False)
     voice_id = Column(String(255), nullable=True)  # ID кастомного голоса в ElevenLabs
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
@@ -140,6 +140,7 @@ class FamilyRelationship(Base):
     # Уникальность: одна связь одного типа между двумя мемориалами
     __table_args__ = (
         UniqueConstraint('memorial_id', 'related_memorial_id', 'relationship_type', name='uq_relationship'),
+        Index('ix_family_rel_memorial_type', 'memorial_id', 'relationship_type'),
     )
 
 

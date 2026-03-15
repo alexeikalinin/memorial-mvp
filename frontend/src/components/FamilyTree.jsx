@@ -50,11 +50,15 @@ function FamilyTree({ memorialId }) {
     }
   }
 
+  const availableMemorialsLoaded = useRef(false)
+
   const loadAvailableMemorials = async () => {
+    if (availableMemorialsLoaded.current) return
     try {
       const res = await memorialsAPI.list()
       const all = Array.isArray(res.data) ? res.data : []
       setAvailableMemorials(all.filter(m => m.id !== memorialId))
+      availableMemorialsLoaded.current = true
     } catch (err) {
       console.error('Error loading memorials:', err)
     }

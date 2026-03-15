@@ -155,22 +155,28 @@ async def get_relationships(
         query = query.filter(FamilyRelationship.relationship_type == relationship_type)
     
     relationships = query.all()
-    
-    # Получаем имена связанных мемориалов
-    result = []
-    for rel in relationships:
-        related = db.query(Memorial).filter(Memorial.id == rel.related_memorial_id).first()
-        result.append(FamilyRelationshipResponse(
+
+    # Bulk-load связанных мемориалов — один запрос вместо N
+    related_ids = {rel.related_memorial_id for rel in relationships}
+    memorials_by_id = {}
+    if related_ids:
+        memorials_by_id = {
+            m.id: m
+            for m in db.query(Memorial).filter(Memorial.id.in_(related_ids)).all()
+        }
+
+    return [
+        FamilyRelationshipResponse(
             id=rel.id,
             memorial_id=rel.memorial_id,
             related_memorial_id=rel.related_memorial_id,
             relationship_type=rel.relationship_type,
             notes=rel.notes,
-            related_memorial_name=related.name if related else None,
-            created_at=rel.created_at
-        ))
-    
-    return result
+            related_memorial_name=memorials_by_id.get(rel.related_memorial_id, Memorial()).name,
+            created_at=rel.created_at,
+        )
+        for rel in relationships
+    ]
 
 
 @router.delete("/relationships/{relationship_id}", status_code=status.HTTP_204_NO_CONTENT)
