@@ -1,8 +1,14 @@
 """
 Конфигурация приложения через переменные окружения.
 """
+from pathlib import Path
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List
+
+# .env всегда ищем в корне backend (независимо от cwd при запуске uvicorn)
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -34,7 +40,17 @@ class Settings(BaseSettings):
     
     # ElevenLabs
     ELEVENLABS_API_KEY: str = ""
-    ELEVENLABS_VOICE_ID: str = ""
+    ELEVENLABS_VOICE_ID: str = ""  # Голос по умолчанию (если не задан пол)
+
+    @field_validator("ELEVENLABS_API_KEY", mode="before")
+    @classmethod
+    def strip_elevenlabs_key(cls, v):
+        """Убирает пробелы и перевод строк из ключа (частая причина 401 при копировании из .env)."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
+    ELEVENLABS_VOICE_ID_MALE: str = ""   # Мужской голос для мемориалов с voice_gender=male
+    ELEVENLABS_VOICE_ID_FEMALE: str = "" # Женский голос для мемориалов с voice_gender=female
     
     # Vector Database - выбор между Pinecone и Qdrant
     VECTOR_DB_PROVIDER: str = "qdrant"  # "pinecone" или "qdrant"
@@ -50,12 +66,29 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION_NAME: str = "memorial-memories"
     QDRANT_LOCAL_PATH: str = ""  # Пустая строка = использовать QDRANT_URL (cloud). Задай путь для локальной разработки.
     
-    # AWS S3
-    S3_BUCKET_NAME: str = ""
-    S3_REGION: str = "us-east-1"
+    # Supabase
+    SUPABASE_URL: str = ""  # https://xxxx.supabase.co
+
+    # S3-совместимое хранилище (Supabase Storage или AWS S3)
+    S3_BUCKET_NAME: str = "memorial-media"
+    S3_REGION: str = "eu-central-1"
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     USE_S3: bool = False
+
+    @property
+    def s3_endpoint_url(self) -> str:
+        """S3 endpoint: Supabase Storage если SUPABASE_URL задан, иначе AWS."""
+        if self.SUPABASE_URL:
+            return f"{self.SUPABASE_URL}/storage/v1/s3"
+        return ""
+
+    @property
+    def supabase_public_url(self) -> str:
+        """Базовый URL для публичных файлов в Supabase Storage."""
+        if self.SUPABASE_URL:
+            return f"{self.SUPABASE_URL}/storage/v1/object/public/{self.S3_BUCKET_NAME}"
+        return ""
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -88,7 +121,7 @@ class Settings(BaseSettings):
         return [ext.strip().lower() for ext in self.ALLOWED_EXTENSIONS.split(",")]
     
     class Config:
-        env_file = ".env"
+        env_file = str(_ENV_FILE)
         case_sensitive = True
 
 

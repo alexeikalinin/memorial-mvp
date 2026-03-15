@@ -43,6 +43,7 @@ from app.services.s3_service import (
     upload_file_to_s3,
     get_presigned_upload_url,
     get_presigned_download_url,
+    get_public_url,
 )
 
 router = APIRouter(prefix="/memorials", tags=["memorials"])
@@ -328,26 +329,38 @@ async def upload_media(
             if generate_video_thumbnail(file_path, video_preview_path, time_offset=1.0):
                 thumbnail_path = str(video_preview_path)
         
-        # Загрузка в S3 если настроено
+        # Загрузка в S3 / Supabase Storage если настроено
         file_url = None
         s3_key = None
+        s3_thumbnail_key = None
         if settings.USE_S3:
             s3_key = f"memorials/{memorial_id}/{file_name}"
             if upload_file_to_s3(file_path, s3_key, file.content_type):
-                file_url = get_presigned_download_url(s3_key, expires_in=86400 * 365)  # 1 год
-                # Опционально: удалить локальный файл после загрузки в S3
-                # file_path.unlink()
-        
+                # Supabase Storage: используем публичный URL; AWS S3: presigned URL
+                if settings.supabase_public_url:
+                    file_url = get_public_url(s3_key)
+                else:
+                    file_url = get_presigned_download_url(s3_key, expires_in=86400 * 365)
+                file_path.unlink(missing_ok=True)  # удаляем локальную копию
+
+            # Загрузка thumbnail в S3
+            if thumbnail_path:
+                thumb_local = Path(thumbnail_path)
+                if thumb_local.exists():
+                    s3_thumbnail_key = f"memorials/{memorial_id}/thumbnails/{thumb_local.name}"
+                    if upload_file_to_s3(thumb_local, s3_thumbnail_key, "image/jpeg"):
+                        thumb_local.unlink(missing_ok=True)
+
         # Создание записи в БД
         db_media = Media(
             memorial_id=memorial_id,
-            file_path=str(file_path) if not settings.USE_S3 else s3_key or str(file_path),
+            file_path=s3_key if settings.USE_S3 and s3_key else str(file_path),
             file_url=file_url,
             file_name=file.filename,
             file_size=len(contents),
             mime_type=file.content_type,
             media_type=media_type,
-            thumbnail_path=thumbnail_path,
+            thumbnail_path=s3_thumbnail_key if settings.USE_S3 and s3_thumbnail_key else thumbnail_path,
         )
         db.add(db_media)
         db.commit()

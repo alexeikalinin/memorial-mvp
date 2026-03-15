@@ -1,0 +1,24 @@
+# Минимальный запуск: только backend. SQLite + локальный Qdrant (файлы).
+# Нужен только OPENAI_API_KEY в .env.
+# Запуск: cd backend && cp .env.example .env && добавьте OPENAI_API_KEY && docker-compose -f docker-compose.simple.yml up --build
+
+services:
+  backend:
+    build: .
+    container_name: memorial_backend_simple
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite:///./memorial.db
+      - QDRANT_LOCAL_PATH=/app/qdrant_storage
+      - PORT=8000
+    volumes:
+      - .:/app
+      - ./uploads:/app/uploads
+      - qdrant_data:/app/qdrant_storage
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+volumes:
+  qdrant_data:

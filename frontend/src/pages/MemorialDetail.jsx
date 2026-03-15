@@ -15,6 +15,7 @@ function MemorialDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('media')
+  const [mountedTabs, setMountedTabs] = useState(new Set(['media']))
   const [editing, setEditing] = useState(false)
   const [editFormData, setEditFormData] = useState({
     name: '',
@@ -22,6 +23,7 @@ function MemorialDetail() {
     birth_date: '',
     death_date: '',
     is_public: false,
+    voice_gender: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -54,6 +56,7 @@ function MemorialDetail() {
           ? new Date(response.data.death_date).toISOString().split('T')[0]
           : '',
         is_public: response.data.is_public || false,
+        voice_gender: response.data.voice_gender || '',
       })
     } catch (err) {
       setError(err.response?.data?.detail || 'Ошибка при загрузке мемориала')
@@ -105,6 +108,7 @@ function MemorialDetail() {
         ...editFormData,
         birth_date: editFormData.birth_date ? `${editFormData.birth_date}T00:00:00Z` : null,
         death_date: editFormData.death_date ? `${editFormData.death_date}T00:00:00Z` : null,
+        voice_gender: editFormData.voice_gender || null,
       }
       await memorialsAPI.update(id, submitData)
       setEditing(false)
@@ -243,6 +247,20 @@ function MemorialDetail() {
                   Публичный мемориал
                 </label>
               </div>
+              <div className="form-group">
+                <label htmlFor="edit-voice_gender">Пол для озвучки аватара</label>
+                <select
+                  id="edit-voice_gender"
+                  value={editFormData.voice_gender}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, voice_gender: e.target.value })
+                  }
+                >
+                  <option value="">Не указан</option>
+                  <option value="male">Мужской голос</option>
+                  <option value="female">Женский голос</option>
+                </select>
+              </div>
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
                   {submitting ? 'Сохранение...' : 'Сохранить'}
@@ -323,59 +341,61 @@ function MemorialDetail() {
       </div>
 
       <div className="tabs">
-        <button
-          className={activeTab === 'media' ? 'active' : ''}
-          onClick={() => setActiveTab('media')}
-        >
-          Медиа
-        </button>
-        <button
-          className={activeTab === 'memories' ? 'active' : ''}
-          onClick={() => setActiveTab('memories')}
-        >
-          Воспоминания
-        </button>
-        <button
-          className={activeTab === 'chat' ? 'active' : ''}
-          onClick={() => setActiveTab('chat')}
-        >
-          Чат с аватаром
-        </button>
-        <button
-          className={activeTab === 'family' ? 'active' : ''}
-          onClick={() => setActiveTab('family')}
-        >
-          Семейное дерево
-        </button>
-        <button
-          className={activeTab === 'timeline' ? 'active' : ''}
-          onClick={() => setActiveTab('timeline')}
-        >
-          Хронология
-        </button>
+        {[
+          { key: 'media', label: 'Медиа' },
+          { key: 'memories', label: 'Воспоминания' },
+          { key: 'chat', label: 'Чат с аватаром' },
+          { key: 'family', label: 'Семейное дерево' },
+          { key: 'timeline', label: 'Хронология' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            className={activeTab === key ? 'active' : ''}
+            onClick={() => {
+              setActiveTab(key)
+              setMountedTabs(prev => new Set([...prev, key]))
+            }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="tab-content">
-        {activeTab === 'media' && (
-          <MediaGallery
-            memorialId={id}
-            onReload={loadMemorial}
-            coverPhotoId={memorial.cover_photo_id}
-            onSetCover={handleSetCover}
-          />
+        {mountedTabs.has('media') && (
+          <div style={{ display: activeTab === 'media' ? '' : 'none' }}>
+            <MediaGallery
+              memorialId={id}
+              onReload={loadMemorial}
+              coverPhotoId={memorial.cover_photo_id}
+              onSetCover={handleSetCover}
+            />
+          </div>
         )}
-        {activeTab === 'memories' && (
-          <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} />
+        {mountedTabs.has('memories') && (
+          <div style={{ display: activeTab === 'memories' ? '' : 'none' }}>
+            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} />
+          </div>
         )}
-        {activeTab === 'chat' && (
-          <AvatarChat
-            memorialId={id}
-            coverPhotoId={memorial.cover_photo_id}
-            memorialName={memorial.name}
-          />
+        {mountedTabs.has('chat') && (
+          <div style={{ display: activeTab === 'chat' ? '' : 'none' }}>
+            <AvatarChat
+              memorialId={id}
+              coverPhotoId={memorial.cover_photo_id}
+              memorialName={memorial.name}
+            />
+          </div>
         )}
-        {activeTab === 'family' && <FamilyTree memorialId={id} />}
-        {activeTab === 'timeline' && <LifeTimeline memorialId={id} />}
+        {mountedTabs.has('family') && (
+          <div style={{ display: activeTab === 'family' ? '' : 'none' }}>
+            <FamilyTree memorialId={id} />
+          </div>
+        )}
+        {mountedTabs.has('timeline') && (
+          <div style={{ display: activeTab === 'timeline' ? '' : 'none' }}>
+            <LifeTimeline memorialId={id} />
+          </div>
+        )}
       </div>
 
       {showInviteModal && (

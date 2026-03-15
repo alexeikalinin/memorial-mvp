@@ -28,6 +28,7 @@ from app.services.ai_tasks import (
     sync_family_memories,
 )
 from app.workers.worker import animate_photo_task, create_memory_embedding_task
+from app.services.s3_service import upload_file_to_s3, get_public_url
 from app.config import settings
 import os
 import uuid
@@ -454,10 +455,25 @@ async def avatar_chat(
         
         # Опциональная генерация аудио
         audio_url = None
+        audio_error = None
         if request.include_audio:
             try:
-                # Используем кастомный голос мемориала, если он есть
-                voice_id = memorial.voice_id or settings.ELEVENLABS_VOICE_ID
+                # Голос: клон аватара > мужской/женский pre-made > голос по умолчанию
+                # Pre-made голоса ElevenLabs доступны на бесплатном тарифе без ограничений
+                if memorial.voice_id:
+                    voice_id = memorial.voice_id
+                elif getattr(memorial, 'voice_gender', None) == 'male' and settings.ELEVENLABS_VOICE_ID_MALE:
+                    voice_id = settings.ELEVENLABS_VOICE_ID_MALE
+                elif getattr(memorial, 'voice_gender', None) == 'female' and settings.ELEVENLABS_VOICE_ID_FEMALE:
+                    voice_id = settings.ELEVENLABS_VOICE_ID_FEMALE
+                else:
+                    voice_id = settings.ELEVENLABS_VOICE_ID
+                if not voice_id:
+                    raise ValueError(
+                        "Не задан голос для озвучки: укажите ELEVENLABS_VOICE_ID в backend/.env или загрузите клон голоса аватара."
+                    )
+                if not settings.ELEVENLABS_API_KEY:
+                    raise ValueError("В backend/.env не задан ELEVENLABS_API_KEY.")
                 audio_bytes = await generate_speech_elevenlabs(answer, voice_id=voice_id)
 
                 # Сохранение аудио-файла
@@ -469,16 +485,22 @@ async def avatar_chat(
                 with open(audio_path, "wb") as f:
                     f.write(audio_bytes)
 
-                # В production это должен быть S3 URL
-                # Для локальной разработки используем относительный путь (будет работать с frontend)
-                if settings.USE_S3:
-                    audio_url = f"s3://{settings.S3_BUCKET_NAME}/audio/{audio_filename}"
+                # URL для воспроизведения в браузере: только HTTP(S) или путь к API (никогда s3://)
+                if settings.USE_S3 and settings.supabase_public_url:
+                    s3_key = f"audio/{audio_filename}"
+                    if upload_file_to_s3(audio_path, s3_key, "audio/mpeg"):
+                        public_url = get_public_url(s3_key)
+                        audio_url = public_url if (public_url and public_url.startswith("http")) else f"/api/v1/media/audio/{audio_filename}"
+                    else:
+                        audio_url = f"/api/v1/media/audio/{audio_filename}"
                 else:
-                    # Используем относительный путь - frontend добавит базовый URL автоматически
                     audio_url = f"/api/v1/media/audio/{audio_filename}"
+                # Если фронт на другом домене (деплой), браузеру нужен абсолютный URL
+                if audio_url.startswith("/") and settings.PUBLIC_API_URL:
+                    audio_url = f"{settings.PUBLIC_API_URL.rstrip('/')}{audio_url}"
 
             except Exception as e:
-                # Если генерация аудио не удалась, продолжаем без него
+                audio_error = str(e)
                 print(f"Error generating audio: {e}")
 
         # Запуск анимации говорящей головы (async, опционально)
@@ -509,6 +531,7 @@ async def avatar_chat(
         return AvatarChatResponse(
             answer=answer,
             audio_url=audio_url,
+            audio_error=audio_error,
             animation_task_id=animation_task_id,
             animation_provider=animation_provider,
             sources=sources

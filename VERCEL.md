@@ -2,6 +2,8 @@
 
 На Vercel деплоится **только фронтенд** (React). Backend (FastAPI) нужно поднять отдельно (Railway, Render, Fly.io и т.д.). Чат с ИИ-аватаром работает только если backend доступен по URL и настроены ключи API на стороне backend.
 
+**Пошаговый чеклист с подстановкой своих URL:** см. [DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md).
+
 ---
 
 ## 1. Настройка проекта в Vercel
@@ -74,11 +76,10 @@ CORS_ORIGINS=https://your-app.vercel.app,https://your-app-*.vercel.app
 
 ## 4. Краткий чеклист
 
-- [ ] В Vercel: **Root Directory** = `frontend`
-- [ ] В Vercel: переменная **`VITE_API_URL`** = `https://ВАШ_BACKEND_URL/api/v1`
-- [ ] Backend задеплоен и доступен по этому URL
-- [ ] На backend: **CORS** разрешает домен Vercel (`CORS_ORIGINS`)
-- [ ] На backend: заданы **OPENAI_API_KEY** и векторная БД (Qdrant/Pinecone) для работы чата с ИИ
-- [ ] После смены `VITE_API_URL` сделан **Redeploy** в Vercel
+- [ ] В Vercel: переменная **`VITE_API_URL`** = `https://ВАШ_BACKEND_URL/api/v1` (без слеша в конце)
+- [ ] После добавления переменной — **Redeploy** в Vercel
+- [ ] Backend задеплоен и доступен по HTTPS
+- [ ] На backend: **CORS_ORIGINS** = `https://ваш-проект.vercel.app` (и при необходимости `https://ваш-проект-*.vercel.app`)
+- [ ] Для чата с ИИ: на backend заданы **OPENAI_API_KEY** и векторная БД (Qdrant/Pinecone)
 
-После этого деплой на Vercel должен открываться, данные и чат с ИИ-аватаром — работать через ваш backend.
+Подставьте свои URL по шагам в [DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md). После этого деплой на Vercel откроется, данные и чат будут работать через ваш backend.

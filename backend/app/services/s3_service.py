@@ -12,19 +12,33 @@ from datetime import timedelta
 def get_s3_client():
     """
     Создает и возвращает S3 клиент.
+    Поддерживает Supabase Storage (через endpoint_url) и AWS S3.
     """
     if not settings.USE_S3:
         return None
-    
+
     if not all([settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY, settings.S3_BUCKET_NAME]):
         return None
-    
-    return boto3.client(
-        's3',
-        region_name=settings.S3_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
+
+    kwargs = {
+        "region_name": settings.S3_REGION,
+        "aws_access_key_id": settings.AWS_ACCESS_KEY_ID,
+        "aws_secret_access_key": settings.AWS_SECRET_ACCESS_KEY,
+    }
+    if settings.s3_endpoint_url:
+        kwargs["endpoint_url"] = settings.s3_endpoint_url
+
+    return boto3.client("s3", **kwargs)
+
+
+def get_public_url(s3_key: str) -> str:
+    """
+    Возвращает публичный URL файла в Supabase Storage.
+    Работает только если бакет публичный.
+    """
+    if settings.supabase_public_url:
+        return f"{settings.supabase_public_url}/{s3_key}"
+    return ""
 
 
 def upload_file_to_s3(

@@ -18,9 +18,10 @@ COPY . .
 # Создание директории для загрузок
 RUN mkdir -p uploads
 
-# Порт для FastAPI
+# Порт для FastAPI (Railway/Render передают PORT)
 EXPOSE 8000
+ENV PORT=8000
 
-# Команда запуска
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Команда запуска: $PORT для облака, 8000 по умолчанию
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 

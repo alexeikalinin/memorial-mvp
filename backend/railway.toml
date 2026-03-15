@@ -1,0 +1,13 @@
+# Railway: деплой папки backend через Dockerfile.
+# В Dashboard: New Project → Deploy from GitHub → выберите репо, Root Directory = backend.
+# В Variables добавьте: OPENAI_API_KEY, при необходимости PUBLIC_API_URL (URL выдаст Railway после деплоя).
+
+[build]
+builder = "DOCKERFILE"
+
+[deploy]
+# PORT Railway подставляет сам; в Dockerfile используется ${PORT:-8000}
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

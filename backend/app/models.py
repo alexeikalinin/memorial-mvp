@@ -52,6 +52,7 @@ class Memorial(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_public = Column(Boolean, default=False)
     voice_id = Column(String(255), nullable=True)  # ID кастомного голоса в ElevenLabs
+    voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

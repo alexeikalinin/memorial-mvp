@@ -5,6 +5,7 @@ import './MemoryList.css'
 function MemoryList({ memorialId, memorialName, onReload }) {
   const [memories, setMemories] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ title: '', content: '', event_date: '' })
   const [submitting, setSubmitting] = useState(false)
@@ -143,11 +144,13 @@ function MemoryList({ memorialId, memorialName, onReload }) {
   const loadMemories = async (q = '') => {
     try {
       setLoading(true)
+      setLoadError(null)
       const response = await memorialsAPI.getMemories(memorialId, q || null)
       setMemories(Array.isArray(response.data) ? response.data : [])
     } catch (err) {
       console.error('Error loading memories:', err)
       setMemories([])
+      setLoadError(err.response?.data?.detail || err.message || 'Ошибка сети. Убедитесь, что бэкенд запущен.')
     } finally {
       setLoading(false)
     }
@@ -349,7 +352,15 @@ function MemoryList({ memorialId, memorialName, onReload }) {
         </form>
       )}
 
-      {!loading && memories.length === 0 ? (
+      {!loading && loadError ? (
+        <div className="empty-state load-error">
+          <p>Не удалось загрузить воспоминания</p>
+          <p className="hint">{loadError}</p>
+          <button type="button" className="btn-retry" onClick={() => loadMemories(debouncedQuery)}>
+            Повторить
+          </button>
+        </div>
+      ) : !loading && memories.length === 0 ? (
         <div className="empty-state">
           {searchQuery ? (
             <p>Ничего не найдено по запросу «{searchQuery}»</p>

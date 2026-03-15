@@ -11,6 +11,7 @@ function MemorialCreate() {
     birth_date: '',
     death_date: '',
     is_public: false,
+    voice_gender: '', // 'male' | 'female' | '' — для выбора голоса озвучки
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -32,9 +33,9 @@ function MemorialCreate() {
       // Преобразуем данные для отправки
       const submitData = {
         ...formData,
-        // Преобразуем даты в ISO формат или null
         birth_date: formData.birth_date ? `${formData.birth_date}T00:00:00Z` : null,
         death_date: formData.death_date ? `${formData.death_date}T00:00:00Z` : null,
+        voice_gender: formData.voice_gender || null,
       }
       
       const response = await memorialsAPI.create(submitData)
@@ -123,6 +124,21 @@ function MemorialCreate() {
               onChange={handleChange}
             />
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="voice_gender">Пол для озвучки аватара</label>
+          <select
+            id="voice_gender"
+            name="voice_gender"
+            value={formData.voice_gender}
+            onChange={handleChange}
+          >
+            <option value="">Не указан (голос по умолчанию)</option>
+            <option value="male">Мужской голос</option>
+            <option value="female">Женский голос</option>
+          </select>
+          <span className="form-hint">Выберите, если нужна озвучка ответов мужским или женским голосом</span>
         </div>
 
         <div className="form-group">

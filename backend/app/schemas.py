@@ -35,6 +35,7 @@ class MemorialBase(BaseModel):
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
     is_public: bool = False
+    voice_gender: Optional[str] = None  # "male" | "female" — пол для выбора голоса озвучки
 
 
 class MemorialCreate(MemorialBase):
@@ -48,6 +49,7 @@ class MemorialUpdate(BaseModel):
     death_date: Optional[datetime] = None
     is_public: Optional[bool] = None
     voice_id: Optional[str] = None
+    voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
 
 
@@ -55,6 +57,7 @@ class MemorialResponse(MemorialBase):
     id: int
     owner_id: int
     voice_id: Optional[str] = None
+    voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -196,6 +199,7 @@ class AvatarChatRequest(BaseModel):
 class AvatarChatResponse(BaseModel):
     answer: str
     audio_url: Optional[str] = None
+    audio_error: Optional[str] = None  # Причина сбоя генерации аудио (если include_audio=True, но аудио нет)
     animation_task_id: Optional[str] = None
     animation_provider: Optional[str] = None  # "d-id" или "heygen"
     sources: List[str] = []  # Список использованных фрагментов воспоминаний
@@ -241,7 +245,7 @@ class FamilyTreeNode(BaseModel):
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
     relationship_type: Optional[RelationshipType] = None  # Тип связи с родительским узлом
-    cover_photo_url: Optional[str] = None  # URL фото обложки для аватара в дереве
+    cover_photo_id: Optional[int] = None  # ID фото обложки для построения URL на фронтенде
     children: List["FamilyTreeNode"] = []
     spouses: List["FamilyTreeNode"] = []
     

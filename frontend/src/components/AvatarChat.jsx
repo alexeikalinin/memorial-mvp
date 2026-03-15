@@ -44,6 +44,15 @@ function useVoiceRecorder() {
   return { isRecording, audioBlob, audioUrl, start, stop, reset }
 }
 
+/** URL, по которому браузер может воспроизвести аудио (никогда s3://, голый filename превращаем в /api/v1/media/audio/...) */
+function getPlayableAudioUrl(url) {
+  if (!url) return null
+  if (url.startsWith('s3://')) return null
+  if (/^https?:\/\//.test(url) || url.startsWith('/')) return url
+  const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')
+  return `${base}/media/audio/${url}`
+}
+
 const SUGGESTED_QUESTIONS = [
   'Расскажи о своём детстве',
   'Что ты любил больше всего в жизни?',
@@ -210,10 +219,21 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
         include_family_memories: includeFamilyMemories,
       })
 
+      // Браузер воспроизводит только http(s) или относительный /api/...; s3:// и голый filename — нормализуем
+      let audioUrl = response.data.audio_url || null
+      if (audioUrl) {
+        if (audioUrl.startsWith('s3://')) audioUrl = null
+        else if (!/^https?:\/\//.test(audioUrl) && !audioUrl.startsWith('/')) {
+          const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')
+          audioUrl = `${base}/media/audio/${audioUrl}`
+        }
+      }
+
       const assistantMessage = {
         role: 'assistant',
         text: response.data.answer,
-        audioUrl: response.data.audio_url,
+        audioUrl,
+        audioError: response.data.audio_error || null,
         animationTaskId: response.data.animation_task_id || null,
         animationProvider: response.data.animation_provider || null,
         videoUrl: null,
@@ -470,16 +490,20 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
                 <div className="video-loading">
                   <span className="video-loading-icon">🎬</span> Видео генерируется...
                 </div>
-              ) : msg.audioUrl ? (
+              ) : getPlayableAudioUrl(msg.audioUrl) ? (
                 <div className="audio-container">
                   <audio
                     controls
-                    src={msg.audioUrl}
+                    src={getPlayableAudioUrl(msg.audioUrl)}
                     className="audio-player"
                     preload="metadata"
                   >
                     Ваш браузер не поддерживает аудио.
                   </audio>
+                </div>
+              ) : msg.audioError ? (
+                <div className="audio-error">
+                  Аудио не сгенерировано: {msg.audioError}
                 </div>
               ) : null}
               {Array.isArray(msg.sources) && msg.sources.length > 0 && (

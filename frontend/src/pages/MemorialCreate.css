@@ -28,6 +28,7 @@
 
 .form-group input[type="text"],
 .form-group input[type="date"],
+.form-group select,
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
@@ -35,6 +36,17 @@
   border-radius: 5px;
   font-size: 1rem;
   font-family: inherit;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .form-group textarea {

@@ -2,13 +2,15 @@
 API endpoints для работы с медиа-файлами (получение, статический сервинг).
 """
 from fastapi import APIRouter, HTTPException, status, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 from typing import Optional
 import mimetypes
 
 from app.db import get_db
 from app.models import Media
+from app.config import settings
+from app.services.s3_service import get_public_url
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -65,10 +67,17 @@ async def get_media_file(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Media not found"
         )
-    
+
     file_path = Path(media.file_path)
-    
-    # Если запрашивается миниатюра для изображения
+
+    # --- Supabase Storage / S3: редиректим на публичный URL ---
+    if settings.USE_S3 and settings.supabase_public_url:
+        if thumbnail and media.media_type.value == "photo" and media.thumbnail_path:
+            # Используем реальный путь из БД, а не вычисленный
+            return RedirectResponse(url=get_public_url(media.thumbnail_path), status_code=302)
+        return RedirectResponse(url=get_public_url(str(file_path)), status_code=302)
+
+    # --- Локальный режим ---
     if thumbnail and media.media_type.value == "photo":
         if thumbnail in ("small", "medium", "large"):
             thumbnail_path = UPLOAD_DIR / "thumbnails" / f"{file_path.stem}_{thumbnail}.jpg"
@@ -78,18 +87,15 @@ async def get_media_file(
                     media_type="image/jpeg",
                     filename=f"{media.file_name}_thumb_{thumbnail}.jpg"
                 )
-        # Если миниатюра не найдена, возвращаем оригинал
-    
-    # Проверка существования файла
+
     if not file_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Media file not found on disk"
         )
-    
-    # Определение MIME типа
+
     mime_type = media.mime_type or mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
-    
+
     return FileResponse(
         file_path,
         media_type=mime_type,

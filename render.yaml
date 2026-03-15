@@ -1,0 +1,29 @@
+# Render Blueprint: деплой backend одним кликом.
+# Dashboard: New → Blueprint → подключите репо, выберите render.yaml.
+# Добавьте в Dashboard секреты: OPENAI_API_KEY (и при необходимости Qdrant Cloud / Pinecone).
+
+services:
+  - type: web
+    name: memorial-mvp-api
+    runtime: python
+    region: frankfurt
+
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./memorial.db
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: VECTOR_DB_PROVIDER
+        value: qdrant
+      - key: QDRANT_LOCAL_PATH
+        value: ./qdrant_storage
+      - key: CORS_ORIGINS
+        value: https://memorial-mvp.vercel.app,http://localhost:5173
+      - key: PUBLIC_FRONTEND_URL
+        value: https://memorial-mvp.vercel.app
+    # Секреты задайте вручную в Dashboard (Environment):
+    # OPENAI_API_KEY, SECRET_KEY; опционально PUBLIC_API_URL после деплоя

@@ -934,6 +934,30 @@ async def generate_speech_elevenlabs(text: str, voice_id: Optional[str] = None) 
                         f"ElevenLabs API error 401: Неверный API ключ. "
                         f"Проверьте ELEVENLABS_API_KEY в настройках."
                     )
+                elif response.status_code == 402:
+                    # Бесплатный тариф: часть голосов по API недоступна — пробуем по очереди все голоса из .env
+                    fallback_ids = [
+                        settings.ELEVENLABS_VOICE_ID,
+                        settings.ELEVENLABS_VOICE_ID_MALE,
+                        settings.ELEVENLABS_VOICE_ID_FEMALE,
+                    ]
+                    for fid in fallback_ids:
+                        if not fid or fid == voice_id:
+                            continue
+                        print(f"ElevenLabs 402. Пробуем голос: {fid}")
+                        try:
+                            fallback_url = f"https://api.elevenlabs.io/v1/text-to-speech/{fid}"
+                            fallback_response = await client.post(
+                                fallback_url, json=payload, headers=headers, timeout=60.0
+                            )
+                            if fallback_response.status_code == 200:
+                                return fallback_response.content
+                        except Exception:
+                            continue
+                    raise ValueError(
+                        "На бесплатном тарифе ElevenLabs выбранный голос по API недоступен. "
+                        "В .env укажите голоса из раздела Professional в вашем аккаунте (скрипт: python -m scripts.list_elevenlabs_voices) или оформите подписку."
+                    )
                 elif response.status_code == 404:
                     raise ValueError(
                         f"ElevenLabs API error 404: Voice ID не найден ({voice_id}). "
@@ -1076,7 +1100,7 @@ async def upsert_memory_embedding(
 async def search_similar_memories(
     query_embedding: List[float],
     top_k: int = 5,
-    min_score: float = 0.5,
+    min_score: float = 0.2,
     memorial_ids: Optional[List[int]] = None,
     memorial_id: Optional[int] = None,
 ) -> List[Dict]:
@@ -1103,37 +1127,44 @@ async def search_similar_memories(
     try:
         if settings.VECTOR_DB_PROVIDER == "qdrant":
             try:
-                from qdrant_client.models import Filter, FieldCondition, MatchValue
+                from qdrant_client.models import Filter, FieldCondition, MatchAny
             except ImportError:
                 raise ValueError("qdrant-client not installed. Run: pip install qdrant-client")
 
             client = get_vector_db_client()
 
-            # Запрашиваем без фильтра (Qdrant Cloud требует индекс для фильтрации)
-            # Фильтруем по memorial_ids в коде. Умножаем лимит на кол-во мемориалов
-            results = client.search(
-                collection_name=settings.QDRANT_COLLECTION_NAME,
-                query_vector=query_embedding,
-                limit=top_k * 10 * len(memorial_ids),
-                score_threshold=min_score
+            # Нативный фильтр Qdrant по memorial_ids — исключает "призрачные" embeddings
+            # от удалённых мемориалов и повышает точность поиска
+            qdrant_filter = Filter(
+                must=[
+                    FieldCondition(
+                        key="memorial_id",
+                        match=MatchAny(any=memorial_ids),
+                    )
+                ]
             )
 
-            # Фильтруем результаты по memorial_ids и score в коде
-            filtered_results = []
-            for result in results:
-                result_memorial_id = result.payload.get("memorial_id")
-                if (result_memorial_id in memorial_ids and
-                    result.score >= min_score):
-                    filtered_results.append({
-                        "id": str(result.id),
-                        "score": result.score,
-                        "text": result.payload.get("text", ""),
-                        "memory_id": result.payload.get("memory_id"),
-                        "title": result.payload.get("title", ""),
-                        "source_memorial_id": result_memorial_id,
-                    })
-                    if len(filtered_results) >= top_k * len(memorial_ids):
-                        break
+            # qdrant-client 1.7+: query_points заменил search()
+            response = client.query_points(
+                collection_name=settings.QDRANT_COLLECTION_NAME,
+                query=query_embedding,
+                query_filter=qdrant_filter,
+                limit=top_k * len(memorial_ids),
+                score_threshold=min_score,
+            )
+            raw_results = response.points
+
+            filtered_results = [
+                {
+                    "id": str(result.id),
+                    "score": result.score,
+                    "text": result.payload.get("text", ""),
+                    "memory_id": result.payload.get("memory_id"),
+                    "title": result.payload.get("title", ""),
+                    "source_memorial_id": result.payload.get("memorial_id"),
+                }
+                for result in raw_results
+            ]
 
             return filtered_results
 

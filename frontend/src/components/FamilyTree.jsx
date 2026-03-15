@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { familyAPI, memorialsAPI } from '../api/client'
+import { familyAPI, memorialsAPI, getMediaUrl } from '../api/client'
 import './FamilyTree.css'
 
 function FamilyTree({ memorialId }) {
@@ -52,9 +52,9 @@ function FamilyTree({ memorialId }) {
 
   const loadAvailableMemorials = async () => {
     try {
-      // TODO: Добавить endpoint для получения списка всех мемориалов
-      // Пока используем заглушку
-      setAvailableMemorials([])
+      const res = await memorialsAPI.list()
+      const all = Array.isArray(res.data) ? res.data : []
+      setAvailableMemorials(all.filter(m => m.id !== memorialId))
     } catch (err) {
       console.error('Error loading memorials:', err)
     }
@@ -117,9 +117,9 @@ function FamilyTree({ memorialId }) {
             )}
             <div className="node-body">
               <div className={`node-avatar${isDeceased ? ' node-avatar--deceased' : ''}`}>
-                {node.cover_photo_url ? (
+                {node.cover_photo_id ? (
                   <img
-                    src={node.cover_photo_url}
+                    src={getMediaUrl(node.cover_photo_id, 'small')}
                     alt={node.name}
                     className="node-avatar-img"
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
@@ -127,7 +127,7 @@ function FamilyTree({ memorialId }) {
                 ) : null}
                 <span
                   className="node-avatar-initials"
-                  style={node.cover_photo_url ? { display: 'none' } : {}}
+                  style={node.cover_photo_id ? { display: 'none' } : {}}
                 >{getInitials(node.name)}</span>
               </div>
               <div className="node-info">
@@ -160,9 +160,9 @@ function FamilyTree({ memorialId }) {
                 </span>
                 <div className="node-body">
                   <div className="node-avatar">
-                    {spouse.cover_photo_url ? (
+                    {spouse.cover_photo_id ? (
                       <img
-                        src={spouse.cover_photo_url}
+                        src={getMediaUrl(spouse.cover_photo_id, 'small')}
                         alt={spouse.name}
                         className="node-avatar-img"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
@@ -170,7 +170,7 @@ function FamilyTree({ memorialId }) {
                     ) : null}
                     <span
                       className="node-avatar-initials"
-                      style={spouse.cover_photo_url ? { display: 'none' } : {}}
+                      style={spouse.cover_photo_id ? { display: 'none' } : {}}
                     >{getInitials(spouse.name)}</span>
                   </div>
                   <div className="node-info">
@@ -213,18 +213,33 @@ function FamilyTree({ memorialId }) {
       {showAddForm && (
         <form onSubmit={handleAddRelationship} className="relationship-form">
           <div className="form-group">
-            <label htmlFor="related_memorial_id">ID связанного мемориала *</label>
-            <input
-              type="number"
-              id="related_memorial_id"
-              value={formData.related_memorial_id}
-              onChange={(e) =>
-                setFormData({ ...formData, related_memorial_id: parseInt(e.target.value) })
-              }
-              required
-              placeholder="Введите ID мемориала"
-            />
-            <small>Введите ID существующего мемориала</small>
+            <label htmlFor="related_memorial_id">Мемориал *</label>
+            {availableMemorials.length > 0 ? (
+              <select
+                id="related_memorial_id"
+                value={formData.related_memorial_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, related_memorial_id: parseInt(e.target.value) })
+                }
+                required
+              >
+                <option value="">— выберите мемориал —</option>
+                {availableMemorials.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="number"
+                id="related_memorial_id"
+                value={formData.related_memorial_id}
+                onChange={(e) =>
+                  setFormData({ ...formData, related_memorial_id: parseInt(e.target.value) })
+                }
+                required
+                placeholder="Введите ID мемориала"
+              />
+            )}
           </div>
 
           <div className="form-group">

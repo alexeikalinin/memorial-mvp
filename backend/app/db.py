@@ -6,12 +6,27 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
-# Создание движка базы данных
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
-    echo=settings.DEBUG,  # Логирование SQL запросов в режиме отладки
-)
+_is_sqlite = "sqlite" in settings.DATABASE_URL
+_is_postgres = "postgresql" in settings.DATABASE_URL or "postgres" in settings.DATABASE_URL
+
+# Настройки движка в зависимости от БД
+if _is_sqlite:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=settings.DEBUG,
+    )
+elif _is_postgres:
+    engine = create_engine(
+        settings.DATABASE_URL,
+        pool_pre_ping=True,   # проверяем соединение перед использованием
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=300,     # переиспользуем соединения каждые 5 мин (для pgBouncer)
+        echo=settings.DEBUG,
+    )
+else:
+    engine = create_engine(settings.DATABASE_URL, echo=settings.DEBUG)
 
 # Создание фабрики сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

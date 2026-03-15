@@ -4,6 +4,7 @@ API endpoints для работы с семейными связями и род
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Set, Optional
+from collections import defaultdict
 from sqlalchemy import and_, or_
 
 from app.db import get_db
@@ -231,79 +232,89 @@ async def get_family_tree(
             detail="Memorial not found"
         )
     
-    def build_tree(node_id: int, depth: int, visited: Set[int]) -> FamilyTreeNode:
-        """Рекурсивное построение дерева."""
+    # --- Bulk-load all data for the tree (3 DB queries total) ---
+    # BFS to discover all node IDs within max_depth
+    all_ids: Set[int] = {memorial_id}
+    frontier: Set[int] = {memorial_id}
+    depth_map: Dict[int, int] = {memorial_id: 0}
+
+    while frontier:
+        rels_batch = db.query(FamilyRelationship).filter(
+            FamilyRelationship.memorial_id.in_(frontier)
+        ).all()
+        new_ids: Set[int] = set()
+        for rel in rels_batch:
+            if rel.related_memorial_id not in all_ids:
+                new_depth = depth_map[rel.memorial_id] + 1
+                if new_depth <= max_depth:
+                    new_ids.add(rel.related_memorial_id)
+                    depth_map[rel.related_memorial_id] = new_depth
+        all_ids.update(new_ids)
+        frontier = new_ids
+
+    memorials_map: Dict[int, Memorial] = {
+        m.id: m for m in db.query(Memorial).filter(Memorial.id.in_(all_ids)).all()
+    }
+    all_rels = db.query(FamilyRelationship).filter(
+        FamilyRelationship.memorial_id.in_(all_ids)
+    ).all()
+
+    children_map: Dict[int, List[int]] = defaultdict(list)
+    spouse_map: Dict[int, List[int]] = defaultdict(list)
+    for rel in all_rels:
+        if rel.relationship_type == RelationshipType.PARENT:
+            children_map[rel.memorial_id].append(rel.related_memorial_id)
+        elif rel.relationship_type == RelationshipType.SPOUSE:
+            spouse_map[rel.memorial_id].append(rel.related_memorial_id)
+
+    def build_tree(node_id: int, depth: int, visited: Set[int]) -> Optional[FamilyTreeNode]:
         if depth > max_depth or node_id in visited:
             return None
-        
-        visited.add(node_id)
-        
-        node_memorial = db.query(Memorial).filter(Memorial.id == node_id).first()
-        if not node_memorial:
+        visited = visited | {node_id}
+
+        m = memorials_map.get(node_id)
+        if not m:
             return None
-        
-        # Получаем детей
-        children_rels = db.query(FamilyRelationship).filter(
-            FamilyRelationship.memorial_id == node_id,
-            FamilyRelationship.relationship_type == RelationshipType.CHILD
-        ).all()
-        
+
         children = []
-        for rel in children_rels:
-            child_node = build_tree(rel.related_memorial_id, depth + 1, visited.copy())
+        for child_id in children_map.get(node_id, []):
+            child_node = build_tree(child_id, depth + 1, visited)
             if child_node:
                 children.append(child_node)
-        
-        # Получаем супругов
-        spouse_rels = db.query(FamilyRelationship).filter(
-            FamilyRelationship.memorial_id == node_id,
-            FamilyRelationship.relationship_type == RelationshipType.SPOUSE
-        ).all()
-        
+
         spouses = []
-        for rel in spouse_rels:
-            spouse_memorial = db.query(Memorial).filter(Memorial.id == rel.related_memorial_id).first()
-            if spouse_memorial:
-                spouse_photo_url = (
-                    f"/api/v1/media/{spouse_memorial.cover_photo_id}?thumbnail=small"
-                    if spouse_memorial.cover_photo_id else None
-                )
+        for spouse_id in spouse_map.get(node_id, []):
+            sm = memorials_map.get(spouse_id)
+            if sm:
                 spouses.append(FamilyTreeNode(
-                    memorial_id=spouse_memorial.id,
-                    name=spouse_memorial.name,
-                    birth_date=spouse_memorial.birth_date,
-                    death_date=spouse_memorial.death_date,
+                    memorial_id=sm.id,
+                    name=sm.name,
+                    birth_date=sm.birth_date,
+                    death_date=sm.death_date,
                     relationship_type=RelationshipType.SPOUSE,
-                    cover_photo_url=spouse_photo_url,
+                    cover_photo_id=sm.cover_photo_id,
                     children=[],
                     spouses=[]
                 ))
 
-        cover_photo_url = (
-            f"/api/v1/media/{node_memorial.cover_photo_id}?thumbnail=small"
-            if node_memorial.cover_photo_id else None
-        )
         return FamilyTreeNode(
-            memorial_id=node_memorial.id,
-            name=node_memorial.name,
-            birth_date=node_memorial.birth_date,
-            death_date=node_memorial.death_date,
-            cover_photo_url=cover_photo_url,
+            memorial_id=m.id,
+            name=m.name,
+            birth_date=m.birth_date,
+            death_date=m.death_date,
+            cover_photo_id=m.cover_photo_id,
             children=children,
             spouses=spouses
         )
-    
+
     def count_nodes(node: FamilyTreeNode) -> int:
-        """Подсчет узлов в дереве."""
         count = 1
         for child in node.children:
             count += count_nodes(child)
         for spouse in node.spouses:
             count += 1
-            for child in spouse.children:
-                count += count_nodes(child)
         return count
-    
+
     root = build_tree(memorial_id, 0, set())
     if not root:
         raise HTTPException(

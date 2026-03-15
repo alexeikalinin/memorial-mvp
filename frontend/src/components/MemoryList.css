@@ -202,6 +202,29 @@
   font-style: italic;
 }
 
+.empty-state.load-error {
+  color: #b45309;
+}
+
+.empty-state.load-error .hint {
+  color: #92400e;
+  margin-bottom: 1rem;
+}
+
+.btn-retry {
+  padding: 0.5rem 1.25rem;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-retry:hover {
+  background: #2980b9;
+}
+
 .loading {
   text-align: center;
   padding: 3rem;
