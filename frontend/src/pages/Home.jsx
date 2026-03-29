@@ -12,7 +12,7 @@ function Home() {
   const { lang, t } = useLanguage()
 
   useEffect(() => {
-    memorialsAPI.list(lang)
+    memorialsAPI.list()
       .then((res) => setMemorials(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         console.error('Error loading memorials:', err)
