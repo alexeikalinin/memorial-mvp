@@ -77,11 +77,6 @@ async def list_memorials(
     """
     Получить список мемориалов, к которым у текущего пользователя есть доступ.
     """
-    accessible_ids = (
-        db.query(MemorialAccess.memorial_id)
-        .filter(MemorialAccess.user_id == current_user.id)
-        .subquery()
-    )
     # Subquery counts — один запрос вместо N*2
     memories_count_sq = (
         db.query(Memory.memorial_id, func.count(Memory.id).label("cnt"))
@@ -93,6 +88,12 @@ async def list_memorials(
         .group_by(Media.memorial_id)
         .subquery()
     )
+    # Показываем все мемориалы: свои (через MemorialAccess) + все публичные
+    accessible_ids = (
+        db.query(MemorialAccess.memorial_id)
+        .filter(MemorialAccess.user_id == current_user.id)
+        .subquery()
+    )
     rows = (
         db.query(
             Memorial,
@@ -101,7 +102,9 @@ async def list_memorials(
         )
         .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
         .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
-        .filter(Memorial.id.in_(accessible_ids))
+        .filter(
+            (Memorial.is_public == True) | (Memorial.id.in_(accessible_ids))
+        )
         .filter(Memorial.language == language if language else True)
         .order_by(Memorial.created_at.desc())
         .all()
