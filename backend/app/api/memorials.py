@@ -1,17 +1,18 @@
 """
 API endpoints для работы с мемориалами, медиа и воспоминаниями.
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
-import os
 import uuid
 from pathlib import Path
+from datetime import datetime, timezone
 
+from app.auth import get_current_user, get_optional_user, require_memorial_access
 from app.db import get_db
-from app.models import Memorial, Media, Memory, MediaType
+from app.models import Memorial, Media, Memory, MediaType, MemorialAccess, MemorialInvite, User, UserRole
 from app.schemas import (
     MemorialCreate,
     MemorialResponse,
@@ -69,12 +70,18 @@ def get_media_type_from_mime(mime_type: str) -> MediaType:
 
 @router.get("/", response_model=List[MemorialListItem])
 async def list_memorials(
+    language: Optional[str] = None,
     db: Session = Depends(get_db),
-    owner_id: int = 1,  # TODO: получать из токена
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Получить список всех мемориалов пользователя.
+    Получить список мемориалов, к которым у текущего пользователя есть доступ.
     """
+    accessible_ids = (
+        db.query(MemorialAccess.memorial_id)
+        .filter(MemorialAccess.user_id == current_user.id)
+        .subquery()
+    )
     # Subquery counts — один запрос вместо N*2
     memories_count_sq = (
         db.query(Memory.memorial_id, func.count(Memory.id).label("cnt"))
@@ -94,10 +101,18 @@ async def list_memorials(
         )
         .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
         .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
-        .filter(Memorial.owner_id == owner_id)
+        .filter(Memorial.id.in_(accessible_ids))
+        .filter(Memorial.language == language if language else True)
         .order_by(Memorial.created_at.desc())
         .all()
     )
+    # Подтягиваем file_url для обложек одним запросом
+    cover_ids = [m.cover_photo_id for m, _, _ in rows if m.cover_photo_id]
+    cover_urls: dict[int, str] = {}
+    if cover_ids:
+        media_rows = db.query(Media.id, Media.file_url).filter(Media.id.in_(cover_ids)).all()
+        cover_urls = {mid: url for mid, url in media_rows if url}
+
     return [
         MemorialListItem(
             id=m.id,
@@ -107,8 +122,10 @@ async def list_memorials(
             death_date=m.death_date,
             is_public=m.is_public,
             cover_photo_id=m.cover_photo_id,
+            cover_photo_url=cover_urls.get(m.cover_photo_id) if m.cover_photo_id else None,
             memories_count=mc,
             media_count=mc2,
+            language=getattr(m, "language", "ru"),
             created_at=m.created_at,
         )
         for m, mc, mc2 in rows
@@ -119,14 +136,20 @@ async def list_memorials(
 async def create_memorial(
     memorial: MemorialCreate,
     db: Session = Depends(get_db),
-    # TODO: Добавить аутентификацию и получать owner_id из токена
-    owner_id: int = 1,  # Заглушка для MVP
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Создать новый мемориал.
+    Создать новый мемориал. Текущий пользователь автоматически получает роль OWNER.
     """
-    db_memorial = Memorial(**memorial.dict(), owner_id=owner_id)
+    db_memorial = Memorial(**memorial.dict(), owner_id=current_user.id)
     db.add(db_memorial)
+    db.flush()  # получаем id до commit
+    access = MemorialAccess(
+        memorial_id=db_memorial.id,
+        user_id=current_user.id,
+        role=UserRole.OWNER,
+    )
+    db.add(access)
     db.commit()
     db.refresh(db_memorial)
     return db_memorial
@@ -136,38 +159,47 @@ async def create_memorial(
 async def get_memorial(
     memorial_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Получить мемориал по ID со всеми медиа и воспоминаниями.
+    Публичные мемориалы доступны без авторизации.
     """
+    require_memorial_access(memorial_id, current_user, db, allow_public=True)
+
     memorial = (
         db.query(Memorial)
         .options(joinedload(Memorial.media), joinedload(Memorial.memories))
         .filter(Memorial.id == memorial_id)
         .first()
     )
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
-    return memorial
+
+    # Определяем роль текущего пользователя
+    current_user_role = None
+    if current_user:
+        access = db.query(MemorialAccess).filter(
+            MemorialAccess.memorial_id == memorial_id,
+            MemorialAccess.user_id == current_user.id,
+        ).first()
+        if access:
+            current_user_role = access.role.value
+
+    response = MemorialDetailResponse.model_validate(memorial)
+    response.current_user_role = current_user_role
+    return response
 
 
 @router.delete("/{memorial_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_memorial(
     memorial_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Удалить мемориал и все связанные данные (медиа, воспоминания, embeddings).
+    Только OWNER может удалить мемориал.
     """
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.OWNER)
 
     # Удаляем медиафайлы с диска
     for media in memorial.media:
@@ -202,6 +234,7 @@ async def delete_memorial(
 async def get_qr_code(
     memorial_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Получить QR-код для публичной страницы мемориала (PNG).
@@ -215,12 +248,7 @@ async def get_qr_code(
             detail="QR code library not installed. Run: pip install 'qrcode[pil]'"
         )
 
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
 
     frontend_url = settings.PUBLIC_FRONTEND_URL.rstrip("/")
     url = f"{frontend_url}/m/{memorial_id}"
@@ -246,17 +274,12 @@ async def update_memorial(
     memorial_id: int,
     memorial_update: MemorialUpdate,
     db: Session = Depends(get_db),
-    # TODO: Добавить проверку прав доступа
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Обновить мемориал.
+    Обновить мемориал. Требуется роль EDITOR или выше.
     """
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     update_data = memorial_update.dict(exclude_unset=True)
     for field, value in update_data.items():
@@ -272,18 +295,12 @@ async def upload_media(
     memorial_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Загрузить медиа-файл для мемориала.
-    Сохраняет файл локально (или возвращает presigned S3 URL в будущем).
+    Загрузить медиа-файл для мемориала. Требуется роль EDITOR или выше.
     """
-    # Проверка существования мемориала
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     # Проверка расширения файла
     file_ext = Path(file.filename).suffix[1:].lower()
@@ -404,14 +421,13 @@ async def upload_media(
 async def get_memorial_media(
     memorial_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
-    Получить все медиа-файлы мемориала.
+    Получить все медиа-файлы мемориала. Публичные мемориалы доступны без авторизации.
     """
-    media = db.query(Media).filter(Media.memorial_id == memorial_id).all()
-    if not media and not db.query(Memorial.id).filter(Memorial.id == memorial_id).scalar():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
-    return media
+    require_memorial_access(memorial_id, current_user, db, allow_public=True)
+    return db.query(Media).filter(Media.memorial_id == memorial_id).all()
 
 
 @router.delete("/{memorial_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -419,18 +435,12 @@ async def delete_media(
     memorial_id: int,
     media_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Удалить медиа-файл мемориала.
-    Удаляет файл с диска (или из S3), миниатюры и запись из БД.
+    Удалить медиа-файл мемориала. Требуется роль EDITOR или выше.
     """
-    # Проверка существования мемориала
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     # Проверка существования медиа
     media = db.query(Media).filter(
@@ -505,17 +515,28 @@ async def create_memory(
     memorial_id: int,
     memory: MemoryCreate,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+    invite_token: Optional[str] = Query(None, description="Инвайт-токен для анонимного вклада"),
 ):
     """
     Добавить текстовое воспоминание к мемориалу.
+    Доступно авторизованным пользователям (EDITOR+) или держателям invite_token.
     """
-    # Проверка существования мемориала
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    if invite_token:
+        invite = db.query(MemorialInvite).filter(MemorialInvite.token == invite_token).first()
+        if not invite or invite.memorial_id != memorial_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid invite token")
+        if invite.expires_at and invite.expires_at.replace(tzinfo=None) < datetime.utcnow():
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invite token expired")
+        if not invite.permissions.get("add_memories"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invite does not allow adding memories")
+        memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+        if not memorial:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+    elif current_user:
+        memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     
     db_memory = Memory(
         **memory.dict(),
@@ -580,18 +601,12 @@ async def update_memory(
     memory_id: int,
     memory_update: MemoryUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Обновить воспоминание.
-    При изменении текста пересоздается embedding.
+    Обновить воспоминание. Требуется роль EDITOR или выше.
     """
-    # Проверка существования мемориала
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     # Проверка существования воспоминания
     db_memory = db.query(Memory).filter(
@@ -666,18 +681,12 @@ async def delete_memory(
     memorial_id: int,
     memory_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Удалить воспоминание.
-    Также удаляется соответствующий embedding из векторной БД.
+    Удалить воспоминание. Требуется роль EDITOR или выше.
     """
-    # Проверка существования мемориала
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     # Проверка существования воспоминания
     db_memory = db.query(Memory).filter(
@@ -711,16 +720,12 @@ async def get_memorial_memories(
     memorial_id: int,
     q: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
-    Получить воспоминания мемориала. Поддерживает поиск через ?q=текст.
+    Получить воспоминания мемориала. Публичные мемориалы доступны без авторизации.
     """
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
+    require_memorial_access(memorial_id, current_user, db, allow_public=True)
     query = db.query(Memory).filter(Memory.memorial_id == memorial_id)
     if q:
         pattern = f"%{q}%"
@@ -735,13 +740,12 @@ async def set_cover_photo(
     memorial_id: int,
     body: SetCoverRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Установить фото обложки мемориала. Передайте media_id=null чтобы снять обложку.
+    Установить фото обложки мемориала. Требуется роль EDITOR или выше.
     """
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
 
     if body.media_id is not None:
         media = db.query(Media).filter(
@@ -770,13 +774,12 @@ _MONTHS_RU = [
 async def get_timeline(
     memorial_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
-    Хронологическая лента воспоминаний с датами событий.
+    Хронологическая лента воспоминаний. Публичные мемориалы доступны без авторизации.
     """
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+    memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
 
     memories = (
         db.query(Memory)

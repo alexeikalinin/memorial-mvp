@@ -26,18 +26,21 @@ class UserRole(str, enum.Enum):
 class User(Base):
     """Модель пользователя."""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=True)  # nullable для Google-only юзеров
     full_name = Column(String(255), nullable=True)
+    google_id = Column(String(255), unique=True, nullable=True, index=True)
+    avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Связи
     memorials = relationship("Memorial", back_populates="owner", cascade="all, delete-orphan")
+    memorial_access = relationship("MemorialAccess", foreign_keys="MemorialAccess.user_id", back_populates="user")
 
 
 class Memorial(Base):
@@ -54,6 +57,7 @@ class Memorial(Base):
     voice_id = Column(String(255), nullable=True)  # ID кастомного голоса в ElevenLabs
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
+    language = Column(String(5), default="ru", nullable=False, server_default="ru")  # "ru" | "en"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -69,6 +73,8 @@ class Memorial(Base):
     relationships_from = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.memorial_id", back_populates="memorial", cascade="all, delete-orphan")
     relationships_to = relationship("FamilyRelationship", foreign_keys="FamilyRelationship.related_memorial_id", back_populates="related_memorial", cascade="all, delete-orphan")
     invites = relationship("MemorialInvite", back_populates="memorial", cascade="all, delete-orphan")
+    access_entries = relationship("MemorialAccess", back_populates="memorial", cascade="all, delete-orphan")
+    access_requests = relationship("AccessRequest", back_populates="memorial", cascade="all, delete-orphan")
 
 
 class Media(Base):
@@ -116,10 +122,18 @@ class Memory(Base):
 
 class RelationshipType(str, enum.Enum):
     """Типы семейных связей."""
-    PARENT = "parent"  # Родитель
-    CHILD = "child"    # Ребенок
-    SPOUSE = "spouse"  # Супруг/супруга
-    SIBLING = "sibling"  # Брат/сестра
+    PARENT          = "parent"           # Биологический родитель
+    CHILD           = "child"            # Биологический ребёнок
+    SPOUSE          = "spouse"           # Супруг/супруга (в браке)
+    SIBLING         = "sibling"          # Родной брат/сестра
+    STEP_PARENT     = "step_parent"      # Отчим/мачеха
+    STEP_CHILD      = "step_child"       # Пасынок/падчерица
+    ADOPTIVE_PARENT = "adoptive_parent"  # Усыновитель/удочеритель
+    ADOPTIVE_CHILD  = "adoptive_child"   # Усыновлённый/удочерённая
+    HALF_SIBLING    = "half_sibling"     # Единокровный/единоутробный брат/сестра
+    PARTNER         = "partner"          # Гражданский партнёр (без брака)
+    EX_SPOUSE       = "ex_spouse"        # Бывший супруг/супруга
+    CUSTOM          = "custom"           # Произвольная связь (задаётся вручную)
 
 
 class FamilyRelationship(Base):
@@ -130,6 +144,7 @@ class FamilyRelationship(Base):
     memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False, index=True)
     related_memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False, index=True)
     relationship_type = Column(Enum(RelationshipType), nullable=False, index=True)
+    custom_label = Column(String(100), nullable=True)  # Заполняется только для CUSTOM типа
     notes = Column(Text, nullable=True)  # Дополнительные заметки о связи
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -158,4 +173,54 @@ class MemorialInvite(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     memorial = relationship("Memorial", back_populates="invites")
+
+
+class AccessRequestStatus(str, enum.Enum):
+    """Статус запроса доступа к мемориалу."""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class AccessRequest(Base):
+    """Запрос пользователя на получение доступа к мемориалу."""
+    __tablename__ = "access_requests"
+
+    id             = Column(Integer, primary_key=True, index=True)
+    memorial_id    = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id        = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    requested_role = Column(Enum(UserRole), default=UserRole.VIEWER, nullable=False)
+    message        = Column(Text, nullable=True)
+    status         = Column(Enum(AccessRequestStatus), default=AccessRequestStatus.PENDING, nullable=False, index=True)
+    reviewed_by    = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at    = Column(DateTime(timezone=True), nullable=True)
+    created_at     = Column(DateTime(timezone=True), server_default=func.now())
+
+    memorial = relationship("Memorial", back_populates="access_requests")
+    user     = relationship("User", foreign_keys=[user_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+    __table_args__ = (
+        UniqueConstraint("memorial_id", "user_id", name="uq_access_request"),
+    )
+
+
+class MemorialAccess(Base):
+    """Доступ пользователя к мемориалу с определённой ролью."""
+    __tablename__ = "memorial_access"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id     = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role        = Column(Enum(UserRole), nullable=False)   # OWNER | EDITOR | VIEWER
+    granted_by  = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at  = Column(DateTime(timezone=True), server_default=func.now())
+
+    memorial = relationship("Memorial", back_populates="access_entries")
+    user     = relationship("User", foreign_keys=[user_id], back_populates="memorial_access")
+    granter  = relationship("User", foreign_keys=[granted_by])
+
+    __table_args__ = (
+        UniqueConstraint("memorial_id", "user_id", name="uq_memorial_access"),
+    )
 

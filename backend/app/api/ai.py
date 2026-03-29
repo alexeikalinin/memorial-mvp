@@ -203,10 +203,12 @@ async def avatar_chat(
     ).all()
     
     if not all_memories:
-        return AvatarChatResponse(
-            answer="У меня пока нет информации об этом человеке. Пожалуйста, добавьте воспоминания, чтобы я мог отвечать на вопросы.",
-            sources=[]
+        no_mem_msg = (
+            "I don't have any memories yet. Please add some memories so I can answer questions."
+            if request.language == "en" else
+            "У меня пока нет информации об этом человеке. Пожалуйста, добавьте воспоминания, чтобы я мог отвечать на вопросы."
         )
+        return AvatarChatResponse(answer=no_mem_msg, sources=[])
     
     # Проверяем, есть ли воспоминания с embeddings
     # Важно: используем новый запрос к БД, чтобы избежать проблем с кэшем сессии
@@ -342,10 +344,12 @@ async def avatar_chat(
         
         if not similar_memories:
             print(f"⚠️ No similar memories found for question: '{request.question}'")
-            return AvatarChatResponse(
-                answer="У меня нет информации на эту тему.",
-                sources=[]
+            no_info_msg = (
+                "I don't have memories about that."
+                if request.language == "en" else
+                "У меня нет информации на эту тему."
             )
+            return AvatarChatResponse(answer=no_info_msg, sources=[])
         
         # ВАЖНО: Всегда получаем полный текст из БД, так как в векторной БД
         # текст может быть обрезанным (например, только 1000 символов в Qdrant payload)
@@ -362,7 +366,10 @@ async def avatar_chat(
                     # Добавляем метку, если воспоминание от родственника
                     if source_memorial_id and source_memorial_id != request.memorial_id and source_memorial_id in family_memorial_map:
                         rel_name, rel_type = family_memorial_map[source_memorial_id]
-                        label = f"[Из воспоминаний {rel_name} ({rel_type})]: "
+                        if request.language == "en":
+                            label = f"[From memories of {rel_name} ({rel_type})]: "
+                        else:
+                            label = f"[Из воспоминаний {rel_name} ({rel_type})]: "
                         text = label + text
                         has_family_context = True
                     context_chunks.append({
@@ -383,10 +390,12 @@ async def avatar_chat(
         
         if not context_chunks:
             print(f"❌ No context chunks created from {len(similar_memories)} similar memories")
-            return AvatarChatResponse(
-                answer="У меня нет информации на эту тему.",
-                sources=[]
+            no_info_msg = (
+                "I don't have memories about that."
+                if request.language == "en" else
+                "У меня нет информации на эту тему."
             )
+            return AvatarChatResponse(answer=no_info_msg, sources=[])
         
         print(f"📝 Created {len(context_chunks)} context chunks for RAG")
         
@@ -406,6 +415,7 @@ async def avatar_chat(
                     persona_prompt = await build_avatar_persona(
                         memories=[{"title": m.title, "content": m.content} for m in all_memories],
                         memorial_name=memorial.name,
+                        language=request.language,
                     )
                     await redis_client.setex(redis_key, 3600, persona_prompt)
                     print(f"✅ Persona built and cached in Redis for memorial {request.memorial_id}")
@@ -416,19 +426,29 @@ async def avatar_chat(
                     persona_prompt = await build_avatar_persona(
                         memories=[{"title": m.title, "content": m.content} for m in all_memories],
                         memorial_name=memorial.name,
+                        language=request.language,
                     )
                 except Exception as e2:
                     print(f"Warning: Could not build avatar persona: {e2}")
 
         # Если в контексте есть воспоминания родственников — дополняем system prompt
         if has_family_context:
-            family_note = (
-                "\n\nНекоторые воспоминания в контексте принадлежат родственникам "
-                "(помечены \"[Из воспоминаний ...]\"). "
-                "Используй их как события, о которых ты помнишь или знаешь от близких. "
-                "Не приписывай чужие воспоминания себе напрямую: скажи \"мы вместе...\" "
-                "или \"по словам жены/мужа/сына...\"."
-            )
+            if request.language == "en":
+                family_note = (
+                    "\n\nSome memories in the context belong to family members "
+                    "(marked \"[From memories of ...]\"). "
+                    "Use them as events you remember or heard from loved ones. "
+                    "Don't claim others' memories as your own: say \"we together...\" "
+                    "or \"according to my wife/husband/son...\"."
+                )
+            else:
+                family_note = (
+                    "\n\nНекоторые воспоминания в контексте принадлежат родственникам "
+                    "(помечены \"[Из воспоминаний ...]\"). "
+                    "Используй их как события, о которых ты помнишь или знаешь от близких. "
+                    "Не приписывай чужие воспоминания себе напрямую: скажи \"мы вместе...\" "
+                    "или \"по словам жены/мужа/сына...\"."
+                )
             if persona_prompt:
                 persona_prompt = persona_prompt + family_note
             else:
@@ -440,15 +460,17 @@ async def avatar_chat(
             context_chunks=context_chunks,
             memorial_name=memorial.name,
             system_prompt=persona_prompt,
+            language=request.language,
         )
         
-        # Формируем читаемые источники
+        # Формируем читаемые источники (язык подписи = язык запроса)
+        mem_label = "Memory" if request.language == "en" else "Воспоминание"
         sources = []
         for chunk in context_chunks:
             memory_id = chunk.get("memory_id")
             title = chunk.get("title", "")
             if memory_id:
-                source_text = f"Воспоминание #{memory_id}"
+                source_text = f"{mem_label} #{memory_id}"
                 if title:
                     source_text += f": {title}"
                 sources.append(source_text)
@@ -495,9 +517,8 @@ async def avatar_chat(
                         audio_url = f"/api/v1/media/audio/{audio_filename}"
                 else:
                     audio_url = f"/api/v1/media/audio/{audio_filename}"
-                # Если фронт на другом домене (деплой), браузеру нужен абсолютный URL
-                if audio_url.startswith("/") and settings.PUBLIC_API_URL:
-                    audio_url = f"{settings.PUBLIC_API_URL.rstrip('/')}{audio_url}"
+                # PUBLIC_API_URL используется только для D-ID/HeyGen (им нужен публичный URL),
+                # но НЕ для браузера — браузер получает относительный /api/v1/... через Vite прокси
 
             except Exception as e:
                 audio_error = str(e)

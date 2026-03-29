@@ -125,18 +125,22 @@
   justify-content: center;
   gap: 0.6rem;
   width: 100%;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   background: #fff;
   color: #3c4043;
   border: 1px solid #dadce0;
-  border-radius: var(--radius-xs);
-  font-size: 0.9rem;
-  font-family: var(--font-body);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 0.25rem;
 }
 .btn-google-auth:hover {
   background: #f8f9fa;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  color: #3c4043;
+  text-decoration: none;
 }

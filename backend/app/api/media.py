@@ -16,7 +16,17 @@ from fastapi import Depends
 
 router = APIRouter(prefix="/media", tags=["media"])
 
-UPLOAD_DIR = Path("uploads")
+# Корень backend/ — пути в БД вида uploads/... должны резолвиться независимо от cwd uvicorn
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
+UPLOAD_DIR = _BACKEND_ROOT / "uploads"
+
+
+def _resolve_local_path(stored: str | Path) -> Path:
+    """Путь из БД (часто относительный uploads/...) → абсолютный под backend."""
+    p = Path(stored)
+    if p.is_absolute():
+        return p
+    return _BACKEND_ROOT / p
 
 
 @router.get("/audio/{filename}")
@@ -25,7 +35,7 @@ async def get_audio_file(filename: str):
     Получить аудио-файл по имени файла.
     Используется для обслуживания сгенерированных аудио из чата.
     """
-    audio_path = UPLOAD_DIR / "audio" / filename
+    audio_path = _resolve_local_path(UPLOAD_DIR / "audio" / filename)
 
     if not audio_path.exists():
         raise HTTPException(
@@ -68,38 +78,47 @@ async def get_media_file(
             detail="Media not found"
         )
 
-    file_path = Path(media.file_path)
+    file_path = _resolve_local_path(media.file_path)
 
-    # --- Supabase Storage / S3: редиректим на публичный URL ---
-    if settings.USE_S3 and settings.supabase_public_url:
-        if thumbnail and media.media_type.value == "photo" and media.thumbnail_path:
-            # Используем реальный путь из БД, а не вычисленный
-            return RedirectResponse(url=get_public_url(media.thumbnail_path), status_code=302)
-        return RedirectResponse(url=get_public_url(str(file_path)), status_code=302)
-
-    # --- Локальный режим ---
+    # --- Сначала всегда пробуем локальные файлы (uploads/).
+    # При USE_S3=true старый код сразу редиректил в Supabase — локальные сиды/портреты
+    # при этом не в bucket → 400 на публичном URL. Прод: файлы в S3; локальная dev: файлы на диске.
     if thumbnail and media.media_type.value == "photo":
         if thumbnail in ("small", "medium", "large"):
-            thumbnail_path = UPLOAD_DIR / "thumbnails" / f"{file_path.stem}_{thumbnail}.jpg"
-            if thumbnail_path.exists():
+            thumb_candidate = UPLOAD_DIR / "thumbnails" / f"{file_path.stem}_{thumbnail}.jpg"
+            thumb_resolved = _resolve_local_path(thumb_candidate)
+            if thumb_resolved.exists():
                 return FileResponse(
-                    thumbnail_path,
+                    thumb_resolved,
                     media_type="image/jpeg",
                     filename=f"{media.file_name}_thumb_{thumbnail}.jpg"
                 )
+            if media.thumbnail_path:
+                db_thumb = _resolve_local_path(media.thumbnail_path)
+                if db_thumb.exists():
+                    return FileResponse(
+                        db_thumb,
+                        media_type="image/jpeg",
+                        filename=f"{media.file_name}_thumb.jpg"
+                    )
 
-    if not file_path.exists():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media file not found on disk"
+    if file_path.exists():
+        mime_type = media.mime_type or mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        return FileResponse(
+            file_path,
+            media_type=mime_type,
+            filename=media.file_name
         )
 
-    mime_type = media.mime_type or mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+    # --- Только если на диске нет — публичный URL в Supabase Storage ---
+    if settings.USE_S3 and settings.supabase_public_url:
+        if thumbnail and media.media_type.value == "photo" and media.thumbnail_path:
+            return RedirectResponse(url=get_public_url(media.thumbnail_path), status_code=302)
+        return RedirectResponse(url=get_public_url(str(media.file_path)), status_code=302)
 
-    return FileResponse(
-        file_path,
-        media_type=mime_type,
-        filename=media.file_name
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Media file not found on disk"
     )
 
 
@@ -118,7 +137,7 @@ async def get_media_info(
             detail="Media not found"
         )
     
-    file_path = Path(media.file_path)
+    file_path = _resolve_local_path(media.file_path)
     file_exists = file_path.exists()
     
     info = {

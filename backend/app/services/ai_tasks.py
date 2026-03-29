@@ -667,7 +667,8 @@ async def generate_rag_response(
     question: str,
     context_chunks: List[Dict],
     memorial_name: Optional[str] = None,
-    system_prompt: Optional[str] = None
+    system_prompt: Optional[str] = None,
+    language: str = "ru"
 ) -> Tuple[str, List[str]]:
     """
     Сгенерировать ответ через OpenAI с использованием RAG.
@@ -688,27 +689,28 @@ async def generate_rag_response(
     
     client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     
-    # Улучшенный этичный системный промпт
-    default_system_prompt = f"""Ты - ИИ-аватар, созданный для сохранения памяти о человеке{f" по имени {memorial_name}" if memorial_name else ""}. 
-Твоя задача - отвечать на вопросы на основе предоставленных воспоминаний и фактов.
+    # Системный промпт: краткие, завершённые ответы для голосового аватара
+    if language == "en":
+        default_system_prompt = f"""You are an AI avatar preserving the memory of{f" {memorial_name}" if memorial_name else ""}.
+Answer questions strictly based on the provided memories.
 
-КРИТИЧЕСКИ ВАЖНЫЕ ПРАВИЛА:
-1. Отвечай на основе предоставленных фрагментов воспоминаний - используй всю релевантную информацию
-2. НЕ придумывай факты, которые не упомянуты в контексте
-3. НЕ используй общие знания или предположения, которых нет в воспоминаниях
-4. Если в воспоминаниях есть релевантная информация (даже частично), используй её для ответа
-5. Только если в воспоминаниях НЕТ НИКАКОЙ релевантной информации, скажи: "У меня нет информации на эту тему."
-6. Будь уважительным, тактичным и эмпатичным
-7. Используй естественный, разговорный стиль, как будто ты сам человек, о котором идет речь
-8. Если в воспоминаниях есть противоречия, упомяни об этом
-9. Если вопрос можно интерпретировать по-разному, используй информацию из воспоминаний для уточнения
+RULES:
+1. Answer ONLY based on the memories — never invent facts
+2. If the information is not available — say: "I don't have memories about that."
+3. Speak in first person, naturally and warmly
+4. Keep answers SHORT (1-3 sentences) but COMPLETE — don't cut off mid-thought
+5. Every sentence should end with a period or other closing punctuation"""
+    else:
+        default_system_prompt = f"""Ты - ИИ-аватар, сохраняющий память о человеке{f" по имени {memorial_name}" if memorial_name else ""}.
+Отвечай на вопросы строго на основе предоставленных воспоминаний.
 
-Формат ответа:
-- Будь конкретным и детальным, используя информацию из воспоминаний
-- Объединяй информацию из разных воспоминаний, если это уместно
-- Если вопрос касается эмоций или чувств, используй тон, соответствующий контексту
-- Отвечай так, как будто ты вспоминаешь эти события"""
-    
+ПРАВИЛА:
+1. Отвечай ТОЛЬКО на основе воспоминаний — не придумывай факты
+2. Если информации нет — скажи: "У меня нет информации на эту тему."
+3. Говори от первого лица, естественно и тепло
+4. Ответ должен быть КОРОТКИМ (1-3 предложения) но ЗАВЕРШЁННЫМ — не обрывай мысль
+5. Каждое предложение должно заканчиваться точкой или другим знаком завершения"""
+
     system_prompt = system_prompt or default_system_prompt
     
     # Формирование контекста с источниками
@@ -721,22 +723,30 @@ async def generate_rag_response(
         score = chunk.get("score", 0)
         
         if text:
-            context_parts.append(f"[Воспоминание #{memory_id if memory_id else i}, релевантность: {score:.2f}]\n{text}")
+            if language == "en":
+                context_parts.append(f"[Memory #{memory_id if memory_id else i}, relevance: {score:.2f}]\n{text}")
+            else:
+                context_parts.append(f"[Воспоминание #{memory_id if memory_id else i}, релевантность: {score:.2f}]\n{text}")
             if memory_id:
                 sources.append(f"memory_{memory_id}")
     
     context_text = "\n\n---\n\n".join(context_parts)
     
     # Формирование промпта пользователя
-    user_prompt = f"""Контекст (воспоминания о человеке):
+    if language == "en":
+        user_prompt = f"""Memories:
 {context_text}
 
-Вопрос пользователя: {question}
+Question: {question}
 
-Пожалуйста, ответь на вопрос, используя информацию из предоставленных воспоминаний. 
-Используй всю релевантную информацию из воспоминаний, даже если она частично отвечает на вопрос.
-Объединяй информацию из разных воспоминаний, если это помогает дать полный ответ.
-Только если в воспоминаниях НЕТ НИКАКОЙ релевантной информации, скажи об этом."""
+Answer briefly (1-3 sentences), using only information from the memories. The thought must be complete."""
+    else:
+        user_prompt = f"""Воспоминания:
+{context_text}
+
+Вопрос: {question}
+
+Ответь коротко (1-3 предложения), используя только информацию из воспоминаний. Мысль должна быть завершённой."""
     
     messages = [
         {"role": "system", "content": system_prompt},
@@ -748,7 +758,7 @@ async def generate_rag_response(
             model=settings.OPENAI_MODEL,
             messages=messages,
             temperature=0.7,
-            max_tokens=800,  # Увеличено для более детальных ответов
+            max_tokens=200,  # Короткие ответы для голосового аватара (экономия ElevenLabs)
             top_p=0.9
         )
         
@@ -1273,7 +1283,7 @@ async def sync_family_memories(memorial_id: int, db, dry_run: bool = False) -> D
 
         try:
             resp = await client.chat.completions.create(
-                model="gpt-4-turbo-preview",
+                model=settings.OPENAI_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0,
                 max_tokens=1000,
@@ -1368,7 +1378,8 @@ async def sync_family_memories(memorial_id: int, db, dry_run: bool = False) -> D
 
 async def build_avatar_persona(
     memories: List[Dict],
-    memorial_name: str
+    memorial_name: str,
+    language: str = "ru"
 ) -> str:
     """
     Smart Avatar Persona Agent — строит системный промпт-личность аватара из всех воспоминаний.
@@ -1389,22 +1400,36 @@ async def build_avatar_persona(
     from openai import AsyncOpenAI
     client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
+    label_memory = "Memory" if language == "en" else "Воспоминание"
     memories_text = "\n\n".join(
-        f"[{m.get('title', 'Воспоминание')}]\n{m.get('content', '')}"
+        f"[{m.get('title', label_memory)}]\n{m.get('content', '')}"
         for m in memories
     )
 
-    system_prompt = "Ты — помощник по созданию ИИ-аватаров для мемориального сервиса."
-    user_prompt = (
-        f"На основе следующих воспоминаний о человеке по имени {memorial_name}, "
-        "составь системный промпт для ИИ-аватара. Промпт должен:\n"
-        "1. Описывать личность, характер, привычки и ценности этого человека\n"
-        "2. Указывать его профессию, увлечения, важные события жизни\n"
-        "3. Задавать стиль общения (как он говорил, что любил повторять)\n"
-        "4. Включать правила: не придумывать факты, отвечать от первого лица, быть эмпатичным\n\n"
-        f"Воспоминания:\n{memories_text}\n\n"
-        "Напиши только системный промпт, без пояснений."
-    )
+    if language == "en":
+        system_prompt = "You are a helper for creating AI avatars for a memorial service."
+        user_prompt = (
+            f"Based on the following memories about a person named {memorial_name}, "
+            "create a system prompt for an AI avatar. The prompt should:\n"
+            "1. Describe the person's personality, character, habits and values\n"
+            "2. Mention their profession, hobbies, and important life events\n"
+            "3. Define their communication style (how they spoke, what they liked to say)\n"
+            "4. Include rules: don't invent facts, answer in first person, be empathetic, keep answers SHORT (1-3 sentences)\n\n"
+            f"Memories:\n{memories_text}\n\n"
+            "Write only the system prompt, without explanations."
+        )
+    else:
+        system_prompt = "Ты — помощник по созданию ИИ-аватаров для мемориального сервиса."
+        user_prompt = (
+            f"На основе следующих воспоминаний о человеке по имени {memorial_name}, "
+            "составь системный промпт для ИИ-аватара. Промпт должен:\n"
+            "1. Описывать личность, характер, привычки и ценности этого человека\n"
+            "2. Указывать его профессию, увлечения, важные события жизни\n"
+            "3. Задавать стиль общения (как он говорил, что любил повторять)\n"
+            "4. Включать правила: не придумывать факты, отвечать от первого лица, быть эмпатичным\n\n"
+            f"Воспоминания:\n{memories_text}\n\n"
+            "Напиши только системный промпт, без пояснений."
+        )
 
     try:
         response = await client.chat.completions.create(

@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Handoff / session log
+
+At the start of a session, read **`HANDOFF.md`** at the repo root for current status, next steps, **index of repo docs** (`ENVIRONMENT.md`, `docs/MONETIZATION.md`, etc.), monetization/API-cost pointers, and the **media playbook** (Supabase 400 / local-first). After substantive work (features, fixes, migrations), **append to that file** (journal + update status/last action) so the next run can continue without losing context.
+
 ## Project Overview
 
 Memorial MVP is a digital memory preservation service with AI avatars. Users create memorial pages for deceased people, upload media (photos/videos/audio), add text memories, and chat with an AI avatar that responds based on those memories using RAG.
@@ -34,14 +38,15 @@ backend/app/
   main.py          # FastAPI app, CORS, router registration
   config.py        # Settings via pydantic-settings, reads from .env
   db.py            # SQLAlchemy engine/session setup
-  models.py        # DB models: User, Memorial, Media, Memory, FamilyRelationship
+  models.py        # DB models: User, Memorial, Media, Memory, FamilyRelationship, MemorialInvite
   schemas.py       # Pydantic request/response schemas
   api/
     memorials.py   # Memorial CRUD + media upload + memories CRUD
-    ai.py          # Photo animation, avatar chat, voice upload
+    ai.py          # Photo animation, avatar chat, voice upload; AI agents (biography, memory quality)
     media.py       # Media file serving
     embeddings.py  # Embedding management endpoints
-    family.py      # Family tree relationships
+    family.py      # Family tree relationships CRUD
+    invites.py     # Invite tokens for family members to contribute without registration
     s3.py          # S3 presigned URLs
     health.py      # Health check
   services/
@@ -62,19 +67,27 @@ backend/app/
 
 ```
 frontend/src/
-  api/client.js          # Axios instance + all API methods (memorialsAPI, aiAPI, mediaAPI, embeddingsAPI, familyAPI)
-  App.jsx                # Router: /, /memorials/new, /memorials/:id
+  api/client.js          # Axios instance + all API methods (memorialsAPI, aiAPI, mediaAPI, embeddingsAPI, familyAPI, invitesAPI)
+  App.jsx                # Router: see routes below
   pages/
     Home.jsx             # Memorial list/creation entry point
     MemorialCreate.jsx   # Creation form
-    MemorialDetail.jsx   # Tabbed view: media, memories, chat, family tree
+    MemorialDetail.jsx   # Tabbed view: media, memories, chat, family tree (owner view)
+    MemorialPublic.jsx   # Public-facing memorial page at /m/:id (no auth, shareable)
+    ContributePage.jsx   # Family members contribute via invite token at /contribute/:token
   components/
     MediaGallery.jsx     # Photo/video gallery with animation controls
     MemoryList.jsx       # Memory CRUD UI
     AvatarChat.jsx       # Chat UI with audio playback
-    FamilyTree.jsx       # Family relationships visualization
+    FamilyTree.jsx       # Family relationships visualization (SVG, 4 generations)
+    HiddenConnections.jsx # Hidden family links discovery
+    LifeTimeline.jsx     # Timeline view of life events
     Layout.jsx           # App shell/nav
+  utils/
+    declension.js        # Russian word declension helpers
 ```
+
+**Routes:** `/ → Home`, `/memorials/new → MemorialCreate`, `/memorials/:id → MemorialDetail`, `/m/:id → MemorialPublic`, `/contribute/:token → ContributePage`
 
 Vite dev server proxies `/api` requests to `http://localhost:8000`.
 
@@ -122,6 +135,8 @@ npm run lint     # ESLint
 
 ## Environment Setup
 
+Полная таблица «локально vs прод» (фронт `VITE_API_URL`, бэкенд `CORS`/`USE_S3`/Qdrant): [ENVIRONMENT.md](ENVIRONMENT.md).
+
 Copy `backend/.env.example` to `backend/.env`. Minimum for local development without AI features:
 
 ```env
@@ -144,3 +159,6 @@ DB tables are auto-created on startup via `Base.metadata.create_all()` — no mi
 - **Photo animation provider:** Set `USE_HEYGEN=true` for HeyGen, otherwise D-ID is used.
 - **Media thumbnails:** Generated automatically on upload for photos (small/medium/large) and videos (ffmpeg preview). Stored in `uploads/thumbnails/`.
 - **Tests use SQLite in-memory** (`test.db`), overriding the DB dependency via FastAPI's `dependency_overrides`.
+- **Invite tokens:** `POST /api/v1/invites/` creates time-limited tokens. Family members access `/contribute/:token` to add memories without an account (uses `MemorialInvite` model, token stored in DB with expiry + use count).
+- **Avatar chat — family RAG:** Pass `include_family_memories: true` in chat requests to search across related memorials via `FamilyRelationship` edges.
+- **AI Agents** (in `ai_tasks.py` / `ai.py`): `POST /api/v1/ai/biography` (Biography Synthesis), `POST /api/v1/ai/memory/quality` (Memory Quality), avatar persona mode via `use_persona: true` in chat request.
