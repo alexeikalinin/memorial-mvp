@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { memorialsAPI, aiAPI, getMediaUrl as getApiMediaUrl } from '../api/client'
+import { useLanguage } from '../contexts/LanguageContext'
+import ApiMediaImage from './ApiMediaImage'
 import './MediaGallery.css'
 
-function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
+function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit = true }) {
+  const { t } = useLanguage()
   const [media, setMedia] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -291,30 +294,16 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
   }
 
   if (loading) {
-    return <div className="loading">Загрузка медиа...</div>
+    return <div className="loading">{t('media.loading')}</div>
   }
 
   return (
     <div className="media-gallery">
       <div className="gallery-header">
-        <h2>Медиа-файлы</h2>
-        <label className="upload-btn">
-          {uploading ? 'Загрузка...' : 'Загрузить файл'}
-          <input
-            type="file"
-            onChange={handleFileUpload}
-            disabled={uploading}
-            accept="image/*,video/*,audio/*"
-            style={{ display: 'none' }}
-          />
-        </label>
-      </div>
-
-      {media.length === 0 ? (
-        <div className="empty-state">
-          <p>Пока нет загруженных медиа-файлов</p>
+        <h2>{t('media.title')}</h2>
+        {canEdit && (
           <label className="upload-btn">
-            Загрузить первый файл
+            {uploading ? t('media.uploading') : t('media.upload')}
             <input
               type="file"
               onChange={handleFileUpload}
@@ -323,13 +312,40 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
               style={{ display: 'none' }}
             />
           </label>
+        )}
+      </div>
+
+      {media.length === 0 ? (
+        <div className="empty-state">
+          <p>{t('media.empty')}</p>
+          {canEdit && (
+            <label className="upload-btn">
+              {t('media.upload_first')}
+              <input
+                type="file"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                accept="image/*,video/*,audio/*"
+                style={{ display: 'none' }}
+              />
+            </label>
+          )}
         </div>
       ) : (
         <div className="gallery-grid">
           {media.map((item) => (
             <div key={item.id} className="media-item">
               {item.media_type === 'photo' && (
-                <img src={getMediaUrl(item)} alt={item.file_name} />
+                item.file_url ? (
+                  <img src={item.file_url} alt={item.file_name} />
+                ) : (
+                  <ApiMediaImage
+                    mediaId={item.id}
+                    thumbnail="medium"
+                    alt={item.file_name}
+                    fallback={<div className="media-item-placeholder">{item.file_name}</div>}
+                  />
+                )
               )}
               {item.media_type === 'video' && (
                 <video src={getMediaUrl(item)} controls />
@@ -341,68 +357,70 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover }) {
                 </div>
               )}
               {coverPhotoId === item.id && (
-                <div className="cover-badge">Обложка</div>
+                <div className="cover-badge">{t('media.cover_badge')}</div>
               )}
               <div className="media-actions">
                 <div className="media-actions-left">
-                  {item.media_type === 'photo' && (
+                  {canEdit && item.media_type === 'photo' && (
                     <>
                       {onSetCover && (
                         coverPhotoId === item.id ? (
                           <button
                             className="btn-cover active"
                             onClick={() => onSetCover(null)}
-                            title="Снять обложку"
+                            title={t('media.remove_cover')}
                           >
-                            Снять обложку
+                            {t('media.remove_cover')}
                           </button>
                         ) : (
                           <button
                             className="btn-cover"
                             onClick={() => onSetCover(item.id)}
-                            title="Сделать обложкой"
+                            title={t('media.set_cover')}
                           >
-                            Обложка
+                            {t('media.set_cover')}
                           </button>
                         )
                       )}
                     </>
                   )}
-                  {item.media_type === 'photo' && !item.is_animated && (
+                  {canEdit && item.media_type === 'photo' && !item.is_animated && (
                     <>
                       <button
                         className="btn-animate"
                         onClick={() => handleAnimate(item.id)}
                         disabled={animating === item.id || animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending'}
                       >
-                        {animating === item.id ? 'Запуск...' :
-                         animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending' ? 'Обработка...' :
-                         'Оживить фото'}
+                        {animating === item.id ? t('media.animating') :
+                         animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending' ? t('media.processing') :
+                         t('media.animate')}
                       </button>
                       {animationStatus[item.id] && (
                         <div className="animation-status">
                           {animationStatus[item.id].status === 'processing' || animationStatus[item.id].status === 'pending' ? (
-                            <span className="status-processing">⏳ {animationStatus[item.id].message || 'Обработка...'}</span>
+                            <span className="status-processing">⏳ {animationStatus[item.id].message || t('media.processing')}</span>
                           ) : animationStatus[item.id].status === 'completed' ? (
-                            <span className="status-completed">✅ Анимация готова!</span>
+                            <span className="status-completed">✅ {t('media.animation_ready')}</span>
                           ) : animationStatus[item.id].status === 'failed' || animationStatus[item.id].status === 'error' ? (
-                            <span className="status-error">❌ {animationStatus[item.id].message || 'Ошибка'}</span>
+                            <span className="status-error">❌ {animationStatus[item.id].message || '—'}</span>
                           ) : null}
                         </div>
                       )}
                     </>
                   )}
                   {item.is_animated && (
-                    <span className="animated-badge">✅ Оживлено</span>
+                    <span className="animated-badge">✅ {t('media.animated_done')}</span>
                   )}
                 </div>
-                <button
-                  className="btn-delete"
-                  onClick={() => handleDelete(item.id)}
-                  title="Удалить файл"
-                >
-                  🗑️
-                </button>
+                {canEdit && (
+                  <button
+                    className="btn-delete"
+                    onClick={() => handleDelete(item.id)}
+                    title={t('media.delete_file_title')}
+                  >
+                    🗑️
+                  </button>
+                )}
               </div>
             </div>
           ))}

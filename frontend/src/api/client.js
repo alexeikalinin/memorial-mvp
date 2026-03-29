@@ -16,6 +16,15 @@ const apiClient = axios.create({
   },
 })
 
+// Добавляем Bearer token к каждому запросу
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // Interceptors для обработки ошибок
 apiClient.interceptors.response.use(
   (response) => response,
@@ -47,9 +56,15 @@ apiClient.interceptors.response.use(
 
 export default apiClient
 
+export const authAPI = {
+  register: (data) => apiClient.post('/auth/register', data),
+  login:    (data) => apiClient.post('/auth/login', data),
+  me:       ()     => apiClient.get('/auth/me'),
+}
+
 // API методы
 export const memorialsAPI = {
-  list: () => apiClient.get('/memorials/'),
+  list: (language = null) => apiClient.get('/memorials/', language ? { params: { language } } : {}),
   create: (data) => apiClient.post('/memorials/', data),
   get: (id) => apiClient.get(`/memorials/${id}`),
   update: (id, data) => apiClient.patch(`/memorials/${id}`, data),
@@ -64,8 +79,12 @@ export const memorialsAPI = {
   },
   getMedia: (memorialId) => apiClient.get(`/memorials/${memorialId}/media`),
   deleteMedia: (memorialId, mediaId) => apiClient.delete(`/memorials/${memorialId}/media/${mediaId}`),
-  createMemory: (memorialId, data) =>
-    apiClient.post(`/memorials/${memorialId}/memories`, data),
+  createMemory: (memorialId, data, inviteToken = null) =>
+    apiClient.post(
+      `/memorials/${memorialId}/memories`,
+      data,
+      inviteToken ? { params: { invite_token: inviteToken } } : {}
+    ),
   updateMemory: (memorialId, memoryId, data) =>
     apiClient.patch(`/memorials/${memorialId}/memories/${memoryId}`, data),
   deleteMemory: (memorialId, memoryId) =>
@@ -132,6 +151,25 @@ export const invitesAPI = {
     apiClient.delete(`/invites/${token}`),
 }
 
+export const accessAPI = {
+  list:           (memorialId) =>
+    apiClient.get(`/memorials/${memorialId}/access`),
+  grant:          (memorialId, data) =>
+    apiClient.post(`/memorials/${memorialId}/access`, data),
+  update:         (memorialId, userId, data) =>
+    apiClient.patch(`/memorials/${memorialId}/access/${userId}`, data),
+  revoke:         (memorialId, userId) =>
+    apiClient.delete(`/memorials/${memorialId}/access/${userId}`),
+  requestAccess:  (memorialId, data) =>
+    apiClient.post(`/memorials/${memorialId}/access/request`, data),
+  listRequests:   (memorialId) =>
+    apiClient.get(`/memorials/${memorialId}/access/requests`),
+  approveRequest: (memorialId, requestId) =>
+    apiClient.post(`/memorials/${memorialId}/access/requests/${requestId}/approve`),
+  rejectRequest:  (memorialId, requestId) =>
+    apiClient.post(`/memorials/${memorialId}/access/requests/${requestId}/reject`),
+}
+
 export const familyAPI = {
   createRelationship: (memorialId, data) =>
     apiClient.post(`/family/memorials/${memorialId}/relationships`, data),
@@ -143,7 +181,11 @@ export const familyAPI = {
     apiClient.delete(`/family/relationships/${relationshipId}`),
   getFamilyTree: (memorialId, maxDepth = 3) =>
     apiClient.get(`/family/memorials/${memorialId}/tree`, { params: { max_depth: maxDepth } }),
+  getFullTree: (memorialId, maxDepth = 6) =>
+    apiClient.get(`/family/memorials/${memorialId}/full-tree`, { params: { max_depth: maxDepth } }),
   getHiddenConnections: (memorialId, maxDepth = 6) =>
     apiClient.get(`/family/memorials/${memorialId}/hidden-connections`, { params: { max_depth: maxDepth } }),
+  getNetworkClusters: (memorialId) =>
+    apiClient.get(`/family/memorials/${memorialId}/network-clusters`),
 }
 

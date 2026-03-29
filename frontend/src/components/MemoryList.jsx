@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
+import { aboutName } from '../utils/declension'
+import { useLanguage } from '../contexts/LanguageContext'
 import './MemoryList.css'
 
-function MemoryList({ memorialId, memorialName, onReload }) {
+function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
+  const { lang, t } = useLanguage()
+  const locale = lang === 'en' ? 'en-US' : 'ru-RU'
   const [memories, setMemories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -52,7 +56,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
       mediaRecorderRef.current = recorder
       setIsRecording(true)
     } catch {
-      alert('Нет доступа к микрофону. Разрешите доступ в браузере.')
+      alert(t('memoryList.mic_denied'))
     }
   }
 
@@ -85,7 +89,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
       setAudioBlob(null)
       setAudioUrl(null)
     } catch (err) {
-      alert(err.response?.data?.detail || 'Ошибка при транскрипции')
+      alert(err.response?.data?.detail || t('memoryList.transcribe_error'))
     } finally {
       setTranscribing(false)
     }
@@ -105,13 +109,22 @@ function MemoryList({ memorialId, memorialName, onReload }) {
     try {
       const res = await invitesAPI.create(memorialId, {})
       const url = res.data.invite_url
-      const name = memorialName || 'этого человека'
-      const text = `Я пишу воспоминания о ${name}. Расскажи и ты о нём: ${url}`
+      const fallbackName = t('memoryList.anonymous_person')
+      const text =
+        lang === 'en'
+          ? t('memoryList.invite_sms', {
+              name: memorialName || fallbackName,
+              url,
+            })
+          : t('memoryList.invite_sms', {
+              name: aboutName(memorialName || fallbackName),
+              url,
+            })
       setSharePanel({ url, text })
       setUrlCopied(false)
       setTextCopied(false)
     } catch {
-      alert('Не удалось создать ссылку. Попробуйте ещё раз.')
+      alert(t('memoryList.invite_link_error'))
     } finally {
       setSharingLoading(false)
     }
@@ -132,7 +145,14 @@ function MemoryList({ memorialId, memorialName, onReload }) {
   const handleNativeShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: `Воспоминания о ${memorialName || 'близком человеке'}`,
+        title:
+          lang === 'en'
+            ? t('memoryList.native_share_title', {
+                name: memorialName || t('memoryList.anonymous_person'),
+              })
+            : t('memoryList.native_share_title', {
+                name: aboutName(memorialName || t('memoryList.anonymous_person')),
+              }),
         text: sharePanel.text,
         url: sharePanel.url,
       })
@@ -150,7 +170,9 @@ function MemoryList({ memorialId, memorialName, onReload }) {
     } catch (err) {
       console.error('Error loading memories:', err)
       setMemories([])
-      setLoadError(err.response?.data?.detail || err.message || 'Ошибка сети. Убедитесь, что бэкенд запущен.')
+      setLoadError(
+        err.response?.data?.detail || err.message || t('memoryList.network_error')
+      )
     } finally {
       setLoading(false)
     }
@@ -170,7 +192,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
       await loadMemories(debouncedQuery)
       if (onReload) onReload()
     } catch (err) {
-      alert(err.response?.data?.detail || 'Ошибка при добавлении воспоминания')
+      alert(err.response?.data?.detail || t('memoryList.submit_error_add'))
     } finally {
       setSubmitting(false)
     }
@@ -179,45 +201,54 @@ function MemoryList({ memorialId, memorialName, onReload }) {
   return (
     <div className="memory-list">
       <div className="memory-header">
-        <h2>Воспоминания</h2>
+        <h2>{t('memoryList.title')}</h2>
         <div className="memory-header-actions">
           <button
             className="btn btn-share"
             onClick={handleShareInvite}
             disabled={sharingLoading}
           >
-            {sharingLoading ? '...' : '🔗 Пригласить друга'}
+            {sharingLoading ? t('memoryList.invite_loading') : `🔗 ${t('memoryList.invite_friend')}`}
           </button>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm ? 'Отмена' : 'Добавить воспоминание'}
-          </button>
+          {canEdit && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm ? t('common.cancel') : t('memoryList.add_memory')}
+            </button>
+          )}
         </div>
       </div>
 
       {sharePanel && (
         <div className="share-panel">
           <div className="share-panel-header">
-            <span>Поделитесь — пусть близкие тоже расскажут о {memorialName || 'нём'}</span>
+            <span>
+              {memorialName
+                ? t('memoryList.share_heading', {
+                    name:
+                      lang === 'en' ? memorialName : aboutName(memorialName),
+                  })
+                : t('memoryList.share_heading_no_name')}
+            </span>
             <button className="share-panel-close" onClick={() => setSharePanel(null)}>✕</button>
           </div>
           <div className="share-url-row">
             <span className="share-url-text">{sharePanel.url}</span>
             <button className="btn btn-copy" onClick={handleCopyUrl}>
-              {urlCopied ? '✓ Скопировано' : 'Копировать'}
+              {urlCopied ? t('memoryList.copied') : t('memoryList.copy')}
             </button>
           </div>
           <div className="share-message-section">
-            <p className="share-message-label">или отправьте готовое сообщение:</p>
+            <p className="share-message-label">{t('memoryList.or_ready_message')}</p>
             <p className="share-message-text">«{sharePanel.text}»</p>
             <div className="share-actions">
               <button className="btn btn-copy" onClick={handleCopyText}>
-                {textCopied ? '✓ Скопировано' : 'Скопировать текст'}
+                {textCopied ? t('memoryList.copied') : t('memoryList.copy_text')}
               </button>
               <button className="btn btn-primary" onClick={handleNativeShare}>
-                Поделиться
+                {t('memoryList.share')}
               </button>
             </div>
           </div>
@@ -227,7 +258,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
       <div className="memory-search">
         <input
           type="text"
-          placeholder="Поиск по воспоминаниям..."
+          placeholder={t('memoryList.search_placeholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="search-input"
@@ -237,15 +268,17 @@ function MemoryList({ memorialId, memorialName, onReload }) {
         )}
       </div>
       {searchQuery && !loading && (
-        <p className="search-results-count">Найдено: {memories.length} воспоминаний</p>
+        <p className="search-results-count">
+          {t('memoryList.found_count', { n: String(memories.length) })}
+        </p>
       )}
 
-      {loading && <div className="loading">Загрузка воспоминаний...</div>}
+      {loading && <div className="loading">{t('memoryList.loading')}</div>}
 
       {showForm && (
         <form onSubmit={handleSubmit} className="memory-form">
           <div className="form-group">
-            <label htmlFor="title">Заголовок (опционально)</label>
+            <label htmlFor="title">{t('memoryList.title_optional')}</label>
             <input
               type="text"
               id="title"
@@ -253,11 +286,11 @@ function MemoryList({ memorialId, memorialName, onReload }) {
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              placeholder="Краткий заголовок"
+              placeholder={t('memoryList.short_title_ph')}
             />
           </div>
           <div className="form-group">
-            <label htmlFor="content">Текст воспоминания *</label>
+            <label htmlFor="content">{t('memoryList.memory_text_label')}</label>
             <textarea
               id="content"
               value={formData.content}
@@ -266,7 +299,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
               }
               rows="6"
               required
-              placeholder="Расскажите о человеке, его жизни, характере, важных событиях..."
+              placeholder={t('memoryList.memory_content_ph')}
             />
           </div>
 
@@ -277,28 +310,28 @@ function MemoryList({ memorialId, memorialName, onReload }) {
               className="btn-audio-toggle"
               onClick={() => { setShowAudio(!showAudio); resetAudio() }}
             >
-              🎙️ {showAudio ? 'Скрыть' : 'Добавить голосовое воспоминание'}
+              🎙️ {showAudio ? t('memoryList.voice_hide') : t('memoryList.voice_show')}
             </button>
 
             {showAudio && (
               <div className="audio-controls">
                 <p className="audio-hint">
-                  Запишите рассказ голосом или загрузите аудиофайл — он будет преобразован в текст и добавлен в воспоминание.
+                  {t('memoryList.audio_hint')}
                 </p>
                 <div className="audio-buttons">
                   {!audioBlob && (
                     <>
                       {!isRecording ? (
                         <button type="button" className="btn-record" onClick={startRecording}>
-                          🔴 Начать запись
+                          🔴 {t('memoryList.record_start')}
                         </button>
                       ) : (
                         <button type="button" className="btn-record recording" onClick={stopRecording}>
-                          ⏹️ Остановить запись
+                          ⏹️ {t('memoryList.record_stop')}
                         </button>
                       )}
                       <label className="btn-upload-audio">
-                        📁 Загрузить аудио
+                        📁 {t('memoryList.upload_audio')}
                         <input
                           type="file"
                           accept="audio/*"
@@ -318,10 +351,10 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                           onClick={handleTranscribe}
                           disabled={transcribing}
                         >
-                          {transcribing ? '⏳ Транскрибирую...' : '✍️ Преобразовать в текст'}
+                          {transcribing ? `⏳ ${t('memoryList.transcribing')}` : `✍️ ${t('memoryList.transcribe_btn')}`}
                         </button>
                         <button type="button" className="btn btn-secondary" onClick={resetAudio}>
-                          Удалить
+                          {t('memoryList.delete')}
                         </button>
                       </div>
                     </div>
@@ -332,7 +365,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
           </div>
 
           <div className="form-group">
-            <label htmlFor="event_date">Когда это было (опционально)</label>
+            <label htmlFor="event_date">{t('memoryList.when_optional')}</label>
             <input
               type="date"
               id="event_date"
@@ -347,28 +380,28 @@ function MemoryList({ memorialId, memorialName, onReload }) {
             className="btn btn-primary"
             disabled={submitting}
           >
-            {submitting ? 'Сохранение...' : 'Сохранить'}
+            {submitting ? t('memoryList.saving') : t('memoryList.save')}
           </button>
         </form>
       )}
 
       {!loading && loadError ? (
         <div className="empty-state load-error">
-          <p>Не удалось загрузить воспоминания</p>
+          <p>{t('memoryList.load_failed')}</p>
           <p className="hint">{loadError}</p>
           <button type="button" className="btn-retry" onClick={() => loadMemories(debouncedQuery)}>
-            Повторить
+            {t('memoryList.retry')}
           </button>
         </div>
       ) : !loading && memories.length === 0 ? (
         <div className="empty-state">
           {searchQuery ? (
-            <p>Ничего не найдено по запросу «{searchQuery}»</p>
+            <p>{t('memoryList.empty_search', { q: searchQuery })}</p>
           ) : (
             <>
-              <p>Пока нет добавленных воспоминаний</p>
+              <p>{t('memoryList.empty_none')}</p>
               <p className="hint">
-                Добавьте воспоминания, чтобы ИИ-аватар мог отвечать на вопросы
+                {t('memoryList.empty_hint')}
               </p>
             </>
           )}
@@ -393,7 +426,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                       await loadMemories(debouncedQuery)
                       if (onReload) onReload()
                     } catch (err) {
-                      alert(err.response?.data?.detail || 'Ошибка при обновлении воспоминания')
+                      alert(err.response?.data?.detail || t('memoryList.submit_error_update'))
                     } finally {
                       setSubmitting(false)
                     }
@@ -401,7 +434,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                   className="memory-edit-form"
                 >
                   <div className="form-group">
-                    <label htmlFor={`edit-title-${memory.id}`}>Заголовок</label>
+                    <label htmlFor={`edit-title-${memory.id}`}>{t('memoryList.edit_title_label')}</label>
                     <input
                       type="text"
                       id={`edit-title-${memory.id}`}
@@ -409,11 +442,11 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, title: e.target.value })
                       }
-                      placeholder="Краткий заголовок"
+                      placeholder={t('memoryList.short_title_ph')}
                     />
                   </div>
                   <div className="form-group">
-                    <label htmlFor={`edit-content-${memory.id}`}>Текст *</label>
+                    <label htmlFor={`edit-content-${memory.id}`}>{t('memoryList.edit_content_label')}</label>
                     <textarea
                       id={`edit-content-${memory.id}`}
                       value={editFormData.content}
@@ -425,7 +458,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                     />
                   </div>
                   <div className="form-group">
-                    <label htmlFor={`edit-event-date-${memory.id}`}>Когда это было</label>
+                    <label htmlFor={`edit-event-date-${memory.id}`}>{t('memoryList.edit_when')}</label>
                     <input
                       type="date"
                       id={`edit-event-date-${memory.id}`}
@@ -437,7 +470,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                   </div>
                   <div className="form-actions">
                     <button type="submit" className="btn btn-primary" disabled={submitting}>
-                      {submitting ? 'Сохранение...' : 'Сохранить'}
+                      {submitting ? t('memoryList.saving') : t('memoryList.save')}
                     </button>
                     <button
                       type="button"
@@ -447,7 +480,7 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                         setEditFormData({ title: '', content: '' })
                       }}
                     >
-                      Отмена
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </form>
@@ -458,16 +491,17 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                   <div className="memory-meta">
                     {memory.event_date && (
                       <span className="event-date">
-                        {new Date(memory.event_date).toLocaleDateString('ru-RU', {
+                        {new Date(memory.event_date).toLocaleDateString(locale, {
                           year: 'numeric',
                           month: 'long',
                         })}
                       </span>
                     )}
                     <span>
-                      Добавлено:{' '}
-                      {new Date(memory.created_at).toLocaleDateString('ru-RU')}
+                      {t('memoryList.added')}{' '}
+                      {new Date(memory.created_at).toLocaleDateString(locale)}
                     </span>
+                    {canEdit && (
                     <div className="memory-actions">
                       <button
                         className="btn-edit"
@@ -482,25 +516,26 @@ function MemoryList({ memorialId, memorialName, onReload }) {
                           })
                         }}
                       >
-                        ✏️ Редактировать
+                        ✏️ {t('memoryList.edit')}
                       </button>
                       <button
                         className="btn-delete"
                         onClick={async () => {
-                          if (confirm('Удалить это воспоминание?')) {
+                          if (confirm(t('memoryList.confirm_delete'))) {
                             try {
                               await memorialsAPI.deleteMemory(memorialId, memory.id)
                               await loadMemories(debouncedQuery)
                               if (onReload) onReload()
                             } catch (err) {
-                              alert(err.response?.data?.detail || 'Ошибка при удалении воспоминания')
+                              alert(err.response?.data?.detail || t('memoryList.delete_error'))
                             }
                           }
                         }}
                       >
-                        🗑️ Удалить
+                        🗑️ {t('memoryList.delete_memory')}
                       </button>
                     </div>
+                    )}
                   </div>
                 </>
               )}

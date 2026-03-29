@@ -1,525 +1,506 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap');
+/* FamilyTree.css — relatives-tree powered, dark heritage canvas */
 
-/* ===== Контейнер ===== */
+/* ─── Container ──────────────────────────────────────────────────── */
 .family-tree {
   width: 100%;
-  background: #FAFAFA;
-  border-radius: 16px;
-  padding: 1.5rem;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0;
 }
 
-/* ===== Заголовок ===== */
+/* ─── Header ─────────────────────────────────────────────────────── */
 .tree-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .tree-header h2 {
-  font-family: 'Lora', Georgia, serif;
-  font-weight: 600;
-  color: #3D3450;
-  font-size: 1.5rem;
-  letter-spacing: 0.01em;
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--text);
 }
 
-/* ===== Кнопки ===== */
+.tree-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tree-node-count {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+/* ─── Primary button ──────────────────────────────────────────────  */
 .btn.btn-primary {
-  background: linear-gradient(135deg, #7C6FA0, #9B6B8A);
-  color: #fff;
+  background: var(--accent-dark);
+  color: #FAF8F5;
   border: none;
   padding: 0.6rem 1.4rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease-bounce);
+  box-shadow: var(--shadow-accent);
 }
+.btn.btn-primary:hover { background: #7A5234; transform: translateY(-1px); }
 
-.btn.btn-primary:hover {
-  opacity: 0.9;
-  box-shadow: 0 4px 14px rgba(124, 111, 160, 0.4);
-  transform: translateY(-1px);
-}
-
-/* ===== Форма добавления связи ===== */
+/* ─── Add Relationship Form ──────────────────────────────────────── */
 .relationship-form {
-  background: #F7F5FC;
-  border: 1px solid #E8E0F0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   padding: 1.5rem;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   margin-bottom: 2rem;
-  animation: fadeInUp 0.25s ease;
+  animation: slideUp var(--t-base) var(--ease) both;
 }
 
-.relationship-form .form-group {
-  margin-bottom: 1rem;
-}
+.relationship-form .form-group { margin-bottom: 1rem; }
 
 .relationship-form label {
   display: block;
-  margin-bottom: 0.4rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #4A4060;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .relationship-form input,
 .relationship-form select,
 .relationship-form textarea {
   width: 100%;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid #D7CDE8;
-  border-radius: 9px;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 0.95rem;
-  font-family: inherit;
-  background: #fff;
-  color: #2D2D2D;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
   box-sizing: border-box;
+  outline: none;
 }
 
 .relationship-form input:focus,
 .relationship-form select:focus,
 .relationship-form textarea:focus {
-  outline: none;
-  border-color: #7C6FA0;
-  box-shadow: 0 0 0 3px rgba(124, 111, 160, 0.15);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--surface);
 }
 
-.relationship-form small {
-  display: block;
-  margin-top: 0.3rem;
-  color: #9B8FB0;
-  font-size: 0.82rem;
-}
-
-/* ===== Секции ===== */
-.tree-section,
-.relationships-section {
-  margin-bottom: 2rem;
-}
-
-.tree-section h3,
-.relationships-section h3 {
-  font-family: 'Lora', Georgia, serif;
-  color: #3D3450;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #EDE8F5;
-}
-
-/* ===== Контейнер дерева — тёмный градиент с закатом ===== */
-.tree-container {
+/* ─── Main Canvas ────────────────────────────────────────────────── */
+.tree-canvas {
   position: relative;
+  width: 100%;
+  height: 540px;
   background: linear-gradient(
     155deg,
-    #4A235A 0%,
-    #6B3B7A 25%,
-    #8F4060 50%,
-    #C2573D 75%,
-    #F4511E 100%
+    #1C1917 0%,
+    #2A2018 30%,
+    #3D2D1A 60%,
+    #4A3520 80%,
+    #5C3D22 100%
   );
-  border-radius: 18px;
-  min-height: 280px;
-  overflow: auto;
-  max-height: 600px;
-  padding: 2.5rem 2rem 2rem;
-  box-shadow: 0 8px 32px rgba(74, 35, 90, 0.4), 0 2px 8px rgba(0,0,0,0.2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: grab;
+  box-shadow: var(--shadow-lg);
+  touch-action: none;
 }
 
-/* Звёздное небо */
-.tree-container::before {
+.tree-canvas:active { cursor: grabbing; }
+
+/* Warm dust overlay */
+.tree-canvas::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(circle at 8%  12%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.95) 1.5px, transparent 1.5px),
-    radial-gradient(circle at 22%  5%, rgba(255,255,255,0.70) 0, rgba(255,255,255,0.70) 1px,   transparent 1px),
-    radial-gradient(circle at 40% 18%, rgba(255,255,255,0.80) 0, rgba(255,255,255,0.80) 1px,   transparent 1px),
-    radial-gradient(circle at 60%  8%, rgba(255,255,255,0.65) 0, rgba(255,255,255,0.65) 1.5px, transparent 1.5px),
-    radial-gradient(circle at 75% 22%, rgba(255,255,255,0.55) 0, rgba(255,255,255,0.55) 1px,   transparent 1px),
-    radial-gradient(circle at 88% 10%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0.85) 1.5px, transparent 1.5px),
-    radial-gradient(circle at 95% 35%, rgba(255,255,255,0.40) 0, rgba(255,255,255,0.40) 1px,   transparent 1px),
-    radial-gradient(circle at 12% 42%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.30) 1px,   transparent 1px),
-    radial-gradient(circle at 50%  3%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.95) 2px,   transparent 2px),
-    radial-gradient(circle at 33% 28%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.25) 1px,   transparent 1px),
-    radial-gradient(circle at 70% 38%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.30) 1px,   transparent 1px),
-    radial-gradient(circle at 82% 52%, rgba(255,255,255,0.20) 0, rgba(255,255,255,0.20) 1px,   transparent 1px),
-    radial-gradient(circle at  5% 68%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.25) 1px,   transparent 1px),
-    radial-gradient(circle at 47% 62%, rgba(255,255,255,0.15) 0, rgba(255,255,255,0.15) 1px,   transparent 1px),
-    radial-gradient(circle at 17% 82%, rgba(255,255,255,0.20) 0, rgba(255,255,255,0.20) 1px,   transparent 1px),
-    radial-gradient(circle at 64% 75%, rgba(255,255,255,0.18) 0, rgba(255,255,255,0.18) 1px,   transparent 1px),
-    radial-gradient(circle at 90% 80%, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 1px,   transparent 1px);
+    radial-gradient(circle at 15% 20%, rgba(212,160,86,0.08) 0%, transparent 40%),
+    radial-gradient(circle at 75% 65%, rgba(196,168,130,0.06) 0%, transparent 35%),
+    radial-gradient(circle at 50% 8%,  rgba(255,255,255,0.55) 0, rgba(255,255,255,0.55) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 22% 12%, rgba(255,255,255,0.40) 0, rgba(255,255,255,0.40) 1px,   transparent 1px),
+    radial-gradient(circle at 80% 18%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.35) 1px,   transparent 1px);
 }
 
-/* Силуэт дерева */
-.tree-container::after {
-  content: '';
+/* ─── Canvas inner (pan/zoom target) ─────────────────────────────── */
+.tree-canvas-inner {
   position: absolute;
-  bottom: -8px;
-  right: 4%;
-  width: 200px;
-  height: 170px;
-  opacity: 0.08;
-  pointer-events: none;
-  z-index: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Crect x='44' y='75' width='12' height='45' fill='white'/%3E%3Cpolygon points='50,5 88,58 12,58' fill='white'/%3E%3Cpolygon points='50,24 84,68 16,68' fill='white'/%3E%3Cpolygon points='50,40 80,78 20,78' fill='white'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: bottom;
+  top: 0;
+  left: 0;
+  will-change: transform;
 }
 
-/* Подсказка зума */
-.tree-zoom-hint {
+/* ─── Node Card ──────────────────────────────────────────────────── */
+.ft-node {
   position: absolute;
-  top: 0.6rem;
-  right: 0.9rem;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
-  z-index: 10;
-  pointer-events: none;
-  font-style: italic;
-  letter-spacing: 0.02em;
-}
-
-/* Обёртка зума */
-.zoom-wrapper {
-  position: relative;
-  z-index: 1;
-  transition: transform 0.2s ease;
-  display: inline-block;
-  min-width: 100%;
-}
-
-/* ===== Бейджи связей ===== */
-.node-relation-badge {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 0.15rem 0.5rem;
-  border-radius: 20px;
-  margin-bottom: 0.3rem;
-  white-space: nowrap;
-  align-self: flex-start;
-}
-
-.node-relation-badge--child  { background: #E8F4FD; color: #2C7BE5; }
-.node-relation-badge--spouse { background: #FDF0F8; color: #A0468A; }
-.node-relation-badge--root   { background: #F0EDF5; color: #7C6FA0; }
-
-/* ===== Узел дерева ===== */
-.tree-node {
-  margin-bottom: 1.5rem;
-  animation: nodeGrow 0.35s ease both;
-  position: relative;
-}
-
-/* Строка: основной узел + супруги */
-.node-row {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0;
-}
-
-/* ===== Карточка узла ===== */
-.node-card {
-  background: #FDFDFD;
-  border: 1px solid rgba(215, 205, 232, 0.55);
-  padding: 0.7rem 0.9rem;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  min-width: 160px;
-  max-width: 220px;
-  display: inline-flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.13);
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  z-index: 2;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.ft-node:hover { z-index: 10; }
+.ft-node:hover .ft-node-avatar {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+
+.ft-node--placeholder {
+  cursor: default;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ft-node-avatar-wrap {
   position: relative;
-}
-
-/* Внутренняя строка: аватар + текст */
-.node-card .node-body {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-}
-
-.node-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 18px rgba(215, 205, 232, 0.5), 0 6px 20px rgba(0, 0, 0, 0.18);
-}
-
-.node-card.spouse {
-  background: #FFF8FE;
-  border-color: rgba(215, 205, 232, 0.75);
-}
-
-/* Умерший: приглушённость через filter */
-.node-card--deceased {
-  filter: grayscale(85%) brightness(0.88) contrast(0.92);
-  background: #EFEFED;
-  border-color: rgba(180, 175, 165, 0.7);
-  opacity: 0.82;
-}
-
-/* ===== Аватар-кружок ===== */
-.node-avatar {
-  width: 46px;
-  height: 46px;
-  min-width: 46px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #9B8FC8, #C4A0B8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  width: 80px;
+  height: 80px;
   flex-shrink: 0;
 }
 
-.node-avatar--deceased {
-  background: linear-gradient(135deg, #A0A0A0, #C8C8C8);
+/* ─── Avatar circle ──────────────────────────────────────────────── */
+.ft-node-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 2px rgba(196,168,130,0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.node-avatar-img {
+.ft-node--root .ft-node-avatar {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 3px var(--accent);
+}
+
+.ft-node-root-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+}
+
+.ft-node--deceased .ft-node-avatar {
+  filter: grayscale(60%) brightness(0.75);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.45), 0 0 0 2px rgba(140,120,100,0.25);
+}
+
+.ft-node-img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
   object-position: center top;
+  border-radius: 50%;
   display: block;
 }
 
-.node-avatar-initials {
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: 700;
-  font-family: 'Lora', serif;
+.ft-node-initials {
+  color: #FAF8F5;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-serif);
   letter-spacing: 0.04em;
 }
 
-/* Текст карточки */
-.node-info {
-  flex: 1;
-  min-width: 0;
+/* ─── Node info ──────────────────────────────────────────────────── */
+.ft-node-info {
+  margin-top: 6px;
+  text-align: center;
+  max-width: 120px;
 }
 
-.node-name {
-  font-family: 'Lora', Georgia, serif;
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: #3D3450;
+.ft-node-name {
+  font-family: var(--font-serif);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgba(250,248,245,0.92);
   line-height: 1.3;
   word-break: break-word;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-.node-date {
-  font-size: 0.76rem;
-  color: #718096;
+.ft-node-name--unknown {
+  color: rgba(250,248,245,0.4);
   font-style: italic;
-  margin-top: 0.15rem;
 }
 
-/* Символ бесконечности для умерших */
-.node-candle {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.45rem;
-  font-size: 0.7rem;
-  color: #D7CDE8;
-  opacity: 0.75;
-  line-height: 1;
+.ft-node-years {
+  font-size: 0.65rem;
+  color: rgba(196,168,130,0.85);
+  margin-top: 2px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* ===== Супруги — горизонтальная линия брака ===== */
-.spouse-group {
-  display: flex;
-  align-items: center;
+.ft-node-rel-label {
+  font-size: 0.6rem;
+  font-style: italic;
+  color: rgba(220,180,100,0.9);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
 
-.marriage-connector {
-  display: flex;
-  align-items: center;
+.ft-node--deceased .ft-node-name  { color: rgba(200,190,178,0.7); }
+.ft-node--deceased .ft-node-years { color: rgba(160,145,125,0.6); }
+
+/* ─── Empty state ────────────────────────────────────────────────── */
+.ft-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: linear-gradient(155deg, #1C1917, #2A2018, #3D2D1A, #4A3520, #5C3D22);
+  border-radius: var(--radius-md);
 }
 
-.marriage-line {
-  width: 32px;
-  height: 2px;
-  background: rgba(215, 205, 232, 0.9);
+.ft-empty-title {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: rgba(250,248,245,0.6);
+  margin-bottom: 0.5rem;
 }
 
-.marriage-symbol {
-  font-size: 1rem;
-  color: rgba(220, 170, 210, 1);
-  padding: 0 4px;
-  line-height: 1;
+.ft-empty-hint {
+  font-size: 0.85rem;
+  color: rgba(250,248,245,0.35);
 }
 
-/* ===== Дети ===== */
-.children {
-  margin-top: 1.25rem;
-  padding-left: 1.5rem;
-  border-left: 3px solid rgba(196, 183, 224, 0.85);
+/* ─── Relations list ─────────────────────────────────────────────── */
+.relations-list {
+  margin-top: 2rem;
 }
 
-.children .tree-node::before {
-  content: '';
-  position: absolute;
-  left: -1.5rem;
-  top: 1.8rem;
-  width: 1.5rem;
-  height: 2px;
-  background: rgba(196, 183, 224, 0.85);
+.relations-list h3 {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
-/* ===== Список связей ===== */
-.relationships-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.relationship-item {
-  background: #FFFFFF;
-  border: 1px solid #EDE8F5;
-  padding: 0.9rem 1.25rem;
-  border-radius: 12px;
+.relation-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #D7CDE8;
-  transition: box-shadow 0.2s;
+  padding: 0.65rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  gap: 1rem;
 }
 
-.relationship-item:hover {
-  box-shadow: 0 2px 12px rgba(124, 111, 160, 0.1);
-}
-
-.relationship-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.relationship-type {
-  font-weight: 600;
-  color: #4A4060;
+.relation-item span {
   font-size: 0.9rem;
+  color: var(--text);
 }
 
-.relationship-name {
-  font-family: 'Lora', Georgia, serif;
-  color: #2D2D2D;
-  font-size: 1rem;
+.btn.btn-sm {
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
 }
 
-.relationship-notes {
-  color: #9B8FB0;
-  font-size: 0.85rem;
-  font-style: italic;
-}
-
-/* ===== Кнопка удаления ===== */
-.btn-delete {
-  padding: 0.45rem 0.9rem;
-  background: #F0EDF5;
-  color: #9B8FB0;
-  border: 1px solid #DDD6EC;
-  border-radius: 8px;
+.btn.btn-danger {
+  background: none;
+  border: 1px solid rgba(180,60,60,0.35);
+  color: rgba(180,60,60,0.75);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: all var(--t-fast) var(--ease);
   white-space: nowrap;
 }
 
-.btn-delete:hover {
-  background: #FDECEA;
-  color: #C0392B;
-  border-color: #F5C6C2;
+.btn.btn-danger:hover {
+  background: rgba(180,60,60,0.08);
+  border-color: rgba(180,60,60,0.6);
+  color: #b43c3c;
 }
 
-/* ===== Пустое состояние ===== */
-.empty-state {
-  text-align: center;
-  padding: 3.5rem 2rem;
-  color: #9B8FB0;
+/* ─── Mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .tree-canvas { height: 400px; }
+  .tree-header h2 { font-size: 1.4rem; }
 }
 
-.empty-tree-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-  opacity: 0.45;
+/* ─── Connected Families section ─────────────────────────────────── */
+.ft-connected-families {
+  margin-top: 24px;
+  padding: 20px;
+  background: #16162a;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
 }
 
-.empty-state p {
-  margin-bottom: 0.4rem;
-  font-family: 'Lora', Georgia, serif;
-  font-size: 1.05rem;
-  color: #6B5F80;
+.ft-cf-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-.hint {
-  font-size: 0.88rem !important;
+.ft-cf-icon {
+  font-size: 18px;
+  color: #f0a040;
+}
+
+.ft-cf-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.ft-cf-hint {
+  font-size: 12px;
+  color: #666;
+}
+
+.ft-cf-cluster {
+  margin-bottom: 16px;
+}
+
+.ft-cf-cluster:last-child {
+  margin-bottom: 0;
+}
+
+.ft-cf-bridge-label {
+  font-size: 12px;
+  color: #f0a040;
+  margin-bottom: 10px;
   font-style: italic;
-  color: #A898C0 !important;
-  font-family: inherit !important;
+  opacity: 0.85;
 }
 
-/* ===== Загрузка ===== */
-.loading {
+.ft-cf-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ft-cf-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: #1e1e30;
+  width: 72px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ft-cf-card:hover {
+  background: #252540;
+  border-color: rgba(255,255,255,0.15);
+}
+
+.ft-cf-card--deceased {
+  opacity: 0.75;
+}
+
+.ft-cf-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #2a2a40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ft-cf-img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.ft-cf-initials {
+  font-size: 14px;
+  font-weight: 600;
+  color: #aaa;
+}
+
+.ft-cf-name {
+  font-size: 11px;
+  color: #ddd;
   text-align: center;
-  padding: 3rem;
-  color: #9B8FB0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 66px;
+}
+
+.ft-cf-years {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+}
+
+.ft-cf-more {
+  width: 72px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #888;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  border: 1px dashed rgba(255,255,255,0.1);
+}
+
+.ft-cf-cluster-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8a87a;
+  margin-bottom: 8px;
+}
+
+.ft-cf-bridge-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ft-cf-bridge-tag {
+  font-size: 11px;
+  color: #aaa;
+  background: rgba(240, 160, 64, 0.12);
+  border: 1px solid rgba(240, 160, 64, 0.25);
+  border-radius: 20px;
+  padding: 2px 10px;
   font-style: italic;
-}
-
-/* ===== Анимации ===== */
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes nodeGrow {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* ===== Адаптив ===== */
-@media (max-width: 600px) {
-  .node-card {
-    min-width: 130px;
-    max-width: 180px;
-    padding: 0.55rem 0.7rem;
-    gap: 0.5rem;
-  }
-
-  .node-avatar {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-  }
-
-  .node-avatar-initials {
-    font-size: 0.72rem;
-  }
-
-  .marriage-line {
-    width: 12px;
-  }
-
-  .tree-container {
-    padding: 1.5rem 1rem;
-  }
 }

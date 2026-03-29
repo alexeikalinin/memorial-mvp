@@ -1,0 +1,244 @@
+.fn-root {
+  padding: 16px 0;
+}
+
+.fn-subtitle {
+  font-size: 13px;
+  color: #8a8a8a;
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+.fn-loading,
+.fn-error,
+.fn-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: #888;
+  font-size: 14px;
+}
+
+.fn-error { color: #c0392b; }
+
+/* Canvas wrapper: position relative so islands can overlay the SVG */
+.fn-canvas-wrap {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.fn-svg {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.fn-bridge-g {
+  pointer-events: all;
+}
+
+.fn-bridge-label {
+  pointer-events: none;
+  user-select: none;
+  font-family: inherit;
+}
+
+.fn-islands {
+  position: relative;
+}
+
+/* Island cards */
+.fn-island {
+  position: absolute;
+  background: #1a1a2a;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fn-island--focal {
+  border-width: 2px;
+}
+
+.fn-island-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.fn-island-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fn-island-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e0e0e0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fn-island-count {
+  font-size: 11px;
+  color: #888;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 1px 6px;
+}
+
+.fn-island-avatars {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  align-content: flex-start;
+}
+
+.fn-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: visible;
+}
+
+.fn-avatar-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.1);
+  display: block;
+}
+
+.fn-avatar-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0.8;
+}
+
+.fn-alive-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4caf50;
+  border: 1.5px solid #1a1a2a;
+}
+
+.fn-avatar-more {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+/* Bridge detail panel */
+.fn-bridge-detail {
+  margin: 16px auto 0;
+  max-width: 540px;
+  background: #1e1e30;
+  border: 1px solid #f0a04055;
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  animation: fn-slide-in 0.15s ease;
+}
+
+@keyframes fn-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fn-bridge-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+.fn-bridge-close:hover { color: #fff; }
+
+.fn-bridge-detail-people {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fn-bd-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.fn-bd-arrow {
+  font-size: 18px;
+  color: #f0a040;
+}
+
+.fn-bd-label {
+  font-size: 13px;
+  color: #aaa;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Legend */
+.fn-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.fn-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.fn-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

@@ -1,102 +1,123 @@
+/* HiddenConnections — "Скрытые связи"
+   Panel lives inside FamilyTree on a dark background,
+   so it uses its own dark-surface palette.              */
+
 .hidden-connections {
-  margin-top: 32px;
-  padding: 24px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 16px;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--surface-warm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  animation: slideUp var(--t-base) var(--ease) both;
+}
+
+/* ─── Header ────────────────────────────────────────────────────── */
+.hc-header {
+  margin-bottom: 1rem;
 }
 
 .hc-header h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-  color: #c4b5fd;
+  margin: 0 0 0.4rem;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--accent-dark);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .hc-header h3::before {
-  content: '🔍';
-  font-size: 20px;
+  content: '◉';
+  font-size: 0.85rem;
+  opacity: 0.7;
 }
 
 .hc-hint {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: #94a3b8;
-  line-height: 1.5;
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.55;
 }
 
+/* ─── Discover Button ───────────────────────────────────────────── */
 .hc-discover-btn {
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  background: rgba(196, 168, 130, 0.12);
+  border: 1px solid rgba(196, 168, 130, 0.3);
+  color: var(--accent);
+  padding: 0.55rem 1.25rem;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
-  transition: opacity 0.2s;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all var(--t-fast) var(--ease);
 }
 
 .hc-discover-btn:hover:not(:disabled) {
-  opacity: 0.85;
+  background: rgba(196, 168, 130, 0.22);
+  border-color: var(--accent);
 }
 
 .hc-discover-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.hc-results {
-  margin-top: 20px;
-}
+/* ─── Results ───────────────────────────────────────────────────── */
+.hc-results { margin-top: 1.25rem; }
 
 .hc-empty {
-  color: #64748b;
-  font-size: 14px;
+  font-size: 0.85rem;
+  color: var(--text-faint);
   text-align: center;
-  padding: 16px 0;
+  padding: 1rem 0;
+  font-style: italic;
 }
 
 .hc-count {
-  font-size: 14px;
-  color: #94a3b8;
-  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  letter-spacing: 0.04em;
 }
 
 .hc-count strong {
-  color: #c4b5fd;
+  color: var(--accent-dark);
+  font-weight: 600;
 }
 
+/* ─── List ──────────────────────────────────────────────────────── */
 .hc-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .hc-item {
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-  transition: border-color 0.2s;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
 
 .hc-item:hover {
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-xs);
 }
 
-/* Color by hop distance */
-.hc-item--hops-2 { border-left: 3px solid #22d3ee; }
-.hc-item--hops-3 { border-left: 3px solid #a78bfa; }
-.hc-item--hops-4 { border-left: 3px solid #f472b6; }
-.hc-item--hops-5 { border-left: 3px solid #fb923c; }
+/* Color coded by hop distance — warm scale */
+.hc-item--hops-2 { border-left: 3px solid var(--accent); }
+.hc-item--hops-3 { border-left: 3px solid var(--color-accent-warm); }
+.hc-item--hops-4 { border-left: 3px solid #E8924E; }
+.hc-item--hops-5 { border-left: 3px solid var(--text-muted); }
 
+/* ─── Item Header ───────────────────────────────────────────────── */
 .hc-item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 0.75rem 1rem;
   cursor: pointer;
   user-select: none;
 }
@@ -104,90 +125,96 @@
 .hc-item-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 .hc-badge {
-  font-size: 11px;
-  padding: 2px 8px;
-  background: rgba(139, 92, 246, 0.2);
-  color: #c4b5fd;
-  border-radius: 20px;
+  font-size: 0.65rem;
+  padding: 0.12rem 0.5rem;
+  background: rgba(196, 168, 130, 0.15);
+  color: var(--accent);
+  border-radius: var(--radius-full);
   white-space: nowrap;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .hc-name {
-  font-size: 15px;
-  color: #e2e8f0;
+  font-size: 0.92rem;
+  color: var(--text);
   font-weight: 500;
   cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
 }
 
 .hc-name:hover {
-  color: #c4b5fd;
+  color: var(--accent-dark);
   text-decoration: underline;
 }
 
 .hc-toggle {
-  font-size: 11px;
-  color: #64748b;
+  font-size: 0.72rem;
+  color: var(--text-faint);
   flex-shrink: 0;
 }
 
-/* Path detail */
+/* ─── Path Detail ───────────────────────────────────────────────── */
 .hc-path {
-  padding: 0 16px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--border);
+  animation: slideUp var(--t-fast) var(--ease) both;
 }
 
 .hc-path-label {
-  font-size: 12px;
-  color: #64748b;
-  margin: 12px 0 8px;
+  font-size: 0.65rem;
+  color: var(--text-faint);
+  margin: 0.75rem 0 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .hc-chain {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 0.25rem;
+  font-size: 0.82rem;
 }
 
 .hc-chain-step {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .hc-chain-name {
-  color: #93c5fd;
+  color: var(--accent-dark);
   cursor: pointer;
   font-weight: 500;
+  transition: color var(--t-fast) var(--ease);
 }
 
 .hc-chain-name:hover {
+  color: var(--text);
   text-decoration: underline;
-  color: #c4b5fd;
 }
 
 .hc-chain-name--target {
-  color: #c4b5fd;
+  color: var(--accent-dark);
   font-weight: 600;
 }
 
 .hc-chain-rel {
-  color: #475569;
-  font-size: 12px;
+  color: var(--text-faint);
+  font-size: 0.75rem;
 }
 
 .hc-summary {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #64748b;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
   font-style: italic;
   line-height: 1.5;
 }

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { invitesAPI, memorialsAPI, aiAPI, getMediaUrl } from '../api/client'
+import { invitesAPI, memorialsAPI, aiAPI } from '../api/client'
+import ApiMediaImage from '../components/ApiMediaImage'
 import AvatarChat from '../components/AvatarChat'
+import { useLanguage } from '../contexts/LanguageContext'
 import './ContributePage.css'
 
 function ContributePage() {
   const { token } = useParams()
+  const { t } = useLanguage()
   const [info, setInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -31,7 +34,7 @@ function ContributePage() {
     }
     invitesAPI.validate(token)
       .then(res => setInfo(res.data))
-      .catch(err => setError(err.response?.data?.detail || 'Ссылка недействительна'))
+      .catch(err => setError(err.response?.data?.detail || t('contribute.invalid_link')))
       .finally(() => setLoading(false))
   }, [token])
 
@@ -54,7 +57,7 @@ function ContributePage() {
       setTranscript('')
       setSaved(false)
     } catch {
-      alert('Не удалось получить доступ к микрофону. Разрешите доступ в браузере.')
+      alert(t('contribute.mic_denied'))
     }
   }
 
@@ -73,7 +76,7 @@ function ContributePage() {
       setTranscript(res.data.text || '')
     } catch {
       setTranscript('')
-      alert('Не удалось расшифровать запись. Введите текст вручную.')
+      alert(t('contribute.transcribe_error'))
     } finally {
       setTranscribing(false)
     }
@@ -84,13 +87,13 @@ function ContributePage() {
     try {
       const res = await invitesAPI.create(info.memorial_id, {})
       const url = res.data.invite_url
-      const name = info.memorial_name || 'этого человека'
-      const text = `Я поделился воспоминаниями о ${name}. Расскажи и ты: ${url}`
+      const name = info.memorial_name || t('contribute.viral_name_fallback')
+      const text = t('contribute.viral_text', { name, url })
       if (navigator.share) {
-        await navigator.share({ title: `Воспоминания о ${name}`, text, url })
+        await navigator.share({ title: t('contribute.viral_native_title', { name }), text, url })
       } else {
         await navigator.clipboard.writeText(text)
-        alert('Текст скопирован в буфер обмена!')
+        alert(t('contribute.clipboard_copied'))
       }
     } catch {
       // user cancelled share or error — ignore
@@ -107,23 +110,23 @@ function ContributePage() {
         title: memoryTitle || null,
         content: transcript,
         source: 'voice_invite',
-      })
+      }, token)
       setSaved(true)
       setTranscript('')
       setMemoryTitle('')
       setAudioBlob(null)
     } catch {
-      alert('Ошибка при сохранении воспоминания. Попробуйте ещё раз.')
+      alert(t('contribute.save_error'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="contribute-loading">Загрузка...</div>
+  if (loading) return <div className="contribute-loading">{t('contribute.loading')}</div>
   if (error) return (
     <div className="contribute-invalid">
       <div className="invalid-icon">🔗</div>
-      <h2>Ссылка недействительна</h2>
+      <h2>{t('contribute.invalid_link')}</h2>
       <p>{error}</p>
     </div>
   )
@@ -132,8 +135,9 @@ function ContributePage() {
     <div className="contribute-page">
       <div className="contribute-header">
         {info.cover_photo_id && (
-          <img
-            src={getMediaUrl(info.cover_photo_id, 'small')}
+          <ApiMediaImage
+            mediaId={info.cover_photo_id}
+            thumbnail="small"
             alt={info.memorial_name}
             className="contribute-cover"
           />
@@ -141,11 +145,11 @@ function ContributePage() {
         <div className="contribute-info">
           <h1>{info.memorial_name}</h1>
           {info.label && (
-            <p className="contribute-label">Приглашение для: {info.label}</p>
+            <p className="contribute-label">{t('contribute.invitation_for', { label: info.label })}</p>
           )}
           <p className="contribute-subtitle">
-            Вас пригласили поделиться воспоминаниями о {info.memorial_name}.<br />
-            Ваши слова очень важны — они сохранятся навсегда.
+            {t('contribute.subtitle', { name: info.memorial_name })}<br />
+            {t('contribute.subtitle2')}
           </p>
         </div>
       </div>
@@ -156,7 +160,7 @@ function ContributePage() {
             className={activeTab === 'record' ? 'active' : ''}
             onClick={() => setActiveTab('record')}
           >
-            🎙 Записать воспоминание
+            {t('contribute.tab_record')}
           </button>
         )}
         {info.permissions.chat && (
@@ -164,7 +168,7 @@ function ContributePage() {
             className={activeTab === 'chat' ? 'active' : ''}
             onClick={() => setActiveTab('chat')}
           >
-            💬 Чат
+            {t('contribute.tab_chat')}
           </button>
         )}
       </div>
@@ -175,21 +179,21 @@ function ContributePage() {
             {saved ? (
               <div className="save-success">
                 <div className="success-icon">✅</div>
-                <h3>Воспоминание сохранено!</h3>
-                <p className="save-success-hint">Спасибо! Ваши слова теперь часть этой памяти.</p>
+                <h3>{t('contribute.saved_title')}</h3>
+                <p className="save-success-hint">{t('contribute.saved_hint')}</p>
                 <div className="save-success-actions">
                   <button
                     className="btn-record-again"
                     onClick={() => setSaved(false)}
                   >
-                    Записать ещё
+                    {t('contribute.record_again')}
                   </button>
                   <button
                     className="btn-viral-share"
                     onClick={handleViralShare}
                     disabled={viralSharing}
                   >
-                    {viralSharing ? '...' : '💌 Поделиться дальше — пусть другие тоже расскажут'}
+                    {viralSharing ? '...' : t('contribute.viral_share')}
                   </button>
                 </div>
               </div>
@@ -198,44 +202,44 @@ function ContributePage() {
                 <div className="record-area">
                   {!recording && !audioBlob && !transcribing && (
                     <>
-                      <p className="record-hint">Нажмите кнопку и говорите. Мы запишем и сохраним ваши слова.</p>
+                      <p className="record-hint">{t('contribute.record_hint')}</p>
                       <button className="btn-record" onClick={startRecording}>
                         <span className="record-dot"></span>
-                        Нажмите, чтобы записать
+                        {t('contribute.btn_record')}
                       </button>
                     </>
                   )}
                   {recording && (
                     <button className="btn-stop" onClick={stopRecording}>
                       <span className="stop-icon">⏹</span>
-                      Остановить запись
+                      {t('contribute.btn_stop')}
                     </button>
                   )}
                   {transcribing && (
                     <div className="transcribing-status">
                       <div className="spinner"></div>
-                      Расшифровываю запись...
+                      {t('contribute.transcribing')}
                     </div>
                   )}
                 </div>
 
                 {(transcript !== '' || audioBlob) && !transcribing && (
                   <div className="transcript-area">
-                    <label htmlFor="memory-title">Заголовок (необязательно)</label>
+                    <label htmlFor="memory-title">{t('contribute.label_title')}</label>
                     <input
                       id="memory-title"
                       type="text"
                       value={memoryTitle}
                       onChange={e => setMemoryTitle(e.target.value)}
-                      placeholder="Например: Наше последнее лето"
+                      placeholder={t('contribute.placeholder_title')}
                     />
-                    <label htmlFor="transcript">Текст воспоминания</label>
+                    <label htmlFor="transcript">{t('contribute.label_text')}</label>
                     <textarea
                       id="transcript"
                       value={transcript}
                       onChange={e => setTranscript(e.target.value)}
                       rows={6}
-                      placeholder="Введите или отредактируйте текст воспоминания..."
+                      placeholder={t('contribute.placeholder_text')}
                     />
                     <div className="transcript-actions">
                       <button
@@ -243,7 +247,7 @@ function ContributePage() {
                         onClick={handleSave}
                         disabled={saving || !transcript.trim()}
                       >
-                        {saving ? 'Сохранение...' : 'Сохранить воспоминание'}
+                        {saving ? t('contribute.btn_saving') : t('contribute.btn_save_memory')}
                       </button>
                       <button
                         className="btn-record-again"
@@ -253,7 +257,7 @@ function ContributePage() {
                           setMemoryTitle('')
                         }}
                       >
-                        Записать заново
+                        {t('contribute.btn_rerecord')}
                       </button>
                     </div>
                   </div>
@@ -261,18 +265,18 @@ function ContributePage() {
 
                 {!audioBlob && !recording && !transcribing && (
                   <div className="manual-entry">
-                    <p className="or-divider">— или введите текстом —</p>
+                    <p className="or-divider">{t('contribute.or_type')}</p>
                     <input
                       type="text"
                       value={memoryTitle}
                       onChange={e => setMemoryTitle(e.target.value)}
-                      placeholder="Заголовок (необязательно)"
+                      placeholder={t('contribute.placeholder_title_manual')}
                     />
                     <textarea
                       value={transcript}
                       onChange={e => setTranscript(e.target.value)}
                       rows={5}
-                      placeholder="Напишите воспоминание..."
+                      placeholder={t('contribute.placeholder_text_manual')}
                     />
                     {transcript.trim() && (
                       <button
@@ -280,7 +284,7 @@ function ContributePage() {
                         onClick={handleSave}
                         disabled={saving}
                       >
-                        {saving ? 'Сохранение...' : 'Сохранить'}
+                        {saving ? t('contribute.btn_saving') : t('contribute.btn_save')}
                       </button>
                     )}
                   </div>

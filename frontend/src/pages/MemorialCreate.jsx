@@ -65,7 +65,12 @@ function MemorialCreate() {
 
   return (
     <div className="memorial-create">
-      <h1>Создать мемориал</h1>
+      <div className="memorial-create-card">
+      <div className="memorial-create-header">
+        <div className="create-icon">🕯</div>
+        <h1>Создать мемориал</h1>
+        <p>Сохраните память о близком человеке навсегда</p>
+      </div>
       <form onSubmit={handleSubmit} className="memorial-form">
         {error && (
           <div className="error-message">
@@ -166,6 +171,7 @@ function MemorialCreate() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   )
 }

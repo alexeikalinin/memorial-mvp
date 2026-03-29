@@ -1,101 +1,167 @@
+/* ─── Container ─────────────────────────────────────────────────── */
 .life-timeline {
   width: 100%;
 }
 
 .timeline-title {
-  color: #2c3e50;
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--text);
   margin-bottom: 2rem;
 }
 
+/* ─── Empty ─────────────────────────────────────────────────────── */
 .timeline-empty {
   text-align: center;
-  padding: 3rem 1rem;
-  color: #6b7280;
+  padding: 4rem 2rem;
+  color: var(--text-faint);
+}
+
+.timeline-empty p {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 300;
+  margin-bottom: 0.5rem;
 }
 
 .timeline-empty .hint {
   font-size: 0.9rem;
-  color: #9ca3af;
+  color: var(--text-faint);
+  font-style: italic;
   margin-top: 0.5rem;
 }
 
+/* ─── Timeline line ─────────────────────────────────────────────── */
 .timeline-line-container {
   position: relative;
-  padding-left: 2.5rem;
-  border-left: 2px solid #E8E0F0;
+  padding-left: 2.75rem;
+  border-left: 2px solid var(--border);
+  /* Gradient line — fades at bottom */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 92%, transparent 100%);
+          mask-image: linear-gradient(to bottom, black 0%, black 92%, transparent 100%);
 }
 
-.timeline-year-label {
+/* Glow on the vertical line */
+.timeline-line-container::before {
+  content: '';
   position: absolute;
-  left: -1.1rem;
-  transform: translateX(-50%);
-  background: #7C6FA0;
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 0.2rem 0.7rem;
-  border-radius: 12px;
-  margin-bottom: 0.5rem;
-  white-space: nowrap;
-  /* positioned relative to the line */
-  position: relative;
-  left: -3.5rem;
-  display: inline-block;
-  margin-bottom: 0.75rem;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent) 0%, var(--border) 100%);
+  opacity: 0.7;
 }
 
+/* ─── Year label ────────────────────────────────────────────────── */
+.timeline-year-label {
+  position: relative;
+  left: -3.85rem;
+  display: inline-block;
+  background: var(--accent-dark);
+  color: #FAF8F5;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 0.85rem;
+  white-space: nowrap;
+}
+
+/* ─── Entry ─────────────────────────────────────────────────────── */
 .timeline-entry {
   position: relative;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   display: flex;
   align-items: flex-start;
   gap: 1rem;
+  animation: slideUp var(--t-base) var(--ease) both;
 }
 
+/* Dot on the line */
 .timeline-dot {
   position: absolute;
-  left: -2.87rem;
-  top: 0.4rem;
-  width: 12px;
-  height: 12px;
-  background: #7C6FA0;
+  left: -3.1rem;
+  top: 0.5rem;
+  width: 11px;
+  height: 11px;
+  background: var(--accent);
   border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 2px #7C6FA0;
+  border: 2.5px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
   flex-shrink: 0;
+  transition: transform var(--t-fast) var(--ease-bounce);
 }
 
+.timeline-entry:hover .timeline-dot {
+  transform: scale(1.5);
+  background: var(--accent-dark);
+  box-shadow: 0 0 0 2px var(--accent-dark);
+}
+
+/* ─── Card ──────────────────────────────────────────────────────── */
 .timeline-card {
-  background: #fff;
-  border: 1px solid #E8E0F0;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   flex: 1;
-  box-shadow: 0 2px 8px rgba(124, 111, 160, 0.07);
-  transition: box-shadow 0.2s;
+  transition: box-shadow var(--t-base) var(--ease),
+              border-color var(--t-base) var(--ease);
 }
 
 .timeline-card:hover {
-  box-shadow: 0 4px 16px rgba(124, 111, 160, 0.15);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--accent);
+  border-left: 3px solid var(--accent-dark);
 }
 
 .timeline-date {
-  font-size: 0.8rem;
-  color: #7C6FA0;
+  font-size: 0.72rem;
+  color: var(--accent-dark);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
 }
 
 .timeline-card-title {
-  margin: 0.4rem 0 0.5rem;
-  font-size: 1rem;
-  color: #2c3e50;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: var(--text);
+  margin: 0 0 0.4rem;
 }
 
 .timeline-card-content {
   margin: 0;
-  font-size: 0.92rem;
-  color: #4b5563;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* ─── Loading ───────────────────────────────────────────────────── */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-faint);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .timeline-line-container {
+    padding-left: 2.25rem;
+  }
+
+  .timeline-year-label {
+    left: -3rem;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .timeline-dot {
+    left: -2.5rem;
+  }
 }
