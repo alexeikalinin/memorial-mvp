@@ -1,16 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve } from 'path'
 
 // Production (Vercel): landing at /, SPA at /app/ — see root vercel.json
+// landing/index.html lives inside frontend/ so it works regardless of Vercel Root Directory setting
 const landingToDist = () => ({
   name: 'copy-landing-to-dist-root',
   closeBundle() {
-    copyFileSync(
-      resolve(__dirname, '../landing/index.html'),
-      resolve(__dirname, 'dist/index.html')
-    )
+    const src = resolve(__dirname, 'landing/index.html')
+    const destDir = resolve(__dirname, 'dist')
+    const dest = resolve(destDir, 'index.html')
+    if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
+    copyFileSync(src, dest)
+    console.log('[landing] copied to dist/index.html ✓')
   },
 })
 

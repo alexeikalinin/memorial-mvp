@@ -242,7 +242,7 @@ export default {
     loading: 'Loading...',
     invalid_link: 'Link is invalid',
     invitation_for: 'Invitation for: {label}',
-    subtitle: 'You've been invited to share memories about {name}.',
+    subtitle: "You've been invited to share memories about {name}.",
     subtitle2: 'Your words matter — they will be preserved forever.',
     tab_record: '🎙 Record a memory',
     tab_chat: '💬 Chat',
