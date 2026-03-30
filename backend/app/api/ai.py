@@ -344,15 +344,6 @@ async def avatar_chat(
         for i, mem in enumerate(similar_memories):
             print(f"  {i+1}. Memory ID: {mem.get('memory_id')}, Score: {mem.get('score', 0):.3f}, Title: {mem.get('title', 'N/A')}")
         
-        if not similar_memories:
-            print(f"⚠️ No similar memories found for question: '{request.question}'")
-            no_info_msg = (
-                "I don't have memories about that."
-                if request.language == "en" else
-                "У меня нет информации на эту тему."
-            )
-            return AvatarChatResponse(answer=no_info_msg, sources=[])
-        
         # ВАЖНО: Всегда получаем полный текст из БД, так как в векторной БД
         # текст может быть обрезанным (например, только 1000 символов в Qdrant payload)
         context_chunks = []
@@ -390,8 +381,33 @@ async def avatar_chat(
                 context_chunks.append(mem)
                 print(f"⚠️ Using text from payload (no memory_id): {len(mem.get('text', ''))} chars")
         
+        # Fallback: векторный поиск пуст (часто на проде — новый пустой Qdrant/volume при той же Postgres,
+        # или порог score отфильтровал всё), хотя воспоминания в БД есть.
+        if not context_chunks and all_memories:
+            print(
+                f"⚠️ RAG returned no usable chunks; falling back to DB memories only "
+                f"(memorial_id={request.memorial_id}, count={len(all_memories)})"
+            )
+            max_chars = 18000
+            used = 0
+            for m in sorted(all_memories, key=lambda x: x.id, reverse=True):
+                if used >= max_chars:
+                    break
+                piece = (m.content or "").strip()
+                if not piece:
+                    continue
+                take = piece[: max_chars - used]
+                context_chunks.append({
+                    "text": take,
+                    "memory_id": m.id,
+                    "score": 0.35,
+                    "title": m.title,
+                    "source_memorial_id": request.memorial_id,
+                })
+                used += len(take)
+        
         if not context_chunks:
-            print(f"❌ No context chunks created from {len(similar_memories)} similar memories")
+            print(f"❌ No context chunks after RAG + DB fallback (similar_hits={len(similar_memories)})")
             no_info_msg = (
                 "I don't have memories about that."
                 if request.language == "en" else
