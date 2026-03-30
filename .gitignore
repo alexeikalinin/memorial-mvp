@@ -62,9 +62,8 @@ htmlcov/
 # Docker
 .dockerignore
 
-# Landing demo video (large; host on CDN or Git LFS)
+# Landing demo video duplicate at repo root (canonical: frontend/landing/video/)
 landing/video/*.mp4
-frontend/landing/video/*.mp4
 
 # Frontend
 node_modules/

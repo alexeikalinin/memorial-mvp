@@ -252,25 +252,11 @@
       border: 1px solid var(--border);
       box-shadow: 0 40px 120px rgba(0,0,0,0.5);
     }
-    .demo-thumbnail {
-      width: 100%; aspect-ratio: 16/9; object-fit: cover;
-      filter: brightness(0.5) saturate(0.7);
-      display: block;
+    .demo-video {
+      width: 100%; aspect-ratio: 16/9; object-fit: contain;
+      display: block; vertical-align: top;
+      background: #0a0a12;
     }
-    .demo-overlay {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 20px;
-      background: rgba(8,8,16,0.4);
-    }
-    .play-btn {
-      width: 88px; height: 88px; border-radius: 50%;
-      background: rgba(200,169,126,0.95); border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all .3s; font-size: 28px; color: #1a1408;
-      box-shadow: 0 0 0 16px rgba(200,169,126,0.1), 0 0 0 32px rgba(200,169,126,0.05);
-    }
-    .play-btn:hover { transform: scale(1.1); background: var(--accent2); }
-    .play-label { font-size: 15px; color: var(--text2); }
     .demo-chips {
       display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 32px;
     }
@@ -751,17 +737,17 @@
     <div class="section-label reveal">See It Live</div>
     <h2 class="section-title reveal reveal-delay-1">Watch the avatar<br>in action.</h2>
     <div class="demo-container reveal reveal-delay-2">
-      <img
-        class="demo-thumbnail"
-        src="/images/demo-poster.png"
-        alt="Demo video preview"
+      <video
+        class="demo-video"
+        poster="/images/demo-poster.png"
+        controls
+        playsinline
+        preload="metadata"
         width="1200"
         height="675"
-      />
-      <div class="demo-overlay">
-        <button class="play-btn" onclick="this.innerHTML='⏸'">▶</button>
-        <div class="play-label">3-minute product demo</div>
-      </div>
+      >
+        <source src="/video/demo.mp4" type="video/mp4" />
+      </video>
     </div>
     <div class="demo-chips">
       <div class="demo-chip"><span>💬</span> AI Avatar responds in their voice</div>
