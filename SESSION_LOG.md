@@ -2,52 +2,60 @@
 
 > **Где хранится:** этот файл в корне репозитория — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
-## [2026-03-29] Vercel: лендинг на `/`, SPA на `/app/` + ссылки и env (сессия Cursor)
+## [2026-03-29] Сводка сессий Cursor — консультации, код, git
 
-**Статус:** сделано в коде; **прод-деплой и env на Vercel/бэкенде пользователь должен проверить сам** (или Claude Code по чеклисту ниже).
+Ниже — всё, что происходило в связанных сессиях чата (ответы ассистента + выполненные действия).
 
-**Задача:** при открытии домена Vercel показывать **статический лендинг** (`landing/index.html`), а приложение React — по путям **`/app/*`**; кнопки лендинга ведут на **`/app/login`**, **`/app/register`**. Раньше `vercel.json` переписывал всё на SPA `index.html`.
+### 1. Обзор репозитория и «памяти»
+- Прочитан **`HANDOFF.md`**: актуальный фокус на тот момент — Family Network / Family Tree, EN-демо, следующие шаги по сидам и RAG.
+- Прочитан **`SESSION_LOG.md`**, упомянут **`.claude/commands/memory-audit.md`** (чеклист RAG, не журнал).
+- Отдельного файла `memory.md` в корне нет: handoff — **`HANDOFF.md`**, история — **`SESSION_LOG.md`**.
 
-**Что сделано:**
+### 2. Лендинг
+- Подтверждено наличие **`landing/index.html`** и зеркала для сборки **`frontend/landing/index.html`**.
+- В **`frontend/vite.config.js`** при production build лендинг копируется из **`frontend/landing/index.html`** в **`frontend/dist/index.html`** (корень артефакта на Vercel). Изменения в корневом `landing/` имеет смысл **дублировать** в `frontend/landing/`, если правите только один файл.
 
-1. **`frontend/vite.config.js`**
-   - При `vite build`: `base: '/app/'`, `build.outDir: 'dist/app'`, `emptyOutDir: true`.
-   - При `vite dev` / `serve`: `base: '/'` (локально без `/app`).
-   - Плагин `copy-landing-to-dist-root`: в `closeBundle` копирует `../landing/index.html` → `frontend/dist/index.html` (корень артефакта деплоя = лендинг).
+### 3. Деплой: лендинг на `/`, SPA на `/app/`
+**Цель:** по домену Vercel открывается лендинг; приложение — под **`/app/*`**; CTA ведут на **`/app/login`**, **`/app/register`**.
 
-2. **`frontend/src/App.jsx`**
-   - `BrowserRouter` с `basename`: если `import.meta.env.BASE_URL === '/'` → `undefined`, иначе `BASE_URL` без завершающего `/` (в проде basename = `/app`).
+**В коде (фиксировалось ранее в сессии):**
+- **`frontend/vite.config.js`:** при `build` — `base: '/app/'`, `outDir: 'dist/app'`, плагин в `closeBundle` копирует лендинг в `dist/index.html`; при dev — `base: '/'`, порт по умолчанию **5173** (если локально **5174** — отдельный запуск/настройка, на прод не влияет).
+- **`frontend/src/App.jsx`:** `BrowserRouter` с `basename` из `BASE_URL` (в проде `/app`).
+- **`vercel.json` (корень):** rewrites для `/app`, `/app/`, `/app/(.*)` → `/app/index.html`; **нет** общего `/(.*) → /index.html`.
+- **`frontend/vercel.json`:** согласован с корнем при деплое из `frontend/`.
+- **`landing/index.html` / `frontend/landing/index.html`:** ссылки на приложение, якоря в футере.
+- **`backend/.env.example`:** **`FRONTEND_URL`**, **`PUBLIC_FRONTEND_URL`** с суффиксом **`/app`** для прод; комментарии к OAuth (`.../app/auth/callback`).
 
-3. **`vercel.json` (корень репо)**
-   - Удалён catch-all `"/(.*)" → /index.html`.
-   - Добавлены rewrites только для SPA: `/app` и `/app/(.*)` → `/app/index.html`.
+**Проверка сборки:** `cd frontend && npm run build` → `dist/index.html` (лендинг) + `dist/app/` (SPA + assets).
 
-4. **`frontend/vercel.json`**
-   - Те же rewrites, что в корне (на случай, если корень проекта в Vercel указывают на `frontend/`).
+### 4. Консультации (без изменения кода в тот момент)
+- **Vercel + репозиторий:** деплой из **текущего репо**, отдельная ветка только под лендинг не обязательна; «пуш только лендинга» данных не даёт — нужна полная сборка.
+- **ElevenLabs:** план **Creator** часто достаточен для пилота; **Pro** — при выходе за лимиты символов/нагрузки, не как обязательный минимум.
+- **Оживление фото:** сравнение **D-ID / HeyGen / Hedra / self-hosted**; что можно попробовать бесплатно (trial/веб) и где есть **официальный API**; у **Hedra** API обычно с платного плана.
+- **Self-hosted (SadTalker и т.д.):** «бесплатно по деньгам» ≈ нет оплаты вендору за секунду, но **есть** стоимость GPU/времени и **своя** эксплуатация API.
+- **Чеклист «всё работает в вебе»:** фазы: Postgres + S3, деплой бэкенда и env, Google OAuth URI, **`VITE_API_URL`** на Vercel, публичные URL для медиа/D-ID, проверка маршрутов (см. также `ENVIRONMENT.md`).
+- **MCP:** в чате Cursor ассистенту доступны только переданные инструменты; список MCP в Cursor он не видит; **Claude Code** — отдельный контекст от Cursor.
 
-5. **`landing/index.html`**
-   - Навигация: Sign in → `/app/login`, Get started → `/app/register`.
-   - Hero и основные CTA (memorial, hidden connections, plaques, pricing, final CTA) → `/app/register` где уместно.
-   - Футер Product: якоря на секции (`#features`, `#pricing`, `#how`, `#demo`, `#hidden`) вместо пустых `#`.
+### 5. Синхронизация мемориалов локально ↔ прод
+- **`git push` не переносит** `*.db`, `uploads/` (в `.gitignore`).
+- Совпадение данных: **одна `DATABASE_URL`** (например Supabase) для локального и прод-бэкенда + сиды; медиа — общий **S3** при **`USE_S3=true`**.
 
-6. **`backend/.env.example`**
-   - `PUBLIC_FRONTEND_URL` с комментарием про суффикс **`/app`** для схемы landing + SPA.
-   - Добавлены **`FRONTEND_URL`** и комментарий: для Google OAuth редирект на фронт — **`.../app/auth/callback`**, в проде задать `https://<vercel>/app`.
+### 6. Git: проверка и push
+- До коммита: много **modified** и **untracked**; ветка отслеживала `origin/main`.
+- Выполнено ассистентом: **`git add -A`** (с учётом `.gitignore`), коммит и push.
+- **Коммит `0afa1a3`** → **`main`**, remote при push: `https://github.com/alexeikalinin/memorial-mvp.git` (у себя сверить: `git remote -v`).
+- Сообщение коммита: *Sync: EN memorials seeds, Family Tree UX, landing /app CTAs, deploy docs* — **58 файлов** (сиды, бэкенд, фронт, лендинг, docs, e2e, bot, `.claude` commands, превью и пр.).
 
-**Проверка локально:** `cd frontend && npm run build` → должны появиться `dist/index.html` (лендинг) и `dist/app/index.html` + `dist/app/assets/*`; без ошибок (уже прогонялось в сессии).
+### 7. Обновления журналов в сессии
+- В **`SESSION_LOG.md`** и **`HANDOFF.md`** добавлены пометки про схему **`/app`** и ссылка друг на друга.
 
-**Для ревью (Claude Code) — чеклист:**
-
-- [ ] `vite.config.js`: плагин не ломает dev; `copyFileSync` корректен при CI (путь `../landing/index.html` от `frontend/`).
-- [ ] Нет регрессии: все внутренние `Link`/`navigate` в SPA работают с `basename` (публичные маршруты `/m/:id`, `/contribute/:token`, `/auth/callback` в проде = под `/app/...`).
-- [ ] На Vercel задан **`VITE_API_URL=https://<backend>/api/v1`** и сделан redeploy после смены.
-- [ ] На бэкенде в проде **`FRONTEND_URL`** и **`PUBLIC_FRONTEND_URL`** заканчиваются на **`/app`** (как в `.env.example`).
-- [ ] **Google OAuth** в консоли: redirect URI бэкенда без изменений; после логина бэкенд шлёт на `FRONTEND_URL/auth/callback` — URL должен совпадать с реальным SPA.
-- [ ] Лендинг не должен перехватываться rewrite’ом SPA (корень `/` отдаёт статический `dist/index.html`).
-
-**Изменённые файлы:** `frontend/vite.config.js`, `frontend/src/App.jsx`, `vercel.json`, `frontend/vercel.json`, `landing/index.html`, `backend/.env.example`, `SESSION_LOG.md`, `HANDOFF.md`.
-
-**Не делалось в этой сессии:** правки `HANDOFF` про Family Tree / seed EN (это другая сессия); автоматический деплой не запускался.
+### 8. Чеклист для ревью (Claude Code / прод)
+- [ ] `vite.config.js`: dev не сломан; путь к лендингу **`frontend/landing/index.html`** в CI существует.
+- [ ] SPA с `basename`: маршруты `/m/:id`, `/contribute/:token`, `/auth/callback` в проде под **`/app/...`**.
+- [ ] Vercel: **`VITE_API_URL=https://<backend>/api/v1`**, redeploy после смены env.
+- [ ] Бэкенд прод: **`FRONTEND_URL`** и **`PUBLIC_FRONTEND_URL`** с **`/app`**.
+- [ ] Google OAuth: redirect бэкенда ок; финальный редирект на **`FRONTEND_URL/auth/callback`** совпадает с развёрнутым SPA.
+- [ ] `/` отдаёт статический лендинг, не SPA.
 
 ---
 

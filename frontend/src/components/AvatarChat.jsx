@@ -283,7 +283,6 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
         {coverPhotoId ? (
           <ApiMediaImage
             mediaId={coverPhotoId}
-            thumbnail="medium"
             alt={memorialName || 'Avatar'}
             className="avatar-panel-photo"
             fallback={

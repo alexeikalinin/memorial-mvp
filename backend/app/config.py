@@ -26,6 +26,24 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+
+    @field_validator("OPENAI_MODEL", mode="before")
+    @classmethod
+    def normalize_openai_model(cls, v):
+        """Имена вроде gpt-4-turbo-preview сняты с API → 404; подменяем на рабочий дефолт."""
+        if not isinstance(v, str):
+            return "gpt-4o-mini"
+        s = v.strip()
+        deprecated = frozenset(
+            {
+                "gpt-4-turbo-preview",  # типичная 404 в проде при старом .env
+                "gpt-4-0125-preview",
+                "gpt-4-1106-preview",
+            }
+        )
+        if s in deprecated:
+            return "gpt-4o-mini"
+        return s
     
     # D-ID
     DID_API_KEY: str = ""

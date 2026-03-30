@@ -36,6 +36,11 @@
   object-fit: cover;
   object-position: top center;
   display: block;
+  /* Было thumbnail=medium (~300px) — растягивалось с пикселизацией; полный файл + сглаживание */
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .avatar-panel-placeholder {

@@ -31,7 +31,7 @@
 **В .env:**
 ```env
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
@@ -209,7 +209,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # OpenAI
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MODEL=gpt-4o-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 
 # HeyGen (для анимации фото)

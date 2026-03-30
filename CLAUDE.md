@@ -17,7 +17,7 @@ Memorial MVP is a digital memory preservation service with AI avatars. Users cre
 **Frontend** (`frontend/`): React 18 + Vite + React Router + Axios
 
 **Key external services:**
-- **OpenAI** — LLM (gpt-4-turbo-preview) + embeddings (text-embedding-3-small)
+- **OpenAI** — LLM (`OPENAI_MODEL`, по умолчанию gpt-4o-mini) + embeddings (text-embedding-3-small)
 - **D-ID** or **HeyGen** — photo animation (controlled by `USE_HEYGEN` env var)
 - **ElevenLabs** — TTS + custom voice cloning
 - **Qdrant** (default) or **Pinecone** — vector DB for RAG (controlled by `VECTOR_DB_PROVIDER`)
