@@ -1004,8 +1004,8 @@
   color: rgba(250, 248, 245, 0.9);
 }
 
-/* Sources */
-.sources {
+/* Sources — collapsed by default */
+.chat-sources-details {
   margin-top: 0.65rem;
   padding-top: 0.65rem;
   border-top: 1px solid rgba(0,0,0,0.08);
@@ -1013,9 +1013,38 @@
   color: var(--text-muted);
 }
 
-.sources strong { display: block; margin-bottom: 0.2rem; color: var(--text-muted); }
-.sources ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
-.sources li { margin-bottom: 0.2rem; }
+.chat-sources-summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.chat-sources-summary::-webkit-details-marker { display: none; }
+.chat-sources-summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 0.35rem;
+  transition: transform var(--t-fast) var(--ease);
+  opacity: 0.7;
+}
+.chat-sources-details[open] .chat-sources-summary::before {
+  transform: rotate(90deg);
+}
+
+.chat-sources-list {
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
+}
+.chat-sources-list li { margin-bottom: 0.2rem; }
+
+.avatar-chat--fullscreen .chat-sources-details {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+.avatar-chat--fullscreen .chat-sources-summary {
+  color: rgba(250, 248, 245, 0.55);
+}
 
 /* Typing indicator */
 .typing-indicator {

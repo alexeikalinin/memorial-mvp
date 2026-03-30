@@ -3,10 +3,9 @@
 """
 
 
-def test_timeline_empty(client, memorial):
-    """Без воспоминаний с датами — пустой список."""
+def test_timeline_undated_only(client, memorial):
+    """Воспоминание без даты попадает в таймлайн (секция «без даты»)."""
     mid = memorial["id"]
-    # Добавляем воспоминание БЕЗ даты
     client.post(
         f"/api/v1/memorials/{mid}/memories",
         json={"title": "Без даты", "content": "Просто текст."},
@@ -14,7 +13,11 @@ def test_timeline_empty(client, memorial):
 
     response = client.get(f"/api/v1/memorials/{mid}/timeline")
     assert response.status_code == 200
-    assert response.json() == []
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["title"] == "Без даты"
+    assert data[0]["event_date"] is None
+    assert data[0]["date_label"] == "Без даты"
 
 
 def test_timeline_with_dates(client, memorial):
@@ -37,8 +40,8 @@ def test_timeline_with_dates(client, memorial):
     assert data[1]["year"] == 1990
 
 
-def test_timeline_excludes_memories_without_date(client, memorial):
-    """Воспоминания без event_date не появляются в таймлайне."""
+def test_timeline_dated_then_undated(client, memorial):
+    """Сначала события с датой, затем без даты."""
     mid = memorial["id"]
     client.post(
         f"/api/v1/memorials/{mid}/memories",
@@ -52,8 +55,10 @@ def test_timeline_excludes_memories_without_date(client, memorial):
     response = client.get(f"/api/v1/memorials/{mid}/timeline")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 1
+    assert len(data) == 2
     assert data[0]["title"] == "С датой"
+    assert data[1]["title"] == "Без даты"
+    assert data[1]["event_date"] is None
 
 
 def test_timeline_item_fields(client, memorial):

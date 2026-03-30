@@ -539,14 +539,16 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
                 </div>
               ) : null}
               {Array.isArray(msg.sources) && msg.sources.length > 0 && (
-                <div className="sources">
-                  <strong>{t('chat.sources')}</strong>
-                  <ul>
+                <details className="chat-sources-details">
+                  <summary className="chat-sources-summary">
+                    {t('chat.sources_toggle', { count: msg.sources.length })}
+                  </summary>
+                  <ul className="chat-sources-list">
                     {msg.sources.map((source, i) => (
                       <li key={i}>{source}</li>
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
             </div>
           </div>

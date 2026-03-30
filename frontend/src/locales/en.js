@@ -26,9 +26,9 @@ export default {
   },
   lifeTimeline: {
     loading: 'Loading timeline…',
-    empty_title: 'No memories with an event date',
+    empty_title: 'No memories yet',
     empty_hint:
-      'Add a “When it was” date to memories so they appear here.',
+      'Add memories — undated ones appear under “No date”. Dated events sort by “When it was”.',
     title: 'Life timeline',
   },
   chat: {
@@ -39,6 +39,7 @@ export default {
     family_label: 'Include family memories',
     no_info: "I don't have memories about that.",
     sources: 'Sources:',
+    sources_toggle: 'Sources ({count}) — show',
     questions: [
       'Tell me about your childhood',
       'What were your hobbies and passions?',

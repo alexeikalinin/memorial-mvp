@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Handoff / session log
 
-At the start of a session, read **`HANDOFF.md`** at the repo root for current status, next steps, **index of repo docs** (`ENVIRONMENT.md`, `docs/MONETIZATION.md`, etc.), monetization/API-cost pointers, and the **media playbook** (Supabase 400 / local-first). After substantive work (features, fixes, migrations), **append to that file** (journal + update status/last action) so the next run can continue without losing context.
+At the start of a session, read **`HANDOFF.md`** at the repo root for current status, next steps, **index of repo docs** (`ENVIRONMENT.md`, `docs/MONETIZATION.md`, etc.), monetization/API-cost pointers, and the **media playbook** (Supabase 400 / local-first).
+
+**Where to write what:** detailed session history (what we did, outcomes, decisions, gaps) goes in **`SESSION_LOG.md`** (new entries at the **top**). **`HANDOFF.md`** stays short (focus + last action + next steps); link to `SESSION_LOG.md` instead of duplicating long notes. After substantive work, update **both**: brief handoff + full block in **`SESSION_LOG.md`**.
 
 ## Project Overview
 

@@ -1,13 +1,20 @@
 # Handoff — Memorial MVP
-> Обновлено: 2026-03-29 (session)
+> Обновлено: 2026-03-30 (session)
+
+**Подробный журнал сессий — один файл:** [SESSION_LOG.md](SESSION_LOG.md) (новые блоки в начале файла). Здесь — кратко: фокус, последнее действие, next steps.
+
+## Последнее действие (2026-03-30)
+- **Лендинг:** демо-видео в `#demo`, копирование `video` в `dist`, hero/QR-блоки без перекрытия лица/камня; на секции Physical memorial — декоративная табличка QR + подпись про иллюстрацию.
+- **SPA:** источники чата в сворачиваемом блоке; timeline включает воспоминания без `event_date`; инвайты для **editor** + правильные URL contribute через `utils/inviteUrl.js`; при смене мемориала сброс вкладок и QR state.
+- **Детали, тесты, что не сделано:** см. **[SESSION_LOG.md → 2026-03-30](SESSION_LOG.md)**.
 
 ## Дополнение 2026-03-29 — деплой Vercel: лендинг + `/app`
-**Сделано в Cursor (нужна вторая пара глаз — см. чеклист в логе):** корень сайта = **`landing/index.html`**, React SPA = **`/app/`** (`vite` production `base` + `outDir dist/app` + копирование лендинга в `dist/`; `vercel.json` rewrites только для `/app`). Лендинг: ссылки на **`/app/login`**, **`/app/register`**; **`backend/.env.example`**: `FRONTEND_URL` / `PUBLIC_FRONTEND_URL` с суффиксом **`/app`** для прода. **Полный перечень файлов и чеклист для Claude Code:** [SESSION_LOG.md](SESSION_LOG.md) → запись **[2026-03-29] Vercel: лендинг на `/`...**.
+**Сделано в Cursor (нужна вторая пара глаз — см. чеклист в логе):** корень сайта = **`landing/index.html`**, React SPA = **`/app/`** (`vite` production `base` + `outDir dist/app` + копирование лендинга в `dist/`; `vercel.json` rewrites только для `/app`). Лендинг: ссылки на **`/app/login`**, **`/app/register`**; **`backend/.env.example`**: `FRONTEND_URL` / `PUBLIC_FRONTEND_URL` с суффиксом **`/app`** для прода. **Полный перечень файлов и чеклист для Claude Code:** [SESSION_LOG.md](SESSION_LOG.md) → запись **[2026-03-29]**.
 
-## Что сейчас делается
-Вкладка мемориала **Family** по умолчанию показывает только **семейное дерево** (relatives-tree). Вид **All Families** / `FamilyNetwork` убран из `MemorialDetail` — кластерный обзор остаётся в коде (`FamilyNetwork.jsx` + API `network-clusters`) для демо/отладки при необходимости.
+## Что сейчас в фокусе
+Вкладка мемориала **Family** — **семейное дерево** (`FamilyTree`). `FamilyNetwork` не в `MemorialDetail`, остаётся в коде для демо/API `network-clusters`.
 
-## Последнее действие (2026-03-28)
+## Предыдущее действие (2026-03-28)
 - **EN демо = 35 мемориалов в репозитории:** добавлены `backend/en_memorials_manifest.py` (канонический frozenset имён), `backend/seed_english_all.py` (последовательный запуск трёх сидов + проверка COUNT/имён), `tests/test_en_memorials_manifest.py`. Обновлены docstring’и `seed_english*.py`, в `CLAUDE.md` — команда `seed_english_all.py`.
 - `Home.jsx`: `memorialsAPI.list(lang)` — список на главной фильтруется по `Memorial.language`, иначе смешивались RU+EN и число карточек не совпадало с «английским» набором из сидов.
 - `MemorialDetail`: удалён `FamilyViewToggle`, рендерится только `<FamilyTree memorialId={id} />`; убраны стили `.family-view-*` из `MemorialDetail.css`.
@@ -34,13 +41,9 @@
 - Embeddings для Chang/Rossi воспоминаний: проверить завершился ли фоновый процесс
 - Тест RAG-чата на нескольких мемориалах нового кластера
 
-## Изменённые файлы (текущая сессия)
-- `frontend/src/pages/MemorialDetail.jsx` — только `FamilyTree`, без переключателя
-- `frontend/src/pages/MemorialDetail.css` — удалены стили переключателя
-- `frontend/src/components/FamilyTree.jsx` — fit/center, зум 0.05–3
-- `frontend/src/components/FamilyTree.css` — `.tree-view-controls`, `.btn-tree-view`, `.tree-controls-hint`
-- `frontend/src/locales/en.js`, `ru.js` — строки fit/center
-- Ранее: `backend/app/api/family.py` `/network-clusters`, `FamilyNetwork.jsx`, `client.js`, DB structural links и т.д.
+## Изменённые файлы
+- **Актуальная сессия (2026-03-30):** перечень путей — в [SESSION_LOG.md](SESSION_LOG.md) → блок **2026-03-30**.
+- **Ранее (2026-03-28 и др.):** Family — `MemorialDetail` / `FamilyTree`, `FamilyNetwork` в коде без переключателя в UI; см. также **Предыдущее действие** выше.
 
 ## Запуск стека
 ```bash

@@ -771,6 +771,16 @@ _MONTHS_RU = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
     "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ]
+_MONTHS_EN = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
+
+def _month_year_label(dt: datetime, lang: str) -> str:
+    if lang == "en":
+        return f"{_MONTHS_EN[dt.month - 1]} {dt.year}"
+    return f"{_MONTHS_RU[dt.month - 1]} {dt.year}"
 
 
 @router.get("/{memorial_id}/timeline", response_model=List[TimelineItem])
@@ -781,29 +791,53 @@ async def get_timeline(
 ):
     """
     Хронологическая лента воспоминаний. Публичные мемориалы доступны без авторизации.
+    Сначала события с датой (по event_date), затем без даты (по дате добавления).
     """
     memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
 
-    memories = (
+    lang = (memorial.language or "ru").lower()
+    if lang not in ("en", "ru"):
+        lang = "ru"
+    undated_label = "No date" if lang == "en" else "Без даты"
+
+    dated = (
         db.query(Memory)
         .filter(Memory.memorial_id == memorial_id, Memory.event_date.isnot(None))
         .order_by(Memory.event_date)
         .all()
     )
+    undated = (
+        db.query(Memory)
+        .filter(Memory.memorial_id == memorial_id, Memory.event_date.is_(None))
+        .order_by(Memory.created_at)
+        .all()
+    )
 
     items = []
-    for m in memories:
-        month_name = _MONTHS_RU[m.event_date.month - 1]
-        date_label = f"{month_name} {m.event_date.year}"
+    for m in dated:
         items.append(
             TimelineItem(
                 id=m.id,
                 year=m.event_date.year,
-                date_label=date_label,
+                date_label=_month_year_label(m.event_date, lang),
                 type="memory",
                 title=m.title,
                 content=m.content,
                 event_date=m.event_date,
+            )
+        )
+    for m in undated:
+        ca = m.created_at
+        year = ca.year if ca else 0
+        items.append(
+            TimelineItem(
+                id=m.id,
+                year=year,
+                date_label=undated_label,
+                type="memory",
+                title=m.title,
+                content=m.content,
+                event_date=None,
             )
         )
     return items

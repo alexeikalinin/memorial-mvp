@@ -51,7 +51,7 @@ function LifeTimeline({ memorialId }) {
           const dateLabel =
             item.event_date != null
               ? formatEventLabel(item.event_date, lang)
-              : item.date_label
+              : item.date_label || ''
           return (
             <div key={item.id}>
               {showYear && (

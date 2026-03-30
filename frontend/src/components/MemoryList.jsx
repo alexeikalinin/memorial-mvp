@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
 import { aboutName } from '../utils/declension'
+import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useLanguage } from '../contexts/LanguageContext'
 import './MemoryList.css'
 
@@ -108,7 +109,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
     setSharingLoading(true)
     try {
       const res = await invitesAPI.create(memorialId, {})
-      const url = res.data.invite_url
+      const url = buildContributeInviteUrl(res.data.token) || res.data.invite_url
       const fallbackName = t('memoryList.anonymous_person')
       const text =
         lang === 'en'

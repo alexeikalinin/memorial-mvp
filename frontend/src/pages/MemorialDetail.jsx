@@ -8,6 +8,7 @@ import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
 import LifeTimeline from '../components/LifeTimeline'
+import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import './MemorialDetail.css'
 
 function MemorialDetail() {
@@ -57,6 +58,16 @@ function MemorialDetail() {
 
   useEffect(() => {
     loadMemorial()
+  }, [id])
+
+  useEffect(() => {
+    setMountedTabs(new Set(['media']))
+    setActiveTab('media')
+    setQrBlobUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+    setShowQRModal(false)
   }, [id])
 
   // Вкладка «Воспоминания» временно скрыта для русского UI — вернём позже
@@ -191,7 +202,7 @@ function MemorialDetail() {
     setCreatingInvite(true)
     try {
       const res = await invitesAPI.create(id, { label: inviteLabel || null })
-      setCreatedInviteUrl(res.data.invite_url)
+      setCreatedInviteUrl(buildContributeInviteUrl(res.data.token) || res.data.invite_url)
       setInviteList(prev => [...prev, res.data])
     } catch {
       alert(t('detail.invite_create_error'))

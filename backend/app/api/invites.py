@@ -18,8 +18,12 @@ router = APIRouter(prefix="/invites", tags=["invites"])
 
 
 def _make_invite_url(token: str) -> str:
-    base = settings.PUBLIC_FRONTEND_URL.rstrip("/")
-    return f"{base}/contribute/{token}"
+    """Публичный URL инвайта; приоритет PUBLIC_FRONTEND_URL, иначе FRONTEND_URL."""
+    for attr in ("PUBLIC_FRONTEND_URL", "FRONTEND_URL"):
+        raw = getattr(settings, attr, None)
+        if isinstance(raw, str) and raw.strip():
+            return f"{raw.strip().rstrip('/')}/contribute/{token}"
+    return f"http://localhost:5173/contribute/{token}"
 
 
 def _invite_to_response(invite: MemorialInvite) -> InviteResponse:
@@ -40,7 +44,7 @@ def create_invite(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.OWNER)
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     if not memorial:
         raise HTTPException(status_code=404, detail="Мемориал не найден")
 
@@ -100,7 +104,7 @@ def list_invites(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.OWNER)
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     if not memorial:
         raise HTTPException(status_code=404, detail="Мемориал не найден")
 
@@ -117,7 +121,7 @@ def revoke_invite(
     invite = db.query(MemorialInvite).filter(MemorialInvite.token == token).first()
     if not invite:
         raise HTTPException(status_code=404, detail="Инвайт не найден")
-    require_memorial_access(invite.memorial_id, current_user, db, min_role=UserRole.OWNER)
+    require_memorial_access(invite.memorial_id, current_user, db, min_role=UserRole.EDITOR)
     db.delete(invite)
     db.commit()
     return None

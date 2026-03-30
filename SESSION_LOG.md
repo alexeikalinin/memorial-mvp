@@ -2,6 +2,51 @@
 
 > **Где хранится:** этот файл в корне репозитория — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## Как вести журнал (Claude Code / Cursor)
+
+| Файл | Назначение |
+|------|------------|
+| **`SESSION_LOG.md`** (этот файл) | **Единый подробный журнал сессий:** что сделали, результат, решения, что не сделали / отложили. Новые блоки — **в начало**, после вводного абзаца. |
+| **`HANDOFF.md`** | **Краткий handoff:** текущий фокус, последнее действие в 3–7 строк, следующий шаг, незавершённое. На длинные отчёты — **ссылка сюда** (`SESSION_LOG` + дата), без копипасты всего текста. |
+| **`CLAUDE.md`** | Указывает читать `HANDOFF.md` в начале и дополнять его после существенной работы — имеется в виду **краткое** обновление + отсылка к `SESSION_LOG` для деталей. |
+
+**Не размазывать** одну и ту же историю по `HANDOFF`, `CLAUDE` и разным md — детали сессии = один блок в **`SESSION_LOG.md`**.
+
+---
+
+## [2026-03-30] Лендинг (видео, QR на камне), чат/timeline/инвайты, перф мемориала
+
+**Статус:** сделано в коде (часть коммитов могла быть запушена ранее; сверить `git log`).
+
+### Лендинг (`frontend/landing/`, зеркало `landing/`)
+- **Демо-видео:** секция `#demo` — `<video poster="/images/demo-poster.png" src="/video/demo.mp4">`; `frontend/landing/video/demo.mp4` в репо; `vite.config.js` — копирование `landing/video` → `dist/video`, dev-middleware с **HTTP Range** для seek.
+- **`.gitignore`:** игнор дубликата `landing/video/*.mp4` в корне; канон — `frontend/landing/video/`.
+- **Hero + Physical memorial:** чат с портрета перенесён **вниз слева** (не перекрывает лицо); карточка «телефона» у QR-секции — **вправо внизу** (не перекрывает цветы/основание камня).
+- **Согласование копирайта с картинкой:** на фото добавлена **иллюстрация таблички с декоративным QR** (SVG) + подпись, что фото стоковое, имя/даты в цифровом мемориале после скана.
+
+### Продукт (SPA под `/app/`)
+- **Источники в чате:** список источников RAG — в **`<details>`**, по умолчанию свёрнут; ключи `chat.sources_toggle` (en/ru). Файлы: `AvatarChat.jsx`, `AvatarChat.css`, `locales/en.js`, `ru.js`.
+- **Timeline API:** `GET /memorials/{id}/timeline` — сначала воспоминания **с `event_date`**, затем **без даты** (подпись «Без даты» / «No date», язык от `memorial.language`). `TimelineItem.event_date` опционален. Файлы: `memorials.py`, `schemas.py`, `LifeTimeline.jsx`, локали.
+- **Инвайты «поделиться»:** создание/список/отзыв инвайта для роли **EDITOR** (раньше только OWNER → 403 у редакторов). URL приглашения на фронте: **`frontend/src/utils/inviteUrl.js`** — `buildContributeInviteUrl(token)` с учётом `import.meta.env.BASE_URL` (`/app/` на Vercel). Бэкенд: `_make_invite_url` — первый непустой из `PUBLIC_FRONTEND_URL` / `FRONTEND_URL`. Использование: `MemoryList.jsx`, `MemorialDetail.jsx` (создание ссылки).
+- **Переключение между мемориалами:** в `MemorialDetail` при смене `id` — сброс вкладок на **Media**, `revokeObjectURL` для QR blob, снятие модалки QR (меньше одновременных тяжёлых вкладок).
+
+### Тесты
+- `backend/tests/test_timeline.py` — переписаны под undated + порядок dated→undated.
+- `pytest tests/test_timeline.py tests/test_invites.py` — ок. Полный `pytest` в песочнице может падать на несвязанных тестах (сеть/прокси, см. `test_cover_photo`).
+
+### Не сделано / на потом
+- Отдельный **React Query / prefetch** списка мемориалов — не внедряли; только сброс вкладок при смене `id`.
+- **Пуш в git** после последних правок — пользователь должен проверить `git status` и при необходимости запушить.
+- Дублирующий файл `~/.claude/.../session_log.md` — при необходимости синхронизировать вручную с этим файлом (в репо источник правды — **`SESSION_LOG.md`** здесь).
+
+### Ключевые пути кода
+- Лендинг: `frontend/landing/index.html`, `frontend/vite.config.js`, `.gitignore`
+- Чат: `frontend/src/components/AvatarChat.jsx`, `AvatarChat.css`
+- Таймлайн: `backend/app/api/memorials.py` (`get_timeline`), `frontend/src/components/LifeTimeline.jsx`
+- Инвайты: `backend/app/api/invites.py`, `frontend/src/utils/inviteUrl.js`, `MemoryList.jsx`, `MemorialDetail.jsx`
+
+---
+
 ## [2026-03-29] Сводка сессий Cursor — консультации, код, git
 
 Ниже — всё, что происходило в связанных сессиях чата (ответы ассистента + выполненные действия).

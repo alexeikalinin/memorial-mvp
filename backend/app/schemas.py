@@ -199,7 +199,7 @@ class TimelineItem(BaseModel):
     type: str
     title: Optional[str] = None
     content: str
-    event_date: datetime
+    event_date: Optional[datetime] = None  # None = воспоминание без даты события (секция «без даты»)
 
     class Config:
         from_attributes = True
