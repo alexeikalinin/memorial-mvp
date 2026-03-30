@@ -1,6 +1,8 @@
 """
 API endpoints для AI-функций: анимация фото и чат с аватаром.
 """
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -559,9 +561,43 @@ async def avatar_chat(
         )
     
     except Exception as e:
+        logging.exception("avatar_chat failed")
+        msg = str(e)
+        low = msg.lower()
+        detail = f"Error processing chat request: {msg}"
+        is_config = False
+        if "openai_api_key not configured" in low or (
+            "openai_api_key" in low and "not configured" in low
+        ):
+            detail += " Set OPENAI_API_KEY in the backend environment (Railway Variables)."
+            is_config = True
+        elif (
+            settings.VECTOR_DB_PROVIDER == "qdrant"
+            and not settings.QDRANT_LOCAL_PATH
+            and (
+                "connection refused" in low
+                or "connection error" in low
+                or "failed to establish a new connection" in low
+                or "name or service not known" in low
+                or "timed out" in low
+                or "6333" in msg
+                or ("localhost" in low and "6333" in msg)
+                or ("127.0.0.1" in msg and "6333" in msg)
+            )
+        ):
+            detail += (
+                " Qdrant is not reachable from this host (localhost:6333 does not work on Railway). "
+                "Create a cluster at https://cloud.qdrant.io and set QDRANT_URL + QDRANT_API_KEY; "
+                "leave QDRANT_LOCAL_PATH empty. Re-create memory embeddings against that cluster if needed."
+            )
+            is_config = True
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing chat request: {str(e)}"
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+                if is_config
+                else status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
+            detail=detail,
         )
 
 

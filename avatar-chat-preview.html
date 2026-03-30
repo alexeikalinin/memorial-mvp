@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avatar Chat — Design Concept</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #0f0e0d;
+    color: #e8e0d5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP NAV */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(15,14,13,0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .nav-brand { font-size: 15px; color: #c9b99a; letter-spacing: 0.5px; }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 3px;
+  }
+  .nav-tab {
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: all 0.2s;
+  }
+  .nav-tab.active {
+    background: rgba(201,185,154,0.15);
+    color: #c9b99a;
+  }
+  .nav-tab:hover:not(.active) { color: #ccc; }
+
+  /* MAIN SPLIT LAYOUT */
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── LEFT: AVATAR PANEL ── */
+  .avatar-panel {
+    width: 44%;
+    flex-shrink: 0;
+    background: #111009;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+
+  /* Soft vignette background glow */
+  .avatar-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(90,60,30,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Avatar photo — fills height, like video call */
+  .avatar-photo-wrap {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    opacity: 0.92;
+  }
+
+  /* Fake photo placeholder */
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(160deg, #1c1510 0%, #2a1f14 40%, #1a130c 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar-face {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3d2e1e 0%, #2a1f14 100%);
+    border: 2px solid rgba(201,185,154,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 72px;
+    box-shadow: 0 0 60px rgba(201,185,154,0.08), 0 0 120px rgba(90,60,30,0.15);
+    animation: breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 60px rgba(201,185,154,0.08); }
+    50% { transform: scale(1.015); box-shadow: 0 0 80px rgba(201,185,154,0.14); }
+  }
+
+  /* Bottom overlay: name + status */
+  .avatar-footer {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 32px 28px 24px;
+    background: linear-gradient(to top, rgba(10,8,6,0.95) 0%, rgba(10,8,6,0.6) 60%, transparent 100%);
+  }
+  .avatar-name {
+    font-size: 22px;
+    font-weight: 400;
+    color: #e8e0d5;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .avatar-dates {
+    font-size: 13px;
+    color: #9a8878;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .avatar-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #7a9e7a;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #5a9e5a;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* Thinking animation overlay */
+  .avatar-thinking {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(201,185,154,0.2);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: #c9b99a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .avatar-thinking.visible { opacity: 1; }
+  .thinking-dots span {
+    display: inline-block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #c9b99a;
+    margin: 0 1px;
+    animation: dot-bounce 1.4s ease-in-out infinite;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* ── RIGHT: CHAT PANEL ── */
+  .chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #13110e;
+    border-left: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Chat header */
+  .chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .chat-header-title {
+    font-size: 13px;
+    color: #9a8878;
+    letter-spacing: 0.3px;
+  }
+  .chat-options {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .chat-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #666;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+  .chat-toggle.on { color: #c9b99a; border-color: rgba(201,185,154,0.2); }
+
+  /* Messages area */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+
+  /* Empty / suggestions state */
+  .chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    gap: 16px;
+    color: #666;
+  }
+  .chat-empty-icon { font-size: 32px; opacity: 0.4; }
+  .chat-empty p { font-size: 14px; line-height: 1.6; max-width: 280px; color: #6a5f55; }
+
+  .suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 320px;
+  }
+  .suggestion-label { font-size: 11px; color: #5a5048; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+  .suggestion {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #8a7a6a;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: 'Georgia', serif;
+  }
+  .suggestion:hover {
+    background: rgba(201,185,154,0.06);
+    border-color: rgba(201,185,154,0.15);
+    color: #c9b99a;
+  }
+
+  /* Message bubbles */
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 88%;
+    gap: 4px;
+  }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.avatar { align-self: flex-start; align-items: flex-start; }
+
+  .msg-bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .msg.user .msg-bubble {
+    background: rgba(201,185,154,0.12);
+    border: 1px solid rgba(201,185,154,0.18);
+    color: #e0d6c8;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.avatar .msg-bubble {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: #ccc4b8;
+    border-bottom-left-radius: 4px;
+  }
+  .msg-time {
+    font-size: 10px;
+    color: #4a4038;
+    padding: 0 4px;
+  }
+
+  /* Audio playback row */
+  .msg-audio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(201,185,154,0.05);
+    border: 1px solid rgba(201,185,154,0.1);
+    border-radius: 8px;
+    margin-top: 4px;
+  }
+  .audio-play {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(201,185,154,0.15);
+    border: none;
+    color: #c9b99a;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+  .audio-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .audio-bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 40%;
+    background: linear-gradient(90deg, #c9b99a, #a89070);
+    border-radius: 2px;
+  }
+  .audio-time { font-size: 10px; color: #6a5f55; }
+
+  /* Input area */
+  .chat-input-area {
+    padding: 14px 16px 16px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    flex-shrink: 0;
+  }
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #e0d6c8;
+    font-family: 'Georgia', serif;
+    resize: none;
+    outline: none;
+    min-height: 42px;
+    max-height: 100px;
+    transition: border-color 0.2s;
+  }
+  .chat-input::placeholder { color: #4a4038; }
+  .chat-input:focus { border-color: rgba(201,185,154,0.25); }
+
+  .send-btn {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #c9b99a, #a89070);
+    border: none;
+    color: #1a1208;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .send-btn:hover { opacity: 0.9; transform: scale(1.04); }
+
+  .input-hint {
+    font-size: 11px;
+    color: #3a3028;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Demo controls */
+  .demo-bar {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,16,10,0.95);
+    border: 1px solid rgba(201,185,154,0.2);
+    border-radius: 24px;
+    padding: 8px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 12px;
+    color: #7a6a58;
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .demo-btn {
+    background: rgba(201,185,154,0.1);
+    border: 1px solid rgba(201,185,154,0.15);
+    border-radius: 12px;
+    padding: 4px 10px;
+    color: #c9b99a;
+    cursor: pointer;
+    font-size: 11px;
+    transition: background 0.2s;
+  }
+  .demo-btn:hover { background: rgba(201,185,154,0.2); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <span class="nav-brand">✦ Memorial</span>
+  <div class="nav-tabs">
+    <button class="nav-tab">Media</button>
+    <button class="nav-tab">Memories</button>
+    <button class="nav-tab active">Chat with Avatar</button>
+    <button class="nav-tab">Family Tree</button>
+    <button class="nav-tab">Timeline</button>
+  </div>
+  <div style="display:flex;gap:8px;font-size:12px;color:#666">
+    <span>EN</span>
+  </div>
+</nav>
+
+<!-- MAIN SPLIT -->
+<div class="main">
+
+  <!-- LEFT: AVATAR -->
+  <div class="avatar-panel" id="avatarPanel">
+    <div class="avatar-photo-wrap">
+      <div class="avatar-placeholder">
+        <div class="avatar-face" id="avatarFace">🧔</div>
+      </div>
+    </div>
+
+    <div class="avatar-thinking" id="thinkingIndicator">
+      <span>Thinking</span>
+      <span class="thinking-dots">
+        <span></span><span></span><span></span>
+      </span>
+    </div>
+
+    <div class="avatar-footer">
+      <div class="avatar-name">Duncan Alasdair Anderson</div>
+      <div class="avatar-dates">1838 — 1910</div>
+      <div class="avatar-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Ready to speak</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CHAT -->
+  <div class="chat-panel">
+
+    <div class="chat-header">
+      <span class="chat-header-title">Conversation with Duncan</span>
+      <div class="chat-options">
+        <button class="chat-toggle on" id="audioToggle">🔊 Voice</button>
+        <button class="chat-toggle" id="familyToggle">👨‍👩‍👧 Family RAG</button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="messages">
+      <!-- EMPTY STATE with suggestions -->
+      <div class="chat-empty" id="emptyState">
+        <div class="chat-empty-icon">💬</div>
+        <p>Ask Duncan anything — he'll answer from his memories and stories.</p>
+        <div class="suggestions">
+          <div class="suggestion-label">Try asking</div>
+          <button class="suggestion" onclick="sendDemo('Tell me about your childhood in Scotland')">Tell me about your childhood in Scotland</button>
+          <button class="suggestion" onclick="sendDemo('What was life like on the sheep station?')">What was life like on the sheep station?</button>
+          <button class="suggestion" onclick="sendDemo('What mattered most to you in life?')">What mattered most to you in life?</button>
+          <button class="suggestion" onclick="sendDemo('What advice would you give your children?')">What advice would you give your children?</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask a question..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFromInput()}"
+        ></textarea>
+        <button class="send-btn" onclick="sendFromInput()">➤</button>
+      </div>
+      <div class="input-hint">Press Enter to send · Shift+Enter for new line</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DEMO CONTROLS -->
+<div class="demo-bar">
+  <span>Design preview</span>
+  <button class="demo-btn" onclick="triggerThinking()">▶ Simulate answer</button>
+  <button class="demo-btn" onclick="clearChat()">↺ Reset</button>
+</div>
+
+<script>
+  const RESPONSES = [
+    {
+      text: "Ah, Scotland... I was born in Ayrshire in 1838, the youngest of seven. We were tenant farmers — never owned our land, always working it for others. That's what drove me to leave. When the emigration scheme came in '62, I thought: here is a chance to be the master of something.",
+      audio: true
+    },
+    {
+      text: "The station was hard work, I'll not pretend otherwise. The summers near broke us — forty days without rain one year. But there was something about owning those acres, watching the mob grow. My sons grew up knowing what it meant to earn something properly.",
+      audio: true
+    },
+    {
+      text: "Family. Always family. Not the land, not the wool prices. When I was dying I didn't think of the station — I thought of watching my grandchildren run across the paddock on Christmas morning.",
+      audio: false
+    },
+    {
+      text: "Work honestly. Don't borrow what you can't repay. And write things down — your children will want to know who you were, long after you're gone.",
+      audio: true
+    }
+  ];
+
+  let responseIndex = 0;
+  let isThinking = false;
+
+  function sendDemo(text) {
+    document.getElementById('emptyState')?.remove();
+    addUserMessage(text);
+    startThinking();
+    setTimeout(() => {
+      stopThinking();
+      const resp = RESPONSES[responseIndex % RESPONSES.length];
+      responseIndex++;
+      addAvatarMessage(resp.text, resp.audio);
+    }, 2000 + Math.random() * 1000);
+  }
+
+  function sendFromInput() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    sendDemo(text);
+  }
+
+  function addUserMessage(text) {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    div.innerHTML = `
+      <div class="msg-bubble">${text}</div>
+      <div class="msg-time">just now</div>
+    `;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addAvatarMessage(text, hasAudio) {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg avatar';
+    div.innerHTML = `
+      <div class="msg-bubble">${text}</div>
+      ${hasAudio ? `
+      <div class="msg-audio">
+        <button class="audio-play">▶</button>
+        <div class="audio-bar"><div class="audio-bar-fill"></div></div>
+        <span class="audio-time">0:12</span>
+      </div>` : ''}
+      <div class="msg-time">Duncan · just now</div>
+    `;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function startThinking() {
+    isThinking = true;
+    document.getElementById('thinkingIndicator').classList.add('visible');
+    document.getElementById('statusText').textContent = 'Speaking...';
+    document.getElementById('statusDot').style.background = '#c9a050';
+    document.getElementById('avatarFace').style.animation = 'none';
+    document.getElementById('avatarFace').style.transform = 'scale(1.03)';
+    document.getElementById('avatarFace').style.boxShadow = '0 0 80px rgba(201,160,80,0.2)';
+  }
+
+  function stopThinking() {
+    isThinking = false;
+    document.getElementById('thinkingIndicator').classList.remove('visible');
+    document.getElementById('statusText').textContent = 'Ready to speak';
+    document.getElementById('statusDot').style.background = '#5a9e5a';
+    document.getElementById('avatarFace').style.animation = 'breathe 4s ease-in-out infinite';
+    document.getElementById('avatarFace').style.transform = '';
+    document.getElementById('avatarFace').style.boxShadow = '';
+  }
+
+  function triggerThinking() {
+    if (isThinking) return;
+    document.getElementById('emptyState')?.remove();
+    addUserMessage('What was your life like?');
+    startThinking();
+    setTimeout(() => {
+      stopThinking();
+      const resp = RESPONSES[responseIndex % RESPONSES.length];
+      responseIndex++;
+      addAvatarMessage(resp.text, resp.audio);
+    }, 2500);
+  }
+
+  function clearChat() {
+    responseIndex = 0;
+    const msgs = document.getElementById('messages');
+    msgs.innerHTML = `
+      <div class="chat-empty" id="emptyState">
+        <div class="chat-empty-icon">💬</div>
+        <p>Ask Duncan anything — he'll answer from his memories and stories.</p>
+        <div class="suggestions">
+          <div class="suggestion-label">Try asking</div>
+          <button class="suggestion" onclick="sendDemo('Tell me about your childhood in Scotland')">Tell me about your childhood in Scotland</button>
+          <button class="suggestion" onclick="sendDemo('What was life like on the sheep station?')">What was life like on the sheep station?</button>
+          <button class="suggestion" onclick="sendDemo('What mattered most to you in life?')">What mattered most to you in life?</button>
+          <button class="suggestion" onclick="sendDemo('What advice would you give your children?')">What advice would you give your children?</button>
+        </div>
+      </div>
+    `;
+    stopThinking();
+  }
+
+  // Toggle buttons
+  document.getElementById('audioToggle').onclick = function() {
+    this.classList.toggle('on');
+  };
+  document.getElementById('familyToggle').onclick = function() {
+    this.classList.toggle('on');
+  };
+</script>
+</body>
+</html>

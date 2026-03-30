@@ -673,32 +673,3 @@
   font-family: monospace;
 }
 
-/* Family view toggle (Tree / Network) */
-.family-view-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.family-view-btn {
-  padding: 6px 18px;
-  border-radius: 20px;
-  border: 1.5px solid var(--border, #333);
-  background: transparent;
-  color: var(--text-muted, #888);
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.family-view-btn:hover {
-  border-color: #666;
-  color: #ccc;
-}
-
-.family-view-btn.active {
-  background: var(--accent, #6b7fff);
-  border-color: var(--accent, #6b7fff);
-  color: #fff;
-  font-weight: 600;
-}

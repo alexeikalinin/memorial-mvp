@@ -24,6 +24,13 @@ export default {
     family: 'Family Tree',
     timeline: 'Timeline',
   },
+  lifeTimeline: {
+    loading: 'Loading timeline…',
+    empty_title: 'No memories with an event date',
+    empty_hint:
+      'Add a “When it was” date to memories so they appear here.',
+    title: 'Life timeline',
+  },
   chat: {
     placeholder: 'Ask a question...',
     send: 'Send',
@@ -367,5 +374,7 @@ export default {
       'Each card is one memorial. Older generations are at the top, younger at the bottom. The orange line marks a marriage between two separate family lines.',
     tree_controls:
       'Wheel — zoom · Drag — pan · Click — open profile · Hover — relationship to the selected person',
+    fit_whole_tree: 'Fit whole tree',
+    center_on_person: 'Center on this person',
   },
 }

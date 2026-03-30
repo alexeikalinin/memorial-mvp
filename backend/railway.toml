@@ -1,6 +1,7 @@
 # Railway: деплой папки backend через Dockerfile.
 # В Dashboard: New Project → Deploy from GitHub → выберите репо, Root Directory = backend.
-# В Variables добавьте: OPENAI_API_KEY, при необходимости PUBLIC_API_URL (URL выдаст Railway после деплоя).
+# Variables: OPENAI_API_KEY (обязательно для чата). QDRANT_LOCAL_PATH задаёт Dockerfile (/data/qdrant_storage);
+# не переопределяйте пустой строкой. Для векторов между деплоями: Volume → /data.
 
 [build]
 builder = "DOCKERFILE"

@@ -7,7 +7,6 @@ import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
-import FamilyNetwork from '../components/FamilyNetwork'
 import LifeTimeline from '../components/LifeTimeline'
 import './MemorialDetail.css'
 
@@ -530,7 +529,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('family') && (
           <div style={{ display: activeTab === 'family' ? '' : 'none' }}>
-            <FamilyViewToggle memorialId={id} />
+            <FamilyTree memorialId={id} />
           </div>
         )}
         {mountedTabs.has('timeline') && (
@@ -754,30 +753,6 @@ function MemorialDetail() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function FamilyViewToggle({ memorialId }) {
-  const [view, setView] = useState('network')
-  return (
-    <div>
-      <div className="family-view-tabs">
-        <button
-          className={`family-view-btn ${view === 'network' ? 'active' : ''}`}
-          onClick={() => setView('network')}
-        >
-          All Families
-        </button>
-        <button
-          className={`family-view-btn ${view === 'tree' ? 'active' : ''}`}
-          onClick={() => setView('tree')}
-        >
-          Family Tree
-        </button>
-      </div>
-      {view === 'network' && <FamilyNetwork memorialId={memorialId} />}
-      {view === 'tree'    && <FamilyTree    memorialId={memorialId} />}
     </div>
   )
 }

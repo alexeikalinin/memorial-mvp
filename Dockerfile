@@ -14,6 +14,10 @@ COPY backend/ .
 
 RUN mkdir -p uploads
 
+# См. backend/Dockerfile — встроенный Qdrant для RAG в одном контейнере
+ENV QDRANT_LOCAL_PATH=/data/qdrant_storage
+RUN mkdir -p /data/qdrant_storage
+
 EXPOSE 8000
 ENV PORT=8000
 

@@ -2,6 +2,7 @@
 SQLAlchemy модели для базы данных.
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON, Index
+from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -136,6 +137,34 @@ class RelationshipType(str, enum.Enum):
     CUSTOM          = "custom"           # Произвольная связь (задаётся вручную)
 
 
+class RelationshipTypeColumn(TypeDecorator):
+    """
+    Хранит строку .value в БД. Читает и нижний регистр (seed, API), и легаси-имена SQLAlchemy Enum (PARENT).
+    """
+    impl = String(32)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, RelationshipType):
+            return value.value
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        s = str(value).strip()
+        try:
+            return RelationshipType(s)
+        except ValueError:
+            pass
+        key = s.upper()
+        if key in RelationshipType.__members__:
+            return RelationshipType[key]
+        raise ValueError(f"Unknown relationship_type in DB: {value!r}")
+
+
 class FamilyRelationship(Base):
     """Модель семейной связи между мемориалами."""
     __tablename__ = "family_relationships"
@@ -143,7 +172,7 @@ class FamilyRelationship(Base):
     id = Column(Integer, primary_key=True, index=True)
     memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False, index=True)
     related_memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False, index=True)
-    relationship_type = Column(Enum(RelationshipType), nullable=False, index=True)
+    relationship_type = Column(RelationshipTypeColumn(), nullable=False, index=True)
     custom_label = Column(String(100), nullable=True)  # Заполняется только для CUSTOM типа
     notes = Column(Text, nullable=True)  # Дополнительные заметки о связи
     created_at = Column(DateTime(timezone=True), server_default=func.now())

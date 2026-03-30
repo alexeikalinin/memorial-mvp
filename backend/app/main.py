@@ -1,6 +1,8 @@
 """
 Главный файл FastAPI приложения.
 """
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -79,6 +81,27 @@ def _migrate_existing_access():
     finally:
         db.close()
 _migrate_existing_access()
+
+
+def _warn_qdrant_if_deployed_without_cloud():
+    """Локальный Qdrant по умолчанию недоступен из облачного контейнера (Railway и т.д.)."""
+    if settings.VECTOR_DB_PROVIDER != "qdrant":
+        return
+    if settings.QDRANT_LOCAL_PATH:
+        return
+    url = (settings.QDRANT_URL or "").lower()
+    if "localhost" not in url and "127.0.0.1" not in url:
+        return
+    if not (os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RENDER") or os.getenv("DYNO")):
+        return
+    print(
+        "WARNING: QDRANT_URL points to localhost but QDRANT_LOCAL_PATH is empty. "
+        "Avatar chat (RAG) will fail until you set QDRANT_URL + QDRANT_API_KEY (Qdrant Cloud) "
+        "or a persistent QDRANT_LOCAL_PATH. See backend/.env.example."
+    )
+
+
+_warn_qdrant_if_deployed_without_cloud()
 
 # Создание FastAPI приложения
 app = FastAPI(

@@ -22,6 +22,31 @@ const NODE_H = 160
 const OFF_X = (HW - NODE_W / 2)
 const OFF_Y = (HH - NODE_H / 2)
 
+const MIN_SCALE = 0.05
+const MAX_SCALE = 3
+const VIEW_PAD = 24
+
+function fitInnerInViewport(canvasEl, innerW, innerH) {
+  const cw = canvasEl.offsetWidth
+  const ch = canvasEl.offsetHeight
+  if (!cw || !ch || !innerW || !innerH) return null
+  const sx = (cw - 2 * VIEW_PAD) / innerW
+  const sy = (ch - 2 * VIEW_PAD) / innerH
+  const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(sx, sy)))
+  const cx = innerW / 2
+  const cy = innerH / 2
+  return { x: cw / 2 - cx * scale, y: ch / 2 - cy * scale, scale }
+}
+
+function centerRootInViewport(canvasEl, rootNode) {
+  const cw = canvasEl.offsetWidth
+  const ch = canvasEl.offsetHeight
+  if (!rootNode || !cw) return null
+  const rootX = rootNode.left * HW + OFF_X + NODE_W / 2
+  const rootY = rootNode.top * HH + OFF_Y + NODE_H / 2
+  return { x: cw / 2 - rootX, y: ch / 2 - rootY, scale: 1 }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────
 const sid = (id) => String(id)
 
@@ -377,17 +402,28 @@ export default function FamilyTree({ memorialId }) {
   const canvasW = treeData ? treeData.canvas.width  * HW : 800
   const canvasH = treeData ? treeData.canvas.height * HH : 400
 
-  // Center viewport on root after layout
+  // Initial view: center on the opened memorial (API root_id === this page)
   useEffect(() => {
-    if (!treeData || !canvasRef.current) return
+    if (!treeData || !canvasRef.current || !graphData?.root_id) return
     const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
-    if (!rootNode) return
-    const rootX = rootNode.left * HW + OFF_X + NODE_W / 2
-    const rootY = rootNode.top  * HH + OFF_Y + NODE_H / 2
-    const cw = canvasRef.current.offsetWidth
-    const ch = canvasRef.current.offsetHeight
-    setTransform({ x: cw / 2 - rootX, y: ch / 2 - rootY, scale: 1 })
-  }, [treeData])
+    const next = centerRootInViewport(canvasRef.current, rootNode)
+    if (next) setTransform(next)
+  }, [treeData, graphData?.root_id, memorialId])
+
+  const fitWholeTree = useCallback(() => {
+    if (!graphData || !treeData || !canvasRef.current) return
+    const innerW = treeData.canvas.width * HW
+    const innerH = treeData.canvas.height * HH
+    const next = fitInnerInViewport(canvasRef.current, innerW, innerH)
+    if (next) setTransform(next)
+  }, [graphData, treeData])
+
+  const centerOnThisPerson = useCallback(() => {
+    if (!graphData?.root_id || !treeData || !canvasRef.current) return
+    const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
+    const next = centerRootInViewport(canvasRef.current, rootNode)
+    if (next) setTransform(next)
+  }, [graphData?.root_id, treeData])
 
   // ── Pan / zoom ─────────────────────────────────────────────────
   useEffect(() => {
@@ -400,7 +436,7 @@ export default function FamilyTree({ memorialId }) {
       const py = e.clientY - rect.top
       const delta = e.deltaY > 0 ? -0.1 : 0.1
       setTransform(prev => {
-        const next = Math.min(3, Math.max(0.25, prev.scale + delta * prev.scale))
+        const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, prev.scale + delta * prev.scale))
         const ratio = next / prev.scale
         return { x: px - ratio * (px - prev.x), y: py - ratio * (py - prev.y), scale: next }
       })
@@ -453,7 +489,7 @@ export default function FamilyTree({ memorialId }) {
       const dx = e.touches[0].clientX - e.touches[1].clientX
       const dy = e.touches[0].clientY - e.touches[1].clientY
       const ratio = Math.hypot(dx, dy) / pinchRef.current.dist
-      const next = Math.min(3, Math.max(0.25, pinchRef.current.scale * ratio))
+      const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, pinchRef.current.scale * ratio))
       const sr = next / pinchRef.current.scale
       const rect = canvasRef.current.getBoundingClientRect()
       const px = pinchRef.current.cx - rect.left
@@ -508,9 +544,19 @@ export default function FamilyTree({ memorialId }) {
         <h2>{t('family.title')}</h2>
         <div className="tree-header-actions">
           {hasTree && (
-            <span className="tree-node-count">
-              {t('family.people_count')(graphData.nodes.length)}
-            </span>
+            <>
+              <span className="tree-node-count">
+                {t('family.people_count')(graphData.nodes.length)}
+              </span>
+              <div className="tree-view-controls" role="group" aria-label={t('family.tree_controls')}>
+                <button type="button" className="btn-tree-view" onClick={fitWholeTree}>
+                  {t('family.fit_whole_tree')}
+                </button>
+                <button type="button" className="btn-tree-view" onClick={centerOnThisPerson}>
+                  {t('family.center_on_person')}
+                </button>
+              </div>
+            </>
           )}
           <button
             className="btn btn-primary"
@@ -520,6 +566,9 @@ export default function FamilyTree({ memorialId }) {
           </button>
         </div>
       </div>
+      {hasTree && (
+        <p className="tree-controls-hint">{t('family.tree_controls')}</p>
+      )}
 
       {/* Add form */}
       {showAddForm && (

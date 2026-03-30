@@ -37,6 +37,37 @@
   font-style: italic;
 }
 
+.tree-view-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.btn-tree-view {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.btn-tree-view:hover {
+  border-color: var(--accent-dark, #8b6914);
+  color: var(--text);
+}
+
+.tree-controls-hint {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  margin: -0.5rem 0 1rem;
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
 /* ─── Primary button ──────────────────────────────────────────────  */
 .btn.btn-primary {
   background: var(--accent-dark);

@@ -18,6 +18,11 @@ COPY . .
 # Создание директории для загрузок
 RUN mkdir -p uploads
 
+# Встроенный Qdrant (qdrant-client path=...) — без отдельного процесса и без Qdrant Cloud.
+# Векторы для RAG хранятся здесь; для сохранения между деплоями в Railway добавьте Volume → mount path /data
+ENV QDRANT_LOCAL_PATH=/data/qdrant_storage
+RUN mkdir -p /data/qdrant_storage
+
 # Порт для FastAPI (Railway/Render передают PORT)
 EXPOSE 8000
 ENV PORT=8000

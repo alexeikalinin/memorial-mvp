@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Family Tree — Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #1a1310;
+    color: #FAF8F5;
+    min-height: 100vh;
+    padding: 32px;
+  }
+  h1 { font-size: 1.1rem; font-weight: 400; color: rgba(196,168,130,0.7); margin-bottom: 24px; letter-spacing: 0.05em; }
+
+  /* Header */
+  .tree-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .tree-header h2 { font-size: 1.8rem; font-weight: 400; color: #FAF8F5; }
+  .tree-header-actions { display: flex; align-items: center; gap: 12px; }
+  .node-count { font-size: 0.8rem; color: rgba(250,248,245,0.4); font-style: italic; }
+
+  .btn-primary {
+    background: #5C3A1E; color: #FAF8F5; border: none;
+    padding: 8px 20px; border-radius: 6px; font-size: 0.9rem; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .btn-secondary {
+    background: rgba(196,168,130,0.1); color: #C4A882;
+    border: 1px solid rgba(196,168,130,0.3);
+    padding: 8px 18px; border-radius: 6px; font-size: 0.9rem; cursor: pointer;
+  }
+  .btn-secondary.active {
+    background: rgba(196,168,130,0.22);
+    border-color: #C4A882;
+    box-shadow: 0 0 0 2px rgba(196,168,130,0.15);
+  }
+
+  /* Canvas */
+  .hint {
+    font-size: 0.72rem; color: rgba(255,255,255,0.35);
+    text-align: center; padding: 6px 16px;
+    background: rgba(42,21,53,0.6);
+    border-radius: 6px 6px 0 0; letter-spacing: 0.02em;
+  }
+  .canvas {
+    position: relative; width: 100%; height: 560px;
+    background: linear-gradient(155deg, #2A1535 0%, #3D2050 25%, #5C2840 50%, #8B3A28 75%, #C4511E 100%);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden; cursor: grab;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  /* Stars */
+  .canvas::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(circle at  8% 12%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.95) 1.5px, transparent 1.5px),
+      radial-gradient(circle at 22%  5%, rgba(255,255,255,0.70) 0, rgba(255,255,255,0.70) 1px,   transparent 1px),
+      radial-gradient(circle at 40% 18%, rgba(255,255,255,0.80) 0, rgba(255,255,255,0.80) 1px,   transparent 1px),
+      radial-gradient(circle at 60%  8%, rgba(255,255,255,0.65) 0, rgba(255,255,255,0.65) 1.5px, transparent 1.5px),
+      radial-gradient(circle at 75% 22%, rgba(255,255,255,0.55) 0, rgba(255,255,255,0.55) 1px,   transparent 1px),
+      radial-gradient(circle at 88% 10%, rgba(255,255,255,0.85) 0, rgba(255,255,255,0.85) 1.5px, transparent 1.5px),
+      radial-gradient(circle at 95% 35%, rgba(255,255,255,0.40) 0, rgba(255,255,255,0.40) 1px,   transparent 1px),
+      radial-gradient(circle at 12% 42%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.30) 1px,   transparent 1px),
+      radial-gradient(circle at 50%  3%, rgba(255,255,255,0.95) 0, rgba(255,255,255,0.95) 2px,   transparent 2px),
+      radial-gradient(circle at 33% 28%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0.25) 1px,   transparent 1px),
+      radial-gradient(circle at 70% 38%, rgba(255,255,255,0.30) 0, rgba(255,255,255,0.30) 1px,   transparent 1px);
+  }
+
+  /* Nodes */
+  .node {
+    position: absolute; width: 148px; height: 86px;
+    background: rgba(250,248,245,0.93);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px; padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+    z-index: 2; color: #2C2118;
+    transition: transform 0.15s;
+  }
+  .node:hover { transform: translateY(-3px) scale(1.04); z-index: 10; }
+  .node--root {
+    border: 2px solid #C4A882;
+    background: rgba(250,248,245,0.99);
+    box-shadow: 0 0 0 3px rgba(196,168,130,0.3), 0 6px 24px rgba(0,0,0,0.4);
+  }
+  .node--root::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #C4A882, #8B6340);
+    border-radius: 10px 10px 0 0;
+  }
+  .node--deceased { filter: grayscale(60%) brightness(0.88); opacity: 0.85; }
+  .avatar {
+    width: 40px; height: 40px; min-width: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #C4A882, #8B6340);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 600; color: #FAF8F5;
+    overflow: hidden; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .info { flex: 1; min-width: 0; }
+  .name { font-family: Georgia, serif; font-size: 0.8rem; font-weight: 400; color: #1a1310; line-height: 1.3; }
+  .years { font-size: 0.65rem; color: #7A6050; font-style: italic; margin-top: 2px; }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute; background: rgba(28,25,23,0.95);
+    border: 1px solid rgba(196,168,130,0.28);
+    border-radius: 6px; padding: 5px 10px;
+    font-size: 0.72rem; color: #C4A882; font-style: italic;
+    z-index: 20; pointer-events: none; white-space: nowrap;
+    animation: fadeIn 0.12s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; } }
+
+  /* Legend */
+  .legend {
+    position: absolute; bottom: 12px; left: 12px; z-index: 5;
+    background: rgba(20,17,16,0.78);
+    border: 1px solid rgba(196,168,130,0.15);
+    border-radius: 6px; padding: 8px 12px;
+    display: flex; flex-direction: column; gap: 5px;
+    backdrop-filter: blur(4px);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-item span { font-size: 0.65rem; color: rgba(250,248,245,0.45); white-space: nowrap; font-family: sans-serif; }
+
+  /* Labels on canvas */
+  .label {
+    position: absolute; font-size: 0.65rem;
+    color: rgba(255,255,255,0.55); font-family: sans-serif;
+    background: rgba(0,0,0,0.35); padding: 2px 7px;
+    border-radius: 10px; white-space: nowrap; z-index: 3;
+  }
+  .label--gen {
+    color: rgba(196,168,130,0.6);
+    background: rgba(0,0,0,0.45);
+    font-style: italic;
+  }
+
+  /* Cross-family badge */
+  .cross-badge {
+    position: absolute; font-size: 0.6rem; color: #F59E0B;
+    font-style: italic; font-family: sans-serif;
+    z-index: 4; white-space: nowrap;
+  }
+
+  /* Info panel */
+  .info-panel {
+    margin-top: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;
+  }
+  .feature-card {
+    background: rgba(250,248,245,0.04);
+    border: 1px solid rgba(196,168,130,0.15);
+    border-radius: 8px; padding: 16px;
+  }
+  .feature-card h3 { font-size: 0.85rem; color: #C4A882; margin-bottom: 8px; font-weight: 400; }
+  .feature-card p { font-size: 0.78rem; color: rgba(250,248,245,0.5); font-family: sans-serif; line-height: 1.5; }
+
+  /* Animations */
+  @keyframes arcPulse { 0%,100%{opacity:0.55} 50%{opacity:0.9} }
+  @keyframes crossGlow { 0%,100%{opacity:0.95} 50%{opacity:0.4} }
+  @keyframes knotPulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+
+  .arc-hidden { animation: arcPulse 2.5s ease-in-out infinite; }
+  .edge-cross  { animation: crossGlow 2.5s ease-in-out infinite; }
+  .knot-cross  { animation: knotPulse 2s ease-in-out infinite; filter: drop-shadow(0 0 5px rgba(245,158,11,0.7)); }
+</style>
+</head>
+<body>
+
+<h1>ПРЕВЬЮ — Семейное дерево (концепция)</h1>
+
+<!-- Header -->
+<div class="tree-header">
+  <h2>Семейное дерево</h2>
+  <div class="tree-header-actions">
+    <span class="node-count">21 человек</span>
+    <button class="btn-secondary active" onclick="toggleArcs(this)">Скрытые связи ✓</button>
+    <button class="btn-primary">+ Добавить связь</button>
+  </div>
+</div>
+
+<!-- Canvas hint -->
+<div class="hint">Колесо — зум · Перетащите — перемещение · Нажмите — открыть · Наведите — отношение к Ивану</div>
+
+<!-- Main canvas -->
+<div class="canvas" id="canvas">
+  <svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">
+
+    <!-- Generation labels -->
+    <text x="18" y="64" font-size="10" fill="rgba(196,168,130,0.45)" font-style="italic" font-family="sans-serif">Прадеды</text>
+    <text x="18" y="178" font-size="10" fill="rgba(196,168,130,0.45)" font-style="italic" font-family="sans-serif">Деды</text>
+    <text x="18" y="298" font-size="10" fill="rgba(196,168,130,0.45)" font-style="italic" font-family="sans-serif">Родители</text>
+    <text x="18" y="408" font-size="10" fill="rgba(196,168,130,0.45)" font-style="italic" font-family="sans-serif">Фокус</text>
+    <text x="18" y="510" font-size="10" fill="rgba(196,168,130,0.45)" font-style="italic" font-family="sans-serif">Дети</text>
+
+    <!-- ═══════════ LINES: GEN -3 (прадеды) ═══════════ -->
+    <!-- Петровы: Дмитрий + Елена -->
+    <line x1="195" y1="72" x2="223" y2="72" stroke="rgba(196,168,130,0.6)" stroke-width="1.5"/>
+    <text x="209" y="68" text-anchor="middle" font-size="11" fill="rgba(196,168,130,0.65)">∞</text>
+    <!-- knot + line to child -->
+    <polygon points="209,82 215,88 209,94 203,88" fill="rgba(196,168,130,0.85)" class=""/>
+    <path d="M209,94 C209,130 290,130 290,168" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- Сидоровы: Аркадий + Зинаида -->
+    <line x1="365" y1="72" x2="393" y2="72" stroke="rgba(196,168,130,0.6)" stroke-width="1.5"/>
+    <text x="379" y="68" text-anchor="middle" font-size="11" fill="rgba(196,168,130,0.65)">∞</text>
+    <polygon points="379,82 385,88 379,94 373,88" fill="rgba(196,168,130,0.85)"/>
+    <path d="M379,94 C379,130 460,130 460,168" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- Морозовы (другая семья): Семён + Варвара -->
+    <line x1="582" y1="72" x2="610" y2="72" stroke="rgba(196,168,130,0.6)" stroke-width="1.5"/>
+    <text x="596" y="68" text-anchor="middle" font-size="11" fill="rgba(196,168,130,0.65)">∞</text>
+    <polygon points="596,82 602,88 596,94 590,88" fill="rgba(196,168,130,0.85)"/>
+    <path d="M596,94 C596,130 660,130 660,168" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- ═══════════ LINES: GEN -2 (деды) ═══════════ -->
+    <!-- Петров Николай + Морозова Людмила — МЕЖСЕМЕЙНЫЙ БРАК -->
+    <line x1="285" y1="192" x2="313" y2="192" stroke="#F59E0B" stroke-width="2" class="edge-cross"/>
+    <text x="299" y="184" text-anchor="middle" font-size="9" fill="#F59E0B" font-style="italic" font-family="sans-serif">межсемейный брак</text>
+    <polygon points="299,202 305,208 299,214 293,208" fill="#F59E0B" class="knot-cross"/>
+    <path d="M299,214 C299,250 370,250 370,288" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- Сидорова Наталья + Ковалёв Пётр -->
+    <line x1="454" y1="192" x2="482" y2="192" stroke="rgba(196,168,130,0.6)" stroke-width="1.5"/>
+    <text x="468" y="188" text-anchor="middle" font-size="11" fill="rgba(196,168,130,0.65)">∞</text>
+    <polygon points="468,202 474,208 468,214 462,208" fill="rgba(196,168,130,0.85)"/>
+    <path d="M468,214 C468,250 530,250 530,288" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- ═══════════ LINES: GEN -1 (родители) ═══════════ -->
+    <!-- Отец Алексей + Мать Мария -->
+    <line x1="365" y1="312" x2="393" y2="312" stroke="rgba(196,168,130,0.6)" stroke-width="1.5"/>
+    <text x="379" y="308" text-anchor="middle" font-size="11" fill="rgba(196,168,130,0.65)">∞</text>
+    <polygon points="379,322 385,328 379,334 373,328" fill="rgba(196,168,130,0.85)"/>
+    <!-- children: Иван + сестра -->
+    <path d="M379,334 C379,358 430,358 430,398" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+    <path d="M379,334 C379,358 260,358 260,398" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- Дядя Сергей — одиночка в этом поколении -->
+    <path d="M524,334 C524,358 560,358 560,398" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- Sibling line: Иван <-> Сестра -->
+    <line x1="255" y1="441" x2="285" y2="441" stroke="rgba(196,168,130,0.35)" stroke-width="1" stroke-dasharray="4,3"/>
+
+    <!-- ═══════════ LINES: GEN 0 (фокус — Иван) ═══════════ -->
+    <!-- Иван (root) + Ольга — МЕЖСЕМЕЙНЫЙ БРАК (Ольга из рода Морозовых!) -->
+    <line x1="425" y1="441" x2="453" y2="441" stroke="#F59E0B" stroke-width="2" class="edge-cross"/>
+    <text x="439" y="433" text-anchor="middle" font-size="9" fill="#F59E0B" font-style="italic" font-family="sans-serif">межсемейный брак</text>
+    <polygon points="439,452 445,458 439,464 433,458" fill="#F59E0B" class="knot-cross"/>
+    <!-- children -->
+    <path d="M439,464 C439,488 510,488 510,498" fill="none" stroke="rgba(196,168,130,0.4)" stroke-width="1.5"/>
+
+    <!-- ═══════════ HIDDEN CONNECTION ARCS ═══════════ -->
+    <!-- Иван → Ольга: оказываются дальними родственниками через Морозовых! -->
+    <path id="arc1"
+      d="M430,398 Q596,10 600,398"
+      fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.65" class="arc-hidden">
+      <title>Иван Петров → (дед) → Николай Петров → (межсемейный брак) → Людмила Морозова → (внучка) → Ольга Морозова: Дальние родственники (4 хопа)</title>
+    </path>
+    <!-- Иван → Дядя Сергей через другую ветку -->
+    <path id="arc2"
+      d="M430,398 Q490,20 555,398"
+      fill="none" stroke="#C4A882" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.45" class="arc-hidden">
+      <title>Двоюродный родственник через Наталью Сидорову (3 хопа)</title>
+    </path>
+
+  </svg>
+
+  <!-- ═══════════ GEN -3: ПРАДЕДЫ ═══════════ -->
+  <div class="node node--deceased" style="left:120px;top:30px">
+    <div class="avatar">ДП</div>
+    <div class="info"><div class="name">Дмитрий Петров</div><div class="years">1890 — 1961</div></div>
+  </div>
+  <div class="node node--deceased" style="left:228px;top:30px">
+    <div class="avatar">ЕП</div>
+    <div class="info"><div class="name">Елена Петрова</div><div class="years">1893 — 1970</div></div>
+  </div>
+
+  <div class="node node--deceased" style="left:290px;top:30px">
+    <div class="avatar">АС</div>
+    <div class="info"><div class="name">Аркадий Сидоров</div><div class="years">1888 — 1955</div></div>
+  </div>
+  <div class="node node--deceased" style="left:398px;top:30px">
+    <div class="avatar">ЗС</div>
+    <div class="info"><div class="name">Зинаида Сидорова</div><div class="years">1892 — 1968</div></div>
+  </div>
+
+  <div class="node node--deceased" style="left:510px;top:30px">
+    <div class="avatar">СМ</div>
+    <div class="info"><div class="name">Семён Морозов</div><div class="years">1885 — 1950</div></div>
+  </div>
+  <div class="node node--deceased" style="left:618px;top:30px">
+    <div class="avatar">ВМ</div>
+    <div class="info"><div class="name">Варвара Морозова</div><div class="years">1888 — 1962</div></div>
+  </div>
+
+  <!-- ═══════════ GEN -2: ДЕДЫ ═══════════ -->
+  <div class="node node--deceased" style="left:215px;top:150px">
+    <div class="avatar">НП</div>
+    <div class="info"><div class="name">Николай Петров</div><div class="years">1918 — 1989</div></div>
+  </div>
+  <div class="node node--deceased" style="left:323px;top:150px">
+    <div class="avatar">ЛМ</div>
+    <div class="info"><div class="name">Людмила Морозова</div><div class="years">1920 — 1995</div></div>
+  </div>
+
+  <div class="node node--deceased" style="left:385px;top:150px">
+    <div class="avatar">НС</div>
+    <div class="info"><div class="name">Наталья Сидорова</div><div class="years">1922 — 2001</div></div>
+  </div>
+  <div class="node node--deceased" style="left:493px;top:150px">
+    <div class="avatar">ПК</div>
+    <div class="info"><div class="name">Пётр Ковалёв</div><div class="years">1915 — 1982</div></div>
+  </div>
+
+  <!-- ═══════════ GEN -1: РОДИТЕЛИ ═══════════ -->
+  <div class="node node--deceased" style="left:295px;top:270px">
+    <div class="avatar">АП</div>
+    <div class="info"><div class="name">Алексей Петров</div><div class="years">1945 — 2018</div></div>
+  </div>
+  <div class="node" style="left:403px;top:270px">
+    <div class="avatar">МП</div>
+    <div class="info"><div class="name">Мария Петрова</div><div class="years">1948</div></div>
+  </div>
+  <div class="node" style="left:454px;top:270px">
+    <div class="avatar">СК</div>
+    <div class="info"><div class="name">Сергей Ковалёв</div><div class="years">1950</div></div>
+  </div>
+
+  <!-- ═══════════ GEN 0: ФОКУС ═══════════ -->
+  <div class="node" style="left:130px;top:380px" title="Брат / Сестра Ивана">
+    <div class="avatar">НП</div>
+    <div class="info"><div class="name">Наташа Петрова</div><div class="years">1975</div></div>
+  </div>
+
+  <div class="node node--root" style="left:285px;top:380px" id="root">
+    <div class="avatar" style="background:linear-gradient(135deg,#C4A882,#6B3E26)">ИП</div>
+    <div class="info"><div class="name">Иван Петров</div><div class="years">1978</div></div>
+  </div>
+
+  <div class="node" style="left:430px;top:380px" title="Внучка Морозовых — межсемейный брак!">
+    <div class="avatar">ОМ</div>
+    <div class="info"><div class="name">Ольга Морозова</div><div class="years">1980</div></div>
+  </div>
+
+  <div class="node" style="left:490px;top:380px">
+    <div class="avatar">ДК</div>
+    <div class="info"><div class="name">Дмитрий Ковалёв</div><div class="years">1976</div></div>
+  </div>
+
+  <!-- ═══════════ GEN +1: ДЕТИ ═══════════ -->
+  <div class="node" style="left:410px;top:478px">
+    <div class="avatar">СП</div>
+    <div class="info"><div class="name">Света Петрова</div><div class="years">2005</div></div>
+  </div>
+
+  <!-- Tooltip example -->
+  <div class="tooltip" style="left:598px;top:385px">Дальний родственник через Людмилу М.</div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="rgba(196,168,130,0.7)" stroke-width="1.5"/></svg>
+      <span>Супруги</span>
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="rgba(196,168,130,0.45)" stroke-width="1" stroke-dasharray="4,3"/></svg>
+      <span>Братья / Сёстры</span>
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="10"><polygon points="14,1 20,5 14,9 8,5" fill="rgba(196,168,130,0.85)"/></svg>
+      <span>Союз с детьми</span>
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#F59E0B" stroke-width="2"/></svg>
+      <span>Межсемейный брак</span>
+    </div>
+    <div class="legend-item">
+      <svg width="28" height="10"><path d="M0,8 Q14,-2 28,8" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+      <span>Скрытая связь</span>
+    </div>
+  </div>
+
+  <!-- WOW badge -->
+  <div style="position:absolute;top:16px;right:16px;background:rgba(34,211,238,0.15);border:1px solid rgba(34,211,238,0.4);border-radius:8px;padding:8px 14px;font-size:0.72rem;font-family:sans-serif;color:#22d3ee;z-index:10;max-width:220px;line-height:1.5;">
+    💡 <strong>Скрытая связь!</strong><br>
+    Иван и Ольга — дальние родственники через линию Морозовых (4 хопа)
+  </div>
+
+</div>
+
+<!-- Feature cards -->
+<div class="info-panel">
+  <div class="feature-card">
+    <h3>⬆ Умный лэйаут (bottom-up)</h3>
+    <p>Супруги всегда рядом. Пары центрируются над своими детьми. Алгоритм обходит дерево снизу вверх — от потомков к предкам.</p>
+  </div>
+  <div class="feature-card">
+    <h3>💛 Межсемейный брак</h3>
+    <p>Золотая пульсирующая линия + ромб-knot. Автоматически определяется: если у пары нет общих предков в видимом графе — это межсемейный союз.</p>
+  </div>
+  <div class="feature-card">
+    <h3>🔵 Скрытые связи (дуги)</h3>
+    <p>Кнопка "Скрытые связи" — появляются цветные дуги над деревом. Cyan = 2 хопа, золото = 3, розовый = 4+. Эффект "wow" — новая пара оказалась родственниками!</p>
+  </div>
+  <div class="feature-card">
+    <h3>💬 Tooltip при наведении</h3>
+    <p>Наведите на любой узел — увидите тип отношения к выбранному: "Дедушка / Бабушка", "Дядя / Тётя", "Двоюродный брат", "Дальний родственник через Людмилу".</p>
+  </div>
+  <div class="feature-card">
+    <h3>◆ Marriage Knot</h3>
+    <p>Ромб между супругами — появляется только у пар, у которых есть дети. Линии к детям идут от ромба, не от отдельных родителей. Золотой ромб = межсемейный брак.</p>
+  </div>
+  <div class="feature-card">
+    <h3>🗺 Легенда</h3>
+    <p>Постоянная легенда в левом нижнем углу канваса. На мобильных скрывается чтобы не занимать место.</p>
+  </div>
+</div>
+
+<script>
+  let arcsVisible = true;
+  function toggleArcs(btn) {
+    arcsVisible = !arcsVisible;
+    document.getElementById('arc1').style.display = arcsVisible ? '' : 'none';
+    document.getElementById('arc2').style.display = arcsVisible ? '' : 'none';
+    btn.textContent = arcsVisible ? 'Скрытые связи ✓' : 'Скрытые связи';
+    btn.className = arcsVisible ? 'btn-secondary active' : 'btn-secondary';
+  }
+
+  // Simple hover tooltip demo
+  document.getElementById('root').addEventListener('mouseenter', function() {
+    // root has no tooltip (it's the selected person)
+  });
+</script>
+</body>
+</html>

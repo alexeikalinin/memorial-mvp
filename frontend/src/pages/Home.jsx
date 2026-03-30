@@ -12,7 +12,8 @@ function Home() {
   const { lang, t } = useLanguage()
 
   useEffect(() => {
-    memorialsAPI.list()
+    // Фильтр по языку мемориала (поле `language` в БД), иначе смешиваются RU+EN и счёт «для EN» не совпадает с ожиданиями.
+    memorialsAPI.list(lang)
       .then((res) => setMemorials(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         console.error('Error loading memorials:', err)
