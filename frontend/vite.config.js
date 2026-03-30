@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync, existsSync, mkdirSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, cpSync } from 'fs'
 import { resolve } from 'path'
 
 // Production (Vercel): landing at /, SPA at /app/ — see root vercel.json
@@ -23,12 +23,16 @@ const familyTreePreviewAlias = () => ({
 const landingToDist = () => ({
   name: 'copy-landing-to-dist-root',
   closeBundle() {
-    const src = resolve(__dirname, 'landing/index.html')
+    const landingDir = resolve(__dirname, 'landing')
     const destDir = resolve(__dirname, 'dist')
-    const dest = resolve(destDir, 'index.html')
     if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-    copyFileSync(src, dest)
-    console.log('[landing] copied to dist/index.html ✓')
+    copyFileSync(resolve(landingDir, 'index.html'), resolve(destDir, 'index.html'))
+    const imgs = resolve(landingDir, 'images')
+    if (existsSync(imgs)) {
+      const destImgs = resolve(destDir, 'images')
+      cpSync(imgs, destImgs, { recursive: true })
+    }
+    console.log('[landing] copied to dist/index.html + images ✓')
   },
 })
 

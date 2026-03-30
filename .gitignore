@@ -62,6 +62,10 @@ htmlcov/
 # Docker
 .dockerignore
 
+# Landing demo video (large; host on CDN or Git LFS)
+landing/video/*.mp4
+frontend/landing/video/*.mp4
+
 # Frontend
 node_modules/
 npm-debug.log*

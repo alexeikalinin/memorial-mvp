@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Memorial — Talk to Them Again</title>
   <meta name="description" content="A living memorial powered by AI. Chat with an avatar built from real memories. Voice cloning. Hidden family connections across generations." />
+  <meta property="og:title" content="Memorial — Talk to Them Again" />
+  <meta property="og:description" content="AI memorials grounded in real memories. Family tree, voice, and hidden connections." />
+  <meta property="og:image" content="/images/hero-portrait.png" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <style>
@@ -248,14 +252,25 @@
       border: 1px solid var(--border);
       box-shadow: 0 40px 120px rgba(0,0,0,0.5);
     }
-    .demo-video {
+    .demo-thumbnail {
       width: 100%; aspect-ratio: 16/9; object-fit: cover;
-      display: block; vertical-align: middle;
-      background: #0a0a12;
+      filter: brightness(0.5) saturate(0.7);
+      display: block;
     }
-    .demo-video::-webkit-media-controls-panel {
-      background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    .demo-overlay {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      background: rgba(8,8,16,0.4);
     }
+    .play-btn {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: rgba(200,169,126,0.95); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .3s; font-size: 28px; color: #1a1408;
+      box-shadow: 0 0 0 16px rgba(200,169,126,0.1), 0 0 0 32px rgba(200,169,126,0.05);
+    }
+    .play-btn:hover { transform: scale(1.1); background: var(--accent2); }
+    .play-label { font-size: 15px; color: var(--text2); }
     .demo-chips {
       display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 32px;
     }
@@ -633,7 +648,7 @@
     <div class="hero-visual">
       <!-- Old portrait photo -->
       <div class="hero-photo-frame">
-        <img src="https://images.unsplash.com/photo-1581579186913-45ac3e6efe93?w=600&q=80" alt="Memorial portrait" loading="eager" />
+        <img src="/images/hero-portrait.png" alt="Memorial portrait" loading="eager" width="600" height="750" />
         <div class="hero-photo-overlay"></div>
         <div class="hero-photo-caption">
           <div class="hero-photo-name">George Thompson</div>
@@ -663,11 +678,11 @@
 <div id="logos">
   <div class="logos-inner">
     <span class="logos-label">Powered by</span>
-    <div class="logo-pill">🤖 OpenAI GPT-4</div>
+    <div class="logo-pill">🤖 OpenAI (GPT-4o / mini)</div>
     <div class="logo-pill">🎙️ ElevenLabs Voice</div>
-    <div class="logo-pill">🎬 D-ID Animation</div>
-    <div class="logo-pill">🔍 RAG Memory Search</div>
-    <div class="logo-pill">🌲 Qdrant Vector DB</div>
+    <div class="logo-pill">🎬 D-ID / HeyGen</div>
+    <div class="logo-pill">🔍 RAG memory search</div>
+    <div class="logo-pill">🌲 Qdrant / Pinecone</div>
   </div>
 </div>
 
@@ -736,15 +751,17 @@
     <div class="section-label reveal">See It Live</div>
     <h2 class="section-title reveal reveal-delay-1">Watch the avatar<br>in action.</h2>
     <div class="demo-container reveal reveal-delay-2">
-      <video
-        class="demo-video"
-        controls
-        playsinline
-        preload="metadata"
-        title="Product demo"
-      >
-        <source src="video/demo.mp4" type="video/mp4" />
-      </video>
+      <img
+        class="demo-thumbnail"
+        src="/images/demo-poster.png"
+        alt="Demo video preview"
+        width="1200"
+        height="675"
+      />
+      <div class="demo-overlay">
+        <button class="play-btn" onclick="this.innerHTML='⏸'">▶</button>
+        <div class="play-label">3-minute product demo</div>
+      </div>
     </div>
     <div class="demo-chips">
       <div class="demo-chip"><span>💬</span> AI Avatar responds in their voice</div>
@@ -766,7 +783,7 @@
       <div class="feature-row">
         <div class="feat-block reveal">
           <div class="feat-photo">
-            <img src="https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=800&q=60" alt="" />
+            <img src="/images/feat-chat.png" alt="AI avatar chat grounded in memories" width="800" height="500" />
           </div>
           <div class="feat-content">
             <div class="feat-tag">AI Avatar Chat</div>
@@ -788,7 +805,7 @@
         </div>
         <div class="feat-block dark reveal reveal-delay-1">
           <div class="feat-photo">
-            <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=60" alt="" />
+            <img src="/images/feat-voice.png" alt="Voice cloning from recordings" width="800" height="500" />
           </div>
           <div class="feat-content">
             <div class="feat-tag">Voice Cloning</div>
@@ -816,7 +833,7 @@
       <div class="feature-row">
         <div class="feat-block dark reveal">
           <div class="feat-photo">
-            <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=60" alt="" />
+            <img src="/images/feat-timeline.png" alt="Life timeline from dated memories" width="800" height="500" />
           </div>
           <div class="feat-content">
             <div class="feat-tag">Life Timeline</div>
@@ -844,7 +861,7 @@
         </div>
         <div class="feat-block reveal reveal-delay-1">
           <div class="feat-photo">
-            <img src="https://images.unsplash.com/photo-1511895426328-dc8714191011?w=800&q=60" alt="" />
+            <img src="/images/feat-tree.png" alt="Interactive family tree" width="800" height="500" />
           </div>
           <div class="feat-content">
             <div class="feat-tag">Family Tree</div>
@@ -919,7 +936,7 @@
     <div class="qr-inner">
       <div class="qr-photo-wrap reveal">
         <div class="qr-photo">
-          <img src="https://images.unsplash.com/photo-1519741347686-c1e0aadf4611?w=600&q=75" alt="Memorial headstone" />
+          <img src="/images/feat-headstone.png" alt="Memorial headstone with QR concept" width="600" height="400" />
           <div class="qr-overlay-gradient"></div>
         </div>
         <div class="qr-badge">
@@ -976,14 +993,14 @@
 <section id="testimonials">
   <div class="section-inner">
     <div class="section-label reveal">Stories</div>
-    <h2 class="section-title reveal reveal-delay-1">Real families.<br>Real conversations.</h2>
+    <h2 class="section-title reveal reveal-delay-1">What families experience.<br><span style="font-size:0.55em;color:var(--text3);font-weight:400">Illustrative stories — not verified customer records.</span></h2>
     <div class="testimonials-grid">
       <div class="testi reveal">
         <div class="testi-stars">★★★★★</div>
         <p class="testi-text">"I asked grandpa's avatar what advice he'd give me. He answered exactly the way he used to talk — thoughtful, warm, with that little chuckle before the punchline. I cried for an hour."</p>
         <div class="testi-author">
           <div class="testi-avatar">
-            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80" alt="Sarah M." />
+            <img src="/images/testi-1.png" alt="" width="100" height="100" />
           </div>
           <div>
             <div class="testi-name">Sarah M.</div>
@@ -996,7 +1013,7 @@
         <p class="testi-text">"We found 23 relatives we didn't know existed. Three of them had overlapping memories of our great-grandparents. Hidden Connections is extraordinary — nothing else does this."</p>
         <div class="testi-author">
           <div class="testi-avatar">
-            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" alt="The Kowalski family" />
+            <img src="/images/testi-2.png" alt="" width="100" height="100" />
           </div>
           <div>
             <div class="testi-name">The Kowalski family</div>
@@ -1009,7 +1026,7 @@
         <p class="testi-text">"My kids ask grandma questions every Sunday morning. She's been gone for three years. They're growing up knowing her — not just knowing about her. That's everything."</p>
         <div class="testi-author">
           <div class="testi-avatar">
-            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&q=80" alt="James R." />
+            <img src="/images/testi-3.png" alt="" width="100" height="100" />
           </div>
           <div>
             <div class="testi-name">James R.</div>
@@ -1018,6 +1035,7 @@
         </div>
       </div>
     </div>
+    <p class="section-sub reveal" style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)">Portrait photos are generated placeholders.</p>
 
     <div class="stats-row reveal">
       <div class="stat-block">
@@ -1037,6 +1055,7 @@
         <div class="stat-label">% would recommend</div>
       </div>
     </div>
+    <p class="section-sub reveal" style="text-align:center;margin-top:12px;font-size:12px;color:var(--text3)">Stats are illustrative placeholders until we publish real aggregates.</p>
   </div>
 </section>
 
@@ -1076,7 +1095,8 @@
   <div class="section-inner" style="text-align:center">
     <div class="section-label reveal" style="justify-content:center">Pricing</div>
     <h2 class="section-title reveal reveal-delay-1">Start free.<br>Grow with your family.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 56px;text-align:center">All plans include a 14-day free trial. No credit card required to start.</p>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 12px;text-align:center">No credit card required to start. <strong style="color:var(--accent)">Billing is not live yet</strong> — prices below are the product roadmap, not active checkout.</p>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 56px;text-align:center;font-size:14px;color:var(--text3)">Aligned with engineering docs: chat limits, family RAG, and voice caps are planned metering targets.</p>
     <div class="pricing-grid">
       <div class="pricing-card reveal">
         <div class="pricing-name">Free</div>
@@ -1157,7 +1177,7 @@
       </div>
       <div class="faq-item reveal">
         <div class="faq-q">What happens to my data if I cancel? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Export all your memories, photos, videos, and chat transcripts at any time — no lock-in. We will never delete a memorial without 90 days notice and multiple export opportunities. The Lifetime plan includes permanent hosting guarantees.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Export your memories, photos, and media from the app when available. Paid plans are not active yet; when billing launches, cancellation and retention terms will be published clearly before any charge.</div></div>
       </div>
       <div class="faq-item reveal">
         <div class="faq-q">Do I need any technical skills to set this up? <span class="faq-icon">+</span></div>
@@ -1170,7 +1190,7 @@
 <!-- ═══ FINAL CTA ═══ -->
 <section id="final-cta">
   <div class="final-bg-photo">
-    <img src="https://images.unsplash.com/photo-1511895426328-dc8714191011?w=1600&q=70" alt="" />
+    <img src="/images/feat-tree.png" alt="" width="1600" height="900" />
   </div>
   <div class="final-bg-overlay"></div>
   <div class="final-content reveal">
