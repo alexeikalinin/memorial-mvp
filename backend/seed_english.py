@@ -5,7 +5,7 @@ Seed script: Australian memorial families (EN) for investor demo — part 1 of 3
 `seed_english.py` → `seed_english_expanded.py` → `seed_english_cluster2.py`).
 См. `en_memorials_manifest.py` — канонический список имён.
 
-Two families across 4 generations with a cross-family marriage.
+Two families across 5 generations with a cross-family marriage and extra siblings / next generation for tree demos.
 
 Family 1 – Kelly (Irish-Australian):
   Sean Kelly (1842-1918) + Brigid O'Brien Kelly (1848-1922)
@@ -133,6 +133,33 @@ MEMORIALS = [
         "voice_gender": "female",
         "desc": "Daughter of William and Agnes Anderson. Met James Kelly at a Sydney Town Hall dance in 1919 and married him the following year.",
     },
+    # Kelly Gen 2 — extra sibling (wider row)
+    {
+        "key": "mary",
+        "name": "Mary Frances Kelly",
+        "birth": dt(1873, 1, 8),
+        "death": dt(1958, 3, 2),
+        "voice_gender": "female",
+        "desc": "Younger sister of Thomas Kelly. Taught school in Ballarat and kept the family letters.",
+    },
+    # Kelly Gen 3 — James's sister
+    {
+        "key": "patricia",
+        "name": "Patricia Anne Kelly",
+        "birth": dt(1901, 11, 30),
+        "death": dt(1988, 6, 14),
+        "voice_gender": "female",
+        "desc": "Younger sister of James Kelly. Nurse during the Depression years in Melbourne.",
+    },
+    # Anderson Gen 3 — Helen's brother
+    {
+        "key": "arthur",
+        "name": "Arthur William Anderson",
+        "birth": dt(1892, 4, 19),
+        "death": dt(1968, 2, 5),
+        "voice_gender": "male",
+        "desc": "Brother of Helen Anderson. Wharf engineer; helped James and Helen move house after the war.",
+    },
     # Kelly Gen 4
     {
         "key": "robert",
@@ -141,6 +168,24 @@ MEMORIALS = [
         "death": dt(2005, 9, 30),
         "voice_gender": "male",
         "desc": "Son of James and Helen Kelly. Sydney property developer who witnessed the postwar boom and the building of the Opera House.",
+    },
+    # Kelly Gen 4 — spouse (Chen — third surname for neutral / mixed cards)
+    {
+        "key": "linda",
+        "name": "Linda Mei Chen Kelly",
+        "birth": dt(1932, 8, 22),
+        "death": dt(2018, 5, 9),
+        "voice_gender": "female",
+        "desc": "Born in Sydney to Chinese-Australian parents. Married Robert Kelly in 1955; shared his love of harbour walks.",
+    },
+    # Kelly Gen 5
+    {
+        "key": "claire",
+        "name": "Claire Ying Kelly",
+        "birth": dt(1960, 2, 3),
+        "death": dt(2020, 12, 1),
+        "voice_gender": "female",
+        "desc": "Daughter of Robert and Linda. Urban planner; advocated for public space along the harbour foreshore.",
     },
 ]
 
@@ -614,6 +659,13 @@ RELATIONSHIPS = [
     ("brigid", "thomas", RelationshipType.PARENT),
     ("thomas", "sean", RelationshipType.CHILD),
     ("thomas", "brigid", RelationshipType.CHILD),
+    # Sean & Brigid → Mary (sister of Thomas)
+    ("sean", "mary", RelationshipType.PARENT),
+    ("brigid", "mary", RelationshipType.PARENT),
+    ("mary", "sean", RelationshipType.CHILD),
+    ("mary", "brigid", RelationshipType.CHILD),
+    ("thomas", "mary", RelationshipType.SIBLING),
+    ("mary", "thomas", RelationshipType.SIBLING),
     # Gen 2 Kelly – spouses
     ("thomas", "rose", RelationshipType.SPOUSE),
     ("rose", "thomas", RelationshipType.SPOUSE),
@@ -622,6 +674,13 @@ RELATIONSHIPS = [
     ("rose", "james", RelationshipType.PARENT),
     ("james", "thomas", RelationshipType.CHILD),
     ("james", "rose", RelationshipType.CHILD),
+    # Thomas & Rose → Patricia (sister of James)
+    ("thomas", "patricia", RelationshipType.PARENT),
+    ("rose", "patricia", RelationshipType.PARENT),
+    ("patricia", "thomas", RelationshipType.CHILD),
+    ("patricia", "rose", RelationshipType.CHILD),
+    ("james", "patricia", RelationshipType.SIBLING),
+    ("patricia", "james", RelationshipType.SIBLING),
     # Gen 1 Anderson – spouses
     ("duncan", "flora", RelationshipType.SPOUSE),
     ("flora", "duncan", RelationshipType.SPOUSE),
@@ -638,6 +697,13 @@ RELATIONSHIPS = [
     ("agnes", "helen", RelationshipType.PARENT),
     ("helen", "william", RelationshipType.CHILD),
     ("helen", "agnes", RelationshipType.CHILD),
+    # William & Agnes → Arthur (brother of Helen)
+    ("william", "arthur", RelationshipType.PARENT),
+    ("agnes", "arthur", RelationshipType.PARENT),
+    ("arthur", "william", RelationshipType.CHILD),
+    ("arthur", "agnes", RelationshipType.CHILD),
+    ("helen", "arthur", RelationshipType.SIBLING),
+    ("arthur", "helen", RelationshipType.SIBLING),
     # Cross-family: James ∞ Helen
     ("james", "helen", RelationshipType.SPOUSE),
     ("helen", "james", RelationshipType.SPOUSE),
@@ -646,6 +712,13 @@ RELATIONSHIPS = [
     ("helen", "robert", RelationshipType.PARENT),
     ("robert", "james", RelationshipType.CHILD),
     ("robert", "helen", RelationshipType.CHILD),
+    # Robert & Linda → Claire
+    ("robert", "linda", RelationshipType.SPOUSE),
+    ("linda", "robert", RelationshipType.SPOUSE),
+    ("robert", "claire", RelationshipType.PARENT),
+    ("linda", "claire", RelationshipType.PARENT),
+    ("claire", "robert", RelationshipType.CHILD),
+    ("claire", "linda", RelationshipType.CHILD),
 ]
 
 

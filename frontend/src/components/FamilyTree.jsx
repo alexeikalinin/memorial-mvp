@@ -4,6 +4,11 @@ import { useLanguage } from '../contexts/LanguageContext'
 import { familyAPI, memorialsAPI } from '../api/client'
 import ApiMediaImage from './ApiMediaImage'
 import calcTree from 'relatives-tree'
+import {
+  buildGenerationLayout,
+  isCrossFamilySpouseEdge,
+} from '../utils/familyTreeGenerationLayout.js'
+import { buildOrthogonalConnectors } from '../utils/familyTreeOrthogonalConnectors.js'
 import './FamilyTree.css'
 
 // ── Grid constants ─────────────────────────────────────────────────
@@ -220,6 +225,68 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, onClick }) {
   )
 }
 
+/** Карточка в режиме «поколения»: позиция absolute, линии A/B и золото у перекрёстного брака */
+function GenTreeNodeCard({
+  memorial,
+  left,
+  top,
+  nodeW,
+  nodeH,
+  isRoot,
+  lineage,
+  isBridge,
+  relLabel,
+  onClick,
+}) {
+  const isDeceased = !!memorial.death_year
+  const cls = ['ft-node', 'ft-node--gen']
+  if (isRoot) cls.push('ft-node--root')
+  if (isBridge) cls.push('ft-node--bridge')
+  else if (lineage === 'A') cls.push('ft-node--line-a')
+  else if (lineage === 'B') cls.push('ft-node--line-b')
+  else cls.push('ft-node--line-n')
+  if (isDeceased) cls.push('ft-node--deceased')
+
+  return (
+    <div
+      className={cls.filter(Boolean).join(' ')}
+      style={{ position: 'absolute', left, top, width: nodeW, height: nodeH }}
+      onClick={() => onClick(memorial.memorial_id)}
+      title={memorial.name}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClick(memorial.memorial_id)}
+    >
+      <div className="ft-node-avatar-wrap">
+        <div className="ft-node-avatar">
+          {memorial.cover_photo_id ? (
+            <ApiMediaImage
+              mediaId={memorial.cover_photo_id}
+              thumbnail="small"
+              alt={memorial.name}
+              className="ft-node-img"
+            />
+          ) : (
+            <span className="ft-node-initials">{getInitials(memorial.name)}</span>
+          )}
+        </div>
+        {isRoot && <div className="ft-node-root-ring" />}
+      </div>
+      <div className="ft-node-info">
+        <div className="ft-node-name">{memorial.name}</div>
+        {(memorial.birth_year || memorial.death_year) && (
+          <div className="ft-node-years">
+            {memorial.birth_year || '?'}{memorial.death_year ? ` — ${memorial.death_year}` : ''}
+          </div>
+        )}
+        {relLabel && !isRoot && (
+          <div className="ft-node-rel-label">{relLabel}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Connected-families mini card ───────────────────────────────────
 function ConnectedFamilyCard({ member, bridgeLabel, onClick }) {
   const isDeceased = !!member.death_year
@@ -261,6 +328,10 @@ export default function FamilyTree({ memorialId }) {
   const [submitting, setSubmitting] = useState(false)
 
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
+  /** generations = ряды поколений + две линии (демо); pedigree = relatives-tree */
+  const [layoutMode, setLayoutMode] = useState('generations')
+  const [treeFullscreen, setTreeFullscreen] = useState(false)
+  const familyTreeRootRef = useRef(null)
   const dragRef  = useRef(null)
   const pinchRef = useRef(null)
 
@@ -310,6 +381,58 @@ export default function FamilyTree({ memorialId }) {
     if (!graphData) return {}
     return buildRelLabels(graphData.nodes, graphData.edges, graphData.root_id, t)
   }, [graphData, t])
+
+  const genLayout = useMemo(() => {
+    if (!graphData?.nodes?.length) return null
+    try {
+      return buildGenerationLayout(graphData)
+    } catch (e) {
+      console.error('buildGenerationLayout', e)
+      return null
+    }
+  }, [graphData])
+
+  const bridgeNodeIds = useMemo(() => {
+    if (!graphData?.edges || !genLayout?.lineage) return new Set()
+    const s = new Set()
+    for (const e of graphData.edges) {
+      if (isCrossFamilySpouseEdge(e, genLayout.lineage)) {
+        s.add(sid(e.source))
+        s.add(sid(e.target))
+      }
+    }
+    return s
+  }, [graphData, genLayout])
+
+  const orthoConnectorLines = useMemo(() => {
+    if (layoutMode !== 'generations' || !genLayout?.positions || !graphData?.edges) return []
+    return buildOrthogonalConnectors({
+      edges: graphData.edges,
+      positions: genLayout.positions,
+      nodeSize: genLayout.nodeSize,
+      lineageMap: genLayout.lineage,
+    }).lines
+  }, [layoutMode, genLayout, graphData?.edges])
+
+  useEffect(() => {
+    const onFs = () => {
+      const el = familyTreeRootRef.current
+      setTreeFullscreen(!!el && document.fullscreenElement === el)
+    }
+    document.addEventListener('fullscreenchange', onFs)
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [])
+
+  const toggleTreeFullscreen = useCallback(async () => {
+    const el = familyTreeRootRef.current
+    if (!el) return
+    try {
+      if (!document.fullscreenElement) await el.requestFullscreen()
+      else await document.exitFullscreen()
+    } catch (err) {
+      console.warn('Fullscreen:', err)
+    }
+  }, [])
 
   // Connected families: nodes present in full-tree but NOT placed by relatives-tree
   // (i.e., reachable only via custom edges from the structural family cluster)
@@ -399,31 +522,68 @@ export default function FamilyTree({ memorialId }) {
   }, [graphData, treeData])
 
   // Canvas pixel size
-  const canvasW = treeData ? treeData.canvas.width  * HW : 800
-  const canvasH = treeData ? treeData.canvas.height * HH : 400
+  const canvasW = useMemo(() => {
+    if (layoutMode === 'generations' && genLayout) return genLayout.canvas.width
+    return treeData ? treeData.canvas.width * HW : 800
+  }, [layoutMode, genLayout, treeData])
 
-  // Initial view: center on the opened memorial (API root_id === this page)
+  const canvasH = useMemo(() => {
+    if (layoutMode === 'generations' && genLayout) return genLayout.canvas.height
+    return treeData ? treeData.canvas.height * HH : 400
+  }, [layoutMode, genLayout, treeData])
+
+  // Initial view: центр на открытом мемориале (root_id)
   useEffect(() => {
-    if (!treeData || !canvasRef.current || !graphData?.root_id) return
+    if (!canvasRef.current || !graphData?.root_id) return
+    if (layoutMode === 'generations' && genLayout?.positions) {
+      const p = genLayout.positions[sid(graphData.root_id)]
+      if (!p) return
+      const el = canvasRef.current
+      const cw = el.offsetWidth
+      const ch = el.offsetHeight
+      setTransform({ x: cw / 2 - p.cx, y: ch / 2 - p.cy, scale: 1 })
+      return
+    }
+    if (!treeData) return
     const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
     const next = centerRootInViewport(canvasRef.current, rootNode)
     if (next) setTransform(next)
-  }, [treeData, graphData?.root_id, memorialId])
+  }, [layoutMode, genLayout, treeData, graphData?.root_id, memorialId])
 
   const fitWholeTree = useCallback(() => {
-    if (!graphData || !treeData || !canvasRef.current) return
+    if (!canvasRef.current) return
+    if (layoutMode === 'generations' && genLayout) {
+      const next = fitInnerInViewport(
+        canvasRef.current,
+        genLayout.canvas.width,
+        genLayout.canvas.height
+      )
+      if (next) setTransform(next)
+      return
+    }
+    if (!graphData || !treeData) return
     const innerW = treeData.canvas.width * HW
     const innerH = treeData.canvas.height * HH
     const next = fitInnerInViewport(canvasRef.current, innerW, innerH)
     if (next) setTransform(next)
-  }, [graphData, treeData])
+  }, [layoutMode, genLayout, graphData, treeData])
 
   const centerOnThisPerson = useCallback(() => {
-    if (!graphData?.root_id || !treeData || !canvasRef.current) return
+    if (!graphData?.root_id || !canvasRef.current) return
+    if (layoutMode === 'generations' && genLayout?.positions) {
+      const p = genLayout.positions[sid(graphData.root_id)]
+      if (!p) return
+      const el = canvasRef.current
+      const cw = el.offsetWidth
+      const ch = el.offsetHeight
+      setTransform({ x: cw / 2 - p.cx, y: ch / 2 - p.cy, scale: 1 })
+      return
+    }
+    if (!treeData) return
     const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
     const next = centerRootInViewport(canvasRef.current, rootNode)
     if (next) setTransform(next)
-  }, [graphData?.root_id, treeData])
+  }, [layoutMode, genLayout, graphData?.root_id, treeData])
 
   // ── Pan / zoom ─────────────────────────────────────────────────
   useEffect(() => {
@@ -535,14 +695,39 @@ export default function FamilyTree({ memorialId }) {
   // ── Render ─────────────────────────────────────────────────────
   if (loading) return <div className="loading">{t('family.loading')}</div>
 
-  const hasTree = !!treeData
+  const showGenerations = layoutMode === 'generations' && !!genLayout
+  const showPedigree = layoutMode === 'pedigree' && !!treeData
+  const hasTree =
+    !!graphData?.nodes?.length && (showGenerations || showPedigree)
 
   return (
-    <div className="family-tree">
+    <div
+      ref={familyTreeRootRef}
+      className={`family-tree${treeFullscreen ? ' family-tree--fullscreen' : ''}`}
+    >
       {/* Header */}
       <div className="tree-header">
         <h2>{t('family.title')}</h2>
         <div className="tree-header-actions">
+          {graphData?.nodes?.length > 0 && (
+            <div className="tree-layout-toggle" role="group" aria-label="Layout">
+              <button
+                type="button"
+                className={`btn-tree-view${layoutMode === 'generations' ? ' btn-tree-view--active' : ''}`}
+                onClick={() => setLayoutMode('generations')}
+              >
+                {t('family.layout_generations')}
+              </button>
+              <button
+                type="button"
+                className={`btn-tree-view${layoutMode === 'pedigree' ? ' btn-tree-view--active' : ''}`}
+                onClick={() => setLayoutMode('pedigree')}
+                disabled={!treeData}
+              >
+                {t('family.layout_pedigree')}
+              </button>
+            </div>
+          )}
           {hasTree && (
             <>
               <span className="tree-node-count">
@@ -555,6 +740,9 @@ export default function FamilyTree({ memorialId }) {
                 <button type="button" className="btn-tree-view" onClick={centerOnThisPerson}>
                   {t('family.center_on_person')}
                 </button>
+                <button type="button" className="btn-tree-view" onClick={toggleTreeFullscreen}>
+                  {treeFullscreen ? t('family.exit_fullscreen') : t('family.fullscreen')}
+                </button>
               </div>
             </>
           )}
@@ -566,7 +754,17 @@ export default function FamilyTree({ memorialId }) {
           </button>
         </div>
       </div>
-      {hasTree && (
+      {showGenerations && genLayout && (
+        <>
+          <div className="ft-gen-legend" aria-hidden>
+            <span className="ft-leg ft-leg--a">{genLayout.surnameA || '—'}</span>
+            <span className="ft-leg ft-leg--b">{genLayout.surnameB || '—'}</span>
+            <span className="ft-leg ft-leg--gold">∞ {t('family.legend_cross_family_short')}</span>
+          </div>
+          <p className="tree-controls-hint ft-gen-hint">{t('family.gen_legend_hint')}</p>
+        </>
+      )}
+      {hasTree && layoutMode === 'pedigree' && (
         <p className="tree-controls-hint">{t('family.tree_controls')}</p>
       )}
 
@@ -680,31 +878,104 @@ export default function FamilyTree({ memorialId }) {
             }}
           >
             {/* Connectors — library gives us axis-aligned segments as [x1,y1,x2,y2] grid coords */}
-            <svg
-              style={{ position: 'absolute', top: 0, left: 0, width: canvasW, height: canvasH, pointerEvents: 'none', overflow: 'visible' }}
-            >
-              {treeData.connectors.map(([x1, y1, x2, y2], i) => (
-                <line
-                  key={i}
-                  x1={x1 * HW} y1={y1 * HH}
-                  x2={x2 * HW} y2={y2 * HH}
-                  stroke="rgba(196,168,130,0.65)"
-                  strokeWidth="1.5"
-                />
-              ))}
-            </svg>
-
-            {/* Nodes */}
-            {treeData.nodes.map(extNode => (
-              <NodeCard
-                key={extNode.id}
-                extNode={extNode}
-                nodeMap={nodeMap}
-                isRoot={extNode.id === sid(graphData.root_id)}
-                relLabel={relLabels[extNode.id]}
-                onClick={id => navigate(`/memorials/${id}`)}
-              />
-            ))}
+            {layoutMode === 'generations' && genLayout ? (
+              <>
+                <svg
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: canvasW,
+                    height: canvasH,
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                  }}
+                >
+                  {(genLayout.laneGapBands || []).map((band, gi) => (
+                    <rect
+                      key={`lane-gap-${gi}`}
+                      x={band.x}
+                      y={band.y}
+                      width={band.width}
+                      height={band.height}
+                      fill="rgba(200, 175, 120, 0.07)"
+                      stroke="rgba(200, 175, 120, 0.12)"
+                      strokeWidth={1}
+                      rx={6}
+                    />
+                  ))}
+                  {orthoConnectorLines.map((ln) => (
+                    <line
+                      key={ln.key}
+                      x1={ln.x1}
+                      y1={ln.y1}
+                      x2={ln.x2}
+                      y2={ln.y2}
+                      stroke={ln.stroke}
+                      strokeWidth={ln.strokeWidth}
+                      strokeDasharray={ln.strokeDasharray}
+                    />
+                  ))}
+                </svg>
+                {graphData.nodes.map((n) => {
+                  const id = sid(n.memorial_id)
+                  const pos = genLayout.positions[id]
+                  if (!pos) return null
+                  const { w: nw, h: nh } = genLayout.nodeSize
+                  return (
+                    <GenTreeNodeCard
+                      key={id}
+                      memorial={n}
+                      left={pos.x}
+                      top={pos.y}
+                      nodeW={nw}
+                      nodeH={nh}
+                      isRoot={n.memorial_id === graphData.root_id}
+                      lineage={genLayout.lineage[n.memorial_id]}
+                      isBridge={bridgeNodeIds.has(id)}
+                      relLabel={relLabels[id]}
+                      onClick={(mid) => navigate(`/memorials/${mid}`)}
+                    />
+                  )
+                })}
+              </>
+            ) : (
+              <>
+                <svg
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: canvasW,
+                    height: canvasH,
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                  }}
+                >
+                  {treeData.connectors.map(([x1, y1, x2, y2], i) => (
+                    <line
+                      key={i}
+                      x1={x1 * HW}
+                      y1={y1 * HH}
+                      x2={x2 * HW}
+                      y2={y2 * HH}
+                      stroke="rgba(196,168,130,0.65)"
+                      strokeWidth="1.5"
+                    />
+                  ))}
+                </svg>
+                {treeData.nodes.map((extNode) => (
+                  <NodeCard
+                    key={extNode.id}
+                    extNode={extNode}
+                    nodeMap={nodeMap}
+                    isRoot={extNode.id === sid(graphData.root_id)}
+                    relLabel={relLabels[extNode.id]}
+                    onClick={(id) => navigate(`/memorials/${id}`)}
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}

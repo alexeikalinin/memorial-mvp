@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Превью — полная схема связей (поколения + линии A/B)</title>
+  <style>
+    :root {
+      --bg: #141218;
+      --line: rgba(196, 168, 130, 0.6);
+      --line-strong: rgba(200, 175, 120, 0.95);
+      --card-a: rgba(90, 150, 210, 0.55);
+      --card-b: rgba(150, 110, 200, 0.55);
+      --gap-fill: rgba(200, 175, 120, 0.07);
+      --gap-stroke: rgba(200, 175, 120, 0.14);
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: #e8e4dc;
+      padding: 1.25rem 1rem 2rem;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.35rem; }
+    .lead { margin: 0 0 0.75rem; font-size: 0.88rem; color: #c4bfb6; max-width: 56rem; }
+    .note-app {
+      margin: 0 0 1rem;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.82rem;
+      color: #b8b3a8;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      max-width: 56rem;
+    }
+    .note-app strong { color: #e8dcc8; font-weight: 600; }
+    h2 { font-size: 0.95rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: #d4cfc4; }
+    p { margin: 0 0 0.65rem; font-size: 0.82rem; color: #9a958c; max-width: 56rem; }
+    svg.diagram {
+      display: block;
+      width: 100%;
+      max-width: 1150px;
+      height: auto;
+      border-radius: 12px;
+      background: linear-gradient(155deg, #1c1917, #3d2d1a);
+    }
+    .wrap { max-width: 1160px; margin: 0 auto; }
+    code { font-size: 0.78rem; background: rgba(255,255,255,0.06); padding: 0.1em 0.35em; border-radius: 4px; }
+    ul { font-size: 0.82rem; color: #b8b3a8; max-width: 56rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Полная учебная схема: поколения, две линии, зазор, «мост»</h1>
+    <p class="lead">
+      Ниже — одна статическая картинка со <strong>всеми типами</strong> связей, как в
+      <code>familyTreeOrthogonalConnectors.js</code>: горизонталь брака только <strong>в зазоре между карточками</strong>
+      (от правого края левой к левому краю правой), общий ствол от середины зазора к детям,
+      ломаная у одного родителя, зазоры между кластерами A / B.
+    </p>
+    <p class="note-app">
+      <strong>Ваше настоящее дерево</strong> с мемориалами — во вкладке «Семья» в приложении, режим
+      «По поколениям». Эта страница не подключается к API; она только показывает, как рисуются линии.
+    </p>
+
+    <h2>Крупная схема (прокрутите страницу / уменьшите масштаб браузера при необходимости)</h2>
+    <svg
+      class="diagram"
+      viewBox="0 0 1150 640"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Полная схема: четыре ряда поколений, линия A слева, линия B справа, центр — пересечение"
+    >
+      <defs>
+        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.8" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Подписи поколений слева -->
+      <text x="8" y="78" fill="#7a756c" font-size="11">Покол. 1</text>
+      <text x="8" y="198" fill="#7a756c" font-size="11">Покол. 2</text>
+      <text x="8" y="318" fill="#7a756c" font-size="11">Покол. 3</text>
+      <text x="8" y="438" fill="#7a756c" font-size="11">Покол. 4</text>
+
+      <!-- Зазоры между полосами (как laneGapBands в приложении) -->
+      <rect x="278" y="36" width="152" height="108" fill="var(--gap-fill)" stroke="var(--gap-stroke)" rx="6" />
+      <rect x="278" y="156" width="152" height="108" fill="var(--gap-fill)" stroke="var(--gap-stroke)" rx="6" />
+      <rect x="278" y="276" width="152" height="108" fill="var(--gap-fill)" stroke="var(--gap-stroke)" rx="6" />
+      <rect x="278" y="396" width="152" height="108" fill="var(--gap-fill)" stroke="var(--gap-stroke)" rx="6" />
+
+      <!-- Легенда зазора -->
+      <text x="286" y="52" fill="#6a655c" font-size="9">зазор A|B</text>
+
+      <!-- ═══ Ряд 1: дедушки/бабушки A | зазор | B ═══ -->
+      <rect x="42" y="48" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="86" y="92" text-anchor="middle" fill="#b8d4f0" font-size="10">Дед A</text>
+      <rect x="148" y="48" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="192" y="92" text-anchor="middle" fill="#b8d4f0" font-size="10">Бабка A</text>
+      <!-- брак: только в зазоре между карточками (130–148) -->
+      <line x1="130" y1="118" x2="148" y2="118" stroke="var(--line-strong)" stroke-width="2" />
+
+      <rect x="468" y="48" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="512" y="92" text-anchor="middle" fill="#d4c4f0" font-size="10">Дед B</text>
+      <rect x="574" y="48" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="618" y="92" text-anchor="middle" fill="#d4c4f0" font-size="10">Бабка B</text>
+      <line x1="556" y1="118" x2="574" y2="118" stroke="var(--line-strong)" stroke-width="2" />
+
+      <!-- Стволы вниз к ряду 2 -->
+      <line x1="139" y1="118" x2="139" y2="145" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="565" y1="118" x2="565" y2="145" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="139" y1="145" x2="192" y2="145" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="192" y1="145" x2="192" y2="162" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="565" y1="145" x2="512" y2="145" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="512" y1="145" x2="512" y2="162" stroke="var(--line)" stroke-width="1.5" />
+
+      <!-- ═══ Ряд 2: родители A | зазор | B ═══ -->
+      <rect x="92" y="168" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="136" y="212" text-anchor="middle" fill="#b8d4f0" font-size="10">Отец A</text>
+      <rect x="198" y="168" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="242" y="212" text-anchor="middle" fill="#b8d4f0" font-size="10">Мать A</text>
+      <line x1="180" y1="238" x2="198" y2="238" stroke="var(--line-strong)" stroke-width="2" />
+
+      <rect x="518" y="168" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="562" y="212" text-anchor="middle" fill="#d4c4f0" font-size="10">Отец B</text>
+      <rect x="624" y="168" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="668" y="212" text-anchor="middle" fill="#d4c4f0" font-size="10">Мать B</text>
+      <line x1="606" y1="238" x2="624" y2="238" stroke="var(--line-strong)" stroke-width="2" />
+
+      <!-- Вниз к ряду 3: к центру и по бокам -->
+      <line x1="189" y1="238" x2="189" y2="258" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="189" y1="258" x2="136" y2="258" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="136" y1="258" x2="136" y2="282" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="615" y1="238" x2="615" y2="258" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="615" y1="258" x2="668" y2="258" stroke="var(--line)" stroke-width="1.5" />
+      <line x1="668" y1="258" x2="668" y2="282" stroke="var(--line)" stroke-width="1.5" />
+
+      <!-- ═══ Ряд 3: сестра A | зазор | МОСТ James+Helen | зазор | брат B ═══ -->
+      <rect x="72" y="288" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="116" y="328" text-anchor="middle" fill="#b8d4f0" font-size="10">Сестра A</text>
+
+      <rect x="448" y="288" width="88" height="78" rx="7" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="492" y="328" text-anchor="middle" fill="#b8d4f0" font-size="10">James A</text>
+      <rect x="554" y="288" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="598" y="328" text-anchor="middle" fill="#d4c4f0" font-size="10">Helen B</text>
+      <line x1="536" y1="358" x2="554" y2="358" stroke="var(--line-strong)" stroke-width="3" stroke-dasharray="7 5" filter="url(#glow)" />
+
+      <rect x="758" y="288" width="88" height="78" rx="7" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="802" y="328" text-anchor="middle" fill="#d4c4f0" font-size="10">Брат B</text>
+
+      <!-- Общий ствол от моста James+Helen к детям -->
+      <line x1="545" y1="358" x2="545" y2="388" stroke="var(--line)" stroke-width="1.6" />
+      <line x1="400" y1="388" x2="690" y2="388" stroke="var(--line)" stroke-width="1.5" />
+      <!-- Одна «ломаная» от одного родителя (сестра A) к ребёнку — условно слева -->
+      <line x1="116" y1="366" x2="116" y2="400" stroke="var(--line)" stroke-width="1.3" />
+      <line x1="116" y1="400" x2="280" y2="400" stroke="var(--line)" stroke-width="1.3" />
+      <line x1="280" y1="400" x2="280" y2="412" stroke="var(--line)" stroke-width="1.3" />
+
+      <!-- ═══ Ряд 4: дети + супруги ═══ -->
+      <rect x="218" y="408" width="88" height="78" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(200,175,120,0.45)" stroke-width="2" />
+      <text x="262" y="452" text-anchor="middle" fill="#ddd" font-size="10">Реб. 1</text>
+
+      <rect x="324" y="408" width="88" height="78" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(200,175,120,0.45)" stroke-width="2" />
+      <text x="368" y="452" text-anchor="middle" fill="#ddd" font-size="10">Реб. 2</text>
+      <rect x="430" y="408" width="88" height="78" rx="7" fill="rgba(255,255,255,0.03)" stroke="rgba(200,175,120,0.45)" stroke-width="2" />
+      <text x="474" y="452" text-anchor="middle" fill="#ddd" font-size="10">Реб. 3</text>
+
+      <line x1="262" y1="388" x2="262" y2="408" stroke="var(--line)" stroke-width="1.4" />
+      <line x1="368" y1="388" x2="368" y2="408" stroke="var(--line)" stroke-width="1.4" />
+      <line x1="474" y1="388" x2="474" y2="408" stroke="var(--line)" stroke-width="1.4" />
+
+      <rect x="600" y="408" width="88" height="78" rx="7" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
+      <text x="644" y="452" text-anchor="middle" fill="#aaa" font-size="10">Супруг</text>
+      <rect x="706" y="408" width="88" height="78" rx="7" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
+      <text x="750" y="452" text-anchor="middle" fill="#aaa" font-size="10">Супруга</text>
+      <line x1="688" y1="478" x2="706" y2="478" stroke="var(--line-strong)" stroke-width="1.8" />
+
+      <!-- Подписи зон -->
+      <text x="48" y="34" fill="#5a8cc4" font-size="10" opacity="0.85">линия A</text>
+      <text x="900" y="34" fill="#9a7ec4" font-size="10" opacity="0.85">линия B</text>
+      <text x="470" y="278" fill="#c8a97e" font-size="10">мост A+B</text>
+
+      <text x="575" y="625" text-anchor="middle" fill="#6a655c" font-size="10">
+        Узкая страница? Уменьшите масштаб (Cmd/Ctrl −) или откройте в новой вкладке на весь экран.
+      </text>
+    </svg>
+
+    <h2>Мини-пример: одна пара → трое детей</h2>
+    <p>Компактный фрагмент той же логики (ствол + «полка» + ножки).</p>
+    <svg class="diagram" viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" aria-label="Мини-пример">
+      <rect x="80" y="32" width="100" height="100" rx="8" fill="none" stroke="var(--card-a)" stroke-width="2" />
+      <text x="130" y="88" text-anchor="middle" fill="#b8d4f0" font-size="11">Parent A</text>
+      <rect x="240" y="32" width="100" height="100" rx="8" fill="none" stroke="var(--card-b)" stroke-width="2" />
+      <text x="290" y="88" text-anchor="middle" fill="#d4c4f0" font-size="11">Parent B</text>
+      <!-- зазор: A правый край 180, B левый 240 → линия только между ними -->
+      <line x1="180" y1="114" x2="240" y2="114" stroke="var(--line-strong)" stroke-width="2.5" />
+      <line x1="210" y1="114" x2="210" y2="162" stroke="var(--line)" stroke-width="1.6" />
+      <line x1="120" y1="162" x2="420" y2="162" stroke="var(--line)" stroke-width="1.6" />
+      <rect x="70" y="188" width="100" height="82" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.2)" />
+      <text x="120" y="232" text-anchor="middle" fill="#ccc" font-size="11">Child 1</text>
+      <rect x="200" y="188" width="100" height="82" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.2)" />
+      <text x="250" y="232" text-anchor="middle" fill="#ccc" font-size="11">Child 2</text>
+      <rect x="330" y="188" width="100" height="82" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.2)" />
+      <text x="380" y="232" text-anchor="middle" fill="#ccc" font-size="11">Child 3</text>
+      <line x1="120" y1="162" x2="120" y2="188" stroke="var(--line)" stroke-width="1.4" />
+      <line x1="250" y1="162" x2="250" y2="188" stroke="var(--line)" stroke-width="1.4" />
+      <line x1="380" y1="162" x2="380" y2="188" stroke="var(--line)" stroke-width="1.4" />
+      <text x="340" y="288" text-anchor="middle" fill="#6a655c" font-size="10">Один родитель без пары — отдельная «ломаная» в коде</text>
+    </svg>
+
+    <ul>
+      <li>Светлые прямоугольники — зазор между полосами фамилий (как в приложении).</li>
+      <li>Пунктирная золотая линия между James и Helen — в зазоре между карточками, условный межсемейный брак.</li>
+      <li>Живые данные и панорамирование — только в основном приложении.</li>
+    </ul>
+  </div>
+</body>
+</html>

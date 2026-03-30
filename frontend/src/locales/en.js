@@ -376,5 +376,12 @@ export default {
       'Wheel — zoom · Drag — pan · Click — open profile · Hover — relationship to the selected person',
     fit_whole_tree: 'Fit whole tree',
     center_on_person: 'Center on this person',
+    fullscreen: 'Fullscreen',
+    exit_fullscreen: 'Exit fullscreen',
+    layout_generations: 'Generations (demo)',
+    layout_pedigree: 'Pedigree layout',
+    gen_legend_hint:
+      'Rows = generations (older at top). Left and right clusters = the two main surnames, separated by a gap (pale band). The middle lane is cross-family marriages and other surnames. Gold ring on a pair = marriage across lines. Zoom out to see the full graph.',
+    gen_row_label: (n) => `Gen ${n}`,
   },
 }

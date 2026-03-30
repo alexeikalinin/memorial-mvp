@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Превью: дерево по поколениям — две семьи + брак</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: "Georgia", "Times New Roman", serif;
+      background: linear-gradient(160deg, #1a1814 0%, #0d0b08 50%, #15120f 100%);
+      color: #e8e4dc;
+      min-height: 100vh;
+      padding: 32px 20px 48px;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 400;
+      color: #c8a97e;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #8a8478;
+      max-width: 640px;
+      margin: 0 auto 28px;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(200,169,126,0.2);
+      border-radius: 16px;
+      padding: 24px 16px 32px;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 0.78rem;
+      font-family: system-ui, sans-serif;
+      color: #b0aaa0;
+    }
+    .leg-item { display: flex; align-items: center; gap: 8px; }
+    .sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); }
+    .sw-a { background: linear-gradient(90deg, #3d5a7a 0%, #3d5a7a 100%); }
+    .sw-b { background: linear-gradient(90deg, #6b4c7a 0%, #6b4c7a 100%); }
+    .sw-bridge { box-shadow: 0 0 0 2px #c8a97e, 0 0 12px rgba(200,169,126,0.35); background: #2a2620; }
+    svg { display: block; width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <h1>Схема: поколения + две линии + перекрёстный брак</h1>
+  <p class="sub">
+    Условная карикатура по рекомендации: <strong>горизонтальные этажи</strong> = поколения (сверху старше),
+    цвет карточки = линия семьи А или В, <strong>золотая рамка</strong> = супруги «мост» между линиями.
+    Откройте файл в браузере (двойной клик или перетащите вкладку).
+  </p>
+  <div class="wrap">
+    <div class="legend">
+      <div class="leg-item"><span class="sw sw-a"></span> Семья А (напр. Kelly)</div>
+      <div class="leg-item"><span class="sw sw-b"></span> Семья В (напр. Anderson)</div>
+      <div class="leg-item"><span class="sw sw-bridge"></span> Брак между линиями</div>
+    </div>
+    <svg viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" aria-label="Превью дерева">
+      <defs>
+        <linearGradient id="cardA" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2a3548"/><stop offset="100%" stop-color="#1e2838"/>
+        </linearGradient>
+        <linearGradient id="cardB" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3a2a45"/><stop offset="100%" stop-color="#281e32"/>
+        </linearGradient>
+        <linearGradient id="cardBridge" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#2a3548"/><stop offset="50%" stop-color="#3a2a45"/><stop offset="100%" stop-color="#3a2a45"/>
+        </linearGradient>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Row labels -->
+      <text x="24" y="38" fill="#8a8478" font-size="11" font-family="system-ui,sans-serif">Поколение 1</text>
+      <text x="24" y="128" fill="#8a8478" font-size="11" font-family="system-ui,sans-serif">Поколение 2</text>
+      <text x="24" y="218" fill="#8a8478" font-size="11" font-family="system-ui,sans-serif">Поколение 3</text>
+      <text x="24" y="332" fill="#8a8478" font-size="11" font-family="system-ui,sans-serif">Поколение 4</text>
+      <line x1="12" y1="0" x2="12" y2="500" stroke="rgba(200,169,126,0.15)" stroke-width="1"/>
+
+      <!-- Gen 1 -->
+      <g transform="translate(120, 12)">
+        <rect x="0" y="0" width="100" height="56" rx="8" fill="url(#cardA)" stroke="rgba(200,169,126,0.35)"/>
+        <text x="50" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Дед А</text>
+        <text x="50" y="40" text-anchor="middle" fill="#9a9488" font-size="9">семья А</text>
+        <line x1="100" y1="28" x2="132" y2="28" stroke="rgba(200,169,126,0.5)" stroke-width="2"/>
+        <rect x="132" y="0" width="100" height="56" rx="8" fill="url(#cardA)" stroke="rgba(200,169,126,0.35)"/>
+        <text x="182" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Бабушка А</text>
+        <text x="182" y="40" text-anchor="middle" fill="#9a9488" font-size="9">семья А</text>
+      </g>
+      <g transform="translate(520, 12)">
+        <rect x="0" y="0" width="100" height="56" rx="8" fill="url(#cardB)" stroke="rgba(200,169,126,0.35)"/>
+        <text x="50" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Дед В</text>
+        <text x="50" y="40" text-anchor="middle" fill="#9a9488" font-size="9">семья В</text>
+        <line x1="100" y1="28" x2="132" y2="28" stroke="rgba(200,169,126,0.5)" stroke-width="2"/>
+        <rect x="132" y="0" width="100" height="56" rx="8" fill="url(#cardB)" stroke="rgba(200,169,126,0.35)"/>
+        <text x="182" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Бабушка В</text>
+        <text x="182" y="40" text-anchor="middle" fill="#9a9488" font-size="9">семья В</text>
+      </g>
+
+      <!-- vertical to gen2 -->
+      <path d="M 221 68 L 221 92 L 186 92" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 267 68 L 267 92 L 302 92" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 621 68 L 621 92 L 586 92" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 667 68 L 667 92 L 702 92" fill="none" stroke="rgba(200,169,126,0.35)"/>
+
+      <!-- Gen 2 -->
+      <g transform="translate(140, 92)">
+        <rect x="0" y="0" width="112" height="56" rx="8" fill="url(#cardA)" stroke="rgba(200,169,126,0.4)"/>
+        <text x="56" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Отец А</text>
+        <text x="56" y="40" text-anchor="middle" fill="#9a9488" font-size="9">покол. 2 · А</text>
+        <line x1="112" y1="28" x2="144" y2="28" stroke="rgba(200,169,126,0.55)" stroke-width="2"/>
+        <rect x="144" y="0" width="112" height="56" rx="8" fill="url(#cardA)" stroke="rgba(200,169,126,0.4)"/>
+        <text x="200" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Мать А</text>
+      </g>
+      <g transform="translate(540, 92)">
+        <rect x="0" y="0" width="112" height="56" rx="8" fill="url(#cardB)" stroke="rgba(200,169,126,0.4)"/>
+        <text x="56" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Отец В</text>
+        <line x1="112" y1="28" x2="144" y2="28" stroke="rgba(200,169,126,0.55)" stroke-width="2"/>
+        <rect x="144" y="0" width="112" height="56" rx="8" fill="url(#cardB)" stroke="rgba(200,169,126,0.4)"/>
+        <text x="200" y="24" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Мать В</text>
+      </g>
+
+      <!-- connectors to gen 3 -->
+      <path d="M 256 148 L 256 175 L 220 175" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 312 148 L 312 175 L 348 175" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 656 148 L 656 175 L 620 175" fill="none" stroke="rgba(200,169,126,0.35)"/>
+      <path d="M 712 148 L 712 175 L 748 175" fill="none" stroke="rgba(200,169,126,0.35)"/>
+
+      <!-- Gen 3: marriage bridge -->
+      <g transform="translate(168, 175)">
+        <rect x="0" y="0" width="120" height="62" rx="10" fill="url(#cardA)" stroke="#c8a97e" stroke-width="2.5" filter="url(#glow)"/>
+        <text x="60" y="26" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Джеймс · линия А</text>
+        <text x="60" y="44" text-anchor="middle" fill="#c8a97e" font-size="9">будущий «мост»</text>
+      </g>
+      <text x="448" y="208" text-anchor="middle" fill="#c8a97e" font-size="22" font-weight="300">∞</text>
+      <line x1="300" y1="206" x2="378" y2="206" stroke="#c8a97e" stroke-width="2" stroke-dasharray="4 3" opacity="0.9"/>
+      <line x1="482" y1="206" x2="560" y2="206" stroke="#c8a97e" stroke-width="2" stroke-dasharray="4 3" opacity="0.9"/>
+      <g transform="translate(568, 175)">
+        <rect x="0" y="0" width="120" height="62" rx="10" fill="url(#cardB)" stroke="#c8a97e" stroke-width="2.5" filter="url(#glow)"/>
+        <text x="60" y="26" text-anchor="middle" fill="#e8e4dc" font-size="11" font-weight="600">Хелен · линия В</text>
+        <text x="60" y="44" text-anchor="middle" fill="#c8a97e" font-size="9">брак между семьями</text>
+      </g>
+      <text x="440" y="248" text-anchor="middle" fill="#8a8478" font-size="10" font-family="system-ui,sans-serif">перекрёстный брак · один ряд поколения</text>
+
+      <!-- down to gen 4 -->
+      <path d="M 228 237 L 228 275 L 320 275" fill="none" stroke="rgba(200,169,126,0.45)"/>
+      <path d="M 628 237 L 628 275 L 536 275" fill="none" stroke="rgba(200,169,126,0.45)"/>
+      <circle cx="428" cy="275" r="4" fill="#c8a97e"/>
+
+      <!-- Gen 4 -->
+      <g transform="translate(320, 258)">
+        <rect x="0" y="0" width="100" height="54" rx="8" fill="url(#cardBridge)" stroke="rgba(200,169,126,0.45)"/>
+        <text x="50" y="22" text-anchor="middle" fill="#e8e4dc" font-size="10" font-weight="600">Ребёнок А+В</text>
+        <text x="50" y="38" text-anchor="middle" fill="#9a9488" font-size="8">покол. 4 для прародителей</text>
+      </g>
+      <g transform="translate(432, 258)">
+        <rect x="0" y="0" width="100" height="54" rx="8" fill="url(#cardBridge)" stroke="rgba(200,169,126,0.45)"/>
+        <text x="50" y="22" text-anchor="middle" fill="#e8e4dc" font-size="10" font-weight="600">…внук/сестра</text>
+        <text x="50" y="38" text-anchor="middle" fill="#9a9488" font-size="8">та же «ступень» вниз</text>
+      </g>
+
+      <!-- Gen 5 hint -->
+      <path d="M 370 312 L 370 348 L 386 348" fill="none" stroke="rgba(200,169,126,0.3)"/>
+      <path d="M 482 312 L 482 348 L 466 348" fill="none" stroke="rgba(200,169,126,0.3)"/>
+      <g transform="translate(386, 330)">
+        <rect x="0" y="0" width="80" height="44" rx="6" fill="#222018" stroke="rgba(200,169,126,0.25)"/>
+        <text x="40" y="28" text-anchor="middle" fill="#b8b2a8" font-size="9">правнуки …</text>
+      </g>
+
+      <!-- Side note -->
+      <text x="440" y="405" text-anchor="middle" fill="#6a6458" font-size="10" font-family="system-ui,sans-serif">
+        В реальном UI ряды выравниваются по полю generation; линия А/В — цвет рамки или градиент карточки
+      </text>
+    </svg>
+  </div>
+  <p class="sub" style="margin-top:20px;margin-bottom:0;">
+    Файл: <code style="color:#c8a97e;">docs/family-tree-generation-preview.html</code>
+  </p>
+</body>
+</html>
