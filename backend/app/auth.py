@@ -14,6 +14,18 @@ from app.config import settings
 from app.db import get_db
 from app.models import Memorial, MemorialAccess, User, UserRole
 
+
+def _global_admin_emails_normalized() -> set[str]:
+    raw = (getattr(settings, "GLOBAL_ADMIN_EMAILS", None) or "").strip()
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+
+def is_global_admin(user: Optional[User]) -> bool:
+    """Site-wide admin: same effective rights as memorial owner on all memorials."""
+    if user is None or not user.email:
+        return False
+    return user.email.strip().lower() in _global_admin_emails_normalized()
+
 # auto_error=False — не бросаем 401 автоматически, обрабатываем вручную (нужно для dev-bypass)
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_PREFIX}/auth/token",
@@ -119,6 +131,9 @@ def require_memorial_access(
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if is_global_admin(user):
+        return memorial
 
     access = db.query(MemorialAccess).filter(
         MemorialAccess.memorial_id == memorial_id,

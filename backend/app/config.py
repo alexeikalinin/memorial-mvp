@@ -121,6 +121,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_USERNAME: str = ""  # Имя бота без @, для deep links
     BOT_API_BASE_URL: str = "http://localhost:8000/api/v1"
     
+    # Global admins (comma-separated emails): full owner-level API access to every memorial
+    # without a row in memorial_access. Use for prod operators; pair with grant_owner script for DB consistency.
+    GLOBAL_ADMIN_EMAILS: str = ""
+
     # Application
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"

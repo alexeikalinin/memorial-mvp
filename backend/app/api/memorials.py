@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timezone
 
-from app.auth import get_current_user, get_optional_user, require_memorial_access
+from app.auth import get_current_user, get_optional_user, is_global_admin, require_memorial_access
 from app.db import get_db
 from app.models import Memorial, Media, Memory, MediaType, MemorialAccess, MemorialInvite, User, UserRole
 from app.schemas import (
@@ -102,8 +102,9 @@ async def list_memorials(
         )
         .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
         .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
-        .filter(or_(Memorial.is_public == True, access_via_acl.exists()))
     )
+    if not is_global_admin(current_user):
+        q = q.filter(or_(Memorial.is_public == True, access_via_acl.exists()))
     if language:
         q = q.filter(Memorial.language == language)
     rows = q.order_by(Memorial.created_at.desc()).all()
@@ -178,12 +179,15 @@ async def get_memorial(
     # Определяем роль текущего пользователя
     current_user_role = None
     if current_user:
-        access = db.query(MemorialAccess).filter(
-            MemorialAccess.memorial_id == memorial_id,
-            MemorialAccess.user_id == current_user.id,
-        ).first()
-        if access:
-            current_user_role = access.role.value
+        if is_global_admin(current_user):
+            current_user_role = UserRole.OWNER.value
+        else:
+            access = db.query(MemorialAccess).filter(
+                MemorialAccess.memorial_id == memorial_id,
+                MemorialAccess.user_id == current_user.id,
+            ).first()
+            if access:
+                current_user_role = access.role.value
 
     response = MemorialDetailResponse.model_validate(memorial)
     response.current_user_role = current_user_role

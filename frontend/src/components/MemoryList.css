@@ -25,31 +25,6 @@
   flex-wrap: wrap;
 }
 
-.btn-memory-chat {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.95rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  background: var(--surface-warm, #f5f0e8);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition:
-    border-color var(--t-fast) var(--ease),
-    background var(--t-fast) var(--ease),
-    color var(--t-fast) var(--ease);
-}
-
-.btn-memory-chat:hover {
-  border-color: var(--accent);
-  background: rgba(212, 160, 86, 0.12);
-  color: var(--accent-dark);
-}
-
 /* ─── Search ────────────────────────────────────────────────────── */
 .memory-search {
   position: relative;

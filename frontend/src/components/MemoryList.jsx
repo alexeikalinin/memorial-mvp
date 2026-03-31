@@ -15,7 +15,7 @@ function formatApiDetail(err) {
   return String(d)
 }
 
-function MemoryList({ memorialId, memorialName, onReload, canEdit = true, onOpenAvatarChat }) {
+function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
   const { lang, t } = useLanguage()
   const locale = lang === 'en' ? 'en-US' : 'ru-RU'
   const [memories, setMemories] = useState([])
@@ -215,15 +215,6 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, onOpen
       <div className="memory-header">
         <h2>{t('memoryList.title')}</h2>
         <div className="memory-header-actions">
-          {typeof onOpenAvatarChat === 'function' && (
-            <button
-              type="button"
-              className="btn btn-memory-chat"
-              onClick={() => onOpenAvatarChat()}
-            >
-              💬 {t('tabs.chat')}
-            </button>
-          )}
           <button
             className="btn btn-share"
             onClick={handleShareInvite}
