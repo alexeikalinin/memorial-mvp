@@ -10,7 +10,12 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timezone
 
-from app.auth import get_current_user, get_optional_user, is_global_admin, require_memorial_access
+from app.auth import (
+    get_current_user,
+    get_optional_user,
+    has_site_wide_memorial_owner,
+    require_memorial_access,
+)
 from app.db import get_db
 from app.models import Memorial, Media, Memory, MediaType, MemorialAccess, MemorialInvite, User, UserRole
 from app.schemas import (
@@ -103,7 +108,7 @@ async def list_memorials(
         .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
         .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
     )
-    if not is_global_admin(current_user):
+    if not has_site_wide_memorial_owner(current_user):
         q = q.filter(or_(Memorial.is_public == True, access_via_acl.exists()))
     if language:
         q = q.filter(Memorial.language == language)
@@ -179,7 +184,7 @@ async def get_memorial(
     # Определяем роль текущего пользователя
     current_user_role = None
     if current_user:
-        if is_global_admin(current_user):
+        if has_site_wide_memorial_owner(current_user):
             current_user_role = UserRole.OWNER.value
         else:
             access = db.query(MemorialAccess).filter(

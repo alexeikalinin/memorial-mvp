@@ -3,6 +3,7 @@ export default {
     brand: 'Memorial',
     home: 'Home',
     create: 'Create Memorial',
+    logout: 'Log out',
     footer: '© 2025 Memorial. Preserving digital memories.',
   },
   home: {

@@ -52,6 +52,16 @@ function Layout({ children }) {
                 <span className="lang-btn lang-btn--active" aria-current="true">EN</span>
               )}
             </div>
+            {user ? (
+              <div className="nav-auth">
+                <span className="nav-user" title={user.email || user.username}>
+                  {user.email || user.username}
+                </span>
+                <button type="button" className="nav-logout" onClick={handleLogout}>
+                  {t('nav.logout')}
+                </button>
+              </div>
+            ) : null}
           </nav>
         </div>
       </header>

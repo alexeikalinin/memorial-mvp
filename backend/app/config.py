@@ -125,6 +125,10 @@ class Settings(BaseSettings):
     # without a row in memorial_access. Use for prod operators; pair with grant_owner script for DB consistency.
     GLOBAL_ADMIN_EMAILS: str = ""
 
+    # Investor / walkthrough demo: any authenticated user is treated as owner on all memorials
+    # (list all, edit, invites, chat, etc.). Turn OFF before real multi-tenant launch.
+    INVESTOR_DEMO_MODE: bool = False
+
     # Application
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"

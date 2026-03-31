@@ -47,8 +47,12 @@
 | `OPENAI_API_KEY`, `QDRANT_*`, `ELEVENLABS_*` | Свои ключи | Те же или отдельные ключи/квоты для прода |
 | `REDIS_URL` | `redis://localhost:6379/0` или закомментировать, если воркер не используется | URL Redis на хостинге |
 | `BOT_API_BASE_URL` | `http://localhost:8000/api/v1` | Публичный `https://.../api/v1` для Telegram-бота |
+| `GLOBAL_ADMIN_EMAILS` | Пусто | Через запятую: полные права owner на все мемориалы (см. [docs/DEMO_INVESTOR.md](docs/DEMO_INVESTOR.md)) |
+| `INVESTOR_DEMO_MODE` | `false` | `true` — любой залогиненный пользователь = owner на всех мемориалах (демо); выключить до продакшена |
 
 Загрузка конфига: [backend/app/config.py](backend/app/config.py) — всегда читает `backend/.env`.
+
+Режим демо и ссылки на сценарии инвайтов/доступа: [docs/DEMO_INVESTOR.md](docs/DEMO_INVESTOR.md).
 
 ---
 

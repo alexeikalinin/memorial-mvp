@@ -26,6 +26,18 @@ def is_global_admin(user: Optional[User]) -> bool:
         return False
     return user.email.strip().lower() in _global_admin_emails_normalized()
 
+
+def has_site_wide_memorial_owner(user: Optional[User]) -> bool:
+    """
+    Owner-level access to every memorial: GLOBAL_ADMIN_EMAILS match, or INVESTOR_DEMO_MODE
+    (any logged-in user). Used for API checks and current_user_role in memorial detail.
+    """
+    if user is None:
+        return False
+    if is_global_admin(user):
+        return True
+    return bool(getattr(settings, "INVESTOR_DEMO_MODE", False))
+
 # auto_error=False — не бросаем 401 автоматически, обрабатываем вручную (нужно для dev-bypass)
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_PREFIX}/auth/token",
@@ -132,7 +144,7 @@ def require_memorial_access(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if is_global_admin(user):
+    if has_site_wide_memorial_owner(user):
         return memorial
 
     access = db.query(MemorialAccess).filter(
