@@ -3,8 +3,12 @@
 
 **Подробный журнал сессий — один файл:** [SESSION_LOG.md](SESSION_LOG.md) (новые блоки в начале файла). Здесь — кратко: фокус, последнее действие, next steps.
 
+## Следующий шаг (после паузы)
+- **Вернуть остальные семьи** в дерево (сейчас читаемо при `FAMILY_TREE_SCOPE = 'kelly_anderson'`): расширить фильтр/раскладку так, чтобы **Chang, Rossi и др.** снова были в графе **без** потери читаемости (колонки, коннекторы, при необходимости новый режим или эвристики).
+- **Пуш:** коммит **`18a0f80`** на `main` — `git push origin main` когда будешь готов.
+
 ## Последнее действие (2026-04-01)
-- **Family tree — коннекторы и читаемость:** таблица замечаний/решений (колонки Kelly/Anderson, marriageBarInGap, parent-child yH, вилка+mx, yFork над детьми, пунктир sibling) — **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**. В коде: увеличены вертикаль вилка→ребёнок (`forkMargin`) и жирность пунктира sibling/half_sibling в `familyTreeOrthogonalConnectors.js`.
+- **Family tree — коннекторы и читаемость:** таблица замечаний/решений (колонки Kelly/Anderson, marriageBarInGap, parent-child yH, вилка+mx, yFork над детьми, пунктир sibling) — **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**. В коде: увеличены вертикаль вилка→ребёнок (`forkMargin`) и жирность пунктира sibling/half_sibling в `familyTreeOrthogonalConnectors.js`. **Снимок состояния:** коммит `18a0f80`.
 
 ## Предыдущее действие (2026-03-31)
 - **Family tree — сиблинги в один ряд:** исправление БД (`repair_expanded_family_rels.py`: снять ложный parent/child между Sarah↔Daniel и **George↔Helen**, SIBLING; `engine.echo=false` в скрипте), API — `_infer_sibling_pairs_from_shared_parents` в `family.py`, фронт — `stripSiblingConflictingParentEdges` + доработки поколений/коннекторов. Подробности и таблица — **[SESSION_LOG.md → 2026-03-31](SESSION_LOG.md)**.
