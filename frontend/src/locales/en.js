@@ -312,6 +312,10 @@ export default {
       'Showing the Kelly family only — other families are hidden until we connect them in the next steps.',
     kelly_anderson_banner:
       'Showing the Kelly and Anderson families. Other surnames (e.g. Chang, Rossi) are hidden in this demo view.',
+    kelly_anderson_third_banner:
+      'Showing Kelly, Anderson, and one additional family branch. Other surnames stay hidden to keep the tree readable.',
+    kelly_anderson_four_banner:
+      'Showing four families: Kelly, Anderson, and two additional branches. Other surnames stay hidden for readability.',
     // empty state
     empty_title: 'Your family history starts here',
     empty_hint: 'Add the first relation to start building the tree',

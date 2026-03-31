@@ -1,11 +1,16 @@
 # Handoff — Memorial MVP
-> Обновлено: 2026-04-01 (session)
+> Обновлено: 2026-04-01 (session, late)
 
 **Подробный журнал сессий — один файл:** [SESSION_LOG.md](SESSION_LOG.md) (новые блоки в начале файла). Здесь — кратко: фокус, последнее действие, next steps.
 
-## Следующий шаг (после паузы)
-- **Вернуть остальные семьи** в дерево (сейчас читаемо при `FAMILY_TREE_SCOPE = 'kelly_anderson'`): расширить фильтр/раскладку так, чтобы **Chang, Rossi и др.** снова были в графе **без** потери читаемости (колонки, коннекторы, при необходимости новый режим или эвристики).
-- **Пуш:** коммит **`18a0f80`** на `main` — `git push origin main` когда будешь готов.
+## Последнее действие (2026-04-01, late)
+- **Family tree — 4 семьи и split-рамка:** `FAMILY_TREE_SCOPE='kelly_anderson_four'`, колонки `A|center|B|C|D`, split-рамка для двойной фамилии по стороне связи (пример `Helen ... Anderson Kelly`) — детали в **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**.
+- **Сборка:** `frontend npm run build` успешно.
+- **Деплой:** попытка `vercel --prod --yes` упирается в невалидный токен (`vercel login` / новый `VERCEL_TOKEN`).
+
+## Следующий шаг
+- Выполнить `git push origin main` (если ещё не выполнен) и проверить автодеплой Vercel.
+- Либо вручную: `vercel login` → `vercel --prod --yes`.
 
 ## Последнее действие (2026-04-01)
 - **Family tree — коннекторы и читаемость:** таблица замечаний/решений (колонки Kelly/Anderson, marriageBarInGap, parent-child yH, вилка+mx, yFork над детьми, пунктир sibling) — **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**. В коде: увеличены вертикаль вилка→ребёнок (`forkMargin`) и жирность пунктира sibling/half_sibling в `familyTreeOrthogonalConnectors.js`. **Снимок состояния:** коммит `18a0f80`.

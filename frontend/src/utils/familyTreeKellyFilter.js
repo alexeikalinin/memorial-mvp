@@ -9,9 +9,11 @@ const sid = (id) => String(id)
 /**
  * - `kelly` — только фамилия Kelly (фаза 1).
  * - `kelly_anderson` — Kelly + Anderson по последнему слову имени (без Chang, Rossi и др.).
+ * - `kelly_anderson_third` — Kelly + Anderson + 3-я фамилия (самая частая среди остальных).
+ * - `kelly_anderson_four` — Kelly + Anderson + 3-я и 4-я фамилии (по частоте).
  * - `full` — весь ответ API (все связанные семьи).
  */
-export const FAMILY_TREE_SCOPE = 'kelly_anderson'
+export const FAMILY_TREE_SCOPE = 'kelly_anderson_four'
 
 /** Совместимость: true только при `FAMILY_TREE_SCOPE === 'kelly'`. */
 export const FAMILY_TREE_KELLY_ONLY = FAMILY_TREE_SCOPE === 'kelly'
@@ -26,6 +28,17 @@ export function isAndersonFamilyMember(name) {
 
 export function isKellyOrAndersonMember(name) {
   return isKellyFamilyMember(name) || isAndersonFamilyMember(name)
+}
+
+function topExtraSurnames(nodes, limit = 1) {
+  const counts = {}
+  for (const n of nodes || []) {
+    const s = surnameOf(n.name)
+    if (!s || s === 'Kelly' || s === 'Anderson') continue
+    counts[s] = (counts[s] || 0) + 1
+  }
+  const ordered = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  return ordered.slice(0, limit).map(([s]) => s)
 }
 
 function oldestMemorialId(nodes) {
@@ -97,6 +110,45 @@ export function filterGraphToKellyFamily(graphData) {
 export function filterGraphToKellyAndAndersonFamily(graphData) {
   if (!graphData?.nodes?.length) return graphData
   const nodes = graphData.nodes.filter((n) => isKellyOrAndersonMember(n.name))
+  if (!nodes.length) return graphData
+  const idSet = new Set(nodes.map((n) => sid(n.memorial_id)))
+  const edges = graphData.edges.filter(
+    (e) => idSet.has(sid(e.source)) && idSet.has(sid(e.target))
+  )
+  const root_id = pickRootInRestrictedSet(graphData, nodes)
+  return {
+    ...graphData,
+    nodes,
+    edges,
+    root_id,
+  }
+}
+
+export function filterGraphToThreeFamilies(graphData) {
+  if (!graphData?.nodes?.length) return graphData
+  const third = topExtraSurnames(graphData.nodes, 1)[0]
+  const allowed = new Set(['Kelly', 'Anderson'])
+  if (third) allowed.add(third)
+  const nodes = graphData.nodes.filter((n) => allowed.has(surnameOf(n.name)))
+  if (!nodes.length) return graphData
+  const idSet = new Set(nodes.map((n) => sid(n.memorial_id)))
+  const edges = graphData.edges.filter(
+    (e) => idSet.has(sid(e.source)) && idSet.has(sid(e.target))
+  )
+  const root_id = pickRootInRestrictedSet(graphData, nodes)
+  return {
+    ...graphData,
+    nodes,
+    edges,
+    root_id,
+  }
+}
+
+export function filterGraphToFourFamilies(graphData) {
+  if (!graphData?.nodes?.length) return graphData
+  const extras = topExtraSurnames(graphData.nodes, 2)
+  const allowed = new Set(['Kelly', 'Anderson', ...extras])
+  const nodes = graphData.nodes.filter((n) => allowed.has(surnameOf(n.name)))
   if (!nodes.length) return graphData
   const idSet = new Set(nodes.map((n) => sid(n.memorial_id)))
   const edges = graphData.edges.filter(

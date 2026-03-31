@@ -8,6 +8,7 @@ import {
   buildGenerationLayout,
   buildSurnameClusterStyles,
   isCrossFamilySpouseEdge,
+  surnameOf,
 } from '../utils/familyTreeGenerationLayout.js'
 import {
   buildOrthogonalConnectors,
@@ -16,6 +17,8 @@ import {
 import {
   filterGraphToKellyFamily,
   filterGraphToKellyAndAndersonFamily,
+  filterGraphToThreeFamilies,
+  filterGraphToFourFamilies,
   FAMILY_TREE_SCOPE,
 } from '../utils/familyTreeKellyFilter.js'
 import './FamilyTree.css'
@@ -69,6 +72,22 @@ const sid = (id) => String(id)
 function getInitials(name) {
   if (!name) return '?'
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
+function surnameTokens(name) {
+  if (!name || typeof name !== 'string') return []
+  return name
+    .replace(/\(.*?\)/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
+function previousSurname(name) {
+  const tokens = surnameTokens(name)
+  if (tokens.length < 2) return ''
+  const prev = tokens[tokens.length - 2]
+  return /^[A-Za-zА-Яа-яёЁ\-']+$/.test(prev) ? prev : ''
 }
 
 // Convert backend graph (nodes + edges) → relatives-tree format
@@ -257,6 +276,7 @@ function GenTreeNodeCard({
   lineage,
   isBridge,
   clusterStyle,
+  splitBorderStyle,
   relLabel,
   onClick,
 }) {
@@ -282,11 +302,17 @@ function GenTreeNodeCard({
           : clusterStyle.boxShadow,
       }
     : {}
+  const visualBox = splitBorderStyle
+    ? {
+        ...clusterBox,
+        ...splitBorderStyle,
+      }
+    : clusterBox
 
   return (
     <div
       className={cls.filter(Boolean).join(' ')}
-      style={{ position: 'absolute', left, top, width: nodeW, height: nodeH, ...clusterBox }}
+      style={{ position: 'absolute', left, top, width: nodeW, height: nodeH, ...visualBox }}
       onClick={() => onClick(memorial.memorial_id)}
       title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
       role="button"
@@ -400,6 +426,8 @@ export default function FamilyTree({ memorialId }) {
     if (!graphData?.nodes?.length) return null
     if (FAMILY_TREE_SCOPE === 'full') return graphData
     if (FAMILY_TREE_SCOPE === 'kelly') return filterGraphToKellyFamily(graphData)
+    if (FAMILY_TREE_SCOPE === 'kelly_anderson_third') return filterGraphToThreeFamilies(graphData)
+    if (FAMILY_TREE_SCOPE === 'kelly_anderson_four') return filterGraphToFourFamilies(graphData)
     return filterGraphToKellyAndAndersonFamily(graphData)
   }, [graphData])
 
@@ -836,16 +864,23 @@ export default function FamilyTree({ memorialId }) {
           </button>
         </div>
       </div>
-      {(FAMILY_TREE_SCOPE === 'kelly' || FAMILY_TREE_SCOPE === 'kelly_anderson') &&
+      {((FAMILY_TREE_SCOPE === 'kelly' ||
+        FAMILY_TREE_SCOPE === 'kelly_anderson' ||
+        FAMILY_TREE_SCOPE === 'kelly_anderson_third' ||
+        FAMILY_TREE_SCOPE === 'kelly_anderson_four') &&
         graphData?.nodes?.length > 0 && (
         <p className="ft-kelly-only-banner" role="status">
           {t(
             FAMILY_TREE_SCOPE === 'kelly'
               ? 'family.kelly_only_banner'
-              : 'family.kelly_anderson_banner'
+              : FAMILY_TREE_SCOPE === 'kelly_anderson'
+                ? 'family.kelly_anderson_banner'
+                : FAMILY_TREE_SCOPE === 'kelly_anderson_third'
+                  ? 'family.kelly_anderson_third_banner'
+                  : 'family.kelly_anderson_four_banner'
           )}
         </p>
-      )}
+      ))}
       {showGenerations && genLayout && (
         <>
           <div className="ft-gen-legend" aria-hidden={false}>
@@ -1070,6 +1105,52 @@ export default function FamilyTree({ memorialId }) {
                   const pos = genLayout.positions[id]
                   if (!pos) return null
                   const { w: nw, h: nh } = genLayout.nodeSize
+                  const curSurname = surnameOf(n.name)
+                  const prevSurnameVal = previousSurname(n.name)
+                  let splitBorderStyle = null
+                  if (prevSurnameVal && curSurname && prevSurnameVal !== curSurname) {
+                    const neighbors = []
+                    for (const e of displayGraph.edges || []) {
+                      const s = sid(e.source)
+                      const t = sid(e.target)
+                      if (s === id && genLayout.positions[t]) neighbors.push(displayGraph.nodes.find((x) => sid(x.memorial_id) === t))
+                      else if (t === id && genLayout.positions[s]) neighbors.push(displayGraph.nodes.find((x) => sid(x.memorial_id) === s))
+                    }
+                    const fromOld = neighbors.filter((m) => m && surnameOf(m.name) === prevSurnameVal)
+                    const oldRefs = fromOld.length ? fromOld : displayGraph.nodes.filter((m) => m && surnameOf(m.name) === prevSurnameVal)
+                    const oldColor =
+                      oldRefs.length > 0
+                        ? (
+                            genLayout.memorialClusterStyle?.[oldRefs[0].memorial_id] ??
+                            genLayout.memorialClusterStyle?.[sid(oldRefs[0].memorial_id)]
+                          )?.borderColor
+                        : null
+                    const curColor =
+                      (
+                        genLayout.memorialClusterStyle?.[n.memorial_id] ??
+                        genLayout.memorialClusterStyle?.[id]
+                      )?.borderColor || 'rgba(210, 210, 210, 0.9)'
+
+                    if (oldColor) {
+                      let oldOnRight = true
+                      if (fromOld.length) {
+                        const avgX = fromOld
+                          .map((m) => genLayout.positions[sid(m.memorial_id)]?.cx)
+                          .filter((v) => typeof v === 'number')
+                          .reduce((acc, v, _, arr) => acc + v / arr.length, 0)
+                        if (Number.isFinite(avgX)) oldOnRight = avgX > pos.cx
+                      }
+                      const leftColor = oldOnRight ? curColor : oldColor
+                      const rightColor = oldOnRight ? oldColor : curColor
+                      splitBorderStyle = {
+                        borderWidth: 3,
+                        borderStyle: 'solid',
+                        borderColor: 'transparent',
+                        borderImageSlice: 1,
+                        borderImageSource: `linear-gradient(to right, ${leftColor} 0 50%, ${rightColor} 50% 100%)`,
+                      }
+                    }
+                  }
                   return (
                     <GenTreeNodeCard
                       key={id}
@@ -1085,6 +1166,7 @@ export default function FamilyTree({ memorialId }) {
                         genLayout.memorialClusterStyle?.[n.memorial_id] ??
                         genLayout.memorialClusterStyle?.[id]
                       }
+                      splitBorderStyle={splitBorderStyle}
                       relLabel={relLabels[id]}
                       onClick={(mid) => navigate(`/memorials/${mid}`)}
                     />

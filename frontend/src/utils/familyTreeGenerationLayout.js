@@ -178,7 +178,7 @@ export function isDistinctFamilyPair(lineageMap, idA, idB, nameA, nameB) {
   return false
 }
 
-/** Две линии A (слева) и B (справа). При Kelly+Anderson в одном графе — всегда Kelly=A, Anderson=B, иначе топ-2 по числу узлов. */
+/** Линии A/B/C/D: Kelly слева, Anderson справа, 3-я/4-я фамилии — отдельные правые колонки. */
 export function assignLineages(nodes) {
   const counts = {}
   for (const n of nodes) {
@@ -188,25 +188,39 @@ export function assignLineages(nodes) {
   const keys = Object.keys(counts)
   let aSurname = ''
   let bSurname = ''
+  let cSurname = ''
+  let dSurname = ''
   if (keys.includes('Kelly') && keys.includes('Anderson')) {
     aSurname = 'Kelly'
     bSurname = 'Anderson'
+    const third = keys
+      .filter((k) => k !== 'Kelly' && k !== 'Anderson')
+      .sort((k1, k2) => (counts[k2] || 0) - (counts[k1] || 0) || k1.localeCompare(k2))[0]
+    cSurname = third || ''
+    const fourth = keys
+      .filter((k) => k !== 'Kelly' && k !== 'Anderson' && k !== cSurname)
+      .sort((k1, k2) => (counts[k2] || 0) - (counts[k1] || 0) || k1.localeCompare(k2))[0]
+    dSurname = fourth || ''
   } else {
     const top = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 2)
+      .slice(0, 4)
       .map((e) => e[0])
     aSurname = top[0] || ''
     bSurname = top[1] || ''
+    cSurname = top[2] || ''
+    dSurname = top[3] || ''
   }
   const lineage = {}
   for (const n of nodes) {
     const s = surnameOf(n.name)
     if (aSurname && s === aSurname) lineage[n.memorial_id] = 'A'
     else if (bSurname && s === bSurname) lineage[n.memorial_id] = 'B'
+    else if (cSurname && s === cSurname) lineage[n.memorial_id] = 'C'
+    else if (dSurname && s === dSurname) lineage[n.memorial_id] = 'D'
     else lineage[n.memorial_id] = 'N'
   }
-  return { lineage, surnameA: aSurname, surnameB: bSurname }
+  return { lineage, surnameA: aSurname, surnameB: bSurname, surnameC: cSurname, surnameD: dSurname }
 }
 
 function isSpouseType(t) {
@@ -237,6 +251,8 @@ function unitSortKey(memorialId, lineageMap) {
   if (L === 'A') return 0
   if (L === 'N') return 1
   if (L === 'B') return 2
+  if (L === 'C') return 3
+  if (L === 'D') return 4
   return 1
 }
 
@@ -325,29 +341,44 @@ function rowWidthForIds(count) {
 }
 
 /**
- * Раскидать юниты по трём полосам: левая линия (A), центр (пересечение A+B и нейтральные между линиями), правая (B).
+ * Раскидать юниты по 5 полосам: A слева, центр, B справа, C и D — правые дополнительные.
  * Сохраняет порядок появления юнитов в исходном списке.
  */
-function clusterUnitsIntoLanes(units, lineageMap, hasAInRow, hasBInRow) {
+function clusterUnitsIntoLanes(units, lineageMap, hasAInRow, hasBInRow, hasCInRow, hasDInRow) {
   const left = []
   const center = []
   const right = []
+  const farRight = []
+  const extraRight = []
   for (const u of units) {
     const Ls = u.ids.map((id) => lineageMap[id] || 'N')
     const hasA = Ls.includes('A')
     const hasB = Ls.includes('B')
+    const hasC = Ls.includes('C')
+    const hasD = Ls.includes('D')
     let bucket = left
-    if (hasA && hasB) bucket = center
+    if ((hasA && hasB) || (hasA && hasC) || (hasB && hasC) || hasD && (hasA || hasB || hasC)) bucket = center
+    else if (hasD && !hasA && !hasB && !hasC) bucket = extraRight
+    else if (hasC && !hasA && !hasB && !hasD) bucket = farRight
     else if (hasB && !hasA) bucket = right
     else if (hasA && !hasB) bucket = left
     else {
-      if (hasAInRow && hasBInRow) bucket = center
+      if (
+        (hasAInRow && hasBInRow) ||
+        (hasAInRow && hasCInRow) ||
+        (hasAInRow && hasDInRow) ||
+        (hasBInRow && hasCInRow) ||
+        (hasBInRow && hasDInRow) ||
+        (hasCInRow && hasDInRow)
+      ) bucket = center
+      else if (hasDInRow && !hasAInRow && !hasBInRow && !hasCInRow) bucket = extraRight
+      else if (hasCInRow && !hasAInRow && !hasBInRow && !hasDInRow) bucket = farRight
       else if (hasBInRow && !hasAInRow) bucket = right
       else bucket = left
     }
     bucket.push(u)
   }
-  return { left, center, right }
+  return { left, center, right, farRight, extraRight }
 }
 
 function segmentWidthUnits(units) {
@@ -357,11 +388,13 @@ function segmentWidthUnits(units) {
 }
 
 /** То же с меткой колонки для фиксированной раскладки (A слева, B справа). */
-function nonEmptyLanesTagged(left, center, right) {
+function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
   const out = []
   if (left.length) out.push({ kind: 'left', units: left })
   if (center.length) out.push({ kind: 'center', units: center })
   if (right.length) out.push({ kind: 'right', units: right })
+  if (farRight.length) out.push({ kind: 'farRight', units: farRight })
+  if (extraRight.length) out.push({ kind: 'extraRight', units: extraRight })
   return out
 }
 
@@ -419,22 +452,39 @@ export function buildGenerationLayout(graphData) {
   let maxLeftW = 0
   let maxCenterW = 0
   let maxRightW = 0
+  let maxFarRightW = 0
+  let maxExtraRightW = 0
   let hasAnyLeft = false
   let hasAnyCenter = false
   let hasAnyRight = false
+  let hasAnyFarRight = false
+  let hasAnyExtraRight = false
   for (let g = minGen; g <= maxGen; g++) {
     const rowNodes = byGen[g] || []
     const units = buildUnitsInGeneration(rowNodes, edges, lineage, nodes)
     const hasAInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'A')
     const hasBInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'B')
-    const { left, center, right } = clusterUnitsIntoLanes(units, lineage, hasAInRow, hasBInRow)
-    rowLanes[g] = { left, center, right }
+    const hasCInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'C')
+    const hasDInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'D')
+    const { left, center, right, farRight, extraRight } = clusterUnitsIntoLanes(
+      units,
+      lineage,
+      hasAInRow,
+      hasBInRow,
+      hasCInRow,
+      hasDInRow
+    )
+    rowLanes[g] = { left, center, right, farRight, extraRight }
     if (left.length) hasAnyLeft = true
     if (center.length) hasAnyCenter = true
     if (right.length) hasAnyRight = true
+    if (farRight.length) hasAnyFarRight = true
+    if (extraRight.length) hasAnyExtraRight = true
     maxLeftW = Math.max(maxLeftW, segmentWidthUnits(left))
     maxCenterW = Math.max(maxCenterW, segmentWidthUnits(center))
     maxRightW = Math.max(maxRightW, segmentWidthUnits(right))
+    maxFarRightW = Math.max(maxFarRightW, segmentWidthUnits(farRight))
+    maxExtraRightW = Math.max(maxExtraRightW, segmentWidthUnits(extraRight))
   }
 
   /** Фиксированные колонки: без центрирования ряда — иначе строки только Kelly и только Anderson накладываются по X. */
@@ -453,6 +503,16 @@ export function buildGenerationLayout(graphData) {
   if (hasAnyRight) {
     columnLayout.push({ kind: 'right', start: xCursor, maxW: maxRightW })
     xCursor += maxRightW
+    if (hasAnyFarRight) xCursor += LINEAGE_LANE_GAP
+  }
+  if (hasAnyFarRight) {
+    columnLayout.push({ kind: 'farRight', start: xCursor, maxW: maxFarRightW })
+    xCursor += maxFarRightW
+    if (hasAnyExtraRight) xCursor += LINEAGE_LANE_GAP
+  }
+  if (hasAnyExtraRight) {
+    columnLayout.push({ kind: 'extraRight', start: xCursor, maxW: maxExtraRightW })
+    xCursor += maxExtraRightW
   }
 
   const canvasW = Math.max(720, xCursor + PAD)
@@ -484,8 +544,8 @@ export function buildGenerationLayout(graphData) {
   }
 
   for (let g = minGen; g <= maxGen; g++) {
-    const { left, center, right } = rowLanes[g]
-    const segments = nonEmptyLanesTagged(left, center, right)
+    const { left, center, right, farRight, extraRight } = rowLanes[g]
+    const segments = nonEmptyLanesTagged(left, center, right, farRight, extraRight)
     const y = PAD + (g - minGen) * ROW_H
     for (const seg of segments) {
       let x = startXForSegment(seg.kind, seg.units)
