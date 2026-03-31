@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { memorialsAPI, invitesAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -11,9 +11,12 @@ import LifeTimeline from '../components/LifeTimeline'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import './MemorialDetail.css'
 
+const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'])
+
 function MemorialDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { t, lang } = useLanguage()
   const [memorial, setMemorial] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -70,16 +73,12 @@ function MemorialDetail() {
     setShowQRModal(false)
   }, [id])
 
-  // Вкладка «Воспоминания» временно скрыта для русского UI — вернём позже
   useEffect(() => {
-    if (lang !== 'ru') return
-    setActiveTab((prev) => (prev === 'memories' ? 'media' : prev))
-    setMountedTabs((prev) => {
-      const next = new Set(prev)
-      next.delete('memories')
-      return next
-    })
-  }, [lang])
+    const tab = searchParams.get('tab')
+    if (!tab || !MEMORIAL_TABS.has(tab)) return
+    setActiveTab(tab)
+    setMountedTabs((prev) => new Set([...prev, tab]))
+  }, [id, searchParams])
 
   const loadMemorial = async () => {
     try {
@@ -495,9 +494,7 @@ function MemorialDetail() {
           { key: 'chat', label: t('tabs.chat') },
           { key: 'family', label: t('tabs.family') },
           { key: 'timeline', label: t('tabs.timeline') },
-        ]
-          .filter((tab) => !(lang === 'ru' && tab.key === 'memories'))
-          .map(({ key, label }) => (
+        ].map(({ key, label }) => (
           <button
             key={key}
             className={activeTab === key ? 'active' : ''}
@@ -524,7 +521,7 @@ function MemorialDetail() {
             />
           </div>
         )}
-        {lang !== 'ru' && mountedTabs.has('memories') && (
+        {mountedTabs.has('memories') && (
           <div style={{ display: activeTab === 'memories' ? '' : 'none' }}>
             <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} />
           </div>

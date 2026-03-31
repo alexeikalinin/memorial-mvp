@@ -5,6 +5,16 @@ import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useLanguage } from '../contexts/LanguageContext'
 import './MemoryList.css'
 
+function formatApiDetail(err) {
+  const d = err.response?.data?.detail
+  if (!d) return err.message || ''
+  if (typeof d === 'string') return d
+  if (Array.isArray(d)) {
+    return d.map((x) => (typeof x === 'object' && x?.msg ? x.msg : String(x))).join('; ')
+  }
+  return String(d)
+}
+
 function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
   const { lang, t } = useLanguage()
   const locale = lang === 'en' ? 'en-US' : 'ru-RU'
@@ -124,8 +134,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
       setSharePanel({ url, text })
       setUrlCopied(false)
       setTextCopied(false)
-    } catch {
-      alert(t('memoryList.invite_link_error'))
+    } catch (err) {
+      const msg = formatApiDetail(err)
+      alert(msg || t('memoryList.invite_link_error'))
     } finally {
       setSharingLoading(false)
     }

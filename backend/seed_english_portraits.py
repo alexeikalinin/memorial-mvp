@@ -80,6 +80,17 @@ TARGETS: list[dict] = [
     {"memorial_id": 56, "gender": "female", "age_min": 25, "age_max": 45,  "nat": "it"},  # Sofia (alive)
 ]
 
+# Если memorial_id в БД не совпадает с цепочкой сидов, добираем обложку по точному имени (language=en).
+NAME_FALLBACK_TARGETS: list[dict] = [
+    {"name": "Sarah Elizabeth Kelly", "gender": "female", "age_min": 25, "age_max": 40},
+    {"name": "Daniel James Kelly", "gender": "male", "age_min": 25, "age_max": 38},
+    {"name": "Catherine Kelly (O'Neill)", "gender": "female", "age_min": 45, "age_max": 65},
+    {"name": "Patricia Ann Murphy Kelly", "gender": "female", "age_min": 55, "age_max": 75},
+    {"name": "Michael Robert Kelly", "gender": "male", "age_min": 45, "age_max": 62},
+    {"name": "Ian George Anderson", "gender": "male", "age_min": 75, "age_max": 95},
+    {"name": "Evelyn Parker Anderson", "gender": "female", "age_min": 70, "age_max": 90},
+]
+
 
 def fetch_portrait(gender: str, age_min: int, age_max: int, attempts: int = 40, nat: str | None = None) -> bytes | None:
     use_nat = nat if nat else NATS
@@ -152,6 +163,43 @@ def run():
             thumbnails = generate_all_thumbnails(file_path, THUMBNAILS_DIR)
             thumb_medium = thumbnails.get("medium")
 
+            media = Media(
+                memorial_id=mid,
+                file_path=str(file_path),
+                file_name=fname,
+                file_size=fsize,
+                mime_type="image/jpeg",
+                media_type=MediaType.PHOTO,
+                thumbnail_path=thumb_medium,
+            )
+            db.add(media)
+            db.flush()
+            memorial.cover_photo_id = media.id
+            db.commit()
+            print(f"  ✓ media.id={media.id}, cover set, thumb={thumb_medium}")
+            ok += 1
+
+        for t in NAME_FALLBACK_TARGETS:
+            memorial = (
+                db.query(Memorial)
+                .filter(Memorial.name == t["name"], Memorial.language == "en")
+                .first()
+            )
+            if not memorial:
+                continue
+            if memorial.cover_photo_id:
+                skip += 1
+                continue
+            mid = memorial.id
+            print(f"\n[name fallback] [{mid}] {memorial.name} → {t['gender']}, photo age {t['age_min']}-{t['age_max']}")
+            photo_bytes = fetch_portrait(t["gender"], t["age_min"], t["age_max"], nat=t.get("nat"))
+            if not photo_bytes:
+                print("  ✗ could not fetch portrait")
+                fail += 1
+                continue
+            file_path, fname, fsize = save_and_optimize(photo_bytes, mid)
+            thumbnails = generate_all_thumbnails(file_path, THUMBNAILS_DIR)
+            thumb_medium = thumbnails.get("medium")
             media = Media(
                 memorial_id=mid,
                 file_path=str(file_path),

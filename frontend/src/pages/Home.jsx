@@ -101,56 +101,66 @@ function Home() {
               memorials.map((memorial, i) => {
                 const deceased = isDeceasedMemorial(memorial)
                 return (
-                <Link
+                <div
                   key={memorial.id}
-                  to={`/memorials/${memorial.id}`}
                   className={`memorial-card memorial-card--${deceased ? 'deceased' : 'living'}`}
                   style={{ animationDelay: `${i * 0.07}s` }}
                 >
-                  <div className={`card-cover ${deceased ? 'card-cover--deceased' : 'card-cover--living'}`}>
-                    {deceased && (
-                      <span className="card-cover-candle" aria-hidden="true" title="Memorial">
-                        🕯
-                      </span>
-                    )}
-                    {memorial.cover_photo_url || memorial.cover_photo_id ? (
-                      <ApiMediaImage
-                        directUrl={memorial.cover_photo_url || null}
-                        mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
-                        thumbnail="small"
-                        alt={memorial.name}
-                        className="card-cover-img"
-                        fallback={<div className="card-no-cover">🕯</div>}
-                      />
-                    ) : (
-                      <div className="card-no-cover">🕯</div>
-                    )}
-                  </div>
-
-                  <div className="card-body">
-                    <h3 className="card-name">{memorial.name}</h3>
-                    {memorial.description && (
-                      <p className="card-description">{memorial.description}</p>
-                    )}
-                    <div className="card-meta">
-                      {(memorial.birth_date || memorial.death_date) ? (
-                        <span className="card-dates">
-                          {memorial.birth_date && new Date(memorial.birth_date).getFullYear()}
-                          {memorial.birth_date && memorial.death_date && ' — '}
-                          {memorial.death_date && new Date(memorial.death_date).getFullYear()}
+                  <Link to={`/memorials/${memorial.id}`} className="memorial-card-link">
+                    <div className={`card-cover ${deceased ? 'card-cover--deceased' : 'card-cover--living'}`}>
+                      {deceased && (
+                        <span className="card-cover-candle" aria-hidden="true" title="Memorial">
+                          🕯
                         </span>
-                      ) : (
-                        <span />
                       )}
-                      <span className="card-counts">
-                        {t('home.card_counts', {
-                          memories: memorial.memories_count,
-                          media: memorial.media_count,
-                        })}
-                      </span>
+                      {memorial.cover_photo_url || memorial.cover_photo_id ? (
+                        <ApiMediaImage
+                          directUrl={memorial.cover_photo_url || null}
+                          mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
+                          thumbnail="small"
+                          alt={memorial.name}
+                          className="card-cover-img"
+                          fallback={<div className="card-no-cover">🕯</div>}
+                        />
+                      ) : (
+                        <div className="card-no-cover">🕯</div>
+                      )}
                     </div>
+
+                    <div className="card-body">
+                      <h3 className="card-name">{memorial.name}</h3>
+                      {memorial.description && (
+                        <p className="card-description">{memorial.description}</p>
+                      )}
+                      <div className="card-meta">
+                        {(memorial.birth_date || memorial.death_date) ? (
+                          <span className="card-dates">
+                            {memorial.birth_date && new Date(memorial.birth_date).getFullYear()}
+                            {memorial.birth_date && memorial.death_date && ' — '}
+                            {memorial.death_date && new Date(memorial.death_date).getFullYear()}
+                          </span>
+                        ) : (
+                          <span />
+                        )}
+                        <span className="card-counts">
+                          {t('home.card_counts', {
+                            memories: memorial.memories_count,
+                            media: memorial.media_count,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="memorial-card-actions">
+                    <Link
+                      to={`/memorials/${memorial.id}?tab=memories`}
+                      className="btn btn-card-memories"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {t('home.add_memories')}
+                    </Link>
                   </div>
-                </Link>
+                </div>
                 )
               })
             )}

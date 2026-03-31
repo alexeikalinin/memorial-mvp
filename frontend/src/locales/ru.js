@@ -14,6 +14,7 @@ export default {
     section_title: 'Мемориалы',
     count_label: '{n} страниц памяти',
     card_counts: '{memories} восп. · {media} файлов',
+    add_memories: 'Воспоминания',
     empty: 'Пока нет созданных мемориалов',
     create_first: 'Создать первый мемориал',
   },

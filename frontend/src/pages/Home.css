@@ -187,7 +187,6 @@
   background: var(--surface);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  text-decoration: none;
   color: inherit;
   display: flex;
   flex-direction: column;
@@ -196,6 +195,44 @@
               box-shadow var(--t-base) var(--ease),
               border-color var(--t-base) var(--ease);
   animation: slideUp var(--t-slow) var(--ease) both;
+}
+
+.memorial-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.memorial-card-actions {
+  padding: 0 1rem 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-card-memories {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface-warm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  transition: background var(--t-base) var(--ease), border-color var(--t-base) var(--dash-ease, ease), color var(--t-base) var(--ease);
+}
+
+.btn-card-memories:hover {
+  background: rgba(212, 160, 86, 0.14);
+  border-color: var(--accent);
+  color: var(--accent-dark);
 }
 
 .memorial-card:hover {

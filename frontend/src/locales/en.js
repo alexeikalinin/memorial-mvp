@@ -14,6 +14,7 @@ export default {
     section_title: 'Memorials',
     count_label: '{n} memory pages',
     card_counts: '{memories} memories · {media} files',
+    add_memories: 'Add memories',
     empty: 'No memorials created yet',
     create_first: 'Create your first memorial',
   },
