@@ -16,7 +16,7 @@ const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'
 function MemorialDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { t, lang } = useLanguage()
   const [memorial, setMemorial] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -318,6 +318,12 @@ function MemorialDetail() {
   const isOwner = role === 'owner'
   const canEdit = role === 'owner' || role === 'editor'
 
+  const openAvatarChatTab = () => {
+    setActiveTab('chat')
+    setMountedTabs((prev) => new Set([...prev, 'chat']))
+    setSearchParams({ tab: 'chat' }, { replace: true })
+  }
+
   return (
     <div className="memorial-detail">
 
@@ -523,7 +529,13 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('memories') && (
           <div style={{ display: activeTab === 'memories' ? '' : 'none' }}>
-            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} />
+            <MemoryList
+              memorialId={id}
+              memorialName={memorial.name}
+              onReload={loadMemorial}
+              canEdit={canEdit}
+              onOpenAvatarChat={openAvatarChatTab}
+            />
           </div>
         )}
         {mountedTabs.has('chat') && (
