@@ -678,16 +678,16 @@ async def get_animation_status_endpoint(
                 "error": None
             }
         
-        status = status_result.get("status", "unknown")
+        anim_status = status_result.get("status", "unknown")
         error = status_result.get("error")
         
         # Не возвращаем error, если статус processing/pending (это нормально)
-        if status in ("processing", "pending") and error:
+        if anim_status in ("processing", "pending") and error:
             error = None
         
         return AnimationStatusResponse(
             task_id=request.task_id,  # Возвращаем оригинальный task_id для совместимости
-            status=status,
+            status=anim_status,
             video_url=status_result.get("video_url"),
             error=error,
             provider=provider
