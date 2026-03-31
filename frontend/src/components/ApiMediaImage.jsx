@@ -69,10 +69,8 @@ export default function ApiMediaImage({
         aria-hidden
         style={{
           display: 'block',
-          width: '100%',
-          height: '100%',
-          minHeight: '48px',
-          background: 'linear-gradient(135deg, var(--surface-warm, #f5f0e8) 0%, var(--border, #e8e0d4) 100%)',
+          background:
+            'linear-gradient(135deg, var(--surface-warm, #f5f0e8) 0%, var(--border, #e8e0d4) 100%)',
         }}
       />
     )

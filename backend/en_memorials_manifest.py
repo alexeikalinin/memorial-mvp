@@ -26,7 +26,7 @@ EXPECTED_EN_NAMES = frozenset(
         # seed_english_expanded.py (+9 → 20)
         "Patricia Ann Murphy Kelly",
         "Michael Robert Kelly",
-        "Catherine O'Neill Kelly",
+        "Catherine Kelly (O'Neill)",
         "Sarah Elizabeth Kelly",
         "Daniel James Kelly",
         "George William Anderson",

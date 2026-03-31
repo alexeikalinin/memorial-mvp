@@ -226,7 +226,8 @@
   box-shadow: var(--shadow-md);
 }
 
-.public-photo-item img {
+.public-photo-item img,
+.public-photo-item .api-media-image-loading {
   width: 100%;
   height: 180px;
   object-fit: cover;
@@ -234,7 +235,8 @@
   transition: transform var(--t-slow) var(--ease);
 }
 
-.public-photo-item:hover img {
+.public-photo-item:hover img,
+.public-photo-item:hover .api-media-image-loading {
   transform: scale(1.05);
 }
 

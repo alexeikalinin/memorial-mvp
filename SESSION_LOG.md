@@ -14,6 +14,49 @@
 
 ---
 
+## [2026-04-01] Family tree (поколения): колонки Kelly/Anderson, коннекторы, читаемость
+
+**Контекст:** после `FAMILY_TREE_SCOPE = 'kelly_anderson'` и фиксированных колонок A/B пользователь подтвердил, что связи стали понятнее; ниже — зафиксированные замечания и решения.
+
+| Замечание | Причина | Решение |
+|-----------|---------|---------|
+| Все семьи EN-демо в дереве | `full-tree` отдаёт весь граф | `FAMILY_TREE_SCOPE` в `familyTreeKellyFilter.js`: только Kelly+Anderson по последней фамилии |
+| Kelly и Anderson «в одной колонке» по центру | каждый ряд центрировался по ширине холста | в `buildGenerationLayout` фиксированные ширины колонок left/center/right + выравнивание; Kelly=A, Anderson=B при обеих фамилиях в графе |
+| Нет линии до второго супруга / кольца «висят» | при отсутствии зазора по X брак схлопывался в точку | `marriageBarInGap`: отрезок ненулевой ширины вокруг `mx` |
+| Линии parent→child через чужие карточки (Rose) | горизональ на середине большого Δy | §3: `yH` сразу под родителем, не по середине интервала |
+| Разрыв ствол↔вилка у Anderson | горизонталь вилки [xMin,xMax] не включала `mx` | расширение до `[min(xMin,mx), max(xMax,mx)]` |
+| Вилка через Rose к Helen | `yFork` по середине брак↔дети попадал в промежуточный ряд | §2: `yFork` в зазоре над детским рядом (`minChildY - forkMargin`) |
+| Тонкая связь брат/сестра (half_sibling и т.д.) | тонкий пунктир | §4: `strokeWidth` 2.2, пунктир `8 5`, выше непрозрачность |
+| Короткая вертикаль вилка→ребёнок | малый `forkMargin` | увеличен диапазон `forkMargin` (~12–20 px по шагу ряда) |
+
+**Файлы:** `familyTreeKellyFilter.js`, `familyTreeGenerationLayout.js`, `familyTreeOrthogonalConnectors.js`.
+
+---
+
+## [2026-03-31] Family tree: брат и сестра в один ряд (Kelly + Anderson)
+
+**Проблема:** у пары родителей (Michael + Catherine) дети Sarah и Daniel отображались **вертикально** (как родитель→ребёнок), а не **на одной горизонтали**.
+
+**Причины:**
+1. В БД могло быть **ложное** ребро PARENT/CHILD между сиблингами (или инвертированные пары от старого сида).
+2. BFS поколений в `full-tree` и раскладка на фронте не всегда выравнивали сиблингов без явной пары «общий родитель».
+
+**Решение (комплекс):**
+
+| Слой | Что сделано |
+|------|-------------|
+| **БД** | `backend/repair_expanded_family_rels.py`: удаление PARENT/CHILD между **Sarah ↔ Daniel** (id-зависимо), добавление **SIBLING** в обе стороны при отсутствии; то же для **George ↔ Helen** (ветка Anderson, полные сиблинги William+Agnes). Пересборка корректных PARENT/CHILD к родителям. В скрипте **`engine.echo = false`**, чтобы не заливать консоль SQL при `DEBUG=true`. |
+| **API** | `backend/app/api/family.py`: в `refine_generations_parent_child` добавлены пары из **`_infer_sibling_pairs_from_shared_parents(parents_of)`** — любые двое детей с **общим родителем** получают одно поколение в `full-tree`. |
+| **Фронт** | `stripSiblingConflictingParentEdges`, пересечение детей у супругов в `finalizeSiblingGenerations`, `stripSiblingConflictingParentEdges` в коннекторах и `buildGenerationLayout` — не рисовать и не считать глубину по ложному parent/child между сиблингами. |
+
+**UI «вторая семья» (Anderson):** в `familyTreeKellyFilter.js` **`FAMILY_TREE_SCOPE`**: `'kelly_anderson'` — узлы с последней фамилией **Kelly** или **Anderson** (остальные семьи API не рисуем); `'kelly'` — только Kelly; `'full'` — весь граф.
+
+**Запуск ремонта БД:** из `backend/`: `python repair_expanded_family_rels.py`
+
+**Подтверждение:** после правок дерево отображается как задумано (сиблинги в один ряд под родителями; вторая ветка — Anderson — при `FAMILY_TREE_KELLY_ONLY = false`).
+
+---
+
 ## [2026-03-30] Лендинг (видео, QR на камне), чат/timeline/инвайты, перф мемориала
 
 **Статус:** сделано в коде (часть коммитов могла быть запушена ранее; сверить `git log`).

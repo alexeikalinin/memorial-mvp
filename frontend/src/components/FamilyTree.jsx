@@ -6,9 +6,18 @@ import ApiMediaImage from './ApiMediaImage'
 import calcTree from 'relatives-tree'
 import {
   buildGenerationLayout,
+  buildSurnameClusterStyles,
   isCrossFamilySpouseEdge,
 } from '../utils/familyTreeGenerationLayout.js'
-import { buildOrthogonalConnectors } from '../utils/familyTreeOrthogonalConnectors.js'
+import {
+  buildOrthogonalConnectors,
+  getSpouseMarriageMarkers,
+} from '../utils/familyTreeOrthogonalConnectors.js'
+import {
+  filterGraphToKellyFamily,
+  filterGraphToKellyAndAndersonFamily,
+  FAMILY_TREE_SCOPE,
+} from '../utils/familyTreeKellyFilter.js'
 import './FamilyTree.css'
 
 // ── Grid constants ─────────────────────────────────────────────────
@@ -30,6 +39,8 @@ const OFF_Y = (HH - NODE_H / 2)
 const MIN_SCALE = 0.05
 const MAX_SCALE = 3
 const VIEW_PAD = 24
+/** Показывать иконку брака между супругами при достаточном приближении */
+const MIN_SCALE_MARRIAGE_RINGS = 0.82
 
 function fitInnerInViewport(canvasEl, innerW, innerH) {
   const cw = canvasEl.offsetWidth
@@ -156,7 +167,7 @@ function buildRelLabels(nodes, edges, rootId, t) {
 }
 
 // ── Node Card ──────────────────────────────────────────────────────
-function NodeCard({ extNode, nodeMap, isRoot, relLabel, onClick }) {
+function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick }) {
   const memorial = nodeMap[extNode.id]
 
   const x = extNode.left * HW + OFF_X
@@ -183,25 +194,35 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, onClick }) {
 
   const isDeceased = !!memorial.death_year
 
+  const clusterBorder = clusterStyle
+    ? { borderLeft: `4px solid ${clusterStyle.borderColor}` }
+    : {}
+
   return (
     <div
       className={[
         'ft-node',
-        isRoot     ? 'ft-node--root'     : '',
-        isDeceased ? 'ft-node--deceased' : '',
+        clusterStyle ? 'ft-node--pedigree-accent' : '',
+        isRoot ? 'ft-node--root' : '',
+        isDeceased ? 'ft-node--deceased' : 'ft-node--living',
       ].filter(Boolean).join(' ')}
-      style={{ position: 'absolute', left: x, top: y, width: NODE_W, height: NODE_H }}
+      style={{ position: 'absolute', left: x, top: y, width: NODE_W, height: NODE_H, ...clusterBorder }}
       onClick={() => onClick(memorial.memorial_id)}
-      title={memorial.name}
+      title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
     >
       <div className="ft-node-avatar-wrap">
+        {isDeceased && (
+          <span className="ft-node-candle-badge" title="Deceased" aria-hidden="true">
+            🕯
+          </span>
+        )}
         <div className="ft-node-avatar">
           {memorial.cover_photo_id ? (
             <ApiMediaImage
               mediaId={memorial.cover_photo_id}
-              thumbnail="small"
+              thumbnail="large"
               alt={memorial.name}
-              className="ft-node-img"
+              className="ft-node-img ft-node-img--hidpi"
               onError={e => { e.target.style.display = 'none' }}
             />
           ) : (
@@ -225,7 +246,7 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, onClick }) {
   )
 }
 
-/** Карточка в режиме «поколения»: позиция absolute, линии A/B и золото у перекрёстного брака */
+/** Карточка в режиме «поколения»: яркая рамка по кластеру фамилии + золото у перекрёстного брака */
 function GenTreeNodeCard({
   memorial,
   left,
@@ -235,6 +256,7 @@ function GenTreeNodeCard({
   isRoot,
   lineage,
   isBridge,
+  clusterStyle,
   relLabel,
   onClick,
 }) {
@@ -242,29 +264,48 @@ function GenTreeNodeCard({
   const cls = ['ft-node', 'ft-node--gen']
   if (isRoot) cls.push('ft-node--root')
   if (isBridge) cls.push('ft-node--bridge')
-  else if (lineage === 'A') cls.push('ft-node--line-a')
-  else if (lineage === 'B') cls.push('ft-node--line-b')
-  else cls.push('ft-node--line-n')
+  if (!clusterStyle) {
+    if (lineage === 'A') cls.push('ft-node--line-a')
+    else if (lineage === 'B') cls.push('ft-node--line-b')
+    else cls.push('ft-node--line-n')
+  } else cls.push('ft-node--gen-cluster')
   if (isDeceased) cls.push('ft-node--deceased')
+  else cls.push('ft-node--living')
+
+  const clusterBox = clusterStyle
+    ? {
+        borderWidth: 3,
+        borderStyle: 'solid',
+        borderColor: clusterStyle.borderColor,
+        boxShadow: isBridge
+          ? `${clusterStyle.boxShadow}, 0 0 0 2px rgba(220, 175, 95, 0.72), 0 0 22px rgba(220, 175, 95, 0.26)`
+          : clusterStyle.boxShadow,
+      }
+    : {}
 
   return (
     <div
       className={cls.filter(Boolean).join(' ')}
-      style={{ position: 'absolute', left, top, width: nodeW, height: nodeH }}
+      style={{ position: 'absolute', left, top, width: nodeW, height: nodeH, ...clusterBox }}
       onClick={() => onClick(memorial.memorial_id)}
-      title={memorial.name}
+      title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick(memorial.memorial_id)}
     >
       <div className="ft-node-avatar-wrap">
+        {isDeceased && (
+          <span className="ft-node-candle-badge ft-node-candle-badge--gen" title="Deceased" aria-hidden="true">
+            🕯
+          </span>
+        )}
         <div className="ft-node-avatar">
           {memorial.cover_photo_id ? (
             <ApiMediaImage
               mediaId={memorial.cover_photo_id}
-              thumbnail="small"
+              thumbnail="large"
               alt={memorial.name}
-              className="ft-node-img"
+              className="ft-node-img ft-node-img--hidpi"
             />
           ) : (
             <span className="ft-node-initials">{getInitials(memorial.name)}</span>
@@ -354,65 +395,105 @@ export default function FamilyTree({ memorialId }) {
 
   useEffect(() => { loadData() }, [loadData])
 
+  /** Полный ответ API; для дерева — после фильтра по `FAMILY_TREE_SCOPE`. */
+  const displayGraph = useMemo(() => {
+    if (!graphData?.nodes?.length) return null
+    if (FAMILY_TREE_SCOPE === 'full') return graphData
+    if (FAMILY_TREE_SCOPE === 'kelly') return filterGraphToKellyFamily(graphData)
+    return filterGraphToKellyAndAndersonFamily(graphData)
+  }, [graphData])
+
   // ── Derived data ───────────────────────────────────────────────
   // Map id → memorial object for fast lookup
   const nodeMap = useMemo(() => {
-    if (!graphData?.nodes) return {}
-    return Object.fromEntries(graphData.nodes.map(n => [sid(n.memorial_id), n]))
-  }, [graphData])
+    if (!displayGraph?.nodes) return {}
+    return Object.fromEntries(displayGraph.nodes.map(n => [sid(n.memorial_id), n]))
+  }, [displayGraph])
+
+  const clusterTheme = useMemo(
+    () => buildSurnameClusterStyles(displayGraph?.nodes || []),
+    [displayGraph?.nodes]
+  )
+
+  const rootDisplayName = useMemo(() => {
+    if (!displayGraph?.nodes || displayGraph.root_id == null) return ''
+    const n = displayGraph.nodes.find((x) => x.memorial_id === displayGraph.root_id)
+    return n?.name || ''
+  }, [displayGraph])
 
   // relatives-tree layout
   const treeData = useMemo(() => {
-    if (!graphData?.nodes?.length) return null
+    if (!displayGraph?.nodes?.length) return null
     try {
-      const libNodes = toLibNodes(graphData.nodes, graphData.edges)
+      const libNodes = toLibNodes(displayGraph.nodes, displayGraph.edges)
       return calcTree(libNodes, {
-        rootId: sid(graphData.root_id),
+        rootId: sid(displayGraph.root_id),
         placeholders: true,
       })
     } catch (e) {
       console.error('calcTree error', e)
       return null
     }
-  }, [graphData])
+  }, [displayGraph])
 
   // Relationship labels (BFS from root)
   const relLabels = useMemo(() => {
-    if (!graphData) return {}
-    return buildRelLabels(graphData.nodes, graphData.edges, graphData.root_id, t)
-  }, [graphData, t])
+    if (!displayGraph) return {}
+    return buildRelLabels(displayGraph.nodes, displayGraph.edges, displayGraph.root_id, t)
+  }, [displayGraph, t])
 
   const genLayout = useMemo(() => {
-    if (!graphData?.nodes?.length) return null
+    if (!displayGraph?.nodes?.length) return null
     try {
-      return buildGenerationLayout(graphData)
+      return buildGenerationLayout(displayGraph)
     } catch (e) {
       console.error('buildGenerationLayout', e)
       return null
     }
-  }, [graphData])
+  }, [displayGraph])
 
   const bridgeNodeIds = useMemo(() => {
-    if (!graphData?.edges || !genLayout?.lineage) return new Set()
+    if (!displayGraph?.edges || !genLayout?.lineage) return new Set()
     const s = new Set()
-    for (const e of graphData.edges) {
-      if (isCrossFamilySpouseEdge(e, genLayout.lineage)) {
+    for (const e of displayGraph.edges) {
+      if (
+        isCrossFamilySpouseEdge(
+          e,
+          genLayout.lineage,
+          displayGraph.nodes,
+          genLayout.memorialClusterStyle
+        )
+      ) {
         s.add(sid(e.source))
         s.add(sid(e.target))
       }
     }
     return s
-  }, [graphData, genLayout])
+  }, [displayGraph, genLayout])
 
   const orthoConnectorLines = useMemo(() => {
-    if (layoutMode !== 'generations' || !genLayout?.positions || !graphData?.edges) return []
+    if (layoutMode !== 'generations' || !genLayout?.positions || !displayGraph?.edges) return []
     return buildOrthogonalConnectors({
-      edges: graphData.edges,
+      edges: displayGraph.edges,
       positions: genLayout.positions,
       nodeSize: genLayout.nodeSize,
       lineageMap: genLayout.lineage,
+      nodes: displayGraph.nodes,
+      memorialClusterStyle: genLayout.memorialClusterStyle,
     }).lines
-  }, [layoutMode, genLayout, graphData?.edges])
+  }, [layoutMode, genLayout, displayGraph?.edges, displayGraph?.nodes])
+
+  const spouseMarriageMarkers = useMemo(() => {
+    if (layoutMode !== 'generations' || !genLayout?.positions || !displayGraph?.edges) return []
+    return getSpouseMarriageMarkers({
+      edges: displayGraph.edges,
+      positions: genLayout.positions,
+      nodeSize: genLayout.nodeSize,
+      lineageMap: genLayout.lineage,
+      nodes: displayGraph.nodes,
+      memorialClusterStyle: genLayout.memorialClusterStyle,
+    })
+  }, [layoutMode, genLayout, displayGraph?.edges, displayGraph?.nodes])
 
   useEffect(() => {
     const onFs = () => {
@@ -437,6 +518,7 @@ export default function FamilyTree({ memorialId }) {
   // Connected families: nodes present in full-tree but NOT placed by relatives-tree
   // (i.e., reachable only via custom edges from the structural family cluster)
   const connectedFamilies = useMemo(() => {
+    if (FAMILY_TREE_SCOPE !== 'full') return []
     if (!graphData || !treeData) return []
     const treeIds = new Set(treeData.nodes.filter(n => !n.placeholder).map(n => n.id))
     const nodeMap2 = Object.fromEntries(graphData.nodes.map(n => [String(n.memorial_id), n]))
@@ -534,9 +616,9 @@ export default function FamilyTree({ memorialId }) {
 
   // Initial view: центр на открытом мемориале (root_id)
   useEffect(() => {
-    if (!canvasRef.current || !graphData?.root_id) return
+    if (!canvasRef.current || !displayGraph?.root_id) return
     if (layoutMode === 'generations' && genLayout?.positions) {
-      const p = genLayout.positions[sid(graphData.root_id)]
+      const p = genLayout.positions[sid(displayGraph.root_id)]
       if (!p) return
       const el = canvasRef.current
       const cw = el.offsetWidth
@@ -545,10 +627,10 @@ export default function FamilyTree({ memorialId }) {
       return
     }
     if (!treeData) return
-    const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
+    const rootNode = treeData.nodes.find(n => n.id === sid(displayGraph.root_id))
     const next = centerRootInViewport(canvasRef.current, rootNode)
     if (next) setTransform(next)
-  }, [layoutMode, genLayout, treeData, graphData?.root_id, memorialId])
+  }, [layoutMode, genLayout, treeData, displayGraph?.root_id, memorialId])
 
   const fitWholeTree = useCallback(() => {
     if (!canvasRef.current) return
@@ -561,17 +643,17 @@ export default function FamilyTree({ memorialId }) {
       if (next) setTransform(next)
       return
     }
-    if (!graphData || !treeData) return
+    if (!displayGraph || !treeData) return
     const innerW = treeData.canvas.width * HW
     const innerH = treeData.canvas.height * HH
     const next = fitInnerInViewport(canvasRef.current, innerW, innerH)
     if (next) setTransform(next)
-  }, [layoutMode, genLayout, graphData, treeData])
+  }, [layoutMode, genLayout, displayGraph, treeData])
 
   const centerOnThisPerson = useCallback(() => {
-    if (!graphData?.root_id || !canvasRef.current) return
+    if (!displayGraph?.root_id || !canvasRef.current) return
     if (layoutMode === 'generations' && genLayout?.positions) {
-      const p = genLayout.positions[sid(graphData.root_id)]
+      const p = genLayout.positions[sid(displayGraph.root_id)]
       if (!p) return
       const el = canvasRef.current
       const cw = el.offsetWidth
@@ -580,10 +662,10 @@ export default function FamilyTree({ memorialId }) {
       return
     }
     if (!treeData) return
-    const rootNode = treeData.nodes.find(n => n.id === sid(graphData.root_id))
+    const rootNode = treeData.nodes.find(n => n.id === sid(displayGraph.root_id))
     const next = centerRootInViewport(canvasRef.current, rootNode)
     if (next) setTransform(next)
-  }, [layoutMode, genLayout, graphData?.root_id, treeData])
+  }, [layoutMode, genLayout, displayGraph?.root_id, treeData])
 
   // ── Pan / zoom ─────────────────────────────────────────────────
   useEffect(() => {
@@ -698,7 +780,7 @@ export default function FamilyTree({ memorialId }) {
   const showGenerations = layoutMode === 'generations' && !!genLayout
   const showPedigree = layoutMode === 'pedigree' && !!treeData
   const hasTree =
-    !!graphData?.nodes?.length && (showGenerations || showPedigree)
+    !!displayGraph?.nodes?.length && (showGenerations || showPedigree)
 
   return (
     <div
@@ -731,7 +813,7 @@ export default function FamilyTree({ memorialId }) {
           {hasTree && (
             <>
               <span className="tree-node-count">
-                {t('family.people_count')(graphData.nodes.length)}
+                {t('family.people_count')(displayGraph.nodes.length)}
               </span>
               <div className="tree-view-controls" role="group" aria-label={t('family.tree_controls')}>
                 <button type="button" className="btn-tree-view" onClick={fitWholeTree}>
@@ -754,14 +836,48 @@ export default function FamilyTree({ memorialId }) {
           </button>
         </div>
       </div>
+      {(FAMILY_TREE_SCOPE === 'kelly' || FAMILY_TREE_SCOPE === 'kelly_anderson') &&
+        graphData?.nodes?.length > 0 && (
+        <p className="ft-kelly-only-banner" role="status">
+          {t(
+            FAMILY_TREE_SCOPE === 'kelly'
+              ? 'family.kelly_only_banner'
+              : 'family.kelly_anderson_banner'
+          )}
+        </p>
+      )}
       {showGenerations && genLayout && (
         <>
-          <div className="ft-gen-legend" aria-hidden>
-            <span className="ft-leg ft-leg--a">{genLayout.surnameA || '—'}</span>
-            <span className="ft-leg ft-leg--b">{genLayout.surnameB || '—'}</span>
+          <div className="ft-gen-legend" aria-hidden={false}>
+            {(genLayout.clusterLegend || []).map((c) => (
+              <span
+                key={c.key}
+                className="ft-leg ft-leg--cluster"
+                style={{
+                  borderColor: c.border,
+                  background: c.pillBg,
+                  color: c.textColor,
+                }}
+              >
+                {c.key === genLayout.otherSurnameKey ? t('family.cluster_other') : c.key}
+              </span>
+            ))}
             <span className="ft-leg ft-leg--gold">∞ {t('family.legend_cross_family_short')}</span>
           </div>
           <p className="tree-controls-hint ft-gen-hint">{t('family.gen_legend_hint')}</p>
+          <details className="ft-gen-help">
+            <summary className="ft-gen-help-summary">{t('family.gen_legend_expand')}</summary>
+            <div className="ft-gen-help-body">
+              <p>{t('family.gen_legend_help_borders')}</p>
+              <p>{t('family.gen_legend_help_lines')}</p>
+              <p>
+                {t('family.gen_legend_help_labels', {
+                  rootName: rootDisplayName || t('family.gen_legend_root_fallback'),
+                })}
+              </p>
+              <p>{t('family.gen_legend_help_generation')}</p>
+            </div>
+          </details>
         </>
       )}
       {hasTree && layoutMode === 'pedigree' && (
@@ -873,7 +989,7 @@ export default function FamilyTree({ memorialId }) {
             style={{
               width: canvasW,
               height: canvasH,
-              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) translateZ(0)`,
               transformOrigin: '0 0',
             }}
           >
@@ -916,8 +1032,40 @@ export default function FamilyTree({ memorialId }) {
                       strokeDasharray={ln.strokeDasharray}
                     />
                   ))}
+                  {spouseMarriageMarkers.map((m) => {
+                    const showRings = transform.scale >= MIN_SCALE_MARRIAGE_RINGS
+                    return (
+                      <g
+                        key={m.key}
+                        transform={`translate(${m.mx}, ${m.y - 2})`}
+                        className="ft-marriage-rings"
+                        opacity={showRings ? 1 : 0}
+                        style={{ transition: 'opacity 0.2s ease' }}
+                      >
+                        <title>{t('family.marriage_rings_title')}</title>
+                        <circle
+                          cx={-5.5}
+                          cy={0}
+                          r={6.5}
+                          fill="none"
+                          stroke={m.leftRingStroke}
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                        />
+                        <circle
+                          cx={5.5}
+                          cy={0}
+                          r={6.5}
+                          fill="none"
+                          stroke={m.rightRingStroke}
+                          strokeWidth={2.2}
+                          strokeLinecap="round"
+                        />
+                      </g>
+                    )
+                  })}
                 </svg>
-                {graphData.nodes.map((n) => {
+                {displayGraph.nodes.map((n) => {
                   const id = sid(n.memorial_id)
                   const pos = genLayout.positions[id]
                   if (!pos) return null
@@ -930,9 +1078,13 @@ export default function FamilyTree({ memorialId }) {
                       top={pos.y}
                       nodeW={nw}
                       nodeH={nh}
-                      isRoot={n.memorial_id === graphData.root_id}
+                      isRoot={n.memorial_id === displayGraph.root_id}
                       lineage={genLayout.lineage[n.memorial_id]}
                       isBridge={bridgeNodeIds.has(id)}
+                      clusterStyle={
+                        genLayout.memorialClusterStyle?.[n.memorial_id] ??
+                        genLayout.memorialClusterStyle?.[id]
+                      }
                       relLabel={relLabels[id]}
                       onClick={(mid) => navigate(`/memorials/${mid}`)}
                     />
@@ -964,16 +1116,23 @@ export default function FamilyTree({ memorialId }) {
                     />
                   ))}
                 </svg>
-                {treeData.nodes.map((extNode) => (
-                  <NodeCard
-                    key={extNode.id}
-                    extNode={extNode}
-                    nodeMap={nodeMap}
-                    isRoot={extNode.id === sid(graphData.root_id)}
-                    relLabel={relLabels[extNode.id]}
-                    onClick={(id) => navigate(`/memorials/${id}`)}
-                  />
-                ))}
+                {treeData.nodes.map((extNode) => {
+                  const mid = Number(extNode.id)
+                  const csty =
+                    clusterTheme.memorialClusterStyle?.[mid] ??
+                    clusterTheme.memorialClusterStyle?.[extNode.id]
+                  return (
+                    <NodeCard
+                      key={extNode.id}
+                      extNode={extNode}
+                      nodeMap={nodeMap}
+                      isRoot={extNode.id === sid(displayGraph.root_id)}
+                      relLabel={relLabels[extNode.id]}
+                      clusterStyle={csty}
+                      onClick={(id) => navigate(`/memorials/${id}`)}
+                    />
+                  )
+                })}
               </>
             )}
           </div>

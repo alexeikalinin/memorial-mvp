@@ -377,6 +377,11 @@ p { line-height: 1.7; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
+/* Blob-loading placeholder for ApiMediaImage — sizes come from className, not inline 100% */
+.api-media-image-loading {
+  box-sizing: border-box;
+}
+
 /* ─── Selection ─────────────────────────────────────────────────── */
 ::selection {
   background: rgba(196, 168, 130, 0.3);

@@ -489,3 +489,30 @@ class TestFullTree:
         assert "partner" in edge_types
         assert "ex_spouse" in edge_types
         assert "half_sibling" in edge_types
+
+    def test_full_tree_generation_child_below_parent(self, auth_client):
+        """Ребёнок всегда на поколение ниже родителя (gen ребёнка = gen родителя + 1)."""
+        michael = mk_memorial(auth_client, "FT-Gen-Michael")
+        sarah = mk_memorial(auth_client, "FT-Gen-Sarah")
+        # Michael — родитель Sarah (API: у Sarah parent = Michael)
+        add_rel(auth_client, sarah["id"], michael["id"], "parent")
+
+        resp = auth_client.get(f"/api/v1/family/memorials/{michael['id']}/full-tree")
+        assert resp.status_code == 200
+        nodes = {n["memorial_id"]: n["generation"] for n in resp.json()["nodes"]}
+        assert nodes[michael["id"]] == 0
+        assert nodes[sarah["id"]] == nodes[michael["id"]] + 1
+
+    def test_full_tree_custom_does_not_skip_parent_child_order(self, auth_client):
+        """Custom-связь не должна присваивать поколение раньше родства: дети ниже родителей."""
+        michael = mk_memorial(auth_client, "FT-C-Michael")
+        sarah = mk_memorial(auth_client, "FT-C-Sarah")
+        marco = mk_memorial(auth_client, "FT-C-Marco")
+        add_rel(auth_client, sarah["id"], michael["id"], "parent")
+        add_rel(auth_client, michael["id"], marco["id"], "custom", custom_label="Коллега")
+
+        resp = auth_client.get(f"/api/v1/family/memorials/{michael['id']}/full-tree")
+        assert resp.status_code == 200
+        nodes = {n["memorial_id"]: n["generation"] for n in resp.json()["nodes"]}
+        assert nodes[sarah["id"]] == nodes[michael["id"]] + 1
+        assert nodes[marco["id"]] == nodes[michael["id"]]

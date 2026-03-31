@@ -5,7 +5,7 @@ Expanded EN seed: part 2 of 3 — adds 9 new memorials + extended memories for a
 
 New memorials:
   Kelly Gen 4: Robert + Patricia Ann Murphy Kelly (1935-2010)
-  Kelly Gen 5: Michael Robert Kelly (1958-2019) + Catherine O'Neill Kelly (b.1960, alive)
+  Kelly Gen 5: Michael Robert Kelly (1958-2019) + Catherine Kelly (O'Neill) (b.1960, alive)
   Kelly Gen 6: Sarah Elizabeth Kelly (b.1985, alive), Daniel James Kelly (b.1988, alive)
   Anderson Gen 3 (William+Agnes's son): George William Anderson (1900-1965) + Margaret Fraser Anderson (1904-1985)
   Anderson Gen 4: Ian George Anderson (b.1932, alive) + Evelyn Parker Anderson (b.1935, alive)
@@ -54,7 +54,7 @@ NEW_MEMORIALS = [
     },
     {
         "key": "catherine",
-        "name": "Catherine O'Neill Kelly",
+        "name": "Catherine Kelly (O'Neill)",
         "birth": dt(1960, 10, 3),
         "death": None,   # alive
         "voice_gender": "female",
@@ -1745,43 +1745,47 @@ NEW_MEMORIES = {
 }
 
 # ── New relationships ─────────────────────────────────────────────────────────
-# Format: (from_key, to_key, type)
+# Format: (from_key, to_key, type) — stored as FamilyRelationship(memorial_id=from, related=to, type)
+# API rule: PARENT ⇒ related is parent of memorial; CHILD ⇒ related is child of memorial.
 # Keys mix existing ("robert","helen","william","agnes") and new
 NEW_RELATIONSHIPS = [
     # Robert ↔ Patricia
     ("robert", "patricia", RelationshipType.SPOUSE),
     ("patricia", "robert", RelationshipType.SPOUSE),
     # Robert & Patricia → Michael
-    ("robert", "michael", RelationshipType.PARENT),
-    ("patricia", "michael", RelationshipType.PARENT),
-    ("michael", "robert", RelationshipType.CHILD),
-    ("michael", "patricia", RelationshipType.CHILD),
+    ("michael", "robert", RelationshipType.PARENT),
+    ("michael", "patricia", RelationshipType.PARENT),
+    ("robert", "michael", RelationshipType.CHILD),
+    ("patricia", "michael", RelationshipType.CHILD),
     # Michael ↔ Catherine
     ("michael", "catherine", RelationshipType.SPOUSE),
     ("catherine", "michael", RelationshipType.SPOUSE),
     # Michael & Catherine → Sarah
-    ("michael", "sarah", RelationshipType.PARENT),
-    ("catherine", "sarah", RelationshipType.PARENT),
-    ("sarah", "michael", RelationshipType.CHILD),
-    ("sarah", "catherine", RelationshipType.CHILD),
+    ("sarah", "michael", RelationshipType.PARENT),
+    ("sarah", "catherine", RelationshipType.PARENT),
+    ("michael", "sarah", RelationshipType.CHILD),
+    ("catherine", "sarah", RelationshipType.CHILD),
     # Michael & Catherine → Daniel
-    ("michael", "daniel", RelationshipType.PARENT),
-    ("catherine", "daniel", RelationshipType.PARENT),
-    ("daniel", "michael", RelationshipType.CHILD),
-    ("daniel", "catherine", RelationshipType.CHILD),
+    ("daniel", "michael", RelationshipType.PARENT),
+    ("daniel", "catherine", RelationshipType.PARENT),
+    ("michael", "daniel", RelationshipType.CHILD),
+    ("catherine", "daniel", RelationshipType.CHILD),
+    # Sarah & Daniel — full siblings (same row in tree, not parent/child)
+    ("sarah", "daniel", RelationshipType.SIBLING),
+    ("daniel", "sarah", RelationshipType.SIBLING),
     # William & Agnes → George (Anderson Gen 3 sibling of Helen)
-    ("william", "george", RelationshipType.PARENT),
-    ("agnes", "george", RelationshipType.PARENT),
-    ("george", "william", RelationshipType.CHILD),
-    ("george", "agnes", RelationshipType.CHILD),
+    ("george", "william", RelationshipType.PARENT),
+    ("george", "agnes", RelationshipType.PARENT),
+    ("william", "george", RelationshipType.CHILD),
+    ("agnes", "george", RelationshipType.CHILD),
     # George ↔ Margaret
     ("george", "margaret", RelationshipType.SPOUSE),
     ("margaret", "george", RelationshipType.SPOUSE),
     # George & Margaret → Ian
-    ("george", "ian", RelationshipType.PARENT),
-    ("margaret", "ian", RelationshipType.PARENT),
-    ("ian", "george", RelationshipType.CHILD),
-    ("ian", "margaret", RelationshipType.CHILD),
+    ("ian", "george", RelationshipType.PARENT),
+    ("ian", "margaret", RelationshipType.PARENT),
+    ("george", "ian", RelationshipType.CHILD),
+    ("margaret", "ian", RelationshipType.CHILD),
     # Ian ↔ Evelyn
     ("ian", "evelyn", RelationshipType.SPOUSE),
     ("evelyn", "ian", RelationshipType.SPOUSE),

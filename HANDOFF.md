@@ -1,9 +1,18 @@
 # Handoff — Memorial MVP
-> Обновлено: 2026-03-30 (session)
+> Обновлено: 2026-04-01 (session)
 
 **Подробный журнал сессий — один файл:** [SESSION_LOG.md](SESSION_LOG.md) (новые блоки в начале файла). Здесь — кратко: фокус, последнее действие, next steps.
 
-## Последнее действие (2026-03-30)
+## Последнее действие (2026-04-01)
+- **Family tree — коннекторы и читаемость:** таблица замечаний/решений (колонки Kelly/Anderson, marriageBarInGap, parent-child yH, вилка+mx, yFork над детьми, пунктир sibling) — **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**. В коде: увеличены вертикаль вилка→ребёнок (`forkMargin`) и жирность пунктира sibling/half_sibling в `familyTreeOrthogonalConnectors.js`.
+
+## Предыдущее действие (2026-03-31)
+- **Family tree — сиблинги в один ряд:** исправление БД (`repair_expanded_family_rels.py`: снять ложный parent/child между Sarah↔Daniel и **George↔Helen**, SIBLING; `engine.echo=false` в скрипте), API — `_infer_sibling_pairs_from_shared_parents` в `family.py`, фронт — `stripSiblingConflictingParentEdges` + доработки поколений/коннекторов. Подробности и таблица — **[SESSION_LOG.md → 2026-03-31](SESSION_LOG.md)**.
+- **Показ двух семей в UI:** `FAMILY_TREE_SCOPE` в `familyTreeKellyFilter.js` — `'kelly_anderson'` (Kelly + Anderson по последней фамилии, без Chang/Rossi), `'kelly'` только Kelly, `'full'` весь граф API.
+
+## Предыдущее действие (2026-03-30)
+- **Family tree — фаза 1 (только Kelly):** `frontend/src/utils/familyTreeKellyFilter.js` — `FAMILY_TREE_KELLY_ONLY`, фильтр узлов по фамилии Kelly (`surnameOf` === `Kelly`), рёбра только внутри подграфа; `root_id` — открытый мемориал если Kelly, иначе BFS от полного графа к ближайшему Kelly, иначе самый старый по `birth_year`. В `FamilyTree.jsx` дерево и раскладка считаются по `displayGraph`; блок «Connected families» скрыт в этой фазе. Баннер `family.kelly_only_banner` + стиль `.ft-kelly-only-banner`.
+- **Family tree (поколения):** раскладка рядов через `computeLayoutDepthOldestTop` в `familyTreeGenerations.js` — сверху корни (без родителей в графе), ниже дети; не зависит от `root_id` / фокального мемориала (раньше `refineFullTreeGenerations` сдвигал этажи относительно открытой карточки). Подключено в `buildGenerationLayout` (`familyTreeGenerationLayout.js`).
 - **Лендинг:** демо-видео в `#demo`, копирование `video` в `dist`, hero/QR-блоки без перекрытия лица/камня; на секции Physical memorial — декоративная табличка QR + подпись про иллюстрацию.
 - **SPA:** источники чата в сворачиваемом блоке; timeline включает воспоминания без `event_date`; инвайты для **editor** + правильные URL contribute через `utils/inviteUrl.js`; при смене мемориала сброс вкладок и QR state.
 - **Детали, тесты, что не сделано:** см. **[SESSION_LOG.md → 2026-03-30](SESSION_LOG.md)**.

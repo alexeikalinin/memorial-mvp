@@ -649,76 +649,79 @@ def apply_event_dates_to_existing(db):
 
 
 # ── Family relationships ──────────────────────────────────────────────────────
-# Format: (from_key, to_key, type)
+# Format: (from_key, to_key, type) — stored as memorial_id=from, related=to
+# API / DB semantics (must match frontend buildParentsOf):
+#   PARENT  → related is parent of memorial (child=from, parent=to)
+#   CHILD   → related is child of memorial (parent=from, child=to)
 RELATIONSHIPS = [
     # Gen 1 Kelly – spouses
     ("sean", "brigid", RelationshipType.SPOUSE),
     ("brigid", "sean", RelationshipType.SPOUSE),
     # Sean & Brigid → Thomas
-    ("sean", "thomas", RelationshipType.PARENT),
-    ("brigid", "thomas", RelationshipType.PARENT),
-    ("thomas", "sean", RelationshipType.CHILD),
-    ("thomas", "brigid", RelationshipType.CHILD),
+    ("thomas", "sean", RelationshipType.PARENT),
+    ("thomas", "brigid", RelationshipType.PARENT),
+    ("sean", "thomas", RelationshipType.CHILD),
+    ("brigid", "thomas", RelationshipType.CHILD),
     # Sean & Brigid → Mary (sister of Thomas)
-    ("sean", "mary", RelationshipType.PARENT),
-    ("brigid", "mary", RelationshipType.PARENT),
-    ("mary", "sean", RelationshipType.CHILD),
-    ("mary", "brigid", RelationshipType.CHILD),
+    ("mary", "sean", RelationshipType.PARENT),
+    ("mary", "brigid", RelationshipType.PARENT),
+    ("sean", "mary", RelationshipType.CHILD),
+    ("brigid", "mary", RelationshipType.CHILD),
     ("thomas", "mary", RelationshipType.SIBLING),
     ("mary", "thomas", RelationshipType.SIBLING),
     # Gen 2 Kelly – spouses
     ("thomas", "rose", RelationshipType.SPOUSE),
     ("rose", "thomas", RelationshipType.SPOUSE),
     # Thomas & Rose → James
-    ("thomas", "james", RelationshipType.PARENT),
-    ("rose", "james", RelationshipType.PARENT),
-    ("james", "thomas", RelationshipType.CHILD),
-    ("james", "rose", RelationshipType.CHILD),
+    ("james", "thomas", RelationshipType.PARENT),
+    ("james", "rose", RelationshipType.PARENT),
+    ("thomas", "james", RelationshipType.CHILD),
+    ("rose", "james", RelationshipType.CHILD),
     # Thomas & Rose → Patricia (sister of James)
-    ("thomas", "patricia", RelationshipType.PARENT),
-    ("rose", "patricia", RelationshipType.PARENT),
-    ("patricia", "thomas", RelationshipType.CHILD),
-    ("patricia", "rose", RelationshipType.CHILD),
+    ("patricia", "thomas", RelationshipType.PARENT),
+    ("patricia", "rose", RelationshipType.PARENT),
+    ("thomas", "patricia", RelationshipType.CHILD),
+    ("rose", "patricia", RelationshipType.CHILD),
     ("james", "patricia", RelationshipType.SIBLING),
     ("patricia", "james", RelationshipType.SIBLING),
     # Gen 1 Anderson – spouses
     ("duncan", "flora", RelationshipType.SPOUSE),
     ("flora", "duncan", RelationshipType.SPOUSE),
     # Duncan & Flora → William
-    ("duncan", "william", RelationshipType.PARENT),
-    ("flora", "william", RelationshipType.PARENT),
-    ("william", "duncan", RelationshipType.CHILD),
-    ("william", "flora", RelationshipType.CHILD),
+    ("william", "duncan", RelationshipType.PARENT),
+    ("william", "flora", RelationshipType.PARENT),
+    ("duncan", "william", RelationshipType.CHILD),
+    ("flora", "william", RelationshipType.CHILD),
     # Gen 2 Anderson – spouses
     ("william", "agnes", RelationshipType.SPOUSE),
     ("agnes", "william", RelationshipType.SPOUSE),
     # William & Agnes → Helen
-    ("william", "helen", RelationshipType.PARENT),
-    ("agnes", "helen", RelationshipType.PARENT),
-    ("helen", "william", RelationshipType.CHILD),
-    ("helen", "agnes", RelationshipType.CHILD),
+    ("helen", "william", RelationshipType.PARENT),
+    ("helen", "agnes", RelationshipType.PARENT),
+    ("william", "helen", RelationshipType.CHILD),
+    ("agnes", "helen", RelationshipType.CHILD),
     # William & Agnes → Arthur (brother of Helen)
-    ("william", "arthur", RelationshipType.PARENT),
-    ("agnes", "arthur", RelationshipType.PARENT),
-    ("arthur", "william", RelationshipType.CHILD),
-    ("arthur", "agnes", RelationshipType.CHILD),
+    ("arthur", "william", RelationshipType.PARENT),
+    ("arthur", "agnes", RelationshipType.PARENT),
+    ("william", "arthur", RelationshipType.CHILD),
+    ("agnes", "arthur", RelationshipType.CHILD),
     ("helen", "arthur", RelationshipType.SIBLING),
     ("arthur", "helen", RelationshipType.SIBLING),
     # Cross-family: James ∞ Helen
     ("james", "helen", RelationshipType.SPOUSE),
     ("helen", "james", RelationshipType.SPOUSE),
     # James & Helen → Robert
-    ("james", "robert", RelationshipType.PARENT),
-    ("helen", "robert", RelationshipType.PARENT),
-    ("robert", "james", RelationshipType.CHILD),
-    ("robert", "helen", RelationshipType.CHILD),
+    ("robert", "james", RelationshipType.PARENT),
+    ("robert", "helen", RelationshipType.PARENT),
+    ("james", "robert", RelationshipType.CHILD),
+    ("helen", "robert", RelationshipType.CHILD),
     # Robert & Linda → Claire
     ("robert", "linda", RelationshipType.SPOUSE),
     ("linda", "robert", RelationshipType.SPOUSE),
-    ("robert", "claire", RelationshipType.PARENT),
-    ("linda", "claire", RelationshipType.PARENT),
-    ("claire", "robert", RelationshipType.CHILD),
-    ("claire", "linda", RelationshipType.CHILD),
+    ("claire", "robert", RelationshipType.PARENT),
+    ("claire", "linda", RelationshipType.PARENT),
+    ("robert", "claire", RelationshipType.CHILD),
+    ("linda", "claire", RelationshipType.CHILD),
 ]
 
 

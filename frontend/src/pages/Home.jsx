@@ -9,18 +9,19 @@ import './Home.css'
 function Home() {
   const [memorials, setMemorials] = useState([])
   const [loading, setLoading] = useState(true)
-  const { lang, t } = useLanguage()
+  const { t } = useLanguage()
 
   useEffect(() => {
-    // Фильтр по языку мемориала (поле `language` в БД), иначе смешиваются RU+EN и счёт «для EN» не совпадает с ожиданиями.
-    memorialsAPI.list(lang)
+    // Без фильтра по `language` в БД: интерфейс может быть EN при мемориалах ru — иначе список пустой.
+    memorialsAPI
+      .list()
       .then((res) => setMemorials(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         console.error('Error loading memorials:', err)
         setMemorials([])
       })
       .finally(() => setLoading(false))
-  }, [lang])
+  }, [])
 
   return (
     <div className="home">
@@ -97,14 +98,21 @@ function Home() {
                 </Link>
               </div>
             ) : (
-              memorials.map((memorial, i) => (
+              memorials.map((memorial, i) => {
+                const deceased = isDeceasedMemorial(memorial)
+                return (
                 <Link
                   key={memorial.id}
                   to={`/memorials/${memorial.id}`}
-                  className={`memorial-card memorial-card--${isDeceasedMemorial(memorial) ? 'deceased' : 'living'}`}
+                  className={`memorial-card memorial-card--${deceased ? 'deceased' : 'living'}`}
                   style={{ animationDelay: `${i * 0.07}s` }}
                 >
-                  <div className="card-cover">
+                  <div className={`card-cover ${deceased ? 'card-cover--deceased' : 'card-cover--living'}`}>
+                    {deceased && (
+                      <span className="card-cover-candle" aria-hidden="true" title="Memorial">
+                        🕯
+                      </span>
+                    )}
                     {memorial.cover_photo_url || memorial.cover_photo_id ? (
                       <ApiMediaImage
                         directUrl={memorial.cover_photo_url || null}
@@ -143,7 +151,8 @@ function Home() {
                     </div>
                   </div>
                 </Link>
-              ))
+                )
+              })
             )}
           </div>
         )}

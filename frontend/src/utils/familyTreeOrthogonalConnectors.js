@@ -3,11 +3,57 @@
  * от середины — ствол вниз и разветвление к детям (без «паутины» от каждого родителя к каждому ребёнку).
  */
 
+import {
+  isDistinctFamilyPair,
+  lineageRingStroke,
+  isDistinctClusterPair,
+  ROW_H,
+} from './familyTreeGenerationLayout.js'
+import {
+  getFullSiblingGroupsForLayout,
+  stripSiblingConflictingParentEdges,
+} from './familyTreeGenerations.js'
+
 const sid = (id) => String(id)
 
 function isSpouseType(t) {
   const u = String(t || '').toLowerCase()
   return u === 'spouse' || u === 'partner' || u === 'ex_spouse'
+}
+
+function isSiblingType(t) {
+  const u = String(t || '').toLowerCase()
+  return u === 'sibling' || u === 'half_sibling'
+}
+
+/** Ключи пар a|b (a<b) для рёбер брат/сестра — между ними не показываем брак и кольца. */
+function siblingPairKeySet(edges, idSet) {
+  const keys = new Set()
+  for (const e of edges || []) {
+    if (!isSiblingType(e.type)) continue
+    const a = sid(e.source)
+    const b = sid(e.target)
+    if (!idSet.has(a) || !idSet.has(b)) continue
+    keys.add(a < b ? `${a}|${b}` : `${b}|${a}`)
+  }
+  return keys
+}
+
+/** Пары с одинаковыми двумя родителями — без колец и без отдельной горизонтали между карточками (как на эскизе). */
+function fullSiblingPairKeySet(nodes, edges, idSet) {
+  const keys = new Set()
+  if (!nodes?.length) return keys
+  for (const group of getFullSiblingGroupsForLayout(nodes, edges)) {
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        const a = group[i]
+        const b = group[j]
+        if (!idSet.has(a) || !idSet.has(b)) continue
+        keys.add(a < b ? `${a}|${b}` : `${b}|${a}`)
+      }
+    }
+  }
+  return keys
 }
 
 function isParentEdgeType(t) {
@@ -46,15 +92,24 @@ export function normalizeParentChildEdges(edges, idSet) {
   return out
 }
 
-function spousePairsFromEdges(edges, idSet) {
+/**
+ * Пары супругов для линий брака (spouse / partner / ex_spouse).
+ * Пары, между которыми есть sibling/half_sibling или общие два родителя, отбрасываются — кольца только у супругов.
+ */
+function spousePairsFromEdges(edges, idSet, nodes) {
+  const noRing = new Set([
+    ...siblingPairKeySet(edges, idSet),
+    ...fullSiblingPairKeySet(nodes, edges, idSet),
+  ])
   const pairs = []
   const seen = new Set()
-  for (const e of edges) {
+  for (const e of edges || []) {
     if (!isSpouseType(e.type)) continue
     const a = sid(e.source)
     const b = sid(e.target)
     if (!idSet.has(a) || !idSet.has(b)) continue
     const key = a < b ? `${a}|${b}` : `${b}|${a}`
+    if (noRing.has(key)) continue
     if (seen.has(key)) continue
     seen.add(key)
     pairs.push([a, b])
@@ -73,7 +128,7 @@ function buildChildrenMap(parentEdges) {
 
 /**
  * Горизонталь брака только в зазоре между карточками: от правого края левой к левому краю правой.
- * Ствол — из середины зазора (mx). Если карточки наезжают — линия схлопывается в точку mx.
+ * Ствол — из середины зазора (mx). Если по X нет зазора — не схлопывать в точку: отрезок между центрами (иначе пропадает половина связи и кольца «висят»).
  */
 function marriageBarInGap(pa, pb, nw, nh) {
   const yBar = Math.max(pa.y, pb.y) + nh * 0.82
@@ -86,7 +141,8 @@ function marriageBarInGap(pa, pb, nw, nh) {
     return { yBar, x1: xRightOfLeft, x2: xLeftOfRight, mx }
   }
   const mx = (pa.cx + pb.cx) / 2
-  return { yBar, x1: mx, x2: mx, mx }
+  const half = Math.max(10, Math.abs(pa.cx - pb.cx) / 2 + 4)
+  return { yBar, x1: mx - half, x2: mx + half, mx }
 }
 
 /** Горизонталь в зазоре между двумя карточками (сиблинги и т.п.) */
@@ -100,34 +156,37 @@ function horizontalInGap(pa, pb, nw) {
   return { x1: mx, x2: mx, mx }
 }
 
-function lineageVal(lineageMap, id) {
-  if (!lineageMap) return 'N'
-  return lineageMap[id] ?? lineageMap[Number(id)] ?? 'N'
-}
-
-function isCrossLineage(lineageMap, a, b) {
-  const x = lineageVal(lineageMap, a)
-  const y = lineageVal(lineageMap, b)
-  if (x === 'N' || y === 'N') return false
-  return x !== y
-}
-
 /**
  * @param {object} params
  * @param {Array} params.edges — raw graph edges
  * @param {Record<string, {x,y,cx,cy}>} params.positions
  * @param {{ w: number, h: number }} params.nodeSize
- * @param {Record<string, string>|undefined} params.lineage — для золотого акцента межсемейных браков
+ * @param {Record<string, string>|undefined} params.lineage — A/B/N кластеры фамилий
+ * @param {Array<{ memorial_id:number, name:string }>|undefined} params.nodes — для межсемейных браков A+N и колец
+ * @param {Record<number|string, { clusterIndex:number }>|undefined} params.memorialClusterStyle
  * @returns {{ lines: Array<{key:string,x1:number,y1:number,x2:number,y2:number,stroke?:string,strokeWidth?:number,strokeDasharray?:string}> }}
  */
-export function buildOrthogonalConnectors({ edges, positions, nodeSize, lineageMap }) {
+export function buildOrthogonalConnectors({
+  edges,
+  positions,
+  nodeSize,
+  lineageMap,
+  nodes,
+  memorialClusterStyle,
+}) {
   const idSet = new Set(Object.keys(positions))
   const nw = nodeSize?.w ?? 118
   const nh = nodeSize?.h ?? 132
 
-  const parentEdges = normalizeParentChildEdges(edges, idSet)
+  const layoutEdges = stripSiblingConflictingParentEdges(edges || [], nodes || [])
+
+  const idToName = new Map()
+  for (const n of nodes || []) idToName.set(String(n.memorial_id), n.name)
+
+  const parentEdges = normalizeParentChildEdges(layoutEdges, idSet)
   const childrenOf = buildChildrenMap(parentEdges)
-  const spousePairs = spousePairsFromEdges(edges, idSet)
+  const spousePairs = spousePairsFromEdges(layoutEdges, idSet, nodes)
+  const fullSibKeys = fullSiblingPairKeySet(nodes, layoutEdges, idSet)
 
   /** Пары (parent, child), уже нарисованные совместным блоком */
   const coveredPc = new Set()
@@ -168,7 +227,17 @@ export function buildOrthogonalConnectors({ edges, positions, nodeSize, lineageM
     const pb = positions[b]
     if (!pa || !pb) continue
     const { yBar, x1, x2 } = marriageBarInGap(pa, pb, nw, nh)
-    const cross = isCrossLineage(lineageMap, a, b)
+    const crossCluster = isDistinctClusterPair(memorialClusterStyle, a, b)
+    const cross =
+      crossCluster !== null
+        ? crossCluster
+        : isDistinctFamilyPair(
+            lineageMap,
+            a,
+            b,
+            idToName.get(String(a)),
+            idToName.get(String(b))
+          )
     addLine(x1, yBar, x2, yBar, {
       stroke: cross ? 'rgba(200, 175, 120, 0.95)' : 'rgba(196,168,130,0.78)',
       strokeWidth: cross ? 2.6 : 2,
@@ -198,7 +267,15 @@ export function buildOrthogonalConnectors({ edges, positions, nodeSize, lineageM
     if (!childPts.length) continue
 
     const minChildY = Math.min(...childPts.map((p) => p.y))
-    const yFork = (ySpouse + minChildY) / 2
+    // Горизонталь вилки по середине (брак↔дети) часто попадает в ряд чужой колонки (Rose и т.д.).
+    // Ставим y вилки в зазор сразу над верхом детского ряда — как в §3 для parent→child.
+    // Вертикаль вилка→ребёнок ≈ forkMargin px; чуть больше — линия читается лучше (не «прилипает» к карточке).
+    const forkMargin = Math.min(20, Math.max(12, (ROW_H - nh) * 0.42))
+    const yForkCandidate = minChildY - forkMargin
+    const yFork =
+      yForkCandidate > ySpouse + 2
+        ? yForkCandidate
+        : (ySpouse + minChildY) / 2
 
     shared.forEach((c) => coveredPc.add(`${p1}|${c}`))
     shared.forEach((c) => coveredPc.add(`${p2}|${c}`))
@@ -216,7 +293,11 @@ export function buildOrthogonalConnectors({ edges, positions, nodeSize, lineageM
     } else {
       const xMin = childPts[0].cx
       const xMax = childPts[childPts.length - 1].cx
-      addLine(xMin, yFork, xMax, yFork, { stroke: 'rgba(196,168,130,0.52)', strokeWidth: 1.5 })
+      // Ствол спускается по mx между супругами; вилка по детям [xMin,xMax] может не включать mx
+      // (дети в другой колонке / смещены) — тогда вертикаль не встречает горизонталь.
+      const xMinExt = Math.min(xMin, mx)
+      const xMaxExt = Math.max(xMax, mx)
+      addLine(xMinExt, yFork, xMaxExt, yFork, { stroke: 'rgba(196,168,130,0.52)', strokeWidth: 1.5 })
       for (const ch of childPts) {
         addLine(ch.cx, yFork, ch.cx, ch.y, { stroke: 'rgba(196,168,130,0.48)', strokeWidth: 1.4 })
       }
@@ -235,35 +316,100 @@ export function buildOrthogonalConnectors({ edges, positions, nodeSize, lineageM
     const y1 = topY(child)
     const x0 = cx(parent)
     const x1 = cx(child)
-    const yMid = (y0 + y1) / 2
+    // Горизонталь не по середине всего вертикального интервала: иначе линия проходит через
+    // промежуточные ряды поколений и пересекает чужие карточки (другая колонка / семья).
+    const gapBelowParent = Math.min(8, Math.max(3, (ROW_H - nh) * 0.12))
+    const yH =
+      y1 > y0 + gapBelowParent ? Math.min(y0 + gapBelowParent, y1 - 0.5) : (y0 + y1) / 2
 
     if (Math.abs(x0 - x1) < 3) {
       addLine(x0, y0, x1, y1, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
     } else {
-      addLine(x0, y0, x0, yMid, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
-      addLine(x0, yMid, x1, yMid, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
-      addLine(x1, yMid, x1, y1, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
+      addLine(x0, y0, x0, yH, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
+      addLine(x0, yH, x1, yH, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
+      addLine(x1, yH, x1, y1, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
     }
   }
 
-  // ── 4) Братья / сёстры — тонкая горизонталь (тот же ряд)
-  for (const e of edges) {
+  // ── 4) half_sibling и т.п. — тонкая горизонталь; полные сиблинги только через вилку от родителей (без линии между карточками, как на референсе)
+  for (const e of layoutEdges) {
     const typ = String(e.type || '').toLowerCase()
     if (typ !== 'sibling' && typ !== 'half_sibling') continue
     const a = sid(e.source)
     const b = sid(e.target)
     if (!idSet.has(a) || !idSet.has(b)) continue
+    const pairKey = a < b ? `${a}|${b}` : `${b}|${a}`
+    if (fullSibKeys.has(pairKey)) continue
     const pa = positions[a]
     const pb = positions[b]
     if (!pa || !pb) continue
     const ySib = Math.max(pa.y, pb.y) + nh * 0.35
     const { x1, x2 } = horizontalInGap(pa, pb, nw)
     addLine(x1, ySib, x2, ySib, {
-      stroke: 'rgba(196,168,130,0.3)',
-      strokeWidth: 1,
-      strokeDasharray: '4 4',
+      stroke: 'rgba(196,168,130,0.55)',
+      strokeWidth: 2.2,
+      strokeDasharray: '8 5',
     })
   }
 
   return { lines }
+}
+
+/**
+ * Центры «брачной» линии между супругами — для иконки колец (режим поколений).
+ * @returns {Array<{ key: string, mx: number, y: number, cross: boolean, leftRingStroke: string, rightRingStroke: string }>}
+ */
+export function getSpouseMarriageMarkers({
+  edges,
+  positions,
+  nodeSize,
+  lineageMap,
+  nodes,
+  memorialClusterStyle,
+}) {
+  const idSet = new Set(Object.keys(positions))
+  const nw = nodeSize?.w ?? 118
+  const nh = nodeSize?.h ?? 132
+  const layoutEdges = stripSiblingConflictingParentEdges(edges || [], nodes || [])
+  const idToName = new Map()
+  for (const n of nodes || []) idToName.set(String(n.memorial_id), n.name)
+  const spousePairs = spousePairsFromEdges(layoutEdges, idSet, nodes)
+  const markers = []
+  for (const [a, b] of spousePairs) {
+    const pa = positions[a]
+    const pb = positions[b]
+    if (!pa || !pb) continue
+    const { yBar, mx } = marriageBarInGap(pa, pb, nw, nh)
+    const leftPid = pa.x <= pb.x ? a : b
+    const rightPid = pa.x <= pb.x ? b : a
+    markers.push({
+      key: `mar-${a}-${b}`,
+      mx,
+      y: yBar,
+      cross: (() => {
+        const cx = isDistinctClusterPair(memorialClusterStyle, a, b)
+        if (cx !== null) return cx
+        return isDistinctFamilyPair(
+          lineageMap,
+          a,
+          b,
+          idToName.get(String(a)),
+          idToName.get(String(b))
+        )
+      })(),
+      leftRingStroke: lineageRingStroke(
+        leftPid,
+        lineageMap,
+        idToName.get(String(leftPid)),
+        memorialClusterStyle
+      ),
+      rightRingStroke: lineageRingStroke(
+        rightPid,
+        lineageMap,
+        idToName.get(String(rightPid)),
+        memorialClusterStyle
+      ),
+    })
+  }
+  return markers
 }

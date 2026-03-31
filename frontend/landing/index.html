@@ -190,10 +190,12 @@
 
     /* ─── LOGOS BAR ─── */
     #logos {
-      padding: 32px 48px; background: var(--bg2);
+      padding: 28px 48px; background: var(--bg2);
       border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
     }
     .logos-inner { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; gap: 48px; justify-content: center; flex-wrap: wrap; }
+    .logos-inner--trust { gap: 16px; text-align: center; }
+    .logos-trust-text { font-size: 14px; color: var(--text2); letter-spacing: 0.03em; max-width: 520px; line-height: 1.5; }
     .logos-label { font-size: 12px; color: var(--text3); white-space: nowrap; }
     .logo-pill {
       display: flex; align-items: center; gap: 8px; opacity: 0.4;
@@ -201,6 +203,12 @@
       transition: opacity .2s;
     }
     .logo-pill:hover { opacity: 0.7; }
+    .feat-soon-row {
+      margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(200,169,126,0.2);
+      font-size: 15px; color: rgba(250,248,245,0.85); line-height: 1.5;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .feat-soon-row strong { color: var(--accent2); font-weight: 600; }
 
     /* ─── PROBLEM ─── */
     #problem { background: var(--bg2); }
@@ -225,6 +233,19 @@
     .problem-label { font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
     .problem-before { font-size: 15px; color: var(--text3); margin-bottom: 8px; text-decoration: line-through; }
     .problem-after { font-size: 16px; color: var(--accent2); font-weight: 500; line-height: 1.5; }
+    .problem-after-stack { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+    .problem-after-note {
+      font-size: 15px; color: var(--accent); font-weight: 500; line-height: 1.45;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .badge-soon {
+      display: inline-block;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--bg);
+      background: linear-gradient(135deg, var(--accent), #9a7a48);
+      padding: 4px 10px; border-radius: 100px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
 
     /* ─── HOW IT WORKS ─── */
     #how { background: var(--bg); }
@@ -643,9 +664,9 @@
         <a href="#demo" class="btn btn-outline btn-lg">▶ Watch demo</a>
       </div>
       <div class="hero-note">
-        <div class="hero-note-item">No credit card</div>
-        <div class="hero-note-item">Free forever plan</div>
-        <div class="hero-note-item">Takes 5 minutes</div>
+        <div class="hero-note-item">Simple, transparent pricing</div>
+        <div class="hero-note-item">Start free</div>
+        <div class="hero-note-item">Ready in about 5 minutes</div>
       </div>
     </div>
 
@@ -678,15 +699,10 @@
   </div>
 </section>
 
-<!-- LOGOS BAR -->
+<!-- TRUST STRIP (no vendor stack — privacy-first) -->
 <div id="logos">
-  <div class="logos-inner">
-    <span class="logos-label">Powered by</span>
-    <div class="logo-pill">🤖 OpenAI (GPT-4o / mini)</div>
-    <div class="logo-pill">🎙️ ElevenLabs Voice</div>
-    <div class="logo-pill">🎬 D-ID / HeyGen</div>
-    <div class="logo-pill">🔍 RAG memory search</div>
-    <div class="logo-pill">🌲 Qdrant / Pinecone</div>
+  <div class="logos-inner logos-inner--trust">
+    <span class="logos-trust-text">Private by design. Your memories are not used to train public models — they stay in your family’s space.</span>
   </div>
 </div>
 
@@ -709,7 +725,13 @@
         <span class="problem-icon">🎙️</span>
         <div class="problem-label">Their Voice</div>
         <div class="problem-before">Lost the moment they're gone</div>
-        <div class="problem-after">→ Cloned from any recording — WhatsApp, video, voicemail</div>
+        <div class="problem-after-stack">
+          <div class="problem-after">→ Cloned from your recordings — the avatar speaks in their voice</div>
+          <div class="problem-after-note">
+            🎬 Video — bring their portrait to life from a clip
+            <span class="badge-soon">Coming soon</span>
+          </div>
+        </div>
       </div>
       <div class="problem-card reveal reveal-delay-2">
         <span class="problem-icon">🌳</span>
@@ -771,7 +793,7 @@
       <div class="demo-chip"><span>💬</span> AI Avatar responds in their voice</div>
       <div class="demo-chip"><span>🌳</span> Family tree with 4 generations</div>
       <div class="demo-chip"><span>🔗</span> Hidden Connections discovery</div>
-      <div class="demo-chip"><span>🎙️</span> Voice cloning from WhatsApp audio</div>
+      <div class="demo-chip"><span>🎙️</span> Voice from your recordings</div>
     </div>
   </div>
 </section>
@@ -814,12 +836,16 @@
           <div class="feat-content">
             <div class="feat-tag">Voice Cloning</div>
             <h3 class="feat-title">Hear them,<br>not a robot.</h3>
-            <p class="feat-desc">Upload any recording — a voicemail, a birthday video, a WhatsApp message. We clone their voice. The avatar speaks in their actual tone.</p>
+            <p class="feat-desc">Upload recordings you already have — voicemail, a birthday clip, a message they left you. We build their voice so the avatar sounds like them, not a generic assistant.</p>
             <ul class="feat-points">
               <li>Works from as little as 60 seconds of audio</li>
-              <li>Any source: old tapes, phone calls, home videos</li>
-              <li>Emotional range preserved — not flat TTS</li>
+              <li>Old tapes, phone calls, home videos — if you can hear them, we can use it</li>
+              <li>Emotional range preserved — not flat, lifeless speech</li>
             </ul>
+            <p class="feat-soon-row">
+              <strong>Video avatar</strong> — animate their portrait from video
+              <span class="badge-soon">Coming soon</span>
+            </p>
             <div class="voice-widget">
               <div class="voice-play-btn">▶</div>
               <div class="voice-bars">
@@ -1114,7 +1140,7 @@
   <div class="section-inner" style="text-align:center">
     <div class="section-label reveal" style="justify-content:center">Pricing</div>
     <h2 class="section-title reveal reveal-delay-1">Start free.<br>Grow with your family.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 12px;text-align:center">No credit card required to start. <strong style="color:var(--accent)">Billing is not live yet</strong> — prices below are the product roadmap, not active checkout.</p>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 12px;text-align:center">Pick a plan when you’re ready. <strong style="color:var(--accent)">Billing is not live yet</strong> — prices below are the product roadmap, not active checkout.</p>
     <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 56px;text-align:center;font-size:14px;color:var(--text3)">Aligned with engineering docs: chat limits, family RAG, and voice caps are planned metering targets.</p>
     <div class="pricing-grid">
       <div class="pricing-card reveal">
@@ -1192,7 +1218,7 @@
       </div>
       <div class="faq-item reveal">
         <div class="faq-q">How does voice cloning work? Do I need a studio recording? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Any audio works — a WhatsApp voice message, a home video, a birthday recording. Upload at least one minute and we'll create a voice model. No studio required. The more audio you provide, the more accurate the clone.</div></div>
+        <div class="faq-a"><div class="faq-a-inner">Any clear recording works — voicemail, a clip from a home video, a message they left you. Upload at least one minute and we’ll build a voice model. No studio required; the more audio you provide, the closer it feels to them.</div></div>
       </div>
       <div class="faq-item reveal">
         <div class="faq-q">What happens to my data if I cancel? <span class="faq-icon">+</span></div>
@@ -1220,8 +1246,8 @@
     <p class="final-sub">It takes 5 minutes to create.<br>It lasts forever.</p>
     <a href="/app/register" class="btn btn-primary btn-xl">Preserve their memory — start free</a>
     <div class="final-trust">
-      <div class="final-trust-item">No credit card required</div>
-      <div class="final-trust-item">Free forever plan</div>
+      <div class="final-trust-item">Fair, simple plans</div>
+      <div class="final-trust-item">Start free</div>
       <div class="final-trust-item">Cancel anytime</div>
       <div class="final-trust-item">Your data stays yours</div>
     </div>

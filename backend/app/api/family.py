@@ -3,7 +3,7 @@ API endpoints для работы с семейными связями и род
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Set, Optional, Tuple
 from collections import defaultdict
 from sqlalchemy import and_, or_
 
@@ -28,6 +28,211 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/family", tags=["family"])
+
+
+def _norm_rel_type(rel_type) -> str:
+    return str(rel_type or "").lower()
+
+
+def _neighbor_generation_for_full_tree(cur_gen: int, rel_type) -> int:
+    """
+    Поколение соседа при обходе из current по ребру memorial_id → related с типом rel_type.
+    API: PARENT ⇒ related — родитель memorial; CHILD ⇒ related — ребёнок memorial.
+    """
+    t = _norm_rel_type(rel_type)
+    if t in ("parent", "adoptive_parent", "step_parent"):
+        return cur_gen - 1
+    if t in ("child", "adoptive_child", "step_child"):
+        return cur_gen + 1
+    if t in ("spouse", "partner", "ex_spouse", "sibling", "half_sibling"):
+        return cur_gen
+    if t == "custom":
+        return cur_gen
+    return cur_gen
+
+
+def _is_custom_rel(rel_type) -> bool:
+    return _norm_rel_type(rel_type) == "custom"
+
+
+def compute_full_tree_generations(
+    adj: Dict[int, List[tuple]],
+    root_id: int,
+    max_depth: int,
+) -> Dict[int, int]:
+    """
+    Поколения относительно корня (корень = 0; родители −1 за шаг вверх; дети +1 вниз).
+
+    Сначала полностью насыщаем граф по всем связям, кроме custom (родство + супруги и т.д.),
+    затем одна волна custom с тем же поколением, и снова — пока не перестанут появляться узлы.
+
+    Так «мосты» custom не присваивают поколение раньше, чем зафиксировано родство parent/child,
+    из‑за чего дети могли оказаться визуально «выше» родителей.
+    """
+    generation: Dict[int, int] = {root_id: 0}
+    visited: Set[int] = {root_id}
+
+    while True:
+        changed = False
+        while True:
+            added = False
+            for current in list(visited):
+                cur_gen = generation[current]
+                for neighbor_id, rel_type in adj.get(current, []):
+                    if neighbor_id in visited:
+                        continue
+                    if _is_custom_rel(rel_type):
+                        continue
+                    neighbor_gen = _neighbor_generation_for_full_tree(cur_gen, rel_type)
+                    if abs(neighbor_gen) > max_depth:
+                        continue
+                    generation[neighbor_id] = neighbor_gen
+                    visited.add(neighbor_id)
+                    added = True
+                    changed = True
+            if not added:
+                break
+        for current in list(visited):
+            cur_gen = generation[current]
+            for neighbor_id, rel_type in adj.get(current, []):
+                if neighbor_id in visited:
+                    continue
+                if not _is_custom_rel(rel_type):
+                    continue
+                if abs(cur_gen) > max_depth:
+                    continue
+                generation[neighbor_id] = cur_gen
+                visited.add(neighbor_id)
+                changed = True
+        if not changed:
+            break
+
+    return generation
+
+
+def _build_parents_of_from_rels(all_rels, node_ids: Set[int]) -> Dict[int, List[int]]:
+    """child_id → список родителей (по правилам API для PARENT/CHILD)."""
+    parents_of: Dict[int, List[int]] = defaultdict(list)
+    for rel in all_rels:
+        if rel.memorial_id not in node_ids or rel.related_memorial_id not in node_ids:
+            continue
+        t = _norm_rel_type(rel.relationship_type.value)
+        if t in ("parent", "adoptive_parent", "step_parent"):
+            parents_of[rel.memorial_id].append(rel.related_memorial_id)
+        elif t in ("child", "adoptive_child", "step_child"):
+            parents_of[rel.related_memorial_id].append(rel.memorial_id)
+    for k in list(parents_of.keys()):
+        parents_of[k] = list(dict.fromkeys(parents_of[k]))
+    return parents_of
+
+
+def _build_same_generation_pairs_from_rels(all_rels, node_ids: Set[int]) -> List[Tuple[int, int]]:
+    """Пары с одинаковым «этажом»: супруги, партнёры, братья/сёстры."""
+    same_types = ("spouse", "partner", "ex_spouse", "sibling", "half_sibling")
+    pairs: List[Tuple[int, int]] = []
+    seen: Set[Tuple[int, int]] = set()
+    for rel in all_rels:
+        if rel.memorial_id not in node_ids or rel.related_memorial_id not in node_ids:
+            continue
+        if _norm_rel_type(rel.relationship_type.value) not in same_types:
+            continue
+        a, b = rel.memorial_id, rel.related_memorial_id
+        key = (a, b) if a < b else (b, a)
+        if key in seen:
+            continue
+        seen.add(key)
+        pairs.append((a, b))
+    return pairs
+
+
+def _dedupe_undirected_pairs(pairs: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    seen: Set[Tuple[int, int]] = set()
+    out: List[Tuple[int, int]] = []
+    for a, b in pairs:
+        key = (a, b) if a < b else (b, a)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((a, b))
+    return out
+
+
+def _infer_sibling_pairs_from_shared_parents(parents_of: Dict[int, List[int]]) -> List[Tuple[int, int]]:
+    """Все пары детей с общим родителем — один этаж (брат/сестра в full-tree)."""
+    by_parent: Dict[int, List[int]] = defaultdict(list)
+    for child, plist in parents_of.items():
+        for p in plist:
+            by_parent[p].append(child)
+    pairs: List[Tuple[int, int]] = []
+    seen: Set[Tuple[int, int]] = set()
+    for kids in by_parent.values():
+        uniq = sorted(set(kids))
+        for i in range(len(uniq)):
+            for j in range(i + 1, len(uniq)):
+                a, b = uniq[i], uniq[j]
+                key = (a, b) if a < b else (b, a)
+                if key in seen:
+                    continue
+                seen.add(key)
+                pairs.append((a, b))
+    return pairs
+
+
+def refine_generations_parent_child(
+    generation: Dict[int, int],
+    parents_of: Dict[int, List[int]],
+    same_gen_pairs: List[Tuple[int, int]],
+    focal_id: int,
+) -> None:
+    """
+    Согласовать поколения: у всех родителей одного ребёнка один gen; ребёнок = родитель + 1;
+    супруги/братья — один gen. После каждой итерации корень сдвигается к 0.
+    Устраняет инверсии «дети выше родителей» при сложных графах.
+    """
+    if focal_id not in generation:
+        return
+    for _ in range(max(200, len(generation) * 10)):
+        changed = False
+        for a, b in same_gen_pairs:
+            if a not in generation or b not in generation:
+                continue
+            g = min(generation[a], generation[b])
+            if generation[a] != g or generation[b] != g:
+                generation[a] = generation[b] = g
+                changed = True
+        for child, plist in parents_of.items():
+            if child not in generation or not plist:
+                continue
+            known = [p for p in plist if p in generation]
+            if not known:
+                continue
+            pg = min(generation[p] for p in known)
+            for p in known:
+                if generation[p] != pg:
+                    generation[p] = pg
+                    changed = True
+            exp = pg + 1
+            if generation[child] != exp:
+                generation[child] = exp
+                changed = True
+        for child, plist in parents_of.items():
+            if child not in generation:
+                continue
+            cg = generation[child]
+            for p in plist:
+                if p not in generation:
+                    generation[p] = cg - 1
+                    changed = True
+                elif generation[p] != cg - 1:
+                    generation[p] = cg - 1
+                    changed = True
+        d = -generation[focal_id]
+        if d != 0:
+            for k in generation:
+                generation[k] += d
+            changed = True
+        if not changed:
+            break
 
 
 @router.post("/memorials/{memorial_id}/relationships", response_model=FamilyRelationshipResponse, status_code=status.HTTP_201_CREATED)
@@ -396,36 +601,14 @@ async def get_full_family_tree(
     for rel in all_rels:
         adj[rel.memorial_id].append((rel.related_memorial_id, rel.relationship_type.value))
 
-    # BFS with generation tracking
-    # generation rules: CHILD of X → X is at gen-1 relative to X's child
-    # i.e. if we walk edge (A→B, type=parent): B is parent of A, so B.gen = A.gen - 1
-    # if we walk edge (A→B, type=child): B is child of A, so B.gen = A.gen + 1
-    # SPOUSE/SIBLING: same generation
-    generation: Dict[int, int] = {memorial_id: 0}
-    visited: Set[int] = {memorial_id}
-    queue = [memorial_id]
-
-    while queue:
-        current = queue.pop(0)
-        cur_gen = generation[current]
-        for neighbor_id, rel_type in adj.get(current, []):
-            if neighbor_id in visited:
-                continue
-            if rel_type == "parent":
-                # current has a parent = neighbor → neighbor is one gen above
-                neighbor_gen = cur_gen - 1
-            elif rel_type == "child":
-                # current has a child = neighbor → neighbor is one gen below
-                neighbor_gen = cur_gen + 1
-            else:
-                # spouse / sibling → same generation
-                neighbor_gen = cur_gen
-            if abs(neighbor_gen) <= max_depth:
-                generation[neighbor_id] = neighbor_gen
-                visited.add(neighbor_id)
-                queue.append(neighbor_id)
-
+    generation = compute_full_tree_generations(adj, memorial_id, max_depth)
     node_ids = set(generation.keys())
+    parents_of = _build_parents_of_from_rels(all_rels, node_ids)
+    same_pairs = _dedupe_undirected_pairs(
+        _build_same_generation_pairs_from_rels(all_rels, node_ids)
+        + _infer_sibling_pairs_from_shared_parents(parents_of)
+    )
+    refine_generations_parent_child(generation, parents_of, same_pairs, memorial_id)
 
     # Bulk-load memorials
     memorials_map: Dict[int, Memorial] = {

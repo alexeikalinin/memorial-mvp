@@ -19,20 +19,32 @@ from app.models import Memorial, MemorialAccess, User, UserRole
 from app.auth import hash_password
 
 def _add_missing_columns():
-    """Добавляет новые колонки в существующие таблицы (SQLite не поддерживает ALTER через create_all)."""
-    with engine.connect() as conn:
-        from sqlalchemy import text
-        migrations = [
-            "ALTER TABLE memorials ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'ru'",
-            "ALTER TABLE users ADD COLUMN google_id VARCHAR(255)",
-            "ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)",
-        ]
-        for sql in migrations:
-            try:
-                conn.execute(text(sql))
-                conn.commit()
-            except Exception:
-                pass  # Колонка уже существует — игнорируем
+    """Добавляет новые колонки в существующие таблицы (create_all не обновляет старые таблицы)."""
+    from sqlalchemy import text, inspect
+
+    insp = inspect(engine)
+    if insp.has_table("memorials"):
+        cols = {c["name"] for c in insp.get_columns("memorials")}
+        if "language" not in cols:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE memorials ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'ru'"
+                    )
+                )
+    if insp.has_table("users"):
+        ucols = {c["name"] for c in insp.get_columns("users")}
+        user_alters = []
+        if "google_id" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN google_id VARCHAR(255)")
+        if "avatar_url" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)")
+        if user_alters:
+            with engine.begin() as conn:
+                for sql in user_alters:
+                    conn.execute(text(sql))
+
+
 _add_missing_columns()
 
 def _ensure_default_user():

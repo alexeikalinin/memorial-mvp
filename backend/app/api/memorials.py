@@ -3,7 +3,7 @@ API endpoints для работы с мемориалами, медиа и во�
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, select
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 import uuid
@@ -89,12 +89,12 @@ async def list_memorials(
         .subquery()
     )
     # Показываем все мемориалы: свои (через MemorialAccess) + все публичные
-    accessible_ids = (
-        db.query(MemorialAccess.memorial_id)
-        .filter(MemorialAccess.user_id == current_user.id)
-        .subquery()
+    # exists() вместо IN (subquery) — стабильнее в SQLAlchemy 2.x / PostgreSQL
+    access_via_acl = select(MemorialAccess.memorial_id).where(
+        MemorialAccess.memorial_id == Memorial.id,
+        MemorialAccess.user_id == current_user.id,
     )
-    rows = (
+    q = (
         db.query(
             Memorial,
             func.coalesce(memories_count_sq.c.cnt, 0).label("memories_count"),
@@ -102,13 +102,11 @@ async def list_memorials(
         )
         .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
         .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
-        .filter(
-            (Memorial.is_public == True) | (Memorial.id.in_(accessible_ids))
-        )
-        .filter(Memorial.language == language if language else True)
-        .order_by(Memorial.created_at.desc())
-        .all()
+        .filter(or_(Memorial.is_public == True, access_via_acl.exists()))
     )
+    if language:
+        q = q.filter(Memorial.language == language)
+    rows = q.order_by(Memorial.created_at.desc()).all()
     # Подтягиваем file_url для обложек одним запросом
     cover_ids = [m.cover_photo_id for m, _, _ in rows if m.cover_photo_id]
     cover_urls: dict[int, str] = {}

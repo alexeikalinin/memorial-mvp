@@ -72,7 +72,8 @@
 }
 
 .media-item img,
-.media-item video {
+.media-item video,
+.media-item .api-media-image-loading {
   width: 100%;
   height: 220px;
   object-fit: cover;
@@ -80,7 +81,8 @@
   transition: transform var(--t-slow) var(--ease);
 }
 
-.media-item:hover img {
+.media-item:hover img,
+.media-item:hover .api-media-image-loading {
   transform: scale(1.04);
 }
 
@@ -279,6 +281,7 @@
 
   .media-item img,
   .media-item video,
+  .media-item .api-media-image-loading,
   .audio-placeholder {
     height: 160px;
   }

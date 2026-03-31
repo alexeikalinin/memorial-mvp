@@ -39,7 +39,7 @@ export default {
     family_label: 'Include family memories',
     no_info: "I don't have memories about that.",
     sources: 'Sources:',
-    sources_toggle: 'Sources ({count}) — show',
+    sources_toggle: 'Sources ({count})',
     questions: [
       'Tell me about your childhood',
       'What were your hobbies and passions?',
@@ -308,6 +308,10 @@ export default {
     hidden_connections: 'Hidden connections',
     hide_connections: 'Hide connections',
     add_relation: '+ Add relation',
+    kelly_only_banner:
+      'Showing the Kelly family only — other families are hidden until we connect them in the next steps.',
+    kelly_anderson_banner:
+      'Showing the Kelly and Anderson families. Other surnames (e.g. Chang, Rossi) are hidden in this demo view.',
     // empty state
     empty_title: 'Your family history starts here',
     empty_hint: 'Add the first relation to start building the tree',
@@ -317,6 +321,7 @@ export default {
     legend_union: 'Union with children',
     legend_cross_family: 'Cross-family marriage',
     legend_cross_family_short: 'cross-family marriage',
+    marriage_rings_title: 'Marriage (rings appear when zoomed in)',
     legend_hidden: 'Hidden connection',
     // relations list
     relations_title: 'Relations',
@@ -381,8 +386,19 @@ export default {
     exit_fullscreen: 'Exit fullscreen',
     layout_generations: 'Generations (demo)',
     layout_pedigree: 'Pedigree layout',
+    cluster_other: 'Other',
     gen_legend_hint:
-      'Rows = generations (older at top). Left and right clusters = the two main surnames, separated by a gap (pale band). The middle lane is cross-family marriages and other surnames. Gold ring on a pair = marriage across lines. Zoom out to see the full graph.',
+      'Rows = generations (older at top). Each pill color is one surname cluster in this graph — every card uses its surname’s color at full strength. Spouses sit in the same row (same generation). Zoom in for marriage rings; zoom out for the full tree.',
+    gen_legend_expand: 'How to read colors, lines, and labels',
+    gen_legend_help_borders:
+      'Each surname that appears in the tree gets its own color (by how often it appears). The card border uses exactly that color. Lanes left / center / right are still an old layout heuristic for the two most common names, but every person’s frame matches their actual surname cluster. A gold halo on a card means they are part of a cross-surname marriage. Rows are centered as a whole so a lone person can sit in the visual middle.',
+    gen_legend_help_lines:
+      'Descent: follow lines downward from parents toward children. Spouses: a horizontal segment runs between the two portraits (often near the bottom of the cards). A dashed golden horizontal line means a marriage joining two different family clusters (including e.g. a top‑two surname with an “other” surname). When zoomed in, each ring uses that spouse’s cluster color: blue/purple for the two legend surnames, and a stable accent color derived from last name for everyone else — so a Kelly+Rossi pair shows blue + Rossi’s color.',
+    gen_legend_help_generation:
+      'Row height is driven by the server “generation” value relative to the memorial you opened (0 = that person, negative = ancestors toward the top of the page, positive = descendants below; spouses share the same row). It reflects saved parent/child/spouse links, not sort order by birth year — so an older person can appear under a younger one if the graph path from your anchor memorial makes them a descendant in data.',
+    gen_legend_help_labels:
+      'The small italic line under a name tells how that person is related to {rootName} (the memorial you opened). It is omitted on that person’s own card. “Distant relative via…” means more than two steps away on the relationship path.',
+    gen_legend_root_fallback: 'the person on this memorial page',
     gen_row_label: (n) => `Gen ${n}`,
   },
 }

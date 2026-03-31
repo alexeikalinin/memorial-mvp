@@ -1019,17 +1019,20 @@
   font-weight: 600;
   color: var(--text-muted);
   user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .chat-sources-summary::-webkit-details-marker { display: none; }
-.chat-sources-summary::before {
+.chat-sources-summary::after {
   content: '▸';
   display: inline-block;
-  margin-right: 0.35rem;
+  font-size: 0.85em;
   transition: transform var(--t-fast) var(--ease);
-  opacity: 0.7;
+  opacity: 0.75;
 }
-.chat-sources-details[open] .chat-sources-summary::before {
+.chat-sources-details[open] .chat-sources-summary::after {
   transform: rotate(90deg);
 }
 
