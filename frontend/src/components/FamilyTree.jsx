@@ -128,6 +128,37 @@ function buildSplitGenCardBorder({ leftColor, rightColor, clusterStyle, isBridge
   }
 }
 
+function _edgeTypeLower(t) {
+  return String(t || '').toLowerCase()
+}
+
+function isSpouseLikeGraphEdge(t) {
+  const u = _edgeTypeLower(t)
+  return u === 'spouse' || u === 'partner' || u === 'ex_spouse'
+}
+
+/**
+ * В дереве есть «своя» линия девичьей фамилии: ребро не супружеское к мемориалу,
+ * у которого последняя фамилия = maidenSurname (родитель, ребёнок, брат/сестра и т.д.).
+ * Только тогда — рамка 50/50 девичья|мужа. Иначе одна рамка по последней фамилии (семья мужа).
+ */
+function hasMaidenFamilyLinkInGraph(graph, memorialId, maidenSurname) {
+  if (!maidenSurname || !graph?.edges?.length) return false
+  const sidId = sid(memorialId)
+  for (const e of graph.edges) {
+    if (isSpouseLikeGraphEdge(e.type)) continue
+    if (_edgeTypeLower(e.type) === 'custom') continue
+    const s = sid(e.source)
+    const t = sid(e.target)
+    if (s !== sidId && t !== sidId) continue
+    const other = s === sidId ? t : s
+    const node = graph.nodes.find((x) => sid(x.memorial_id) === other)
+    if (!node) continue
+    if (surnameOf(node.name) === maidenSurname) return true
+  }
+  return false
+}
+
 // Convert backend graph (nodes + edges) → relatives-tree format
 function toLibNodes(graphNodes, graphEdges) {
   const idSet = new Set(graphNodes.map(n => sid(n.memorial_id)))
@@ -1143,8 +1174,18 @@ export default function FamilyTree({ memorialId }) {
                   const prevSurnameVal = previousSurname(n.name)
                   let splitBorderStyle = null
                   const vg = (n.voice_gender || '').toLowerCase()
-                  // Рамка 50/50 — в первую очередь для «жены» (две фамилии в имени); явный male не трогаем.
-                  if (vg !== 'male' && prevSurnameVal && curSurname && prevSurnameVal !== curSurname) {
+                  // Рамка 50/50 только если в графе есть связь с девичьей семьёй (сестра George и т.п.);
+                  // иначе две фамилии в имени — одна рамка цвета последней фамилии (семья мужа).
+                  const maidenInTree =
+                    prevSurnameVal &&
+                    hasMaidenFamilyLinkInGraph(displayGraph, n.memorial_id, prevSurnameVal)
+                  if (
+                    vg !== 'male' &&
+                    prevSurnameVal &&
+                    curSurname &&
+                    prevSurnameVal !== curSurname &&
+                    maidenInTree
+                  ) {
                     const neighbors = []
                     for (const e of displayGraph.edges || []) {
                       const s = sid(e.source)
