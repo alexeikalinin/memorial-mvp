@@ -211,7 +211,6 @@
 }
 
 .edit-form input[type="text"],
-.edit-form input[type="date"],
 .edit-form textarea,
 .edit-form select {
   width: 100%;

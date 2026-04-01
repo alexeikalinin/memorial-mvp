@@ -3,6 +3,9 @@
 
 **Подробный журнал сессий — один файл:** [SESSION_LOG.md](SESSION_LOG.md) (новые блоки в начале файла). Здесь — кратко: фокус, последнее действие, next steps.
 
+## Последнее действие (2026-04-01, session)
+- **EN seed:** `seed_ensure_owner.py` — автосоздание `users.id=1` для цепочки `seed_english_all.py` (раньше требовался «запусти приложение»). **Исправлен pool leak** в `seed_english_cluster2.py` (один `with engine.connect()` на цикл рёбер). **Манифест:** `EXPECTED_EN_COUNT=43` — в список добавлены 5 имён из `seed_english.py` (Mary/Patricia/Arthur/Linda/Claire), иначе проверка в конце `seed_english_all.py` падала с «extra names».
+
 ## Последнее действие (2026-04-01, late)
 - **Family tree — 4 семьи и split-рамка:** `FAMILY_TREE_SCOPE='kelly_anderson_four'`, колонки `A|center|B|C|D`, split-рамка для двойной фамилии по стороне связи (пример `Helen ... Anderson Kelly`) — детали в **[SESSION_LOG.md → 2026-04-01](SESSION_LOG.md)**.
 - **Сборка:** `frontend npm run build` успешно.

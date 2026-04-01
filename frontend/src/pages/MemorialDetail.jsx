@@ -9,6 +9,7 @@ import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
 import LifeTimeline from '../components/LifeTimeline'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
+import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
 import './MemorialDetail.css'
 
 const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'])
@@ -149,14 +150,29 @@ function MemorialDetail() {
     }
   }
 
+  const handleEditDateBlur = (field) => (e) => {
+    const v = e.target.value.trim()
+    if (!v) return
+    const n = normalizeFlexibleDateInput(v)
+    if (n && n !== e.target.value) {
+      setEditFormData((prev) => ({ ...prev, [field]: n }))
+    }
+  }
+
   const handleUpdate = async (e) => {
     e.preventDefault()
+    const br = parseDateFieldForSubmit(editFormData.birth_date)
+    const dr = parseDateFieldForSubmit(editFormData.death_date)
+    if (!br.ok || !dr.ok) {
+      alert(t('detail.date_invalid'))
+      return
+    }
     setSubmitting(true)
     try {
       const submitData = {
         ...editFormData,
-        birth_date: editFormData.birth_date ? `${editFormData.birth_date}T00:00:00Z` : null,
-        death_date: editFormData.death_date ? `${editFormData.death_date}T00:00:00Z` : null,
+        birth_date: br.iso ? `${br.iso}T00:00:00Z` : null,
+        death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: editFormData.voice_gender || null,
       }
       await memorialsAPI.update(id, submitData)
@@ -401,7 +417,7 @@ function MemorialDetail() {
       {editing && canEdit && (
         <div className="memorial-edit-wrap">
           <h2 className="edit-form-title">{t('detail.edit_title')}</h2>
-          <form onSubmit={handleUpdate} className="edit-form">
+          <form onSubmit={handleUpdate} className="edit-form" lang={lang === 'en' ? 'en' : 'ru'}>
             <div className="form-group">
               <label htmlFor="name">{t('detail.label_name')}</label>
               <input
@@ -425,19 +441,29 @@ function MemorialDetail() {
               <div className="form-group">
                 <label htmlFor="birth_date">{t('detail.label_birth')}</label>
                 <input
-                  type="date"
+                  type="text"
                   id="birth_date"
                   value={editFormData.birth_date}
                   onChange={(e) => setEditFormData({ ...editFormData, birth_date: e.target.value })}
+                  onBlur={handleEditDateBlur('birth_date')}
+                  placeholder={t('detail.date_placeholder')}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
                 />
               </div>
               <div className="form-group">
                 <label htmlFor="death_date">{t('detail.label_death')}</label>
                 <input
-                  type="date"
+                  type="text"
                   id="death_date"
                   value={editFormData.death_date}
                   onChange={(e) => setEditFormData({ ...editFormData, death_date: e.target.value })}
+                  onBlur={handleEditDateBlur('death_date')}
+                  placeholder={t('detail.date_placeholder')}
+                  autoComplete="off"
+                  inputMode="text"
+                  spellCheck={false}
                 />
               </div>
             </div>

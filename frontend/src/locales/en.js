@@ -173,6 +173,21 @@ export default {
     uses_count: '{n} visits',
     no_name: 'No name',
     validation_field: 'field',
+    date_placeholder: 'yyyy-mm-dd',
+    date_invalid: 'Enter a valid date: yyyy-mm-dd or dd.mm.yyyy',
+  },
+  memorialCreate: {
+    title: 'Create Memorial',
+    subtitle: 'Preserve the memory of a loved one forever',
+    name_placeholder: "Person's name",
+    description_placeholder: 'Short description or biography',
+    voice_label: 'Gender for avatar voice-over',
+    voice_unspecified: 'Not specified (default voice)',
+    voice_hint:
+      'Select if you want responses to be voiced in a male or female voice',
+    submit: 'Create Memorial',
+    creating: 'Creating…',
+    error_create: 'Failed to create memorial',
   },
   media: {
     loading: 'Loading media…',
@@ -399,7 +414,7 @@ export default {
     gen_legend_help_borders:
       'Each surname that appears in the tree gets its own color (by how often it appears). The card border uses exactly that color. Lanes left / center / right are still an old layout heuristic for the two most common names, but every person’s frame matches their actual surname cluster. A gold halo on a card means they are part of a cross-surname marriage. Rows are centered as a whole so a lone person can sit in the visual middle.',
     gen_legend_help_lines:
-      'Descent: follow lines downward from parents toward children. Spouses: a horizontal segment runs between the two portraits (often near the bottom of the cards). A dashed golden horizontal line means a marriage joining two different family clusters (including e.g. a top‑two surname with an “other” surname). When zoomed in, each ring uses that spouse’s cluster color: blue/purple for the two legend surnames, and a stable accent color derived from last name for everyone else — so a Kelly+Rossi pair shows blue + Rossi’s color.',
+      'Descent: follow lines downward from parents toward children. Spouses: a horizontal segment runs between the two portraits (often near the bottom of the cards). A dashed golden horizontal line marks a marriage between two different surname clusters. When zoomed in, each wedding ring uses that spouse’s cluster color—the same palette as their card border and legend pill—so two spouses from different families show two different ring colors (not a single generic color).',
     gen_legend_help_generation:
       'Row height is driven by the server “generation” value relative to the memorial you opened (0 = that person, negative = ancestors toward the top of the page, positive = descendants below; spouses share the same row). It reflects saved parent/child/spouse links, not sort order by birth year — so an older person can appear under a younger one if the graph path from your anchor memorial makes them a descendant in data.',
     gen_legend_help_labels:

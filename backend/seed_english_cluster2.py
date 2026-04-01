@@ -1,5 +1,5 @@
 """
-Seed: part 3 of 3 — two EN family clusters (Chang + Rossi). После цепочки `seed_english_all.py` в БД **35** EN мемориалов.
+Seed: part 3 of 3 — two EN family clusters (Chang + Rossi). После цепочки `seed_english_all.py` в БД **43** EN мемориала (вместе с частями 1–2).
 
 Список имён: `en_memorials_manifest.py`. После сида добавляются рёбра `custom` в `family_relationships`,
 чтобы full-tree с любого демо-мемориала включал Kelly, Anderson, Chang и Rossi (одна компонента связности).
@@ -10,11 +10,14 @@ CLUSTER 3 — Chang family (Chinese-Australian, Ballarat goldfields):
   Thomas Chang (1898-1968) + Alice Lee Chang (1902-1978)
   Richard Chang (1930-2010) + Grace Kim Chang (1934–alive)
   David Chang (1962–alive) + Jennifer Park Chang (1964–alive)
+    Emily Chang (1992–alive) + Daniel James Kelly (spouse; из seed_english_expanded)
+    Serena Chang (1995–alive) + Luca Rossi (spouse; младший брат Marco)
 
 CLUSTER 4 — Rossi family (Italian-Australian, Sicily → Sydney 1952):
   Enzo Rossi (1920-1988) + Maria Conti Rossi (1925-2008)
   Antonio Rossi (1950-alive) + Giulia Moretti Rossi (1952-alive)
   Marco Rossi (1978-alive) + Sofia Ferrara Rossi (1980-alive)
+  Luca Rossi (1983-alive) — младший брат Marco; муж Serena Chang
 
 HIDDEN CONNECTIONS created:
   Chang ↔ Kelly:    Ah Fong Chang + Sean Kelly shared a Ballarat claim (1866-1868)
@@ -34,7 +37,8 @@ os.chdir(os.path.dirname(__file__))
 from datetime import datetime, timezone
 from app.db import SessionLocal, engine
 from app.models import (Base, Memorial, Memory, FamilyRelationship,
-                        RelationshipType, MemorialAccess, User, UserRole)
+                        RelationshipType, MemorialAccess, UserRole)
+from seed_ensure_owner import ensure_owner_user_id_1
 from app.services.ai_tasks import get_embedding, upsert_memory_embedding
 
 Base.metadata.create_all(bind=engine)
@@ -116,6 +120,22 @@ CHANG_MEMORIALS = [
         "death": None,  # alive
         "voice_gender": "female",
         "desc": "Korean-Australian restaurateur. Married David Chang in 1990. Runs three contemporary Asian restaurants in Sydney. Founded the Sydney Asian Culinary Foundation in 2005.",
+    },
+    {
+        "key": "emily_chang",
+        "name": "Emily Chang",
+        "birth": dt(1992, 3, 14),
+        "death": None,
+        "voice_gender": "female",
+        "desc": "Eldest daughter of David and Jennifer Park Chang. Museum educator. Married software engineer Daniel James Kelly; they share an interest in the Kelly–Anderson–Chang family archive.",
+    },
+    {
+        "key": "serena_chang",
+        "name": "Serena Chang",
+        "birth": dt(1995, 10, 2),
+        "death": None,
+        "voice_gender": "female",
+        "desc": "Younger daughter of David and Jennifer Park Chang. Sound designer for documentary film. Married structural engineer Luca Rossi; collaborates with Sofia Ferrara Rossi on post-production.",
     },
 ]
 
@@ -726,6 +746,15 @@ CHANG_MEMORIES = {
             "That is what the family has always done: "
             "held what matters until the next person can carry it.",
         ),
+        (
+            "Emily, Serena, and the branches we did not draw",
+            "Emily married Daniel Kelly — the man who mapped the Kelly and Anderson lines "
+            "that touch Ah Fong and Sean Kelly. "
+            "Serena married Luca Rossi — Marco's brother, Antonio's son, "
+            "another family that built the harbour's edges stone by stone. "
+            "Jennifer and I did not plan those matches. "
+            "The city planned them. We only raised two daughters who listen.",
+        ),
     ],
 
     "jennifer": [
@@ -778,6 +807,108 @@ CHANG_MEMORIES = {
             "They both planted them in Australian soil in the 1860s. "
             "Different plants. Same impulse.",
         ),
+        (
+            "Our daughters",
+            "Emily and Serena grew up between Balmain and the restaurants — "
+            "the smell of the wok, the noise of service, the quiet of my office "
+            "where I planned menus at midnight. "
+            "Emily chose museums and memory; Serena chose sound and film. "
+            "They are different and they are close. "
+            "That is what David and I hoped for: not copies of us, but people "
+            "who know where they came from.",
+        ),
+    ],
+
+    "emily_chang": [
+        (
+            "Growing up Chang–Park",
+            "My father David talks about buildings the way other people talk about music — "
+            "light, proportion, what a room remembers. "
+            "My mother Jennifer runs kitchens where history is on every plate. "
+            "I grew up thinking that stories belong in public — in a gallery, in a book, in code. "
+            "That is why I work in museums now.",
+        ),
+        (
+            "Grandparents Richard and Grace",
+            "Grandfather Richard Chang took me to court once when I was fifteen — "
+            "not as a defendant, as an observer. "
+            "He wanted me to see how language could protect people who looked like us. "
+            "Grandmother Grace taught me Korean phrases alongside English; "
+            "she said a kitchen can hold more than one language without choosing. "
+            "I still cook her jjigae when Daniel is late home from work.",
+        ),
+        (
+            "Serena — my sister",
+            "Serena is three years younger and hears things I miss — "
+            "room tone, the breath before someone speaks in an interview. "
+            "She scores documentaries; I write labels for exhibitions. "
+            "We borrow each other's verbs. "
+            "When she married Luca Rossi our families already overlapped: "
+            "Barangaroo, Ballarat, the same small city of connections.",
+        ),
+        (
+            "Daniel James Kelly",
+            "I met Daniel at a talk about the Ballarat goldfields — "
+            "he had built the Kelly–Anderson archive; my father had built the interpretation centre. "
+            "We argued politely about citations for an hour and then went for dumplings. "
+            "He is precise and stubborn and kind in the way people who love history are kind — "
+            "they save what others would delete. "
+            "We married in 2021. The archive was our wedding guest in laptop form.",
+        ),
+        (
+            "The creek at Ballarat",
+            "Daniel showed me Ah Fong Chang and Sean Kelly on the same census page — "
+            "two claims, two lives, one creek. "
+            "My great-great-great-grandfather and his Irish neighbour. "
+            "I stood where the water had been and understood why my father wept "
+            "when the centre opened. "
+            "The building is new. The patience in the story is old.",
+        ),
+    ],
+
+    "serena_chang": [
+        (
+            "Sound and family",
+            "I design sound for documentary — room tone, footsteps, the pause before truth. "
+            "My mother Jennifer says I learned to listen in restaurants: "
+            "the kitchen door, the dining room, two different rhythms. "
+            "My father David says I learned to listen in his studio — "
+            "he would play a space on paper and ask what it sounded like. "
+            "Both are right.",
+        ),
+        (
+            "Emily — my sister",
+            "Emily writes text that people read standing up in galleries. "
+            "I make air move around images. "
+            "We fight like sisters about commas and crossfade; "
+            "we agree that our grandparents' stories are not optional. "
+            "When she married Daniel Kelly I gained an archive and a brother-in-law "
+            "who sends me PDFs at two in the morning because he found another neighbour of Ah Fong.",
+        ),
+        (
+            "Luca Rossi",
+            "I met Luca when Sofia Ferrara Rossi hired me to clean dialogue on 'The Wharves' — "
+            "Luca was visiting the edit suite and argued with Marco about load paths in the same sentence "
+            "he used to flirt with me badly. "
+            "He is Antonio and Giulia's younger son; he builds bridges and apologises to stone. "
+            "We married in 2024. Balmain feels smaller in the best way.",
+        ),
+        (
+            "Sofia and the Rossi kitchen",
+            "Sofia films what my parents feed people — memory as documentary. "
+            "Giulia Rossi taught me to roll gnocchi the way Mei Lin taught Alice Lee the wok: "
+            "hands first, recipe second. "
+            "Marco rolls his eyes when the three of us talk film and food in one breath. "
+            "Luca says: that is the family business — load-bearing stories.",
+        ),
+        (
+            "Jennifer's foundation and Nonna Maria",
+            "Mother's foundation recorded women who carried recipes from Guangdong to Neutral Bay. "
+            "Luca's grandmother Maria Conti Rossi traded seeds with Wei Chang's line — "
+            "different soil, same stubborn vegetables. "
+            "I cut those two oral histories together for a short piece Sofia screened in Leichhardt. "
+            "The audience cried. I kept the faders very still.",
+        ),
     ],
 }
 
@@ -804,6 +935,16 @@ CHANG_RELATIONSHIPS = [
     ("david_chang", "grace", RelationshipType.CHILD),
     ("david_chang", "jennifer", RelationshipType.SPOUSE),
     ("jennifer", "david_chang", RelationshipType.SPOUSE),
+    ("david_chang", "emily_chang", RelationshipType.PARENT),
+    ("jennifer", "emily_chang", RelationshipType.PARENT),
+    ("emily_chang", "david_chang", RelationshipType.CHILD),
+    ("emily_chang", "jennifer", RelationshipType.CHILD),
+    ("david_chang", "serena_chang", RelationshipType.PARENT),
+    ("jennifer", "serena_chang", RelationshipType.PARENT),
+    ("serena_chang", "david_chang", RelationshipType.CHILD),
+    ("serena_chang", "jennifer", RelationshipType.CHILD),
+    ("serena_chang", "luca", RelationshipType.SPOUSE),
+    ("luca", "serena_chang", RelationshipType.SPOUSE),
 ]
 
 
@@ -856,6 +997,14 @@ ROSSI_MEMORIALS = [
         "death": None,  # alive
         "voice_gender": "female",
         "desc": "Italian-Australian documentary filmmaker. Married Marco Rossi in 2006. Her 2015 documentary 'The Wharves' interviewed Ian Anderson about his memories of the Harbour Tunnel construction.",
+    },
+    {
+        "key": "luca",
+        "name": "Luca Rossi",
+        "birth": dt(1983, 4, 21),
+        "death": None,
+        "voice_gender": "male",
+        "desc": "Younger son of Antonio and Giulia Rossi; structural engineer. Married Serena Chang. Worked on harbour bridge maintenance and Sydney Metro projects alongside Marco's firm.",
     },
 ]
 
@@ -1325,6 +1474,50 @@ ROSSI_MEMORIES = {
             "and my films, they can.",
         ),
     ],
+
+    "luca": [
+        (
+            "Younger brother",
+            "Marco is five years older and sees load in everything — "
+            "beams, soil pressure, the way a tower meets wind. "
+            "I learned the same maths and chose bridges and maintenance: "
+            "what keeps people safe after the ribbon is cut. "
+            "We still argue Sunday lunch. Sofia records it. Our mother Giulia says we are both wrong.",
+        ),
+        (
+            "Father Antonio and stone",
+            "I tried stonemasonry in my twenties because I wanted to understand "
+            "what Antonio reads in old walls. "
+            "I was competent. He was fluent. "
+            "He told me: stay with steel if you need the answer in numbers. "
+            "I did. The Harbour Bridge does not need poetry; it needs inspection schedules. "
+            "I write them.",
+        ),
+        (
+            "Serena Chang",
+            "I met Serena in Sofia's edit suite — she was fixing room tone on a sequence "
+            "I had walked through on site the week before. "
+            "She heard the bridge in the dialogue. I fell in love with that. "
+            "Her parents, David and Jennifer, had already crossed paths with Marco at Barangaroo. "
+            "Sydney again: small creek, long memory.",
+        ),
+        (
+            "Daniel Kelly and the archive",
+            "Emily's husband Daniel built the archive that lists my grandfather Enzo "
+            "as bricklayer on a Kelly house in Mosman. "
+            "Daniel and I share spreadsheets and beer. "
+            "He says genealogy is civil engineering for families. "
+            "I tell him some joints are human.",
+        ),
+        (
+            "Giulia and Maria's garden",
+            "Nonna Maria traded seeds with the Chang line before I was born. "
+            "My wife scores films about those women's kitchens. "
+            "Giulia still rolls gnocchi with Serena the way she taught Sofia — "
+            "hands first. I set the table and load the dishwasher. "
+            "Structural honesty.",
+        ),
+    ],
 }
 
 # Мосты между кластерами (исторические связи из сюжета демо). Двунаправленные CUSTOM.
@@ -1334,6 +1527,7 @@ CROSS_CLUSTER_CUSTOM_BRIDGES = [
     ("Robert James Kelly", "Enzo Rossi"),
     ("Michael Robert Kelly", "Antonio Rossi"),
     ("Antonio Rossi", "Ian George Anderson"),
+    ("Serena Chang", "Sofia Ferrara Rossi"),
 ]
 
 
@@ -1382,16 +1576,55 @@ ROSSI_RELATIONSHIPS = [
     ("marco", "giulia", RelationshipType.CHILD),
     ("marco", "sofia", RelationshipType.SPOUSE),
     ("sofia", "marco", RelationshipType.SPOUSE),
+    ("antonio", "luca", RelationshipType.PARENT),
+    ("giulia", "luca", RelationshipType.PARENT),
+    ("luca", "antonio", RelationshipType.CHILD),
+    ("luca", "giulia", RelationshipType.CHILD),
+    ("marco", "luca", RelationshipType.SIBLING),
+    ("luca", "marco", RelationshipType.SIBLING),
 ]
+
+# Супруги из других сидов (Daniel — seed_english_expanded); рёбра по имени после INSERT по ключам.
+NAME_RESOLVED_RELATIONSHIPS = [
+    ("Emily Chang", "Daniel James Kelly", RelationshipType.SPOUSE),
+    ("Daniel James Kelly", "Emily Chang", RelationshipType.SPOUSE),
+]
+
+
+def _ensure_relationship_by_names(
+    db, name_from: str, name_to: str, rt: RelationshipType
+) -> None:
+    ma = db.query(Memorial).filter(Memorial.name == name_from).first()
+    mb = db.query(Memorial).filter(Memorial.name == name_to).first()
+    if not ma or not mb:
+        print(f"  ⚠️  name-rel skipped (not found): {name_from!r} → {name_to!r}")
+        return
+    exists = (
+        db.query(FamilyRelationship)
+        .filter(
+            FamilyRelationship.memorial_id == ma.id,
+            FamilyRelationship.related_memorial_id == mb.id,
+            FamilyRelationship.relationship_type == rt,
+        )
+        .first()
+    )
+    if exists:
+        return
+    db.add(
+        FamilyRelationship(
+            memorial_id=ma.id,
+            related_memorial_id=mb.id,
+            relationship_type=rt,
+        )
+    )
+    db.commit()
+    print(f"  🔗 {name_from} --{rt.value}--> {name_to}")
 
 
 async def seed():
     db = SessionLocal()
     try:
-        owner = db.query(User).filter(User.id == 1).first()
-        if not owner:
-            print("⚠️  No user with id=1.")
-            return
+        ensure_owner_user_id_1(db)
 
         created: dict[str, Memorial] = {}
 
@@ -1436,24 +1669,35 @@ async def seed():
 
         # ── Add relationships ─────────────────────────────────────────────
         from sqlalchemy import text as sql_text
-        for fk, tk, rt in all_relationships:
-            fid = created.get(fk)
-            tid = created.get(tk)
-            if not fid or not tid:
-                print(f"  ⚠️  Skipping {fk}→{tk}")
-                continue
-            fid = fid.id if hasattr(fid, 'id') else fid
-            tid = tid.id if hasattr(tid, 'id') else tid
-            exists = engine.connect().execute(sql_text(
-                "SELECT id FROM family_relationships WHERE memorial_id=:a AND related_memorial_id=:b AND relationship_type=:rt LIMIT 1"
-            ), {"a": fid, "b": tid, "rt": rt.value}).fetchone()
-            if not exists:
-                with engine.connect() as c:
-                    c.execute(sql_text(
-                        "INSERT INTO family_relationships (memorial_id, related_memorial_id, relationship_type) VALUES (:a,:b,:rt)"
-                    ), {"a": fid, "b": tid, "rt": rt.value})
-                    c.commit()
-                print(f"  🔗 {fk}({fid}) --{rt.value}--> {tk}({tid})")
+
+        sel_rel = sql_text(
+            "SELECT id FROM family_relationships WHERE memorial_id=:a "
+            "AND related_memorial_id=:b AND relationship_type=:rt LIMIT 1"
+        )
+        ins_rel = sql_text(
+            "INSERT INTO family_relationships (memorial_id, related_memorial_id, relationship_type) "
+            "VALUES (:a,:b,:rt)"
+        )
+        with engine.connect() as conn:
+            for fk, tk, rt in all_relationships:
+                fid = created.get(fk)
+                tid = created.get(tk)
+                if not fid or not tid:
+                    print(f"  ⚠️  Skipping {fk}→{tk}")
+                    continue
+                fid = fid.id if hasattr(fid, "id") else fid
+                tid = tid.id if hasattr(tid, "id") else tid
+                exists = conn.execute(
+                    sel_rel, {"a": fid, "b": tid, "rt": rt.value}
+                ).fetchone()
+                if not exists:
+                    conn.execute(ins_rel, {"a": fid, "b": tid, "rt": rt.value})
+                    conn.commit()
+                    print(f"  🔗 {fk}({fid}) --{rt.value}--> {tk}({tid})")
+
+        print("\n── Name-resolved relationships (memorials from other seeds) ──")
+        for a, b, rt in NAME_RESOLVED_RELATIONSHIPS:
+            _ensure_relationship_by_names(db, a, b, rt)
 
         print("\n── Cross-cluster CUSTOM bridges (Kelly/Anderson ↔ Chang/Rossi) ──")
         for na, nb in CROSS_CLUSTER_CUSTOM_BRIDGES:

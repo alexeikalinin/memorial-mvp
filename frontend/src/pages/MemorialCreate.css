@@ -51,7 +51,6 @@
 /* Reuse global form-group, but override input selectors
    scoped here so they don't break global styles */
 .memorial-form .form-group input[type="text"],
-.memorial-form .form-group input[type="date"],
 .memorial-form .form-group select,
 .memorial-form .form-group textarea {
   width: 100%;

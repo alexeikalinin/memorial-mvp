@@ -1,7 +1,7 @@
 """
 Seed script: Australian memorial families (EN) for investor demo — part 1 of 3 (11 memorials).
 
-Полный английский набор — **35** мемориалов: запускайте `seed_english_all.py` (он вызывает
+Полный английский набор — **43** мемориала: запускайте `seed_english_all.py` (он вызывает
 `seed_english.py` → `seed_english_expanded.py` → `seed_english_cluster2.py`).
 См. `en_memorials_manifest.py` — канонический список имён.
 
@@ -18,7 +18,7 @@ Family 2 – Anderson (Scottish-Australian):
   → William Anderson (1865-1935) + Agnes Brown Anderson (1870-1940)
     → Helen Anderson (1895-1975)  ← marries James Kelly
 
-Run from backend/ (только эта часть — 11 записей):
+Run from backend/ (только эта часть — 16 записей):
     source .venv/bin/activate && python seed_english.py
 
 After full 35 seed, portrait covers (optional):
@@ -34,7 +34,8 @@ os.chdir(os.path.dirname(__file__))
 
 from datetime import datetime, timezone
 from app.db import SessionLocal, engine
-from app.models import Base, Memorial, Memory, FamilyRelationship, RelationshipType, MemorialAccess, User, UserRole
+from app.models import Base, Memorial, Memory, FamilyRelationship, RelationshipType, MemorialAccess, UserRole
+from seed_ensure_owner import ensure_owner_user_id_1
 from app.services.ai_tasks import get_embedding, upsert_memory_embedding
 
 # ── Ensure tables exist ───────────────────────────────────────────────────────
@@ -728,11 +729,7 @@ RELATIONSHIPS = [
 async def seed():
     db = SessionLocal()
     try:
-        # Ensure owner user exists
-        owner = db.query(User).filter(User.id == 1).first()
-        if not owner:
-            print("⚠️  No user with id=1 found. Please create a user first (run the app once).")
-            return
+        ensure_owner_user_id_1(db)
 
         created: dict[str, Memorial] = {}
 

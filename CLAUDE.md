@@ -110,7 +110,7 @@ pytest
 # Run single test file
 pytest tests/test_memorials.py
 
-# English demo data: 35 memorials (chain of three seed scripts)
+# English demo data: 43 memorials (chain of three seed scripts)
 # python seed_english_all.py
 
 # Run Celery worker (requires Redis)

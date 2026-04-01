@@ -1798,10 +1798,9 @@ NEW_RELATIONSHIPS = [
 async def seed():
     db = SessionLocal()
     try:
-        owner = db.query(User).filter(User.id == 1).first()
-        if not owner:
-            print("⚠️  No user with id=1. Run the app once first.")
-            return
+        from seed_ensure_owner import ensure_owner_user_id_1
+
+        ensure_owner_user_id_1(db)
 
         # ── 1. Create new memorials ─────────────────────────────────────────
         created: dict[str, Memorial] = {}

@@ -184,6 +184,7 @@
 
 /* ─── Memorial Card ─────────────────────────────────────────────── */
 .memorial-card {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
@@ -241,50 +242,100 @@
   border-color: var(--accent);
 }
 
+.memorial-card--deceased:hover {
+  border-color: rgba(212, 160, 86, 0.55);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
 /* Умершие — приглушённая карточка; живые — светлая (одинаково для любого языка UI) */
 .memorial-card--living {
   background: #faf8f5;
 }
 
 .memorial-card--deceased {
-  background: #e8e4df;
-  border-color: rgba(120, 100, 85, 0.22);
+  background: linear-gradient(165deg, #3d3a37 0%, #2f2c29 48%, #262422 100%);
+  border-color: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .memorial-card--deceased .card-name {
-  color: rgba(42, 36, 32, 0.92);
+  color: rgba(250, 248, 245, 0.98);
 }
 
 .memorial-card--deceased .card-description {
-  color: rgba(70, 62, 56, 0.75);
+  color: rgba(220, 215, 208, 0.78);
+}
+
+.memorial-card--deceased .card-dates {
+  color: rgba(232, 200, 150, 0.95);
+}
+
+.memorial-card--deceased .card-counts {
+  color: rgba(200, 195, 188, 0.65);
+}
+
+.memorial-card--deceased .card-meta {
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .memorial-card--deceased .card-cover-img {
-  filter: grayscale(35%) brightness(0.96);
+  filter: grayscale(22%) brightness(0.92);
+  image-rendering: auto;
 }
 
 .memorial-card--deceased:hover .card-cover-img {
-  filter: grayscale(28%) brightness(0.98);
+  filter: grayscale(18%) brightness(0.94);
+}
+
+.memorial-card--deceased .btn-card-memories {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(248, 245, 240, 0.92);
+}
+
+.memorial-card--deceased .btn-card-memories:hover {
+  background: rgba(212, 160, 86, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Овал обрезает только фото; свеча — снаружи overflow, иначе её съедают углы mask */
+.card-cover-wrap {
+  position: relative;
+  width: 130px;
+  height: 158px;
+  margin: 1.75rem auto 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Oval portrait avatar */
 .card-cover {
   position: relative;
-  width: 130px;
-  height: 158px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   overflow: hidden;
-  margin: 1.75rem auto 0.5rem;
-  flex-shrink: 0;
   border: 3px solid var(--border);
   box-shadow: 0 4px 16px rgba(28, 25, 23, 0.12);
   transition: border-color var(--t-base) var(--ease),
               box-shadow var(--t-base) var(--ease);
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
-.memorial-card:hover .card-cover {
+.memorial-card:not(.memorial-card--deceased):hover .card-cover-wrap .card-cover {
   border-color: var(--accent);
   box-shadow: 0 6px 24px rgba(139, 94, 60, 0.22);
+}
+
+.memorial-card--deceased .card-cover {
+  border-color: rgba(200, 175, 130, 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.memorial-card--deceased:hover .card-cover {
+  border-color: rgba(212, 160, 86, 0.75);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.45);
 }
 
 .card-cover--living {
@@ -292,15 +343,40 @@
   box-shadow: 0 4px 16px rgba(28, 25, 23, 0.1), 0 0 0 1px rgba(100, 160, 115, 0.22);
 }
 
+/* Свеча на обёртке: вне overflow овала — в «углу» bbox портрета, как в семейном дереве */
 .card-cover-candle {
   position: absolute;
-  top: 0.65rem;
-  right: 0.75rem;
-  z-index: 2;
-  font-size: 1.1rem;
+  bottom: 0;
+  right: 0;
+  top: auto;
+  left: auto;
+  z-index: 5;
+  font-size: 1.35rem;
   line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 6px rgba(255, 190, 90, 0.5));
   pointer-events: none;
+  animation: home-card-candle-flicker 2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes home-card-candle-flicker {
+  0%,
+  100% {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 5px rgba(255, 175, 70, 0.45));
+    transform: scale(1) translateY(0);
+  }
+  40% {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 10px rgba(255, 200, 120, 0.7));
+    transform: scale(1.06) translateY(-0.5px);
+  }
+  55% {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 6px rgba(255, 185, 95, 0.55));
+    transform: scale(1.02) translateY(0);
+  }
 }
 
 .card-cover-img {
@@ -308,11 +384,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  transition: transform var(--t-slow) var(--ease);
-}
-
-.memorial-card:hover .card-cover-img {
-  transform: scale(1.06);
+  /* Без scale при hover — иначе мыло при зуме страницы */
 }
 
 .card-no-cover {
@@ -326,6 +398,11 @@
   opacity: 0.6;
 }
 
+.memorial-card--deceased .card-no-cover {
+  background: linear-gradient(135deg, #3a3633 0%, #2a2725 100%);
+  opacity: 0.85;
+}
+
 /* Card body */
 .card-body {
   padding: 0.75rem 1.5rem 1.5rem;
@@ -333,6 +410,8 @@
   flex-direction: column;
   flex: 1;
   text-align: center;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 .card-name {
@@ -342,6 +421,7 @@
   color: var(--text);
   margin-bottom: 0.4rem;
   line-height: 1.25;
+  text-rendering: optimizeLegibility;
 }
 
 .card-description {

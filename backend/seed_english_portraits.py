@@ -7,7 +7,13 @@
 Запуск из backend/:
     source .venv/bin/activate && python seed_english_portraits.py
 
+Локальный SQLite (если в `.env` указан Supabase, а нужен только `memorial.db`):
+    SEED_USE_SQLITE=1 python seed_english_portraits.py
+
 Требует: сеть. Идемпотентно пропускает мемориалы, у которых уже есть cover_photo_id.
+
+После свежего `seed_english_all.py` id мемориалов начинаются с 1 — блок TARGETS по старым id
+может никого не найти; в конце скрипт добивает **все EN без обложки** по имени и эвристике.
 """
 
 from __future__ import annotations
@@ -25,6 +31,10 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+_sqlite_flag = os.environ.get("SEED_USE_SQLITE", "").lower()
+if _sqlite_flag in ("1", "true", "yes"):
+    os.environ["DATABASE_URL"] = os.environ.get("SEED_SQLITE_URL", "sqlite:///./memorial.db")
 
 from app.db import engine
 from app.models import Media, Memorial, MediaType
@@ -78,6 +88,9 @@ TARGETS: list[dict] = [
     {"memorial_id": 54, "gender": "female", "age_min": 45, "age_max": 65,  "nat": "it"},  # Giulia (alive)
     {"memorial_id": 55, "gender": "male",   "age_min": 25, "age_max": 45,  "nat": "it"},  # Marco (alive)
     {"memorial_id": 56, "gender": "female", "age_min": 25, "age_max": 45,  "nat": "it"},  # Sofia (alive)
+    {"memorial_id": 57, "gender": "female", "age_min": 25, "age_max": 40,  "nat": "cn"},  # Emily Chang
+    {"memorial_id": 58, "gender": "female", "age_min": 22, "age_max": 38,  "nat": "cn"},  # Serena Chang
+    {"memorial_id": 59, "gender": "male",   "age_min": 30, "age_max": 48,  "nat": "it"},  # Luca Rossi
 ]
 
 # Если memorial_id в БД не совпадает с цепочкой сидов, добираем обложку по точному имени (language=en).
@@ -89,7 +102,61 @@ NAME_FALLBACK_TARGETS: list[dict] = [
     {"name": "Michael Robert Kelly", "gender": "male", "age_min": 45, "age_max": 62},
     {"name": "Ian George Anderson", "gender": "male", "age_min": 75, "age_max": 95},
     {"name": "Evelyn Parker Anderson", "gender": "female", "age_min": 70, "age_max": 90},
+    {"name": "Emily Chang", "gender": "female", "age_min": 25, "age_max": 40, "nat": "cn"},
+    {"name": "Serena Chang", "gender": "female", "age_min": 22, "age_max": 38, "nat": "cn"},
+    {"name": "Luca Rossi", "gender": "male", "age_min": 30, "age_max": 48, "nat": "it"},
 ]
+
+
+def _explicit_fallback_by_name() -> dict[str, dict]:
+    out: dict[str, dict] = {}
+    for row in NAME_FALLBACK_TARGETS:
+        name = row["name"]
+        out[name] = {k: v for k, v in row.items() if k != "name"}
+    return out
+
+
+def _params_for_en_memorial(memorial: Memorial) -> dict:
+    """Пол/возраст/nat для randomuser, если нет точного совпадения в NAME_FALLBACK_TARGETS."""
+    fb = _explicit_fallback_by_name()
+    if memorial.name in fb:
+        return fb[memorial.name]
+    vg = (memorial.voice_gender or "male").lower()
+    gender = "male" if vg == "male" else "female"
+    n = memorial.name
+    if "Chang" in n:
+        return {"gender": gender, "age_min": 22, "age_max": 78, "nat": "cn"}
+    if "Rossi" in n:
+        return {"gender": gender, "age_min": 25, "age_max": 82, "nat": "it"}
+    return {"gender": gender, "age_min": 28, "age_max": 92, "nat": None}
+
+
+def _set_cover_from_params(db, memorial: Memorial, p: dict) -> bool:
+    mid = memorial.id
+    photo_bytes = fetch_portrait(
+        p["gender"], p["age_min"], p["age_max"], nat=p.get("nat")
+    )
+    if not photo_bytes:
+        print("  ✗ could not fetch portrait")
+        return False
+    file_path, fname, fsize = save_and_optimize(photo_bytes, mid)
+    thumbnails = generate_all_thumbnails(file_path, THUMBNAILS_DIR)
+    thumb_medium = thumbnails.get("medium")
+    media = Media(
+        memorial_id=mid,
+        file_path=str(file_path),
+        file_name=fname,
+        file_size=fsize,
+        mime_type="image/jpeg",
+        media_type=MediaType.PHOTO,
+        thumbnail_path=thumb_medium,
+    )
+    db.add(media)
+    db.flush()
+    memorial.cover_photo_id = media.id
+    db.commit()
+    print(f"  ✓ media.id={media.id}, cover set, thumb={thumb_medium}")
+    return True
 
 
 def fetch_portrait(gender: str, age_min: int, age_max: int, attempts: int = 40, nat: str | None = None) -> bytes | None:
@@ -215,6 +282,24 @@ def run():
             db.commit()
             print(f"  ✓ media.id={media.id}, cover set, thumb={thumb_medium}")
             ok += 1
+
+        print("\n── Remaining EN memorials without cover (typical after fresh seed, ids 1…43) ──")
+        remaining = (
+            db.query(Memorial)
+            .filter(Memorial.language == "en", Memorial.cover_photo_id.is_(None))
+            .order_by(Memorial.id)
+            .all()
+        )
+        for memorial in remaining:
+            p = _params_for_en_memorial(memorial)
+            print(
+                f"\n[fill] [{memorial.id}] {memorial.name} → {p['gender']}, "
+                f"photo age {p['age_min']}-{p['age_max']}, nat={p.get('nat') or NATS}"
+            )
+            if _set_cover_from_params(db, memorial, p):
+                ok += 1
+            else:
+                fail += 1
 
         print(f"\n═══ Done: {ok} portraits, {skip} skipped (had cover), {fail} failed ═══")
     finally:

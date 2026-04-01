@@ -1,13 +1,18 @@
 """
-Полная английская демо-наполнение БД: ровно 35 мемориалов (language='en').
+Полная английская демо-наполнение БД: ровно 43 мемориалов (language='en').
 
 Запуск из каталога backend/:
     source .venv/bin/activate && python seed_english_all.py
 
+Если в `.env` указан удалённый Postgres (Supabase) и соединение падает, сидьте в локальный SQLite:
+    SEED_USE_SQLITE=1 python seed_english_all.py
+или одной строкой без правки `.env`:
+    DATABASE_URL=sqlite:///./memorial.db python seed_english_all.py
+
 Порядок (зависимости между сидами):
-  1. seed_english.py            — 11 (Kelly + Anderson, поколения до Robert)
-  2. seed_english_expanded.py   — +9 → 20
-  3. seed_english_cluster2.py  — +15 (Chang + Rossi) → 35
+  1. seed_english.py            — 16 (Kelly + Anderson + siblings / Linda / Claire)
+  2. seed_english_expanded.py   — +9 → 25
+  3. seed_english_cluster2.py  — +18 (Chang + Rossi, включая Emily, Serena, Luca) → 43
 
 Опционально портреты (локально / при настроенном S3):
     python seed_english_portraits.py
@@ -21,6 +26,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 os.chdir(os.path.dirname(__file__))
+
+# Должно выполняться до первого `import app.*`, иначе Settings зафиксирует DATABASE_URL из .env.
+_sqlite_flag = os.environ.get("SEED_USE_SQLITE", "").lower()
+if _sqlite_flag in ("1", "true", "yes"):
+    os.environ["DATABASE_URL"] = os.environ.get(
+        "SEED_SQLITE_URL", "sqlite:///./memorial.db"
+    )
 
 from sqlalchemy import text  # noqa: E402
 

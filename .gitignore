@@ -44,6 +44,7 @@ env/
 *.db
 *.sqlite
 *.sqlite3
+*.db-journal
 
 # Media uploads (локальные файлы)
 uploads/

@@ -107,25 +107,29 @@ function Home() {
                   style={{ animationDelay: `${i * 0.07}s` }}
                 >
                   <Link to={`/memorials/${memorial.id}`} className="memorial-card-link">
-                    <div className={`card-cover ${deceased ? 'card-cover--deceased' : 'card-cover--living'}`}>
+                    <div className="card-cover-wrap">
+                      <div
+                        className={`card-cover ${deceased ? 'card-cover--deceased' : 'card-cover--living'}`}
+                      >
+                        {memorial.cover_photo_url || memorial.cover_photo_id ? (
+                          <ApiMediaImage
+                            directUrl={memorial.cover_photo_url || null}
+                            mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
+                            thumbnail="large"
+                            alt={memorial.name}
+                            className="card-cover-img"
+                            loading={i < 4 ? 'eager' : 'lazy'}
+                            eager={i < 4}
+                            fallback={<div className="card-no-cover">🕯</div>}
+                          />
+                        ) : (
+                          <div className="card-no-cover">🕯</div>
+                        )}
+                      </div>
                       {deceased && (
                         <span className="card-cover-candle" aria-hidden="true" title="Memorial">
                           🕯
                         </span>
-                      )}
-                      {memorial.cover_photo_url || memorial.cover_photo_id ? (
-                        <ApiMediaImage
-                          directUrl={memorial.cover_photo_url || null}
-                          mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
-                          thumbnail="small"
-                          alt={memorial.name}
-                          className="card-cover-img"
-                          loading={i < 4 ? 'eager' : 'lazy'}
-                          eager={i < 4}
-                          fallback={<div className="card-no-cover">🕯</div>}
-                        />
-                      ) : (
-                        <div className="card-no-cover">🕯</div>
                       )}
                     </div>
 
