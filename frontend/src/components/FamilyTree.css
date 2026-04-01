@@ -786,6 +786,13 @@ p.tree-controls-hint.ft-gen-hint {
   border-color: transparent;
 }
 
+/* Двухцветная рамка (градиент через background-clip) — без border-image, чтобы не ломалось с radius */
+.ft-node--gen.ft-node--gen-split {
+  border-width: 0;
+  border-style: solid;
+  border-color: transparent;
+}
+
 .ft-node--gen .ft-node-avatar-wrap {
   width: 56px;
   height: 56px;

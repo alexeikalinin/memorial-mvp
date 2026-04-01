@@ -14,6 +14,20 @@
 
 ---
 
+## [2026-04-01] Family tree: восстановление `kelly_anderson_four` + split-рамка жены (градиент)
+
+**Проблема:** в `familyTreeKellyFilter.js` снова стояло `FAMILY_TREE_SCOPE = 'full'` — терялась задуманная раскладка 4 семей (Kelly / Anderson / Chang / Rossi) и легенда; двухцветная рамка у супруги с двойной фамилией опиралась на `border-image` и давала слабый/нестабильный рендер рядом с `border-radius`.
+
+**Решение:**
+- **`FAMILY_TREE_SCOPE = 'kelly_anderson_four'`** — как в записи ниже про 4 семьи.
+- **Рамка 50/50** для жены (две фамилии в имени, `voice_gender !== 'male'`): вместо `border-image` — **двойной `background`** (`padding-box` + `border-box`) и прозрачный `border`, плюс класс `.ft-node--gen-split` в `FamilyTree.css`.
+- **Цвета:** по-прежнему половинки переставляются по положению ветки (`oldOnRight` от соседей с «девичьей» фамилией); если цвет не найден по мемориалу — **`borderColorForSurname`** по фамилии, затем **`neutralSurnameRingStroke(фамилия)`** (средняя фамилия вроде Chen без отдельного кластера).
+- **API:** в `FullTreeNode` добавлено поле **`voice_gender`**, в `GET .../full-tree` пробрасывается из `Memorial` — чтобы рамку «жена» не применять к явному `male`.
+
+**Файлы:** `frontend/src/utils/familyTreeKellyFilter.js`, `frontend/src/components/FamilyTree.jsx`, `frontend/src/components/FamilyTree.css`, `backend/app/schemas.py`, `backend/app/api/family.py`.
+
+---
+
 ## [2026-04-01] Family tree: 4 семьи + split-рамка по стороне связи + релиз
 
 **Сделано (frontend):**

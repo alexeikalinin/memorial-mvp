@@ -8,6 +8,7 @@ import {
   buildGenerationLayout,
   buildSurnameClusterStyles,
   isCrossFamilySpouseEdge,
+  neutralSurnameRingStroke,
   surnameOf,
 } from '../utils/familyTreeGenerationLayout.js'
 import {
@@ -88,6 +89,43 @@ function previousSurname(name) {
   if (tokens.length < 2) return ''
   const prev = tokens[tokens.length - 2]
   return /^[A-Za-zА-Яа-яёЁ\-']+$/.test(prev) ? prev : ''
+}
+
+/** Цвет рамки кластера по фамилии (любой мемориал с этой последней/единственной фамилией в графе). */
+function borderColorForSurname(nodes, memorialClusterStyle, surname) {
+  if (!surname || !nodes?.length || !memorialClusterStyle) return null
+  for (const n of nodes) {
+    if (surnameOf(n.name) === surname) {
+      const st =
+        memorialClusterStyle[n.memorial_id] ??
+        memorialClusterStyle[sid(n.memorial_id)]
+      if (st?.borderColor) return st.borderColor
+    }
+  }
+  return null
+}
+
+/**
+ * Двухцветная рамка 50/50 (девичья фамилия | фамилия в браке), без border-image — стабильно в Chrome/Safari.
+ * Сторона цвета привязана к положению веток (см. oldOnRight ниже по графу).
+ */
+function buildSplitGenCardBorder({ leftColor, rightColor, clusterStyle, isBridge }) {
+  const CARD_BG = 'rgba(20, 20, 28, 0.92)'
+  const bw = 3
+  let boxShadow = clusterStyle?.boxShadow
+  if (isBridge && clusterStyle?.boxShadow) {
+    boxShadow = `${clusterStyle.boxShadow}, 0 0 0 2px rgba(220, 175, 95, 0.72), 0 0 22px rgba(220, 175, 95, 0.26)`
+  } else if (isBridge) {
+    boxShadow = `0 0 0 2px rgba(220, 175, 95, 0.72), 0 0 22px rgba(220, 175, 95, 0.26)`
+  }
+  return {
+    border: `${bw}px solid transparent`,
+    borderRadius: 8,
+    background: `linear-gradient(${CARD_BG}, ${CARD_BG}) padding-box, linear-gradient(to right, ${leftColor} 0%, ${leftColor} 50%, ${rightColor} 50%, ${rightColor} 100%) border-box`,
+    backgroundOrigin: 'border-box',
+    backgroundClip: 'padding-box, border-box',
+    boxShadow,
+  }
 }
 
 // Convert backend graph (nodes + edges) → relatives-tree format
@@ -291,6 +329,7 @@ function GenTreeNodeCard({
   } else cls.push('ft-node--gen-cluster')
   if (isDeceased) cls.push('ft-node--deceased')
   else cls.push('ft-node--living')
+  if (splitBorderStyle) cls.push('ft-node--gen-split')
 
   const clusterBox = clusterStyle
     ? {
@@ -302,12 +341,7 @@ function GenTreeNodeCard({
           : clusterStyle.boxShadow,
       }
     : {}
-  const visualBox = splitBorderStyle
-    ? {
-        ...clusterBox,
-        ...splitBorderStyle,
-      }
-    : clusterBox
+  const visualBox = splitBorderStyle ? splitBorderStyle : clusterBox
 
   return (
     <div
@@ -1108,7 +1142,9 @@ export default function FamilyTree({ memorialId }) {
                   const curSurname = surnameOf(n.name)
                   const prevSurnameVal = previousSurname(n.name)
                   let splitBorderStyle = null
-                  if (prevSurnameVal && curSurname && prevSurnameVal !== curSurname) {
+                  const vg = (n.voice_gender || '').toLowerCase()
+                  // Рамка 50/50 — в первую очередь для «жены» (две фамилии в имени); явный male не трогаем.
+                  if (vg !== 'male' && prevSurnameVal && curSurname && prevSurnameVal !== curSurname) {
                     const neighbors = []
                     for (const e of displayGraph.edges || []) {
                       const s = sid(e.source)
@@ -1118,20 +1154,24 @@ export default function FamilyTree({ memorialId }) {
                     }
                     const fromOld = neighbors.filter((m) => m && surnameOf(m.name) === prevSurnameVal)
                     const oldRefs = fromOld.length ? fromOld : displayGraph.nodes.filter((m) => m && surnameOf(m.name) === prevSurnameVal)
-                    const oldColor =
+                    const mcs = genLayout.memorialClusterStyle
+                    let oldColor =
                       oldRefs.length > 0
                         ? (
-                            genLayout.memorialClusterStyle?.[oldRefs[0].memorial_id] ??
-                            genLayout.memorialClusterStyle?.[sid(oldRefs[0].memorial_id)]
+                            mcs?.[oldRefs[0].memorial_id] ??
+                            mcs?.[sid(oldRefs[0].memorial_id)]
                           )?.borderColor
                         : null
-                    const curColor =
-                      (
-                        genLayout.memorialClusterStyle?.[n.memorial_id] ??
-                        genLayout.memorialClusterStyle?.[id]
-                      )?.borderColor || 'rgba(210, 210, 210, 0.9)'
+                    oldColor =
+                      oldColor ||
+                      borderColorForSurname(displayGraph.nodes, mcs, prevSurnameVal) ||
+                      neutralSurnameRingStroke(prevSurnameVal)
+                    let curColor =
+                      (mcs?.[n.memorial_id] ?? mcs?.[id])?.borderColor ||
+                      borderColorForSurname(displayGraph.nodes, mcs, curSurname) ||
+                      neutralSurnameRingStroke(curSurname)
 
-                    if (oldColor) {
+                    if (oldColor && curColor) {
                       let oldOnRight = true
                       if (fromOld.length) {
                         const avgX = fromOld
@@ -1142,13 +1182,13 @@ export default function FamilyTree({ memorialId }) {
                       }
                       const leftColor = oldOnRight ? curColor : oldColor
                       const rightColor = oldOnRight ? oldColor : curColor
-                      splitBorderStyle = {
-                        borderWidth: 3,
-                        borderStyle: 'solid',
-                        borderColor: 'transparent',
-                        borderImageSlice: 1,
-                        borderImageSource: `linear-gradient(to right, ${leftColor} 0 50%, ${rightColor} 50% 100%)`,
-                      }
+                      const cSty = mcs?.[n.memorial_id] ?? mcs?.[id]
+                      splitBorderStyle = buildSplitGenCardBorder({
+                        leftColor,
+                        rightColor,
+                        clusterStyle: cSty,
+                        isBridge: bridgeNodeIds.has(id),
+                      })
                     }
                   }
                   return (

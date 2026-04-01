@@ -627,6 +627,7 @@ async def get_full_family_tree(
             birth_year=m.birth_date.year if m.birth_date else None,
             death_year=m.death_date.year if m.death_date else None,
             cover_photo_id=m.cover_photo_id,
+            voice_gender=m.voice_gender,
             generation=generation[mid],
         ))
 

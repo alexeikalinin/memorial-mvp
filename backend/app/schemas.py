@@ -335,6 +335,7 @@ class FullTreeNode(BaseModel):
     birth_year: Optional[int] = None
     death_year: Optional[int] = None
     cover_photo_id: Optional[int] = None
+    voice_gender: Optional[str] = None  # для UI (рамка «жена» между семьями)
     generation: int   # 0=root, negative=ancestors, positive=descendants
 
 
