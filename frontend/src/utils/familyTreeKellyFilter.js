@@ -10,7 +10,7 @@ const sid = (id) => String(id)
  * - `kelly` — только фамилия Kelly (фаза 1).
  * - `kelly_anderson` — Kelly + Anderson по последнему слову имени (без Chang, Rossi и др.).
  * - `kelly_anderson_third` — Kelly + Anderson + 3-я фамилия (самая частая среди остальных).
- * - `kelly_anderson_four` — Kelly + Anderson + 3-я и 4-я фамилии (по частоте).
+ * - `kelly_anderson_four` — Kelly + Anderson + Chang + Rossi (если обе есть в графе; иначе — топ по частоте).
  * - `full` — весь ответ API (все связанные семьи).
  */
 export const FAMILY_TREE_SCOPE = 'kelly_anderson_four'
@@ -146,9 +146,13 @@ export function filterGraphToThreeFamilies(graphData) {
 
 export function filterGraphToFourFamilies(graphData) {
   if (!graphData?.nodes?.length) return graphData
-  const extras = topExtraSurnames(graphData.nodes, 2)
+  const allNodes = graphData.nodes
+  const hasChang = allNodes.some((n) => surnameOf(n.name) === 'Chang')
+  const hasRossi = allNodes.some((n) => surnameOf(n.name) === 'Rossi')
+  const extras =
+    hasChang && hasRossi ? ['Chang', 'Rossi'] : topExtraSurnames(allNodes, 2)
   const allowed = new Set(['Kelly', 'Anderson', ...extras])
-  const nodes = graphData.nodes.filter((n) => allowed.has(surnameOf(n.name)))
+  const nodes = allNodes.filter((n) => allowed.has(surnameOf(n.name)))
   if (!nodes.length) return graphData
   const idSet = new Set(nodes.map((n) => sid(n.memorial_id)))
   const edges = graphData.edges.filter(

@@ -1,7 +1,8 @@
 """
 Seed: part 3 of 3 — two EN family clusters (Chang + Rossi). После цепочки `seed_english_all.py` в БД **35** EN мемориалов.
 
-Список имён: `en_memorials_manifest.py`. Мосты Kelly/Anderson ↔ эти кластеры в основном в текстах воспоминаний, не в `family_relationships`.
+Список имён: `en_memorials_manifest.py`. После сида добавляются рёбра `custom` в `family_relationships`,
+чтобы full-tree с любого демо-мемориала включал Kelly, Anderson, Chang и Rossi (одна компонента связности).
 
 CLUSTER 3 — Chang family (Chinese-Australian, Ballarat goldfields):
   Ah Fong Chang (1835-1895)  ← already mentioned in Sean Kelly's memories
@@ -1326,6 +1327,46 @@ ROSSI_MEMORIES = {
     ],
 }
 
+# Мосты между кластерами (исторические связи из сюжета демо). Двунаправленные CUSTOM.
+CROSS_CLUSTER_CUSTOM_BRIDGES = [
+    ("Sean Patrick Kelly", "Ah Fong Chang"),
+    ("Wei Chang", "Agnes Brown Anderson"),
+    ("Robert James Kelly", "Enzo Rossi"),
+    ("Michael Robert Kelly", "Antonio Rossi"),
+    ("Antonio Rossi", "Ian George Anderson"),
+]
+
+
+def _ensure_custom_bridge_pair(db, name_a: str, name_b: str) -> None:
+    ma = db.query(Memorial).filter(Memorial.name == name_a).first()
+    mb = db.query(Memorial).filter(Memorial.name == name_b).first()
+    if not ma or not mb:
+        print(f"  ⚠️  Bridge skipped (memorial not found): {name_a!r} ↔ {name_b!r}")
+        return
+    rt = RelationshipType.CUSTOM
+    for src, dst in ((ma.id, mb.id), (mb.id, ma.id)):
+        exists = (
+            db.query(FamilyRelationship)
+            .filter(
+                FamilyRelationship.memorial_id == src,
+                FamilyRelationship.related_memorial_id == dst,
+                FamilyRelationship.relationship_type == rt,
+            )
+            .first()
+        )
+        if exists:
+            continue
+        db.add(
+            FamilyRelationship(
+                memorial_id=src,
+                related_memorial_id=dst,
+                relationship_type=rt,
+            )
+        )
+        print(f"  🌉 CUSTOM bridge {src} → {dst}")
+    db.commit()
+
+
 ROSSI_RELATIONSHIPS = [
     ("enzo", "maria", RelationshipType.SPOUSE),
     ("maria", "enzo", RelationshipType.SPOUSE),
@@ -1413,6 +1454,10 @@ async def seed():
                     ), {"a": fid, "b": tid, "rt": rt.value})
                     c.commit()
                 print(f"  🔗 {fk}({fid}) --{rt.value}--> {tk}({tid})")
+
+        print("\n── Cross-cluster CUSTOM bridges (Kelly/Anderson ↔ Chang/Rossi) ──")
+        for na, nb in CROSS_CLUSTER_CUSTOM_BRIDGES:
+            _ensure_custom_bridge_pair(db, na, nb)
 
         with engine.connect() as c:
             total_en = c.execute(sql_text("SELECT COUNT(*) FROM memorials WHERE language='en'")).fetchone()[0]
