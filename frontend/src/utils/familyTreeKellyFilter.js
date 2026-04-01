@@ -13,7 +13,7 @@ const sid = (id) => String(id)
  * - `kelly_anderson_four` — Kelly + Anderson + Chang + Rossi (если обе есть в графе; иначе — топ по частоте).
  * - `full` — весь ответ API (все связанные семьи).
  */
-export const FAMILY_TREE_SCOPE = 'kelly_anderson_four'
+export const FAMILY_TREE_SCOPE = 'full'
 
 /** Совместимость: true только при `FAMILY_TREE_SCOPE === 'kelly'`. */
 export const FAMILY_TREE_KELLY_ONLY = FAMILY_TREE_SCOPE === 'kelly'

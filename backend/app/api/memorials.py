@@ -61,6 +61,16 @@ THUMBNAILS_DIR = UPLOAD_DIR / "thumbnails"
 THUMBNAILS_DIR.mkdir(exist_ok=True)
 
 
+def _build_public_memorial_url(memorial_id: int) -> str:
+    base = (settings.PUBLIC_FRONTEND_URL or settings.FRONTEND_URL or "http://localhost:5173").rstrip("/")
+    lower = base.lower()
+    if "/app" in lower:
+        return f"{base}/m/{memorial_id}"
+    if "localhost" in lower or "127.0.0.1" in lower:
+        return f"{base}/m/{memorial_id}"
+    return f"{base}/app/m/{memorial_id}"
+
+
 def get_media_type_from_mime(mime_type: str) -> MediaType:
     """Определяет тип медиа по MIME типу."""
     if mime_type.startswith("image/"):
@@ -260,8 +270,7 @@ async def get_qr_code(
 
     memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
 
-    frontend_url = settings.PUBLIC_FRONTEND_URL.rstrip("/")
-    url = f"{frontend_url}/m/{memorial_id}"
+    url = _build_public_memorial_url(memorial_id)
 
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(url)
