@@ -517,6 +517,11 @@
       background: var(--accent); color: #1a1408;
       padding: 5px 20px; border-radius: 100px; font-size: 12px; font-weight: 700; white-space: nowrap;
     }
+    .pricing-badge--alt {
+      background: rgba(200,169,126,0.12);
+      color: var(--accent2);
+      border: 1px solid rgba(200,169,126,0.28);
+    }
     .pricing-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; color: var(--text3); margin-bottom: 12px; }
     .pricing-price { font-family:'Playfair Display',serif; font-size: 52px; font-weight: 700; color: var(--text); line-height: 1; }
     .pricing-price sup { font-size: 22px; vertical-align: super; margin-right: 2px; font-family:'Inter',sans-serif; }
@@ -532,7 +537,21 @@
     .pricing-features li.dim { opacity: 0.4; }
     .pricing-features li.dim .check { color: var(--text3); }
     .pricing-cta { margin-top: 36px; width: 100%; justify-content: center; }
-    .pricing-note { margin-top: 12px; font-size: 12px; color: var(--text3); text-align: center; }
+    .pricing-note { margin-top: 12px; font-size: 12px; color: var(--text3); text-align: center; line-height: 1.5; }
+    .pricing-intro {
+      max-width: 920px; margin: 0 auto 40px; text-align: center;
+      font-size: 15px; color: var(--text2); line-height: 1.75;
+    }
+    .pricing-intro strong { color: var(--text); font-weight: 600; }
+    .pricing-li-title { display: block; font-size: 14px; color: var(--text); font-weight: 500; line-height: 1.35; }
+    .pricing-li-note {
+      display: block; font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.45; font-weight: 400;
+    }
+    .pricing-features li.has-sub { align-items: flex-start; }
+    .pricing-features li.has-sub .check { margin-top: 4px; }
+    .pricing-footnote {
+      margin-top: 48px; font-size: 13px; color: var(--text3); line-height: 1.65; max-width: 720px; margin-left: auto; margin-right: auto;
+    }
 
     /* ─── FAQ ─── */
     #faq { background: var(--bg); }
@@ -987,7 +1006,7 @@
             <div class="uc-icon">🪦</div>
             <div>
               <div class="uc-title">Permanent monuments</div>
-              <div class="uc-desc">Add a QR plaque to any existing headstone. The Lifetime plan is designed for this — one payment, forever.</div>
+              <div class="uc-desc">Add a QR plaque to any existing headstone. The <strong>Lifetime memorial</strong> tier is designed for this — one payment for one page, no subscription.</div>
             </div>
           </div>
           <div class="uc">
@@ -1117,8 +1136,13 @@
   <div class="section-inner" style="text-align:center">
     <div class="section-label reveal" style="justify-content:center">Pricing</div>
     <h2 class="section-title reveal reveal-delay-1">Start free.<br>Grow with your family.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 12px;text-align:center">Pick a plan when you’re ready. <strong style="color:var(--accent)">Billing is not live yet</strong> — prices below are the product roadmap, not active checkout.</p>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 56px;text-align:center;font-size:14px;color:var(--text3)">Aligned with engineering docs: chat limits, family RAG, and voice caps are planned metering targets.</p>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 16px;text-align:center">Pick a plan when you’re ready. <strong style="color:var(--accent)">Billing is not live yet</strong> — everything below is the intended offer, not active checkout.</p>
+    <p class="pricing-intro reveal reveal-delay-2">
+      <strong>Free</strong> — try one memorial; text chat only; no voice, animation, or family-wide AI.<br>
+      <strong>Plus</strong> — several memorials, full family graph features, and bundled monthly AI you can plan for.<br>
+      <strong>Lifetime memorial</strong> — one payment for <strong>one</strong> page (great for QR / headstones): no subscription, same <strong>monthly</strong> AI caps as Plus on that page, but <strong>no Family RAG across other memorials</strong> and no full Hidden Connections — those stay on Plus.
+    </p>
+    <p class="section-sub reveal reveal-delay-2" style="margin:8px auto 0;text-align:center;font-size:13px;color:var(--text3);max-width:640px">Each row is the same feature across plans — <span style="color:var(--green)">✓</span> included, <span style="opacity:.5">—</span> not included.</p>
     <div class="pricing-grid">
       <div class="pricing-card reveal">
         <div class="pricing-name">Free</div>
@@ -1126,14 +1150,16 @@
         <div class="pricing-period">forever</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> 1 memorial</li>
-          <li><span class="check">✓</span> 30 chat messages / month</li>
-          <li><span class="check">✓</span> Text responses only</li>
-          <li><span class="check">✓</span> Basic photo gallery</li>
-          <li><span class="check">✓</span> Public share link</li>
-          <li class="dim"><span class="check">—</span> Voice cloning</li>
-          <li class="dim"><span class="check">—</span> Photo animation</li>
-          <li class="dim"><span class="check">—</span> Family RAG & Hidden Connections</li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> active page.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note">Text only — up to <strong>10 messages per day</strong> (resets every 24h).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Relatives add memories without an account.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Photos, stories, shareable link.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Only from what you uploaded on this memorial.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note">Limited (starter quota).</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">Upgrade to Plus or Lifetime memorial.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note">Upgrade to Plus or Lifetime memorial.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat using memories from <em>linked</em> memorials — not on Free.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Full graph discovery — Plus only.</span></span></li>
         </ul>
         <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Get started free</a>
       </div>
@@ -1141,37 +1167,46 @@
         <div class="pricing-badge">Most popular</div>
         <div class="pricing-name">Plus</div>
         <div class="pricing-price"><sup>$</sup>14</div>
-        <div class="pricing-period">per month</div>
+        <div class="pricing-period">per month · cancel anytime</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> Unlimited memorials</li>
-          <li><span class="check">✓</span> 500 chat messages / memorial</li>
-          <li><span class="check">✓</span> Voice cloning + custom voice</li>
-          <li><span class="check">✓</span> Photo animation (10 / month)</li>
-          <li><span class="check">✓</span> Family RAG — up to 10 memorials</li>
-          <li><span class="check">✓</span> Hidden Connections discovery</li>
-          <li><span class="check">✓</span> 5 GB media storage</li>
-          <li><span class="check">✓</span> Invite family — no account needed</li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>Up to 5</strong> pages on one account.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>500 messages / memorial / month</strong> (text + voice playback when enabled).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Unlimited invite links.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Full media features per memorial.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Plus optional family context (below).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> shared across the account.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">~<strong>15,000</strong> characters of generated speech / month (account pool).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>10</strong> renders / month (account-wide).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat can pull from up to <strong>10 linked</strong> memorials when enabled.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Discovery across the family graph (where available).</span></span></li>
         </ul>
-        <a href="/app/register" class="btn btn-primary btn-lg pricing-cta">Start free trial</a>
+        <a href="/app/register" class="btn btn-primary btn-lg pricing-cta">Join waitlist</a>
+        <p class="pricing-note">We’ll email you when checkout opens. You can still use Free today.</p>
       </div>
       <div class="pricing-card reveal reveal-delay-2">
-        <div class="pricing-name">Lifetime</div>
+        <div class="pricing-badge pricing-badge--alt">Headstones &amp; QR</div>
+        <div class="pricing-name">Lifetime memorial</div>
         <div class="pricing-price"><sup>$</sup>149</div>
-        <div class="pricing-period">one-time · one memorial · forever</div>
+        <div class="pricing-period">one-time · one memorial · no subscription</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li><span class="check">✓</span> All Plus features — permanently</li>
-          <li><span class="check">✓</span> No monthly fees. Ever.</li>
-          <li><span class="check">✓</span> Perfect for QR on monuments</li>
-          <li><span class="check">✓</span> Priority support</li>
-          <li><span class="check">✓</span> 5 GB permanent storage</li>
-          <li><span class="check">✓</span> Transferable to heirs</li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> page — license locked to this memorial (not transferable).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>500 messages / month</strong> on this page (same class as Plus; resets monthly).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Same as other tiers — invites without an account.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Long-term access to this page while the service operates.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Only from memories on <strong>this</strong> memorial (no cross-memorial RAG).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> for this memorial (fair use).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">Included with the <strong>same monthly TTS cap</strong> as Plus for this page.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>10</strong> renders / month for this memorial (resets monthly).</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note"><strong>Not included:</strong> avatar does not use other linked memorials’ memories in chat — <strong>Plus only</strong>.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note"><strong>Not included</strong> — full graph discovery stays on <strong>Plus</strong>.</span></span></li>
         </ul>
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Buy Lifetime</a>
-        <p class="pricing-note">Ideal for physical memorial plaques</p>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime memorial</a>
+        <p class="pricing-note">One-time fee, no subscription — premium AI on a single page, with clear monthly caps.</p>
       </div>
     </div>
+    <p class="pricing-footnote reveal">Message, voice, animation, and storage numbers are metering targets and may change before launch. <strong>Lifetime</strong> covers long-term hosting for one memorial without a monthly bill; expensive AI features still reset each month so the product stays sustainable. Full terms ship with billing.</p>
   </div>
 </section>
 
