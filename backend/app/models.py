@@ -253,3 +253,13 @@ class MemorialAccess(Base):
         UniqueConstraint("memorial_id", "user_id", name="uq_memorial_access"),
     )
 
+
+class WaitlistSignup(Base):
+    """Email для уведомления о запуске полного функционала (лендинг / waitlist)."""
+    __tablename__ = "waitlist_signups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    source = Column(String(64), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

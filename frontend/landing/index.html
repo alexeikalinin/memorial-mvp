@@ -9,6 +9,7 @@
   <meta property="og:description" content="AI memorials grounded in real memories. Family tree, voice, and hidden connections." />
   <meta property="og:image" content="/images/hero-portrait.png" />
   <meta name="twitter:card" content="summary_large_image" />
+  <script>window.__MEMORIAL_API_BASE__ = __INJECT_LANDING_API__;</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <style>
@@ -578,6 +579,78 @@
       margin-top: 48px; font-size: 13px; color: var(--text3); line-height: 1.65; max-width: 920px; margin-left: 0; text-align: left;
     }
 
+    /* ─── WAITLIST MODAL ─── */
+    .waitlist-modal {
+      position: fixed; inset: 0; z-index: 3000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      background: rgba(8, 8, 16, 0.75);
+      backdrop-filter: blur(8px);
+      opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility .3s;
+    }
+    .waitlist-modal.is-open { opacity: 1; visibility: visible; }
+    .waitlist-modal-panel {
+      position: relative;
+      width: 100%; max-width: 420px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 24px; padding: 32px 32px 28px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.55);
+      transform: translateY(12px) scale(0.98);
+      transition: transform .35s cubic-bezier(.2,.8,.2,1);
+    }
+    .waitlist-modal.is-open .waitlist-modal-panel { transform: translateY(0) scale(1); }
+    .waitlist-modal-title {
+      font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700;
+      color: var(--text); margin-bottom: 8px; line-height: 1.25;
+    }
+    .waitlist-modal-sub {
+      font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 24px;
+    }
+    .waitlist-field { margin-bottom: 16px; text-align: left; }
+    .waitlist-field label {
+      display: block; font-size: 12px; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+    }
+    .waitlist-input {
+      width: 100%; padding: 14px 16px; border-radius: 12px;
+      border: 1px solid var(--border2); background: rgba(0,0,0,0.25);
+      color: var(--text); font-size: 15px; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color .2s;
+    }
+    .waitlist-input:focus { border-color: rgba(200,169,126,0.5); }
+    .waitlist-input::placeholder { color: var(--text3); }
+    .waitlist-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .waitlist-error { font-size: 13px; color: #c98b8b; margin-top: 10px; min-height: 1.25em; }
+    .waitlist-success {
+      text-align: center; padding: 12px 0 8px;
+      animation: waitlist-success-in .55s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes waitlist-success-in {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .waitlist-success-icon {
+      width: 56px; height: 56px; margin: 0 auto 16px;
+      border-radius: 50%; background: rgba(109, 191, 159, 0.15);
+      border: 2px solid var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: var(--green);
+      animation: waitlist-check-pop .5s ease .1s both;
+    }
+    @keyframes waitlist-check-pop {
+      0% { transform: scale(0); }
+      60% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    .waitlist-success-title { font-weight: 600; font-size: 17px; color: var(--text); margin-bottom: 8px; }
+    .waitlist-success-text { font-size: 14px; color: var(--text2); line-height: 1.55; }
+    .waitlist-close-x {
+      position: absolute; top: 16px; right: 16px;
+      width: 36px; height: 36px; border: none; border-radius: 50%;
+      background: rgba(255,255,255,0.06); color: var(--text2); cursor: pointer;
+      font-size: 20px; line-height: 1; transition: background .2s, color .2s;
+    }
+    .waitlist-close-x:hover { background: rgba(255,255,255,0.1); color: var(--text); }
     /* ─── FAQ ─── */
     #faq { background: var(--bg); }
     .faq-wrap { max-width: 800px; margin: 72px auto 0; }
@@ -1212,7 +1285,7 @@
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Discovery across the family graph (where available).</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-primary btn-lg pricing-cta">Join waitlist</a>
+        <button type="button" class="btn btn-primary btn-lg pricing-cta js-waitlist-open">Join waitlist</button>
         <p class="pricing-note">We’ll email you when checkout opens. You can still use Free today.</p>
         </div>
       </div>
@@ -1337,6 +1410,34 @@
     </div>
   </div>
 </footer>
+
+<!-- Waitlist modal -->
+<div id="waitlist-modal" class="waitlist-modal" aria-hidden="true" role="dialog" aria-labelledby="waitlist-modal-title">
+  <div class="waitlist-modal-panel">
+    <button type="button" class="waitlist-close-x" id="waitlist-close" aria-label="Close">×</button>
+    <div id="waitlist-form-view">
+      <h3 id="waitlist-modal-title" class="waitlist-modal-title">Get notified</h3>
+      <p class="waitlist-modal-sub">Voice cloning, photo animation, and paid plans aren’t live yet. Leave your email — we’ll let you know when everything is ready.</p>
+      <form id="waitlist-form" novalidate>
+        <div class="waitlist-field">
+          <label for="waitlist-email">Email</label>
+          <input type="email" id="waitlist-email" name="email" class="waitlist-input" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+        <p id="waitlist-error" class="waitlist-error" role="alert"></p>
+        <div class="waitlist-actions">
+          <button type="submit" class="btn btn-primary btn-lg" id="waitlist-submit" style="flex:1;min-width:140px">Notify me</button>
+          <button type="button" class="btn btn-outline btn-lg" id="waitlist-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <div id="waitlist-success-view" class="waitlist-success" style="display:none">
+      <div class="waitlist-success-icon">✓</div>
+      <div class="waitlist-success-title">You’re on the list</div>
+      <p class="waitlist-success-text" id="waitlist-success-msg">We’ll email you when the service is fully available.</p>
+      <button type="button" class="btn btn-outline btn-lg" id="waitlist-done" style="margin-top:20px;width:100%">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══ PARTICLES BACKGROUND ═══
@@ -1556,6 +1657,98 @@ document.querySelectorAll('.faq-q').forEach(q => {
     if (entries[0].isIntersecting) { drawNext(); obs.disconnect(); }
   }, { threshold: 0.2 });
   obs.observe(svg);
+})();
+</script>
+<script>
+// ═══ WAITLIST MODAL ═══
+(function() {
+  var modal = document.getElementById('waitlist-modal');
+  if (!modal) return;
+  var formView = document.getElementById('waitlist-form-view');
+  var successView = document.getElementById('waitlist-success-view');
+  var form = document.getElementById('waitlist-form');
+  var emailInput = document.getElementById('waitlist-email');
+  var errEl = document.getElementById('waitlist-error');
+  var successMsg = document.getElementById('waitlist-success-msg');
+
+  function endpoint() {
+    var b = window.__MEMORIAL_API_BASE__;
+    if (typeof b === 'string' && b.length) return b.replace(/\/$/, '') + '/waitlist/';
+    return location.origin + '/api/v1/waitlist/';
+  }
+
+  function openModal() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    errEl.textContent = '';
+    form.reset();
+    formView.style.display = '';
+    successView.style.display = 'none';
+    setTimeout(function() { emailInput.focus(); }, 200);
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.js-waitlist-open').forEach(function(btn) {
+    btn.addEventListener('click', openModal);
+  });
+  document.getElementById('waitlist-close').addEventListener('click', closeModal);
+  document.getElementById('waitlist-cancel').addEventListener('click', closeModal);
+  document.getElementById('waitlist-done').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+  });
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    errEl.textContent = '';
+    var email = (emailInput.value || '').trim();
+    if (!emailInput.checkValidity() || !email) {
+      errEl.textContent = 'Please enter a valid email address.';
+      return;
+    }
+    var url = endpoint();
+    var submitBtn = document.getElementById('waitlist-submit');
+    submitBtn.disabled = true;
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, source: 'landing' }),
+    })
+      .then(function(res) {
+        return res.json().then(function(j) {
+          if (!res.ok) {
+            var msg = 'Request failed';
+            if (j.detail) {
+              msg = Array.isArray(j.detail)
+                ? j.detail.map(function(d) { return typeof d === 'object' && d.msg ? d.msg : String(d); }).join(' ')
+                : String(j.detail);
+            }
+            throw new Error(msg);
+          }
+          return j;
+        });
+      })
+      .then(function(data) {
+        formView.style.display = 'none';
+        successView.style.display = 'block';
+        successMsg.textContent = data.message || 'We’ll email you when the service is fully available.';
+      })
+      .catch(function(err) {
+        errEl.textContent = err.message || 'Something went wrong. If this persists, try again later or email support.';
+      })
+      .finally(function() {
+        submitBtn.disabled = false;
+      });
+  });
 })();
 </script>
 </body>

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { createReadStream, copyFileSync, existsSync, mkdirSync, cpSync, statSync } from 'fs'
+import { createReadStream, copyFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, statSync } from 'fs'
 import { resolve, basename } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -83,7 +83,14 @@ const landingToDist = () => ({
       const destVid = resolve(destDir, 'video')
       cpSync(vid, destVid, { recursive: true })
     }
-    console.log('[landing] copied to dist/index.html + images + video ✓')
+    const destIndex = resolve(destDir, 'index.html')
+    if (existsSync(destIndex)) {
+      const api = process.env.VITE_LANDING_API_URL || process.env.VITE_API_URL || ''
+      let html = readFileSync(destIndex, 'utf8')
+      html = html.replace('__INJECT_LANDING_API__', JSON.stringify(api))
+      writeFileSync(destIndex, html)
+    }
+    console.log('[landing] copied to dist/index.html + images + video ✓ (API base injected)')
   },
 })
 

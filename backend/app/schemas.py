@@ -433,3 +433,15 @@ class InviteValidateResponse(BaseModel):
     label: Optional[str] = None
     permissions: Dict
 
+
+# Waitlist (landing)
+class WaitlistSignupCreate(BaseModel):
+    email: EmailStr
+    source: Optional[str] = Field(None, max_length=64)
+
+
+class WaitlistSignupResponse(BaseModel):
+    ok: bool = True
+    message: str
+    already_registered: bool = False
+
