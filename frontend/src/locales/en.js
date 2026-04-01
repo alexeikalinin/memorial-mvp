@@ -18,6 +18,12 @@ export default {
     add_memories: 'Add memories',
     empty: 'No memorials created yet',
     create_first: 'Create your first memorial',
+    show_demo: 'Show demo memorials',
+    hide_demo: 'Hide demo memorials',
+    demo_hint:
+      'English demo / seed memorials from the repo are hidden by default. Turn on to browse the full investor demo set.',
+    demo_only_hidden:
+      'Every memorial in this list is a demo page. Show demo memorials to see them.',
   },
   tabs: {
     media: 'Media',
@@ -70,6 +76,10 @@ export default {
     sync_error: 'Sync failed',
     clear_confirm: 'Clear chat history?',
     chat_error: 'Failed to send message',
+    tts_quota_on: 'ElevenLabs: ~{remaining} / {limit} characters left this period (tier: {tier}).',
+    tts_quota_unlimited: 'ElevenLabs: usage reporting unavailable or unlimited for this plan.',
+    tts_quota_off: 'Voice generation (ElevenLabs) is not configured on the server.',
+    tts_quota_err: 'Could not load ElevenLabs quota.',
     welcome_intro: 'Ask a question about this person, and the AI avatar will answer based on the added memories.',
     video_generating: 'Generating video…',
     browser_no_video: 'Your browser does not support video.',

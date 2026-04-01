@@ -430,7 +430,7 @@ function ConnectedFamilyCard({ member, bridgeLabel, onClick }) {
     >
       <div className="ft-cf-avatar">
         {member.cover_photo_id ? (
-          <ApiMediaImage mediaId={member.cover_photo_id} thumbnail="small" alt={member.name} className="ft-cf-img" />
+          <ApiMediaImage mediaId={member.cover_photo_id} thumbnail="large" alt={member.name} className="ft-cf-img" />
         ) : (
           <span className="ft-cf-initials">{member.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}</span>
         )}

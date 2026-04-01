@@ -175,6 +175,32 @@
   letter-spacing: 0.05em;
 }
 
+.home-demo-toggle-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: -1.25rem 0 1.75rem;
+}
+
+.home-demo-toggle {
+  font-size: 0.85rem;
+  padding: 0.45rem 1rem;
+}
+
+.home-demo-hint {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  max-width: 36rem;
+  line-height: 1.45;
+}
+
+.home-empty--demo-only {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
 /* ─── Grid ──────────────────────────────────────────────────────── */
 .memorials-grid {
   display: grid;
@@ -384,7 +410,10 @@
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  /* Без scale при hover — иначе мыло при зуме страницы */
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Без scale при hover — иначе мыло при зуме страницы; снимок — крупный large-thumb или оригинал */
 }
 
 .card-no-cover {

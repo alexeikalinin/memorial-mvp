@@ -9,6 +9,7 @@ import './Home.css'
 function Home() {
   const [memorials, setMemorials] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showDemoMemorials, setShowDemoMemorials] = useState(false)
   const { t, lang } = useLanguage()
 
   useEffect(() => {
@@ -22,6 +23,11 @@ function Home() {
       })
       .finally(() => setLoading(false))
   }, [lang])
+
+  const hasDemoMemorials = memorials.some((m) => m.is_demo_seed)
+  const visibleMemorials = showDemoMemorials
+    ? memorials
+    : memorials.filter((m) => !m.is_demo_seed)
 
   return (
     <div className="home">
@@ -81,15 +87,45 @@ function Home() {
         <div className="section-header">
           <h2 className="section-title">{t('home.section_title')}</h2>
           {!loading && memorials.length > 0 && (
-            <span className="section-count">{t('home.count_label', { n: memorials.length })}</span>
+            <span className="section-count">
+              {t('home.count_label', {
+                n: showDemoMemorials ? memorials.length : visibleMemorials.length,
+              })}
+            </span>
           )}
         </div>
+
+        {!loading && hasDemoMemorials && (
+          <div className="home-demo-toggle-wrap">
+            <button
+              type="button"
+              className="btn btn-outline home-demo-toggle"
+              onClick={() => setShowDemoMemorials((v) => !v)}
+            >
+              {showDemoMemorials ? t('home.hide_demo') : t('home.show_demo')}
+            </button>
+            {!showDemoMemorials && (
+              <span className="home-demo-hint">{t('home.demo_hint')}</span>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="loading" />
         ) : (
           <div className="memorials-grid">
-            {memorials.length === 0 ? (
+            {visibleMemorials.length === 0 && memorials.length > 0 ? (
+              <div className="home-empty home-empty--demo-only">
+                <p>{t('home.demo_only_hidden')}</p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowDemoMemorials(true)}
+                >
+                  {t('home.show_demo')}
+                </button>
+              </div>
+            ) : visibleMemorials.length === 0 ? (
               <div className="home-empty">
                 <div className="home-empty-icon">🕯</div>
                 <p>{t('home.empty')}</p>
@@ -98,7 +134,7 @@ function Home() {
                 </Link>
               </div>
             ) : (
-              memorials.map((memorial, i) => {
+              visibleMemorials.map((memorial, i) => {
                 const deceased = isDeceasedMemorial(memorial)
                 return (
                 <div
@@ -115,7 +151,7 @@ function Home() {
                           <ApiMediaImage
                             directUrl={memorial.cover_photo_url || null}
                             mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
-                            thumbnail="large"
+                            thumbnail={memorial.cover_photo_url ? null : 'large'}
                             alt={memorial.name}
                             className="card-cover-img"
                             loading={i < 4 ? 'eager' : 'lazy'}

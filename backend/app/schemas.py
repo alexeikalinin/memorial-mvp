@@ -186,6 +186,7 @@ class MemorialListItem(BaseModel):
     media_count: int = 0
     language: str = "ru"
     created_at: datetime
+    is_demo_seed: bool = False  # EN демо из en_memorials_manifest (скрыть на главной по умолчанию)
 
 
 class SetCoverRequest(BaseModel):
@@ -203,6 +204,16 @@ class TimelineItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ElevenLabs (квота для UI)
+class ElevenLabsQuotaResponse(BaseModel):
+    configured: bool = True
+    tier: Optional[str] = None
+    character_count: int = 0
+    character_limit: int = 0
+    characters_remaining: int = 0
+    next_character_count_reset_unix: Optional[int] = None
 
 
 # AI Schemas

@@ -32,6 +32,7 @@ from app.schemas import (
     TimelineItem,
 )
 from app.config import settings
+from en_memorials_manifest import EXPECTED_EN_NAMES
 from app.services.media_service import (
     generate_all_thumbnails,
     validate_image_file,
@@ -144,6 +145,9 @@ async def list_memorials(
             media_count=mc2,
             language=getattr(m, "language", "ru"),
             created_at=m.created_at,
+            is_demo_seed=(
+                getattr(m, "language", "ru") == "en" and m.name in EXPECTED_EN_NAMES
+            ),
         )
         for m, mc, mc2 in rows
     ]

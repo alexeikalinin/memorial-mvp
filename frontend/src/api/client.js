@@ -121,6 +121,7 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  getElevenLabsQuota: () => apiClient.get('/ai/elevenlabs/quota'),
 }
 
 export const mediaAPI = {

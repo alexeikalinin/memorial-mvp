@@ -14,7 +14,7 @@ from app.models import MediaType
 THUMBNAIL_SIZES = {
     "small": (150, 150),
     "medium": (300, 300),
-    "large": (800, 800),
+    "large": (1600, 1600),
 }
 
 

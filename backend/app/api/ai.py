@@ -8,8 +8,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from pathlib import Path
 
+import httpx
+
 from app.db import get_db
-from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship
+from app.auth import get_current_user
+from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User
 from app.schemas import (
     PhotoAnimateRequest,
     PhotoAnimateResponse,
@@ -17,6 +20,7 @@ from app.schemas import (
     AvatarChatResponse,
     AnimationStatusRequest,
     AnimationStatusResponse,
+    ElevenLabsQuotaResponse,
 )
 from app.services.ai_tasks import (
     get_embedding,
@@ -886,4 +890,52 @@ async def sync_family_memories_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка синхронизации: {str(e)}"
+        )
+
+
+@router.get("/elevenlabs/quota", response_model=ElevenLabsQuotaResponse)
+async def get_elevenlabs_quota(_current_user: User = Depends(get_current_user)):
+    """
+    Остаток символов TTS по подписке ElevenLabs (для отображения в UI чата).
+    """
+    key = (settings.ELEVENLABS_API_KEY or "").strip()
+    if not key:
+        return ElevenLabsQuotaResponse(
+            configured=False,
+            tier=None,
+            character_count=0,
+            character_limit=0,
+            characters_remaining=0,
+            next_character_count_reset_unix=None,
+        )
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://api.elevenlabs.io/v1/user/subscription",
+                headers={"xi-api-key": key},
+                timeout=12.0,
+            )
+        if r.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"ElevenLabs API returned {r.status_code}",
+            )
+        data = r.json()
+        used = int(data.get("character_count") or 0)
+        limit = int(data.get("character_limit") or 0)
+        remaining = max(0, limit - used) if limit else 0
+        return ElevenLabsQuotaResponse(
+            configured=True,
+            tier=data.get("tier"),
+            character_count=used,
+            character_limit=limit,
+            characters_remaining=remaining,
+            next_character_count_reset_unix=data.get("next_character_count_reset_unix"),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(e),
         )

@@ -342,9 +342,10 @@ function MemorialDetail() {
         {memorial.cover_photo_id ? (
           <ApiMediaImage
             mediaId={memorial.cover_photo_id}
-            thumbnail="large"
+            thumbnail={null}
             alt={memorial.name}
             className="memorial-hero-img"
+            eager
             fallback={<div className="memorial-hero-empty">🕯</div>}
           />
         ) : (

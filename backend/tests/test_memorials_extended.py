@@ -20,6 +20,7 @@ def test_list_memorials_with_data(auth_client, memorial):
     assert "memories_count" in item
     assert "media_count" in item
     assert "cover_photo_id" in item
+    assert item.get("is_demo_seed") is False
 
 
 def test_update_memorial(auth_client, memorial):

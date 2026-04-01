@@ -61,7 +61,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [includeAudio, setIncludeAudio] = useState(true)
+  const [includeAudio, setIncludeAudio] = useState(false)
   const { lang, t } = useLanguage()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
@@ -70,6 +70,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
   const [voiceName, setVoiceName] = useState('')
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
   const [showVoicePanel, setShowVoicePanel] = useState(false)
+  const [elQuota, setElQuota] = useState(null)
+  const [elQuotaErr, setElQuotaErr] = useState(null)
   const messagesEndRef = useRef(null)
   const voiceRecorder = useVoiceRecorder()
 
@@ -82,6 +84,23 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    let cancelled = false
+    setElQuota(null)
+    setElQuotaErr(null)
+    aiAPI
+      .getElevenLabsQuota()
+      .then((res) => {
+        if (!cancelled) setElQuota(res.data)
+      })
+      .catch(() => {
+        if (!cancelled) setElQuotaErr(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [memorialId])
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -283,8 +302,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
         {coverPhotoId ? (
           <ApiMediaImage
             mediaId={coverPhotoId}
+            thumbnail={null}
             alt={memorialName || 'Avatar'}
             className="avatar-panel-photo"
+            eager
             fallback={
               <div className="avatar-panel-placeholder">
                 <span>{memorialName ? memorialName[0].toUpperCase() : '?'}</span>
@@ -316,6 +337,21 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
 
       {/* ─── Right: Chat panel ───────────────────────────────────── */}
       <div className="chat-panel">
+      {elQuotaErr ? (
+        <p className="chat-tts-quota chat-tts-quota--muted">{t('chat.tts_quota_err')}</p>
+      ) : elQuota && !elQuota.configured ? (
+        <p className="chat-tts-quota chat-tts-quota--muted">{t('chat.tts_quota_off')}</p>
+      ) : elQuota && elQuota.configured ? (
+        <p className="chat-tts-quota">
+          {elQuota.character_limit > 0
+            ? t('chat.tts_quota_on', {
+                remaining: String(elQuota.characters_remaining),
+                limit: String(elQuota.character_limit),
+                tier: String(elQuota.tier ?? '—'),
+              })
+            : t('chat.tts_quota_unlimited')}
+        </p>
+      ) : null}
       <div className="chat-header">
         <div className="chat-header-title">
           <h2>
@@ -493,7 +529,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
                 {coverPhotoId ? (
                   <ApiMediaImage
                     mediaId={coverPhotoId}
-                    thumbnail="small"
+                    thumbnail="medium"
                     alt={memorialName || 'Avatar'}
                     className="message-avatar-img"
                     fallback={
