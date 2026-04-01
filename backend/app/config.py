@@ -131,6 +131,7 @@ class Settings(BaseSettings):
 
     # Application
     DEBUG: bool = True
+    SQL_ECHO: bool = False  # SQL logs are expensive; enable only for debugging.
     API_V1_PREFIX: str = "/api/v1"
     # Локальная разработка + прод фронт на Vercel (можно дописать через env CORS_ORIGINS)
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://memorial-mvp.vercel.app"

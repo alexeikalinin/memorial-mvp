@@ -9,19 +9,19 @@ import './Home.css'
 function Home() {
   const [memorials, setMemorials] = useState([])
   const [loading, setLoading] = useState(true)
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   useEffect(() => {
-    // Без фильтра по `language` в БД: интерфейс может быть EN при мемориалах ru — иначе список пустой.
+    setLoading(true)
     memorialsAPI
-      .list()
+      .list(lang)
       .then((res) => setMemorials(Array.isArray(res.data) ? res.data : []))
       .catch((err) => {
         console.error('Error loading memorials:', err)
         setMemorials([])
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [lang])
 
   return (
     <div className="home">
@@ -120,6 +120,8 @@ function Home() {
                           thumbnail="small"
                           alt={memorial.name}
                           className="card-cover-img"
+                          loading={i < 4 ? 'eager' : 'lazy'}
+                          eager={i < 4}
                           fallback={<div className="card-no-cover">🕯</div>}
                         />
                       ) : (

@@ -14,7 +14,7 @@ if _is_sqlite:
     engine = create_engine(
         settings.DATABASE_URL,
         connect_args={"check_same_thread": False},
-        echo=settings.DEBUG,
+        echo=settings.SQL_ECHO,
     )
 elif _is_postgres:
     engine = create_engine(
@@ -23,10 +23,10 @@ elif _is_postgres:
         pool_size=5,
         max_overflow=10,
         pool_recycle=300,     # переиспользуем соединения каждые 5 мин (для pgBouncer)
-        echo=settings.DEBUG,
+        echo=settings.SQL_ECHO,
     )
 else:
-    engine = create_engine(settings.DATABASE_URL, echo=settings.DEBUG)
+    engine = create_engine(settings.DATABASE_URL, echo=settings.SQL_ECHO)
 
 # Создание фабрики сессий
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
