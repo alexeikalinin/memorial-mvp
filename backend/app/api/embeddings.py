@@ -1,10 +1,11 @@
 """
 API endpoints для управления embeddings воспоминаний.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
+from app.config import settings
 from app.db import get_db
 from app.models import Memory, Memorial
 from app.services.ai_tasks import (
@@ -16,6 +17,54 @@ from app.workers.worker import create_memory_embedding_task
 from app.schemas import MemoryResponse
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
+
+
+def _require_admin_key(x_admin_key: Optional[str] = Header(default=None)):
+    """Simple admin key check for maintenance endpoints."""
+    if not x_admin_key or x_admin_key != settings.SECRET_KEY:
+        raise HTTPException(status_code=403, detail="Admin key required")
+
+
+@router.post("/admin/rebuild-all")
+async def admin_rebuild_all_embeddings(
+    db: Session = Depends(get_db),
+    _: None = Depends(_require_admin_key),
+):
+    """
+    Admin: пересоздать embeddings для ВСЕХ воспоминаний всех мемориалов.
+    Защищён заголовком X-Admin-Key: <SECRET_KEY>.
+    """
+    memories = db.query(Memory).all()
+    ok = 0
+    failed = 0
+    results = []
+
+    for memory in memories:
+        try:
+            embedding = await get_embedding(memory.content)
+            embedding_id = await upsert_memory_embedding(
+                memory_id=memory.id,
+                memorial_id=memory.memorial_id,
+                embedding=embedding,
+                text=memory.content,
+            )
+            if embedding_id:
+                memory.embedding_id = embedding_id
+                ok += 1
+            else:
+                failed += 1
+                results.append({"memory_id": memory.id, "status": "upsert_none"})
+        except Exception as e:
+            failed += 1
+            results.append({"memory_id": memory.id, "status": "error", "detail": str(e)})
+
+    db.commit()
+    return {
+        "total": len(memories),
+        "ok": ok,
+        "failed": failed,
+        "errors": results,
+    }
 
 
 @router.post("/memories/{memory_id}/recreate")
