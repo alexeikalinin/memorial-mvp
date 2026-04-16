@@ -1,11 +1,18 @@
 /* ─── Container ─────────────────────────────────────────────────── */
-.memory-list { width: 100%; }
+.memory-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 
 /* ─── Header ────────────────────────────────────────────────────── */
 .memory-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
   margin-bottom: 1.75rem;
   gap: 1rem;
   flex-wrap: wrap;

@@ -14,12 +14,22 @@ import {
 
 const sid = (id) => String(id)
 
-const NODE_W = 118
-const NODE_H = 132
-const GAP_X = 48
+// GOT-style compact circles: smaller nodes, tighter gaps
+const NODE_W = 90
+/** Node height: avatar (80px) + gap (4px) + name (2 lines ~26px) + years (12px) + rel label (14px) + padding = 148px.
+ *  overflow:hidden clips at this boundary so text never enters the INTER_GEN_GAP. */
+const NODE_H = 148
+const GAP_X = 40
 /** Разрыв между «полосами» линии A / центр (пересечение) / линия B — больше = семьи визуально дальше */
-const LINEAGE_LANE_GAP = 288
-export const ROW_H = 176
+const LINEAGE_LANE_GAP = 260
+/** Базовая высота «этажа» (для совместимости с коннекторами); фактическая высота поколения может быть больше при переносе пар */
+export const ROW_H = 148
+/** На одной горизонтали в сегменте — максимум карточек подряд; сиблинги и одиночки всегда в одну строку */
+const MAX_CARDS_PER_HORIZONTAL = 8
+/** Между подстроками внутри одного поколения (перенос пар/сиблингов) */
+const SUB_ROW_GAP = 32
+/** Между этажами поколений (родители → дети): ≥50px чтобы коннекторы не перекрывались с именами. */
+const INTER_GEN_GAP = 56
 const PAD = 48
 const LABEL_W = 120
 
@@ -257,7 +267,7 @@ function unitSortKey(memorialId, lineageMap) {
 }
 
 /**
- * Пары супругов, группы полных сиблингов (один ряд), пары по ребру sibling/half_sibling, одиночки.
+ * Пары супругов; полные сиблинги — только по 2 в юнит (несколько юнитов подряд); пары по ребру sibling/half_sibling; одиночки.
  */
 function buildUnitsInGeneration(genNodes, edges, lineageMap, allNodes) {
   const ids = genNodes.map((n) => sid(n.memorial_id))
@@ -293,6 +303,7 @@ function buildUnitsInGeneration(genNodes, edges, lineageMap, allNodes) {
     if (inGen.length < 2) continue
     const ordered = sortSiblingIds(inGen, nodeById)
     for (const id of ordered) paired.add(sid(id))
+    // All siblings in one unit — they must appear on the same horizontal line
     units.push({
       type: 'siblingGroup',
       ids: ordered.map((id) => parseInt(id, 10)),
@@ -340,6 +351,182 @@ function rowWidthForIds(count) {
   return count * NODE_W + Math.max(0, count - 1) * GAP_X
 }
 
+function countUnitsCards(units) {
+  let n = 0
+  for (const u of units) n += u.ids.length
+  return n
+}
+
+/**
+ * Group units within a lane segment into sub-rows.
+ * Units are placed on the same sub-row when connected by:
+ *   - sibling / half_sibling edges
+ *   - spouse / partner / ex_spouse edges
+ *   - shared parent (half-siblings from different marriages → same row, no crossing lines)
+ * Returns an array of "row groups", each group being an array of units.
+ */
+function groupUnitsByRow(units, edgeList) {
+  if (!units.length) return []
+  // Map each node id → unit index
+  const idToUnit = new Map()
+  units.forEach((u, i) => u.ids.forEach((id) => idToUnit.set(String(id), i)))
+  // Union-Find
+  const par = units.map((_, i) => i)
+  function find(x) { return par[x] === x ? x : (par[x] = find(par[x])) }
+  function union(a, b) {
+    const pa = find(a), pb = find(b)
+    if (pa !== pb) par[pa] = pb
+  }
+  // 1) Union units connected by sibling OR spouse/ex_spouse edges
+  for (const e of edgeList) {
+    const et = String(e.type).toLowerCase()
+    const isSib = et === 'sibling' || et === 'half_sibling'
+    const isSp = et === 'spouse' || et === 'partner' || et === 'ex_spouse'
+    if (!isSib && !isSp) continue
+    const si = idToUnit.get(String(e.source))
+    const ti = idToUnit.get(String(e.target))
+    if (si === undefined || ti === undefined || si === ti) continue
+    union(si, ti)
+  }
+  // 2) Union units that share a common parent (half-siblings / children of different marriages)
+  //    Without this, Claire (of Robert+Linda) and Michael (of Robert+Patricia) end up in
+  //    separate sub-rows and their connector lines cross each other.
+  const parentOf = {}  // childId → Set<parentId>
+  for (const e of edgeList) {
+    const et = String(e.type).toLowerCase()
+    let parentId, childId
+    if (et === 'child' || et === 'adoptive_child' || et === 'step_child') {
+      parentId = String(e.source); childId = String(e.target)
+    } else if (et === 'parent' || et === 'adoptive_parent' || et === 'step_parent') {
+      parentId = String(e.target); childId = String(e.source)
+    } else continue
+    const ci = idToUnit.get(childId)
+    if (ci === undefined) continue  // child not in this segment
+    if (!parentOf[parentId]) parentOf[parentId] = []
+    parentOf[parentId].push(ci)
+  }
+  for (const childUnits of Object.values(parentOf)) {
+    // All units that share this parent → same row group
+    for (let i = 1; i < childUnits.length; i++) union(childUnits[0], childUnits[i])
+  }
+  // Collect clusters in order of first appearance
+  const clusterOrder = []
+  const clusterMap = new Map()
+  units.forEach((u, i) => {
+    const root = find(i)
+    if (!clusterMap.has(root)) { clusterMap.set(root, []); clusterOrder.push(root) }
+    clusterMap.get(root).push(u)
+  })
+  return clusterOrder.map((r) => clusterMap.get(r))
+}
+
+/**
+ * Build a Set of "min|max" id pairs that are auto-detected as ex-spouses:
+ * Person X has 2+ spouse connections and one of their partners died earlier
+ * than another (= prior/replaced marriage). Mirrors the logic in
+ * familyTreeOrthogonalConnectors.js → autoExSet.
+ */
+function buildAutoExSet(edgeList, allNodes) {
+  const idToDead = new Map()
+  const idToDeathYear = new Map()
+  for (const n of allNodes || []) {
+    idToDead.set(String(n.memorial_id), !!n.death_year)
+    idToDeathYear.set(String(n.memorial_id), n.death_year || null)
+  }
+  // Collect spouse pairs
+  const spousePairsArr = []
+  const seen = new Set()
+  for (const e of edgeList || []) {
+    const et = String(e.type).toLowerCase()
+    if (et !== 'spouse' && et !== 'partner' && et !== 'ex_spouse') continue
+    const a = String(e.source), b = String(e.target)
+    const key = a < b ? `${a}|${b}` : `${b}|${a}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    spousePairsArr.push([a, b, et])
+  }
+  // Count spouses per person
+  const spousePartnersOf = {}
+  for (const [a, b] of spousePairsArr) {
+    ;(spousePartnersOf[a] = spousePartnersOf[a] || []).push(b)
+    ;(spousePartnersOf[b] = spousePartnersOf[b] || []).push(a)
+  }
+  const autoExSet = new Set()
+  for (const [personId, partners] of Object.entries(spousePartnersOf)) {
+    if (partners.length < 2) continue
+    const anyAlive = partners.some((p) => !idToDead.get(p))
+    if (anyAlive) {
+      for (const p of partners) {
+        if (idToDead.get(p)) autoExSet.add(personId < p ? `${personId}|${p}` : `${p}|${personId}`)
+      }
+    } else {
+      // All partners deceased — 💔 for those who died earliest (= prior marriage)
+      const sorted = partners.slice().sort((x, y) => {
+        return (idToDeathYear.get(x) || 9999) - (idToDeathYear.get(y) || 9999)
+      })
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const p = sorted[i]
+        autoExSet.add(personId < p ? `${personId}|${p}` : `${p}|${personId}`)
+      }
+    }
+  }
+  // Also include explicit ex_spouse edges
+  for (const [a, b, et] of spousePairsArr) {
+    if (et === 'ex_spouse') autoExSet.add(a < b ? `${a}|${b}` : `${b}|${a}`)
+  }
+  return autoExSet
+}
+
+/**
+ * Reorder units within a row group so ex-spouse singles appear BEFORE the pair
+ * they're connected to. This keeps [Patricia 💔 Robert ♥ Linda] order instead of
+ * [Robert ♥ Linda … Patricia] where the 💔 would be hidden behind Linda.
+ */
+function reorderGroupForExSpouse(group, edgeList, allNodes) {
+  if (group.length < 2) return group
+  const exPairs = buildAutoExSet(edgeList, allNodes)
+  if (!exPairs.size) return group
+
+  // Find a pair unit and a single unit connected via ex-spouse
+  let pairIdx = -1
+  let exSingleIdx = -1
+  outer:
+  for (let i = 0; i < group.length; i++) {
+    if (group[i].type !== 'pair') continue
+    for (let j = 0; j < group.length; j++) {
+      if (i === j || group[j].type === 'pair') continue
+      for (const pid of group[i].ids) {
+        for (const sid2 of group[j].ids) {
+          const key = String(pid) < String(sid2)
+            ? `${pid}|${sid2}` : `${sid2}|${pid}`
+          if (exPairs.has(key)) {
+            pairIdx = i
+            exSingleIdx = j
+            break outer
+          }
+        }
+      }
+    }
+  }
+  if (exSingleIdx === -1) return group
+
+  // Move ex-spouse single to just before the pair → [Patricia, Robert+Linda]
+  const result = group.filter((_, i) => i !== exSingleIdx)
+  const insertAt = result.indexOf(group[pairIdx])
+  result.splice(insertAt, 0, group[exSingleIdx])
+  return result
+}
+
+/** Width of the widest sub-row in a set of row groups */
+function rowGroupsWidth(groups) {
+  let maxW = 0
+  for (const group of groups) {
+    const n = group.reduce((s, u) => s + u.ids.length, 0)
+    maxW = Math.max(maxW, rowWidthForIds(n))
+  }
+  return maxW
+}
+
 /**
  * Раскидать юниты по 5 полосам: A слева, центр, B справа, C и D — правые дополнительные.
  * Сохраняет порядок появления юнитов в исходном списке.
@@ -356,9 +543,15 @@ function clusterUnitsIntoLanes(units, lineageMap, hasAInRow, hasBInRow, hasCInRo
     const hasB = Ls.includes('B')
     const hasC = Ls.includes('C')
     const hasD = Ls.includes('D')
+    // 'N' = bridge node (connected to a stub) — always placed in center column
+    const hasBridge = Ls.includes('N')
     let bucket = left
-    if ((hasA && hasB) || (hasA && hasC) || (hasB && hasC) || hasD && (hasA || hasB || hasC)) bucket = center
-    else if (hasD && !hasA && !hasB && !hasC) bucket = extraRight
+    if (hasBridge) {
+      // Any unit containing a bridge node goes to center (cross-family couple column)
+      bucket = center
+    } else if ((hasA && hasB) || (hasA && hasC) || (hasB && hasC) || hasD && (hasA || hasB || hasC)) {
+      bucket = center
+    } else if (hasD && !hasA && !hasB && !hasC) bucket = extraRight
     else if (hasC && !hasA && !hasB && !hasD) bucket = farRight
     else if (hasB && !hasA) bucket = right
     else if (hasA && !hasB) bucket = left
@@ -381,10 +574,13 @@ function clusterUnitsIntoLanes(units, lineageMap, hasAInRow, hasBInRow, hasCInRo
   return { left, center, right, farRight, extraRight }
 }
 
+/** Ширина колонки: не больше двух карточек в ряд — ширина сегмента по самой широкой линии */
 function segmentWidthUnits(units) {
-  let n = 0
-  for (const u of units) n += u.ids.length
-  return rowWidthForIds(n)
+  if (!units.length) return 0
+  // Width = widest single unit in the segment (siblings all on one row)
+  let maxW = 0
+  for (const u of units) maxW = Math.max(maxW, rowWidthForIds(u.ids.length))
+  return maxW
 }
 
 /** То же с меткой колонки для фиксированной раскладки (A слева, B справа). */
@@ -399,9 +595,11 @@ function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
 }
 
 /**
- * @returns {{ positions: Record<string, {x,y,cx,cy}>, canvas: {width,height}, lineage, surnameA, surnameB, orderedIds: string[], minGen, maxGen }}
+ * @param {boolean} [singleFamilyMode=false]  When true: ignore lane separation (no LINEAGE_LANE_GAP).
+ *   All units are placed in one centred column. Use when only one primary family is visible.
+ * @returns {{ positions, canvas, lineage, surnameA, surnameB, orderedIds, minGen, maxGen, genBands, labelAreaX, labelAreaW }}
  */
-export function buildGenerationLayout(graphData) {
+export function buildGenerationLayout(graphData, singleFamilyMode = false) {
   const nodesIn = graphData?.nodes || []
   const edgesStripped = stripSiblingConflictingParentEdges(graphData?.edges || [], nodesIn)
   const graphForRefine = graphData ? { ...graphData, edges: edgesStripped } : graphData
@@ -412,6 +610,28 @@ export function buildGenerationLayout(graphData) {
   const rawNodes = refined?.nodes || []
   const edges = refined?.edges || []
   const layoutDepth = rawNodes.length ? computeLayoutDepthOldestTop(rawNodes, edges) : {}
+
+  // In singleFamilyMode, stub nodes from other families may land at wrong depths
+  // (e.g. born earlier than visible-family members, placed in an ancestor row).
+  // Snap each stub to the average generation of its directly-connected visible neighbors.
+  if (singleFamilyMode) {
+    const visibleGenIds = new Set(rawNodes.filter((n) => !n._stub).map((n) => sid(n.memorial_id)))
+    for (const n of rawNodes) {
+      if (!n._stub) continue
+      const id = sid(n.memorial_id)
+      const neighborGens = []
+      for (const e of edges) {
+        const s = sid(e.source)
+        const t = sid(e.target)
+        if (s === id && visibleGenIds.has(t) && layoutDepth[t] !== undefined) neighborGens.push(layoutDepth[t])
+        if (t === id && visibleGenIds.has(s) && layoutDepth[s] !== undefined) neighborGens.push(layoutDepth[s])
+      }
+      if (neighborGens.length) {
+        layoutDepth[id] = Math.round(neighborGens.reduce((a, b) => a + b, 0) / neighborGens.length)
+      }
+    }
+  }
+
   const nodesAfterDepth = rawNodes.map((n) => {
     const id = sid(n.memorial_id)
     const g = layoutDepth[id]
@@ -448,6 +668,70 @@ export function buildGenerationLayout(graphData) {
     byGen[g].push({ ...n, generation: g })
   }
 
+  // In singleFamilyMode:
+  //   - visible nodes NOT connected to stubs → 'A' (left column, pure family)
+  //   - visible nodes directly connected to stubs → 'N' (center column, bridge couple)
+  //   - stub nodes → 'B' (right column)
+  //
+  // This gives the "bridge couple in the middle" layout:
+  //   [Pure Kelly] | [Kelly ♥ Anderson-born] | [Anderson stubs]
+  const stubIdSet = singleFamilyMode
+    ? new Set(nodes.filter((n) => n._stub).map((n) => String(n.memorial_id)))
+    : new Set()
+
+  let effectiveLineage
+  if (singleFamilyMode) {
+    // Start: non-stub → 'A', stub → 'B'
+    effectiveLineage = Object.fromEntries(
+      Object.keys(lineage).map((k) => [k, stubIdSet.has(k) ? 'B' : 'A'])
+    )
+    // Promote to 'N' any non-stub node that has a direct edge to a stub
+    for (const k of Object.keys(effectiveLineage)) {
+      if (effectiveLineage[k] !== 'A') continue
+      for (const e of edges) {
+        const s = String(e.source)
+        const t = String(e.target)
+        if ((s === k && effectiveLineage[t] === 'B') || (t === k && effectiveLineage[s] === 'B')) {
+          effectiveLineage[k] = 'N'
+          break
+        }
+      }
+    }
+    // Propagate 'N' to descendants — BUT only when ALL known parents are N.
+    // This prevents children of mixed couples (one N parent + one A parent, e.g. first marriage)
+    // from being pulled into the bridge center column.
+    let npChanged = true
+    while (npChanged) {
+      npChanged = false
+      const childParentCounts = {}
+      for (const e of edges) {
+        const et = String(e.type).toLowerCase()
+        let parentId, childId
+        if (et === 'child' || et === 'adoptive_child' || et === 'step_child') {
+          parentId = String(e.source); childId = String(e.target)
+        } else if (et === 'parent' || et === 'adoptive_parent' || et === 'step_parent') {
+          parentId = String(e.target); childId = String(e.source)
+        } else continue
+        if (!effectiveLineage[parentId] || !effectiveLineage[childId]) continue
+        if (!childParentCounts[childId]) childParentCounts[childId] = { total: 0, nCount: 0 }
+        childParentCounts[childId].total++
+        if (effectiveLineage[parentId] === 'N') childParentCounts[childId].nCount++
+      }
+      for (const [childId, counts] of Object.entries(childParentCounts)) {
+        if (
+          effectiveLineage[childId] === 'A' &&
+          counts.total > 0 &&
+          counts.nCount === counts.total  // ALL parents must be N
+        ) {
+          effectiveLineage[childId] = 'N'
+          npChanged = true
+        }
+      }
+    }
+  } else {
+    effectiveLineage = lineage
+  }
+
   const rowLanes = {}
   let maxLeftW = 0
   let maxCenterW = 0
@@ -461,14 +745,14 @@ export function buildGenerationLayout(graphData) {
   let hasAnyExtraRight = false
   for (let g = minGen; g <= maxGen; g++) {
     const rowNodes = byGen[g] || []
-    const units = buildUnitsInGeneration(rowNodes, edges, lineage, nodes)
-    const hasAInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'A')
-    const hasBInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'B')
-    const hasCInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'C')
-    const hasDInRow = rowNodes.some((n) => lineage[n.memorial_id] === 'D')
+    const units = buildUnitsInGeneration(rowNodes, edges, effectiveLineage, nodes)
+    const hasAInRow = rowNodes.some((n) => effectiveLineage[n.memorial_id] === 'A')
+    const hasBInRow = rowNodes.some((n) => effectiveLineage[n.memorial_id] === 'B')
+    const hasCInRow = !singleFamilyMode && rowNodes.some((n) => lineage[n.memorial_id] === 'C')
+    const hasDInRow = !singleFamilyMode && rowNodes.some((n) => lineage[n.memorial_id] === 'D')
     const { left, center, right, farRight, extraRight } = clusterUnitsIntoLanes(
       units,
-      lineage,
+      effectiveLineage,
       hasAInRow,
       hasBInRow,
       hasCInRow,
@@ -480,12 +764,15 @@ export function buildGenerationLayout(graphData) {
     if (right.length) hasAnyRight = true
     if (farRight.length) hasAnyFarRight = true
     if (extraRight.length) hasAnyExtraRight = true
-    maxLeftW = Math.max(maxLeftW, segmentWidthUnits(left))
-    maxCenterW = Math.max(maxCenterW, segmentWidthUnits(center))
-    maxRightW = Math.max(maxRightW, segmentWidthUnits(right))
-    maxFarRightW = Math.max(maxFarRightW, segmentWidthUnits(farRight))
-    maxExtraRightW = Math.max(maxExtraRightW, segmentWidthUnits(extraRight))
+    maxLeftW = Math.max(maxLeftW, rowGroupsWidth(groupUnitsByRow(left, edges)))
+    maxCenterW = Math.max(maxCenterW, rowGroupsWidth(groupUnitsByRow(center, edges)))
+    maxRightW = Math.max(maxRightW, rowGroupsWidth(groupUnitsByRow(right, edges)))
+    maxFarRightW = Math.max(maxFarRightW, rowGroupsWidth(groupUnitsByRow(farRight, edges)))
+    maxExtraRightW = Math.max(maxExtraRightW, rowGroupsWidth(groupUnitsByRow(extraRight, edges)))
   }
+
+  // singleFamilyMode: small gap — stubs just to the right of main family column
+  const laneGap = singleFamilyMode ? 100 : LINEAGE_LANE_GAP
 
   /** Фиксированные колонки: без центрирования ряда — иначе строки только Kelly и только Anderson накладываются по X. */
   const columnLayout = []
@@ -493,22 +780,22 @@ export function buildGenerationLayout(graphData) {
   if (hasAnyLeft) {
     columnLayout.push({ kind: 'left', start: xCursor, maxW: maxLeftW })
     xCursor += maxLeftW
-    if (hasAnyCenter || hasAnyRight) xCursor += LINEAGE_LANE_GAP
+    if (hasAnyCenter || hasAnyRight) xCursor += laneGap
   }
   if (hasAnyCenter) {
     columnLayout.push({ kind: 'center', start: xCursor, maxW: maxCenterW })
     xCursor += maxCenterW
-    if (hasAnyRight) xCursor += LINEAGE_LANE_GAP
+    if (hasAnyRight) xCursor += laneGap
   }
   if (hasAnyRight) {
     columnLayout.push({ kind: 'right', start: xCursor, maxW: maxRightW })
     xCursor += maxRightW
-    if (hasAnyFarRight) xCursor += LINEAGE_LANE_GAP
+    if (hasAnyFarRight) xCursor += laneGap
   }
   if (hasAnyFarRight) {
     columnLayout.push({ kind: 'farRight', start: xCursor, maxW: maxFarRightW })
     xCursor += maxFarRightW
-    if (hasAnyExtraRight) xCursor += LINEAGE_LANE_GAP
+    if (hasAnyExtraRight) xCursor += laneGap
   }
   if (hasAnyExtraRight) {
     columnLayout.push({ kind: 'extraRight', start: xCursor, maxW: maxExtraRightW })
@@ -516,73 +803,97 @@ export function buildGenerationLayout(graphData) {
   }
 
   const canvasW = Math.max(720, xCursor + PAD)
-  const numRows = maxGen - minGen + 1
-  const canvasH = PAD * 2 + numRows * ROW_H
+
+  const genBandTop = {}
+  const genBandHeight = {}
+  let yAcc = PAD
+  for (let g = minGen; g <= maxGen; g++) {
+    const { left, center, right, farRight, extraRight } = rowLanes[g]
+    const laneGroups = [left, center, right, farRight, extraRight]
+      .filter((arr) => arr.length > 0)
+      .map((arr) => groupUnitsByRow(arr, edges))
+    const maxLines = laneGroups.length
+      ? Math.max(1, ...laneGroups.map((gs) => gs.length))
+      : 1
+    const h = maxLines * NODE_H + Math.max(0, maxLines - 1) * SUB_ROW_GAP
+    genBandTop[g] = yAcc
+    genBandHeight[g] = h
+    yAcc += h
+    if (g < maxGen) yAcc += INTER_GEN_GAP
+  }
+  const canvasH = yAcc + PAD
+
+  // Generation band metadata for labels
+  const genBands = {}
+  for (let g = minGen; g <= maxGen; g++) {
+    const genNodes = byGen[g] || []
+    const years = genNodes
+      .map((n) => n.birth_year)
+      .filter((y) => y != null && Number.isFinite(Number(y)))
+      .map(Number)
+    const minYear = years.length ? Math.min(...years) : null
+    const decade = minYear != null ? Math.floor(minYear / 10) * 10 + 's' : null
+    genBands[g] = {
+      top: genBandTop[g],
+      height: genBandHeight[g],
+      decade,
+      minYear,
+      genIndex: g - minGen + 1, // 1-based label
+    }
+  }
 
   const positions = {}
   const laneGapBands = []
   for (let i = 0; i < columnLayout.length - 1; i++) {
     const gapX = columnLayout[i].start + columnLayout[i].maxW
     for (let g = minGen; g <= maxGen; g++) {
-      const y = PAD + (g - minGen) * ROW_H
+      const top = genBandTop[g]
+      const bandH = genBandHeight[g]
       laneGapBands.push({
         x: gapX,
-        y: y + 4,
-        width: LINEAGE_LANE_GAP,
-        height: ROW_H - 8,
+        y: top + 4,
+        width: laneGap,
+        height: Math.max(8, bandH - 8),
       })
     }
   }
 
-  function startXForSegment(kind, units) {
-    const col = columnLayout.find((c) => c.kind === kind)
+  function x0ForLine(kind, col, lineCardCount) {
+    const lineW = rowWidthForIds(lineCardCount)
     if (!col) return PAD + LABEL_W
-    const segW = segmentWidthUnits(units)
     if (kind === 'left') return col.start
-    if (kind === 'center') return col.start + (col.maxW - segW) / 2
-    return col.start + col.maxW - segW
+    if (kind === 'center') return col.start + (col.maxW - lineW) / 2
+    return col.start + col.maxW - lineW
   }
 
   for (let g = minGen; g <= maxGen; g++) {
     const { left, center, right, farRight, extraRight } = rowLanes[g]
     const segments = nonEmptyLanesTagged(left, center, right, farRight, extraRight)
-    const y = PAD + (g - minGen) * ROW_H
+    const baseY = genBandTop[g]
     for (const seg of segments) {
-      let x = startXForSegment(seg.kind, seg.units)
-      const idsInLane = []
-      for (const u of seg.units) idsInLane.push(...u.ids)
-      for (let j = 0; j < idsInLane.length; j++) {
-        const mid = idsInLane[j]
-        const id = sid(mid)
-        positions[id] = {
-          x,
-          y,
-          cx: x + NODE_W / 2,
-          cy: y + NODE_H / 2,
-        }
-        if (j < idsInLane.length - 1) x += NODE_W + GAP_X
-        else x += NODE_W
+      const col = columnLayout.find((c) => c.kind === seg.kind)
+      // Group sibling units onto the same sub-row
+      const groups = groupUnitsByRow(seg.units, edges)
+      let subY = baseY
+      for (const group of groups) {
+        // All units in this group share the same Y (siblings side-by-side)
+        // Reorder so ex-spouse singles appear before the pair they connect to:
+        //   [Patricia 💔 Robert ♥ Linda] instead of [Robert ♥ Linda … Patricia]
+        const orderedGroup = reorderGroupForExSpouse(group, edges, nodes)
+        const rowIds = orderedGroup.flatMap((u) => u.ids)
+        const x0 = x0ForLine(seg.kind, col, rowIds.length)
+        rowIds.forEach((mid, j) => {
+          const id = sid(mid)
+          const x = x0 + j * (NODE_W + GAP_X)
+          positions[id] = {
+            x,
+            y: subY,
+            cx: x + NODE_W / 2,
+            cy: subY + NODE_H / 2,
+          }
+        })
+        subY += NODE_H + SUB_ROW_GAP
       }
-    }
-  }
-
-  const genToMinY = {}
-  for (const n of nodes) {
-    const id = sid(n.memorial_id)
-    const p = positions[id]
-    if (!p) continue
-    const g = normalizeGenerationValue(n.generation)
-    if (genToMinY[g] === undefined || p.y < genToMinY[g]) genToMinY[g] = p.y
-  }
-  for (const n of nodes) {
-    const id = sid(n.memorial_id)
-    const p = positions[id]
-    if (!p) continue
-    const g = normalizeGenerationValue(n.generation)
-    const y = genToMinY[g]
-    if (y !== undefined) {
-      p.y = y
-      p.cy = y + NODE_H / 2
     }
   }
 
@@ -600,6 +911,9 @@ export function buildGenerationLayout(graphData) {
     minGen,
     maxGen,
     laneGapBands,
+    genBands,
+    labelAreaX: PAD,
+    labelAreaW: LABEL_W,
   }
 }
 

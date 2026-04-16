@@ -97,7 +97,7 @@ function MemorialPublic() {
         {memorial.cover_photo_id ? (
           <ApiMediaImage
             mediaId={memorial.cover_photo_id}
-            thumbnail="large"
+            thumbnail={null}
             alt={memorial.name}
             className="public-hero-img"
             fallback={<div className="public-hero-empty">🕯</div>}

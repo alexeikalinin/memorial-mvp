@@ -19,11 +19,8 @@ export default {
     empty: 'No memorials created yet',
     create_first: 'Create your first memorial',
     show_demo: 'Show demo memorials',
-    hide_demo: 'Hide demo memorials',
     demo_hint:
-      'English demo / seed memorials from the repo are hidden by default. Turn on to browse the full investor demo set.',
-    demo_only_hidden:
-      'Every memorial in this list is a demo page. Show demo memorials to see them.',
+      'English demo pages from the repo seed set are listed here when expanded — same data as in production, tucked away for a cleaner home list.',
   },
   tabs: {
     media: 'Media',
@@ -36,7 +33,7 @@ export default {
     loading: 'Loading timeline…',
     empty_title: 'No memories yet',
     empty_hint:
-      'Add memories — undated ones appear under “No date”. Dated events sort by “When it was”.',
+      'Add memories — undated ones appear under "No date". Dated events sort by "When it was".',
     title: 'Life timeline',
   },
   chat: {
@@ -66,12 +63,12 @@ export default {
     voice_uploaded: 'Avatar voice loaded',
     voice_change: 'Change',
     voice_panel_title: 'Avatar voice clone',
-    voice_hint: 'The avatar will speak in this person’s voice. At least 1 minute of clean speech without noise.',
+    voice_hint: "The avatar will speak in this person's voice. At least 1 minute of clean speech without noise.",
     mic_denied: 'Microphone access denied.',
     family_tooltip_title: 'Hint',
-    family_tooltip_on: 'When enabled, answers use memories from this person and from relatives’ memorials where they are mentioned.',
-    family_tooltip_off: 'When disabled, only this person’s memories are used.',
-    sync_confirm: 'Run family memory sync? This may create new memories on relatives’ memorials based on this text.',
+    family_tooltip_on: "When enabled, answers use memories from this person and from relatives' memorials where they are mentioned.",
+    family_tooltip_off: "When disabled, only this person's memories are used.",
+    sync_confirm: "Run family memory sync? This may create new memories on relatives' memorials based on this text.",
     sync_done: 'Sync complete. Created: {created}, skipped: {skipped}.',
     sync_error: 'Sync failed',
     clear_confirm: 'Clear chat history?',
@@ -335,6 +332,9 @@ export default {
     hidden_connections: 'Hidden connections',
     hide_connections: 'Hide connections',
     add_relation: '+ Add relation',
+    edit_mode: '✎ Edit layout',
+    edit_mode_exit: '✓ Done editing',
+    connect_title: 'Create connection',
     kelly_only_banner:
       'Showing the Kelly family only — other families are hidden until we connect them in the next steps.',
     kelly_anderson_banner:
@@ -343,6 +343,9 @@ export default {
       'Showing Kelly, Anderson, and one additional family branch. Other surnames stay hidden to keep the tree readable.',
     kelly_anderson_four_banner:
       'Showing four families: Kelly, Anderson, and two additional branches. Other surnames stay hidden for readability.',
+    unlock_hint: 'Connected families:',
+    stub_show: 'Show tree',
+    stub_show_family_title: 'Show this family tree',
     // empty state
     empty_title: 'Your family history starts here',
     empty_hint: 'Add the first relation to start building the tree',
@@ -392,6 +395,7 @@ export default {
     rel_parent: 'Parent',
     rel_child: 'Child',
     rel_spouse: 'Spouse',
+    rel_ex_spouse: 'Ex-spouse',
     rel_sibling: 'Sibling',
     rel_grandparent: 'Grandparent',
     rel_grandchild: 'Grandchild',
@@ -403,9 +407,10 @@ export default {
     rel_stepchild: 'Stepchild',
     rel_great_grandparent: 'Great-grandparent',
     rel_great_grandchild: 'Great-grandchild',
+    rel_great_great_grandparent: 'Great-great-grandparent',
     rel_great_aunt_uncle: 'Great-aunt / Great-uncle',
     rel_cousin: 'Cousin',
-    rel_distant_prefix: 'Distant relative via',
+    rel_distant_prefix: 'Relative',
     // hints
     tree_layout_hint:
       'Each card is one memorial. Older generations are at the top, younger at the bottom. The orange line marks a marriage between two separate family lines.',
@@ -419,16 +424,18 @@ export default {
     layout_pedigree: 'Pedigree layout',
     cluster_other: 'Other',
     gen_legend_hint:
-      'Rows = generations (older at top). Each pill color is one surname cluster in this graph — every card uses its surname’s color at full strength. Spouses sit in the same row (same generation). Zoom in for marriage rings; zoom out for the full tree.',
-    gen_legend_expand: 'How to read colors, lines, and labels',
+      'Each row is one generation — grandparents at top, grandchildren at bottom. Each color represents a family name. Lines connect parents and children; horizontal lines connect spouses.',
+    gen_legend_expand: 'How to read the tree',
+    split_border_title:
+      'Split border: each half is a surname-cluster color from the legend (e.g. Kelly vs Anderson)—not a separate "missing" family line on the graph.',
     gen_legend_help_borders:
-      'Each surname that appears in the tree gets its own color (by how often it appears). The card border uses exactly that color. Lanes left / center / right are still an old layout heuristic for the two most common names, but every person’s frame matches their actual surname cluster. A gold halo on a card means they are part of a cross-surname marriage. Rows are centered as a whole so a lone person can sit in the visual middle. A split two-color frame (maiden | married) appears only when this tree already shows a non-spouse link to someone from the maiden surname—e.g. a sister of her brother in that family. If only the marriage is in the data, the frame stays one color: the married surname cluster (typically the husband’s line).',
+      'Card border color = family name color. A split two-color border means this person connects two families (e.g. born Kelly, married into Anderson). A gold glow means they married into a different family name shown in the tree.',
     gen_legend_help_lines:
-      'Descent: follow lines downward from parents toward children. Spouses: a horizontal segment runs between the two portraits (often near the bottom of the cards). A dashed golden horizontal line marks a marriage between two different surname clusters. When zoomed in, each wedding ring uses that spouse’s cluster color—the same palette as their card border and legend pill—so two spouses from different families show two different ring colors (not a single generic color).',
+      'Lines going down = parent → child. Horizontal line between two portraits = spouses. A dashed golden line = marriage between two different family names. Zoom in to see wedding rings — each ring uses the spouse\'s family color.',
     gen_legend_help_generation:
-      'Row height is driven by the server “generation” value relative to the memorial you opened (0 = that person, negative = ancestors toward the top of the page, positive = descendants below; spouses share the same row). It reflects saved parent/child/spouse links, not sort order by birth year — so an older person can appear under a younger one if the graph path from your anchor memorial makes them a descendant in data.',
+      'Row position is based on the family link path, not birth year — so someone older can appear lower if the data connects them as a descendant of your starting person.',
     gen_legend_help_labels:
-      'The small italic line under a name tells how that person is related to {rootName} (the memorial you opened). It is omitted on that person’s own card. “Distant relative via…” means more than two steps away on the relationship path.',
+      'The small italic line under a name shows how that person is related to {rootName}. "Distant relative via…" means the connection is more than two steps away.',
     gen_legend_root_fallback: 'the person on this memorial page',
     gen_row_label: (n) => `Gen ${n}`,
   },

@@ -154,11 +154,15 @@
 .main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* Avoid 1px body (#FAF8F5) showing between sections on short pages */
+  background: transparent;
 }
 
 /* ─── Footer ────────────────────────────────────────────────────── */
 .footer {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(28, 25, 23, 0.08);
   padding: 2rem 0;
   background: var(--surface-warm);
 }

@@ -32,6 +32,9 @@ def _add_missing_columns():
                         "ALTER TABLE memorials ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'ru'"
                     )
                 )
+        if "tree_layout_json" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE memorials ADD COLUMN tree_layout_json JSON"))
     if insp.has_table("users"):
         ucols = {c["name"] for c in insp.get_columns("users")}
         user_alters = []
@@ -39,6 +42,12 @@ def _add_missing_columns():
             user_alters.append("ALTER TABLE users ADD COLUMN google_id VARCHAR(255)")
         if "avatar_url" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)")
+        if "subscription_plan" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN subscription_plan VARCHAR(20) NOT NULL DEFAULT 'free'")
+        if "plan_expires_at" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN plan_expires_at DATETIME")
+        if "lifetime_memorial_id" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN lifetime_memorial_id INTEGER")
         if user_alters:
             with engine.begin() as conn:
                 for sql in user_alters:

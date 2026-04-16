@@ -337,35 +337,36 @@ function MemorialDetail() {
   return (
     <div className="memorial-detail">
 
-      {/* ── Hero Header ── */}
+      {/* ── Hero Header (portrait left, name + actions right) ── */}
       <div className="memorial-hero">
-        {memorial.cover_photo_id ? (
-          <ApiMediaImage
-            mediaId={memorial.cover_photo_id}
-            thumbnail={null}
-            alt={memorial.name}
-            className="memorial-hero-img"
-            eager
-            fallback={<div className="memorial-hero-empty">🕯</div>}
-          />
-        ) : (
-          <div className="memorial-hero-empty">🕯</div>
-        )}
-        <div className="memorial-hero-overlay" />
+        <div className="memorial-hero-media">
+          {memorial.cover_photo_id ? (
+            <ApiMediaImage
+              mediaId={memorial.cover_photo_id}
+              thumbnail={null}
+              alt={memorial.name}
+              className="memorial-hero-img"
+              eager
+              fallback={<div className="memorial-hero-empty">🕯</div>}
+            />
+          ) : (
+            <div className="memorial-hero-empty">🕯</div>
+          )}
+        </div>
+        <div className="memorial-hero-main">
+          <div className="memorial-hero-info">
+            <div className="memorial-hero-text">
+              <h1 className="memorial-hero-name">{memorial.name}</h1>
+              {(birthYear || deathYear) && (
+                <p className="memorial-hero-dates">
+                  {birthYear && birthYear}
+                  {birthYear && deathYear && ' — '}
+                  {deathYear && deathYear}
+                </p>
+              )}
+            </div>
 
-        <div className="memorial-hero-info">
-          <div className="memorial-hero-text">
-            <h1 className="memorial-hero-name">{memorial.name}</h1>
-            {(birthYear || deathYear) && (
-              <p className="memorial-hero-dates">
-                {birthYear && birthYear}
-                {birthYear && deathYear && ' — '}
-                {deathYear && deathYear}
-              </p>
-            )}
-          </div>
-
-          <div className="memorial-hero-actions">
+            <div className="memorial-hero-actions">
             {canEdit && (
               <button
                 className="btn-edit-header"
@@ -410,6 +411,7 @@ function MemorialDetail() {
                 {deleting ? t('detail.deleting') : '✕'}
               </button>
             )}
+            </div>
           </div>
         </div>
       </div>
@@ -538,7 +540,7 @@ function MemorialDetail() {
 
       <div className="tab-content">
         {mountedTabs.has('media') && (
-          <div style={{ display: activeTab === 'media' ? '' : 'none' }}>
+          <div style={{ display: activeTab === 'media' ? 'block' : 'none' }}>
             <MediaGallery
               memorialId={id}
               onReload={loadMemorial}
@@ -549,12 +551,12 @@ function MemorialDetail() {
           </div>
         )}
         {mountedTabs.has('memories') && (
-          <div style={{ display: activeTab === 'memories' ? '' : 'none' }}>
+          <div style={{ display: activeTab === 'memories' ? 'block' : 'none' }}>
             <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} />
           </div>
         )}
         {mountedTabs.has('chat') && (
-          <div style={{ display: activeTab === 'chat' ? '' : 'none' }}>
+          <div style={{ display: activeTab === 'chat' ? 'block' : 'none' }}>
             <AvatarChat
               memorialId={id}
               coverPhotoId={memorial.cover_photo_id}
@@ -563,12 +565,12 @@ function MemorialDetail() {
           </div>
         )}
         {mountedTabs.has('family') && (
-          <div style={{ display: activeTab === 'family' ? '' : 'none' }}>
+          <div style={{ display: activeTab === 'family' ? 'block' : 'none' }}>
             <FamilyTree memorialId={id} />
           </div>
         )}
         {mountedTabs.has('timeline') && (
-          <div style={{ display: activeTab === 'timeline' ? '' : 'none' }}>
+          <div style={{ display: activeTab === 'timeline' ? 'block' : 'none' }}>
             <LifeTimeline memorialId={id} />
           </div>
         )}

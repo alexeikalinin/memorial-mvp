@@ -258,17 +258,19 @@ export function stripSiblingConflictingParentEdges(edges, nodes) {
   return edges.filter((e) => {
     const typ = normType(e.type)
     if (!PARENT_TYPES.has(typ) && !CHILD_TYPES.has(typ)) return true
-    let parent
-    let child
+    // siblingPairKey симметричен (a|b == b|a), поэтому правильность имён не влияет на результат.
+    // Семантика API: PARENT edge — source=ребёнок, target=родитель; CHILD edge — source=родитель, target=ребёнок.
+    let idA
+    let idB
     if (PARENT_TYPES.has(typ)) {
-      parent = sid(e.source)
-      child = sid(e.target)
+      idA = sid(e.source) // ребёнок
+      idB = sid(e.target) // родитель
     } else {
-      parent = sid(e.target)
-      child = sid(e.source)
+      idA = sid(e.source) // родитель
+      idB = sid(e.target) // ребёнок
     }
-    if (!nodeIds.has(parent) || !nodeIds.has(child)) return true
-    const k = siblingPairKey(parent, child)
+    if (!nodeIds.has(idA) || !nodeIds.has(idB)) return true
+    const k = siblingPairKey(idA, idB)
     return !k || !siblingKeys.has(k)
   })
 }
@@ -561,7 +563,8 @@ function alignSiblingRowsForLayout(out, nodes, edges, nodeIds, parentsOf) {
 }
 
 /**
- * Группы полных сиблингов (одинаковые двое родителей) — для размещения в один горизонтальный ряд рядом.
+ * Группы полных сиблингов (одинаковые двое родителей).
+ * Раскладка в UI — не более двух карточек в ряд (`familyTreeGenerationLayout` режет группы на пары и переносит).
  */
 export function getFullSiblingGroupsForLayout(nodes, edges) {
   if (!nodes?.length) return []

@@ -1749,9 +1749,9 @@ NEW_MEMORIES = {
 # API rule: PARENT ⇒ related is parent of memorial; CHILD ⇒ related is child of memorial.
 # Keys mix existing ("robert","helen","william","agnes") and new
 NEW_RELATIONSHIPS = [
-    # Robert ↔ Patricia
-    ("robert", "patricia", RelationshipType.SPOUSE),
-    ("patricia", "robert", RelationshipType.SPOUSE),
+    # Robert ↔ Patricia (first marriage — divorced, then Patricia died 2010)
+    ("robert", "patricia", RelationshipType.EX_SPOUSE),
+    ("patricia", "robert", RelationshipType.EX_SPOUSE),
     # Robert & Patricia → Michael
     ("michael", "robert", RelationshipType.PARENT),
     ("michael", "patricia", RelationshipType.PARENT),

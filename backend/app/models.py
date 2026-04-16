@@ -24,6 +24,13 @@ class UserRole(str, enum.Enum):
     VIEWER = "viewer"
 
 
+class SubscriptionPlan(str, enum.Enum):
+    """Тарифный план пользователя."""
+    FREE = "free"
+    PLUS = "plus"
+    LIFETIME = "lifetime"
+
+
 class User(Base):
     """Модель пользователя."""
     __tablename__ = "users"
@@ -36,6 +43,10 @@ class User(Base):
     google_id = Column(String(255), unique=True, nullable=True, index=True)
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
+    # Subscription / billing
+    subscription_plan = Column(String(20), default="free", nullable=False, server_default="free")
+    plan_expires_at = Column(DateTime(timezone=True), nullable=True)   # None = free or lifetime (no expiry)
+    lifetime_memorial_id = Column(Integer, nullable=True)               # Locked memorial for lifetime plan
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -59,6 +70,7 @@ class Memorial(Base):
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     language = Column(String(5), default="ru", nullable=False, server_default="ru")  # "ru" | "en"
+    tree_layout_json = Column(JSON, nullable=True)  # {"nodePositions": {"memId": {"x": 0, "y": 0}}, "version": 1}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -262,4 +274,24 @@ class WaitlistSignup(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     source = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserUsage(Base):
+    """Счётчики использования AI-фич пользователем за расчётный период (месяц)."""
+    __tablename__ = "user_usage"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    period = Column(String(7), nullable=False)  # "2026-04" — год-месяц UTC
+    chat_messages = Column(Integer, default=0, nullable=False)
+    animations = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "period", name="uq_user_usage_period"),
+        Index("ix_user_usage_user_period", "user_id", "period"),
+    )
 

@@ -3,7 +3,7 @@ Pydantic схемы для валидации и сериализации дан
 """
 from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from app.models import MediaType, RelationshipType
 
@@ -92,6 +92,7 @@ class MemorialUpdate(BaseModel):
     voice_id: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
+    tree_layout_json: Optional[Dict[str, Any]] = None
 
 
 class MemorialResponse(MemorialBase):
@@ -100,6 +101,7 @@ class MemorialResponse(MemorialBase):
     voice_id: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
+    tree_layout_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

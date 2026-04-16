@@ -1,0 +1,117 @@
+.create-memorial-hero-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.5rem;
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #faf8f5;
+  text-decoration: none;
+  background: #3a2f2c;
+  border: 1px solid rgba(212, 191, 168, 0.3);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+}
+
+.create-memorial-hero-btn:hover {
+  background: #4a3f3a;
+}
+
+.create-memorial-hero-btn__label {
+  position: relative;
+  z-index: 2;
+}
+
+.create-memorial-hero-btn__candle-main {
+  position: absolute;
+  right: -1.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+
+.create-memorial-hero-btn:hover .create-memorial-hero-btn__candle-main {
+  opacity: 1;
+}
+
+.create-memorial-hero-btn__candle-main-svg {
+  width: 2.25rem;
+  height: 3.75rem;
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(252, 211, 77, 0.35));
+}
+
+.create-memorial-hero-btn__candles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.create-memorial-hero-btn__candle {
+  position: absolute;
+}
+
+.create-memorial-hero-btn__candle--1 {
+  left: -2rem;
+  bottom: 0.35rem;
+}
+
+.create-memorial-hero-btn__candle--2 {
+  left: 50%;
+  bottom: 0.5rem;
+  margin-left: -0.7rem;
+}
+
+.create-memorial-hero-btn__candle--3 {
+  right: -2.35rem;
+  bottom: 0.4rem;
+}
+
+.create-memorial-hero-btn__candle-svg {
+  display: block;
+}
+
+.create-memorial-hero-btn__candle-svg--amber {
+  width: 1.15rem;
+  height: 2.1rem;
+  filter: drop-shadow(0 0 12px #fcd34d);
+}
+
+.create-memorial-hero-btn__candle-svg--bright {
+  width: 1.35rem;
+  height: 2.5rem;
+  filter: drop-shadow(0 0 18px #fde68c);
+}
+
+.create-memorial-hero-btn__candle-svg--orange {
+  width: 1rem;
+  height: 1.9rem;
+  filter: drop-shadow(0 0 10px #fbbf24);
+}
+
+.create-memorial-hero-btn__glow {
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(
+    90deg,
+    rgba(245, 158, 11, 0.12) 0%,
+    rgba(250, 204, 21, 0.1) 50%,
+    rgba(245, 158, 11, 0.12) 100%
+  );
+  filter: blur(18px);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+}

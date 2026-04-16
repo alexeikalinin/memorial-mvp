@@ -103,7 +103,7 @@ export default function ApiMediaImage({
         className={className}
         loading={loading}
         decoding="async"
-        fetchPriority={loading === 'eager' ? 'high' : 'low'}
+        fetchpriority={loading === 'eager' ? 'high' : 'low'}
       />
     )
   }
@@ -133,7 +133,7 @@ export default function ApiMediaImage({
       className={className}
       loading={loading}
       decoding="async"
-      fetchPriority={loading === 'eager' ? 'high' : 'low'}
+      fetchpriority={loading === 'eager' ? 'high' : 'low'}
     />
   )
 }

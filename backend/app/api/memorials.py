@@ -32,6 +32,7 @@ from app.schemas import (
     TimelineItem,
 )
 from app.config import settings
+from app.services.billing import check_memorial_limit
 from en_memorials_manifest import EXPECTED_EN_NAMES
 from app.services.media_service import (
     generate_all_thumbnails,
@@ -162,6 +163,7 @@ async def create_memorial(
     """
     Создать новый мемориал. Текущий пользователь автоматически получает роль OWNER.
     """
+    check_memorial_limit(current_user, db)
     db_memorial = Memorial(**memorial.dict(), owner_id=current_user.id)
     db.add(db_memorial)
     db.flush()  # получаем id до commit

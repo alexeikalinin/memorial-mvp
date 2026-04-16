@@ -11,8 +11,16 @@ from pathlib import Path
 import httpx
 
 from app.db import get_db
-from app.auth import get_current_user
+from app.auth import get_current_user, get_optional_user
 from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User
+from app.services.billing import (
+    check_chat_quota,
+    check_animation_quota,
+    check_tts_access,
+    check_family_rag_access,
+    increment_chat_usage,
+    increment_animation_usage,
+)
 from app.schemas import (
     PhotoAnimateRequest,
     PhotoAnimateResponse,
@@ -47,11 +55,15 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 async def animate_photo(
     request: PhotoAnimateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Запустить задачу оживления фото через D-ID или HeyGen.
     Задача выполняется в фоновом режиме через Celery worker.
+    Требует авторизации; квота: 5 рендеров/месяц на Plus/Lifetime, 0 на Free.
     """
+    check_animation_quota(current_user, db)
+
     # Проверка существования медиа
     media = db.query(Media).filter(Media.id == request.media_id).first()
     if not media:
@@ -115,13 +127,15 @@ async def animate_photo(
         )
         
         provider = "heygen" if settings.USE_HEYGEN else "d-id"
-        
+        increment_animation_usage(current_user, db)
         return PhotoAnimateResponse(
             task_id=task.id,
             status="pending",
             provider=provider,
             message=f"Animation task started with {provider}. Check status later."
         )
+    except HTTPException:
+        raise
     except Exception as e:
         # Обработка ошибок Redis/Celery
         error_msg = str(e)
@@ -135,11 +149,11 @@ async def animate_photo(
                 result = await _animate_photo_svc(image_url, request.prompt)
                 provider = result.get("provider", "heygen" if settings.USE_HEYGEN else "d-id")
                 task_id = result.get("task_id")
-                
+
                 # Сохраняем task_id в БД
                 media.animation_task_id = task_id
                 db.commit()
-                
+                increment_animation_usage(current_user, db)
                 return PhotoAnimateResponse(
                     task_id=task_id or "sync",
                     status="processing",
@@ -165,10 +179,11 @@ async def animate_photo(
 async def avatar_chat(
     request: AvatarChatRequest,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Чат с ИИ-аватаром на основе RAG (Retrieval-Augmented Generation).
-    
+
     Процесс:
     1. Получить все воспоминания мемориала
     2. Создать embedding вопроса
@@ -183,6 +198,27 @@ async def avatar_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Memorial not found"
         )
+
+    # ── Billing checks (authenticated users only) ──────────────────────────────
+    if current_user:
+        check_chat_quota(current_user, request.memorial_id, db)
+        if request.include_family_memories:
+            check_family_rag_access(current_user)
+        if request.include_audio:
+            check_tts_access(current_user)
+    else:
+        # Unauthenticated users on public memorials: no TTS or family RAG
+        if request.include_audio:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Voice replies require a Plus or Lifetime account. Please sign in.",
+            )
+        if request.include_family_memories:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Family RAG requires a Plus account. Please sign in.",
+            )
+    # ─────────────────────────────────────────────────────────────────────────
 
     # Определяем список мемориалов для RAG-поиска (основной + родственники)
     search_memorial_ids = [request.memorial_id]
@@ -571,6 +607,10 @@ async def avatar_chat(
                 # Анимация опциональна — не ломаем чат при ошибке
                 print(f"Warning: could not start animation: {e}")
 
+        # Increment quota counter for authenticated users
+        if current_user:
+            increment_chat_usage(current_user, db)
+
         return AvatarChatResponse(
             answer=answer,
             audio_url=audio_url,
@@ -725,15 +765,18 @@ async def upload_voice(
     audio_file: UploadFile = File(...),
     voice_name: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Загрузить аудио-файл с голосом и создать кастомный голос в ElevenLabs.
-    
+    Доступно только на тарифах Plus и Lifetime memorial.
+
     Требования к аудио:
     - Формат: MP3, WAV, M4A
     - Длительность: минимум 1 минута (рекомендуется)
     - Качество: без посторонних шумов
     """
+    check_tts_access(current_user)
     # Проверка существования мемориала
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
     if not memorial:

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { createReadStream, copyFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, statSync } from 'fs'
+import { createReadStream, copyFileSync, readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, statSync, rmSync } from 'fs'
 import { resolve, basename } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -35,9 +35,16 @@ const landingVideoDev = () => ({
       const file = resolve(__dirname, 'landing/video', name)
       if (!existsSync(file)) return next()
       const size = statSync(file).size
+      const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : ''
+      const contentType =
+        ext === 'mp4'
+          ? 'video/mp4'
+          : ext === 'vtt'
+            ? 'text/vtt; charset=utf-8'
+            : 'application/octet-stream'
       const range = req.headers.range
       res.setHeader('Accept-Ranges', 'bytes')
-      res.setHeader('Content-Type', 'video/mp4')
+      res.setHeader('Content-Type', contentType)
       if (range) {
         const m = /^bytes=(\d*)-(\d*)$/.exec(range)
         if (!m) {
@@ -81,7 +88,12 @@ const landingToDist = () => ({
     const vid = resolve(landingDir, 'video')
     if (existsSync(vid)) {
       const destVid = resolve(destDir, 'video')
-      cpSync(vid, destVid, { recursive: true })
+      if (existsSync(destVid)) rmSync(destVid, { recursive: true })
+      mkdirSync(destVid, { recursive: true })
+      for (const name of ['demo.mp4', 'demo.vtt']) {
+        const vf = resolve(vid, name)
+        if (existsSync(vf)) copyFileSync(vf, resolve(destVid, name))
+      }
     }
     const destIndex = resolve(destDir, 'index.html')
     if (existsSync(destIndex)) {

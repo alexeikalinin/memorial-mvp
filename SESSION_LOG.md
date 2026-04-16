@@ -14,6 +14,80 @@
 
 ---
 
+## [2026-04-03] Family tree: критический баг в коннекторах — parent/child инверсия
+
+**Статус:** завершено
+
+**Проблема:** В `normalizeParentChildEdges` (`familyTreeOrthogonalConnectors.js`) роли parent и child были перепутаны местами — следствие неверного понимания семантики API:
+
+```
+API: PARENT edge — source = memorial_id = ребёнок, target = related = родитель
+     CHILD  edge — source = memorial_id = родитель, target = related = ребёнок
+```
+
+**Было (неправильно):**
+```js
+if (isParentEdgeType(typ)) { parent = src; child = tgt }  // src=ребёнок, tgt=родитель — ИНВЕРСИЯ
+else if (isChildEdgeType(typ)) { parent = tgt; child = src }  // tgt=ребёнок, src=родитель — ИНВЕРСИЯ
+```
+
+**Последствия бага:**
+1. `childrenOf` маппил `actual_child → set(actual_parents)` вместо `parent → set(children)`
+2. Секция 2 (брачная линия → форк → дети) искала «общих родителей» пары супругов — почти всегда пустой список → форк **никогда не рисовался**
+3. Секция 3 рисовала линии от нижней карточки (дети) вверх к верхней (родители) — технически SVG рисует, но эстетика и направление были неверными
+
+**Исправление** (`familyTreeOrthogonalConnectors.js`):
+```js
+if (isParentEdgeType(typ)) { parent = tgt; child = src }  // ✓
+else if (isChildEdgeType(typ)) { parent = src; child = tgt }  // ✓
+```
+
+**Дополнительно:** уточнено именование переменных в `stripSiblingConflictingParentEdges` (`familyTreeGenerations.js`) — функционально не влияло (siblingPairKey симметричен), но вводило путаницу.
+
+**Изменённые файлы:**
+- `frontend/src/utils/familyTreeOrthogonalConnectors.js` — фикс parent/child в `normalizeParentChildEdges`
+- `frontend/src/utils/familyTreeGenerations.js` — именование переменных в filter
+
+**Проверка:** `npm run build` — успешно, lint — без ошибок.
+
+**Статус незакоммиченного:** 31 файл изменён с последнего коммита (`d574d48`). Весь пакет готов к коммиту.
+
+---
+
+## [2026-04-02] Лендинг: демо-видео по плану (скрипт, сборка, субтитры)
+
+**Сделано:** зафиксирован EN-сценарий и VO (`frontend/landing/video/DEMO_VIDEO_SCRIPT.md`), инструкция живой записи экрана (`SCREEN_RECORDING.md`), опциональный B-roll (`BROLL_SHOT_LIST.md`). Ролик **~85 с**, 16:9, собирается `build_landing_demo.sh` → `render_landing_demo.py` (Pillow + ffmpeg без `drawtext`): титры + кадры из `landing/images/feat-timeline.png`, `feat-chat.png`, `feat-tree.png`; обновлены `demo.mp4` (~1.8 MB) и `images/demo-poster.png`. Добавлены **`demo.vtt`** и `<track kind="captions">` в `frontend/landing/index.html` и `landing/index.html`. В **`vite.config.js`**: корректный `Content-Type` для `.vtt`, в прод **`dist/video`** копируются только `demo.mp4` и `demo.vtt` (без исходников сборки).
+
+**Дальше:** при желании заменить ролик живым screen capture по `SCREEN_RECORDING.md`.
+
+---
+
+## [2026-04-01] Family tree: зазоры поколений + документ раскладки
+
+**Симптомы:** карточки визуально «лежат друг на друге», линии/кольца брака кажутся смещёнными; частично из‑за **нулевого** вертикального зазора между **разными** поколениями при большом `box-shadow` у `.ft-node--gen-cluster`, частично из‑за малого `SUB_ROW_GAP` относительно свечения.
+
+**Код:** `familyTreeGenerationLayout.js` — добавлен **`INTER_GEN_GAP`** между этажами поколений; увеличен **`SUB_ROW_GAP`** для подстрок внутри одного поколения. Размеры узла по-прежнему одни: `nodeSize` из раскладки = коннекторы = `GenTreeNodeCard`.
+
+**Док:** краткая точка правды — [docs/FAMILY_TREE_LAYOUT.md](docs/FAMILY_TREE_LAYOUT.md) (ссылка на `SESSION_LOG` для истории).
+
+---
+
+## [2026-04-01] EN demo: исправление Chang/Rossi PARENT/CHILD + паритет локал/прод
+
+**Проблема:** в `seed_english_cluster2.py` рёбра `CHANG_RELATIONSHIPS` и `ROSSI_RELATIONSHIPS` были ориентированы против семантики API (`PARENT`: memorial = ребёнок, related = родитель; `CHILD`: наоборот) — родители и дети в графе оказывались перепутаны.
+
+**Сделано:** переписаны массивы под правильную ориентацию; добавлены `backend/verify_en_demo_graph.py` (проверка 43 имён, родителей и ключевых браков), `tests/test_en_demo_canonical.py`, `docs/DEMO_PARITY.md`, `backend/scripts/rebuild_en_demo.sh`, ссылка в `ENVIRONMENT.md`. В git по-прежнему **нет** `memorial.db` — идентичность только через общий сид и общий бэкенд для фронта.
+
+---
+
+## [2026-04-01] Home: демо-мемориалы в `<details>` (как Sources в чате), стиль лендинга
+
+Убраны дублирующие кнопки «Show demo memorials» и состояние `showDemoMemorials`. Основная сетка — только не-демо (`is_demo_seed`); демо в одном сворачиваемом блоке под сеткой (`home-demo-details`), тёмная панель и золотой акцент `#c8a97e`, шеврон как у `.chat-sources-summary`. Счётчик в шапке — число не-демо страниц. Локали: `demo_reveal_summary`, обновлён `demo_hint`; удалены `show_demo` / `hide_demo` / `demo_only_hidden`.
+
+**Файлы:** `frontend/src/pages/Home.jsx`, `Home.css`, `locales/en.js`, `ru.js`.
+
+---
+
 ## [2026-04-01] Family tree: split-рамка только при «девичьей» семье в графе
 
 **Правило:** двухцветная рамка (как у Helen Anderson Kelly: зелёная Anderson + синяя Kelly) — **только** если в текущем `displayGraph` есть **не-супружеское** ребро к мемориалу, у которого **последняя фамилия = девичья** (родитель, ребёнок, брат/сестра и т.д.; супруги и `custom` не считаются). Иначе при двух фамилиях в имени рамка **одного цвета** — кластер **последней** фамилии (линия мужа после замужества).
