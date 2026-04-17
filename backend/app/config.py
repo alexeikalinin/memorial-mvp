@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 дней
+    ADMIN_SECRET_KEY: str = ""  # Отдельный ключ для admin-эндпоинтов; если пусто — падает обратно на SECRET_KEY
     
     # OpenAI
     OPENAI_API_KEY: str = ""

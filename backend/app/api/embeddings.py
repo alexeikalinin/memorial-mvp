@@ -21,7 +21,8 @@ router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
 def _require_admin_key(x_admin_key: Optional[str] = Header(default=None)):
     """Simple admin key check for maintenance endpoints."""
-    if not x_admin_key or x_admin_key != settings.SECRET_KEY:
+    valid = settings.ADMIN_SECRET_KEY or settings.SECRET_KEY
+    if not x_admin_key or x_admin_key != valid:
         raise HTTPException(status_code=403, detail="Admin key required")
 
 
