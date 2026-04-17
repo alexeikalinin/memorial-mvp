@@ -45,7 +45,7 @@ def _add_missing_columns():
         if "subscription_plan" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN subscription_plan VARCHAR(20) NOT NULL DEFAULT 'free'")
         if "plan_expires_at" not in ucols:
-            user_alters.append("ALTER TABLE users ADD COLUMN plan_expires_at DATETIME")
+            user_alters.append("ALTER TABLE users ADD COLUMN plan_expires_at TIMESTAMP WITH TIME ZONE")
         if "lifetime_memorial_id" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN lifetime_memorial_id INTEGER")
         if user_alters:
