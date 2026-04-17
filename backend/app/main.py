@@ -155,6 +155,55 @@ app.include_router(access_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(waitlist.router, prefix=settings.API_V1_PREFIX)
 
 
+@app.on_event("startup")
+async def _auto_rebuild_embeddings_if_empty():
+    """При старте: если Qdrant-коллекция пустая — перестраиваем embeddings в фоне."""
+    import asyncio
+    from app.services.ai_tasks import get_vector_db_client, get_embedding, upsert_memory_embedding
+
+    if not settings.OPENAI_API_KEY:
+        return
+
+    async def _rebuild():
+        try:
+            client = get_vector_db_client()
+            info = client.get_collection(settings.QDRANT_COLLECTION_NAME)
+            if info.points_count > 0:
+                print(f"Qdrant: {info.points_count} vectors already present, skipping auto-rebuild.")
+                return
+        except Exception:
+            pass  # коллекция не существует — создастся при первом upsert
+
+        print("Qdrant: collection empty, starting background embedding rebuild...")
+        db = SessionLocal()
+        try:
+            from app.models import Memory
+            memories = db.query(Memory).all()
+            ok = 0
+            for memory in memories:
+                try:
+                    embedding = await get_embedding(memory.content)
+                    eid = await upsert_memory_embedding(
+                        memory_id=memory.id,
+                        memorial_id=memory.memorial_id,
+                        embedding=embedding,
+                        text=memory.content,
+                    )
+                    if eid:
+                        memory.embedding_id = eid
+                        ok += 1
+                except Exception as e:
+                    print(f"  embedding error memory_id={memory.id}: {e}")
+            db.commit()
+            print(f"Qdrant auto-rebuild done: {ok}/{len(memories)} embeddings created.")
+        except Exception as e:
+            print(f"Qdrant auto-rebuild failed: {e}")
+        finally:
+            db.close()
+
+    asyncio.create_task(_rebuild())
+
+
 @app.get("/")
 async def root():
     """Корневой endpoint."""
