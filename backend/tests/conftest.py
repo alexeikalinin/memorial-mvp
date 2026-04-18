@@ -66,6 +66,19 @@ def client(db_session):
         app.dependency_overrides[get_db] = saved
 
 
+@pytest.fixture(autouse=True)
+def _bypass_billing(monkeypatch):
+    """Disable billing guards globally in tests — quota/plan checks are not the subject under test."""
+    import app.api.memorials as mem_api
+    import app.api.ai as ai_api
+    noop = lambda *a, **kw: None
+    monkeypatch.setattr(mem_api, "check_memorial_limit", noop)
+    monkeypatch.setattr(ai_api, "check_chat_quota", noop)
+    monkeypatch.setattr(ai_api, "check_animation_quota", noop)
+    monkeypatch.setattr(ai_api, "check_tts_access", noop)
+    monkeypatch.setattr(ai_api, "check_family_rag_access", noop)
+
+
 @pytest.fixture
 def registered_user(client):
     """Регистрирует пользователя и возвращает его данные."""
