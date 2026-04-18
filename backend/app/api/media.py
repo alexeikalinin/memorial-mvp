@@ -111,10 +111,15 @@ async def get_media_file(
         )
 
     # --- Только если на диске нет — публичный URL в Supabase Storage ---
-    if settings.USE_S3 and settings.supabase_public_url:
-        if thumbnail and media.media_type.value == "photo" and media.thumbnail_path:
-            return RedirectResponse(url=get_public_url(media.thumbnail_path), status_code=302)
-        return RedirectResponse(url=get_public_url(str(media.file_path)), status_code=302)
+    if settings.USE_S3:
+        # Предпочитаем file_url (уже готовый публичный URL из БД)
+        if media.file_url:
+            return RedirectResponse(url=media.file_url, status_code=302)
+        # Фолбэк: строим URL из S3-ключа
+        if settings.supabase_public_url:
+            if thumbnail and media.media_type.value == "photo" and media.thumbnail_path:
+                return RedirectResponse(url=get_public_url(media.thumbnail_path), status_code=302)
+            return RedirectResponse(url=get_public_url(str(media.file_path)), status_code=302)
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
