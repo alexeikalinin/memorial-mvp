@@ -122,6 +122,18 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_USERNAME: str = ""  # Имя бота без @, для deep links
     BOT_API_BASE_URL: str = "http://localhost:8000/api/v1"
     
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""           # sk_live_... or sk_test_...
+    STRIPE_WEBHOOK_SECRET: str = ""       # whsec_... (from Stripe Dashboard → Webhooks)
+    STRIPE_PRICE_PLUS_MONTHLY: str = ""   # price_...
+    STRIPE_PRICE_PLUS_ANNUAL: str = ""
+    STRIPE_PRICE_PRO_MONTHLY: str = ""
+    STRIPE_PRICE_PRO_ANNUAL: str = ""
+    STRIPE_PRICE_LIFETIME: str = ""       # one-time price
+    STRIPE_PRICE_LIFETIME_PRO: str = ""   # one-time price
+    STRIPE_PRICE_EXTRA_MEMORIAL: str = "" # add-on one-time
+    STRIPE_PRICE_LIVE_SESSION_PACK: str = ""  # add-on: +10 live sessions (one-time)
+
     # Global admins (comma-separated emails): full owner-level API access to every memorial
     # without a row in memorial_access. Use for prod operators; pair with grant_owner script for DB consistency.
     GLOBAL_ADMIN_EMAILS: str = ""

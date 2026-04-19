@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import engine, Base
-from app.api import health, memorials, ai, media, s3, embeddings, family, invites, access as access_router, waitlist
+from app.api import health, memorials, ai, media, s3, embeddings, family, invites, access as access_router, waitlist, billing as billing_router
 from app.api import auth as auth_router
 
 # Создание таблиц в БД (для dev; в production используйте Alembic миграции)
@@ -153,6 +153,7 @@ app.include_router(family.router, prefix=settings.API_V1_PREFIX)
 app.include_router(invites.router, prefix=settings.API_V1_PREFIX)
 app.include_router(access_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(waitlist.router, prefix=settings.API_V1_PREFIX)
+app.include_router(billing_router.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.on_event("startup")
