@@ -47,6 +47,8 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    is_demo: bool = False
+    subscription_plan: str = "free"
     created_at: datetime
 
     class Config:
@@ -445,6 +447,21 @@ class InviteValidateResponse(BaseModel):
     cover_photo_id: Optional[int] = None
     label: Optional[str] = None
     permissions: Dict
+
+
+# Live Avatar Session Schemas
+class LiveSessionStartRequest(BaseModel):
+    memorial_id: int
+    language: str = "ru"  # "ru" | "en"
+
+
+class LiveSessionStartResponse(BaseModel):
+    session_id: str
+    memorial_id: int
+    sessions_used: int            # after this request
+    sessions_limit: Optional[int] = None   # None = pool model (lifetime_pro)
+    sessions_remaining: Optional[int] = None  # for pool model
+    message: str
 
 
 # Waitlist (landing)

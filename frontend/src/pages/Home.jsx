@@ -215,6 +215,51 @@ function Home() {
         </div>
       </section>
 
+      {/* ── Pricing ── */}
+      <section className="pricing-section" id="pricing">
+        <div className="pricing-inner">
+          <h2 className="pricing-title">{t('home.pricing_title')}</h2>
+          <p className="pricing-subtitle">{t('home.pricing_subtitle')}</p>
+          <div className="pricing-grid">
+            {(t('home.pricing_plans') || []).map((plan) => (
+              <div
+                key={plan.id}
+                className={`pricing-card${plan.highlight ? ' pricing-card--highlight' : ''}`}
+              >
+                {plan.highlight && (
+                  <span className="pricing-popular">{t('home.pricing_popular')}</span>
+                )}
+                {plan.badge && !plan.highlight && (
+                  <span className="pricing-badge">{plan.badge}</span>
+                )}
+                <div className="pricing-card-header">
+                  <span className="pricing-plan-name">{plan.name}</span>
+                  <span className="pricing-plan-desc">{plan.desc}</span>
+                </div>
+                <div className="pricing-price">
+                  <span className="pricing-amount">{plan.price}</span>
+                  {plan.period && <span className="pricing-period">{plan.period}</span>}
+                </div>
+                {plan.annual && (
+                  <div className="pricing-annual">{plan.annual}</div>
+                )}
+                <ul className="pricing-features">
+                  {plan.features.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+                <a
+                  href="/memorials/new"
+                  className={`btn pricing-plan-cta${plan.highlight ? ' btn-primary' : ' btn-outline'}`}
+                >
+                  {plan.cta}
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Memorials List (скрыт на первом экране, если в списке только демо-сиды) ── */}
       {showMemorialsContent && (
         <div ref={homeContentRef} id="home-memorials-panel" className="home-content">

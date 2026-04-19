@@ -512,11 +512,13 @@
       margin-left: 0; margin-right: 0; text-align: left;
     }
     .pricing-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 48px;
       align-items: stretch;
     }
+    @media (max-width: 1200px) { .pricing-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 780px)  { .pricing-grid { grid-template-columns: 1fr; } }
     .pricing-card {
-      background: var(--bg3); border: 1px solid var(--border); border-radius: 24px; padding: 44px;
+      background: var(--bg3); border: 1px solid var(--border); border-radius: 24px; padding: 32px 28px;
       position: relative; transition: all .3s;
       display: flex; flex-direction: column; height: 100%;
       text-align: left; align-items: stretch;
@@ -1239,8 +1241,10 @@
     <p class="section-sub reveal reveal-delay-2" style="margin:0 0 16px">Pick a plan when you’re ready. All plans start with a free trial — no card required.</p>
     <p class="pricing-intro reveal reveal-delay-2">
       <strong>Free</strong> — one memorial, text chat only; no voice, animation, or family-wide AI.<br>
-      <strong>Plus</strong> — up to 10 memorials, full AI features, Family RAG, and voice cloning. Save 30% with annual billing.<br>
-      <strong>Lifetime memorial</strong> — one payment for <strong>one</strong> page, forever (great for QR / headstones). Same monthly AI caps as Plus on that page, no Family RAG.
+      <strong>Plus</strong> — up to 10 memorials, TTS, 5 animations/mo, Family RAG. Save 30% annual.<br>
+      <strong>Pro</strong> — everything in Plus, 15 animations/mo, 5 live avatar video sessions/mo.<br>
+      <strong>Lifetime</strong> — one payment for <strong>one</strong> page, forever (ideal for QR / headstones).<br>
+      <strong>Lifetime Pro</strong> — same as Lifetime + a pre-paid pool of <strong>100 live avatar sessions</strong>, never resets.
     </p>
     <p class="section-sub pricing-legend reveal reveal-delay-2" style="margin:8px 0 0;font-size:13px;color:var(--text3);max-width:640px">Each row is the same feature across plans — <span style="color:var(--green)">✓</span> included, <span style="opacity:.5">—</span> not included.</p>
     </div>
@@ -1290,7 +1294,28 @@
         <p class="pricing-note">We’ll email you when checkout opens. You can still use Free today.</p>
         </div>
       </div>
+      <!-- Pro -->
       <div class="pricing-card reveal reveal-delay-2">
+        <div class="pricing-name">Pro</div>
+        <div class="pricing-price"><sup>$</sup>15</div>
+        <div class="pricing-period">per month · <strong style="color:var(--accent)">$120/year</strong> · cancel anytime</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>Up to 10</strong> pages + add-on slots.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>500 messages / month</strong> with voice.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS</span><span class="pricing-li-note">Upload a sample — AI replies in their voice.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat across up to <strong>10 linked</strong> memorials.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note"><strong>5 sessions / month</strong> — real-time video avatar.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>15 GB</strong> shared across the account.</span></span></li>
+        </ul>
+        <div class="pricing-card-footer">
+        <button type="button" class="btn btn-outline btn-lg pricing-cta js-waitlist-open">Join waitlist</button>
+        <p class="pricing-note">We’ll email you when checkout opens.</p>
+        </div>
+      </div>
+      <!-- Lifetime -->
+      <div class="pricing-card reveal reveal-delay-3">
         <div class="pricing-badge pricing-badge--alt">Headstones &amp; QR</div>
         <div class="pricing-name">Lifetime memorial</div>
         <div class="pricing-price"><sup>$</sup>99</div>
@@ -1309,12 +1334,33 @@
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note"><strong>Not included</strong> — full graph discovery stays on <strong>Plus</strong>.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime memorial</a>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime</a>
         <p class="pricing-note">One payment, no subscription — full AI features for one page, forever.</p>
         </div>
       </div>
+      <!-- Lifetime Pro -->
+      <div class="pricing-card reveal reveal-delay-4">
+        <div class="pricing-badge pricing-badge--alt">Live avatar · forever</div>
+        <div class="pricing-name">Lifetime Pro</div>
+        <div class="pricing-price"><sup>$</sup>249</div>
+        <div class="pricing-period">one-time · one memorial · no subscription</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> page — locked to this memorial.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>200 messages / month</strong> on this page.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS</span><span class="pricing-li-note">Same voice features as Plus, for this memorial.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note">Pre-paid pool of <strong>100 sessions</strong> — never resets. Buy more as needed.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>10 GB</strong> for this memorial.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Not included — avatar uses only this page's memories.</span></span></li>
+        </ul>
+        <div class="pricing-card-footer">
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime Pro</a>
+        <p class="pricing-note">One payment — get 100 live avatar sessions that never expire.</p>
+        </div>
+      </div>
     </div>
-    <p class="pricing-footnote reveal">Chat, animation, and storage quotas reset monthly. <strong>Lifetime</strong> is not a subscription — it covers one memorial page indefinitely while the service operates; AI features (chat, voice, animation) still reset monthly to keep the service sustainable. Full billing terms ship with Stripe checkout.</p>
+    <p class="pricing-footnote reveal">Chat, animation, and storage quotas reset monthly. <strong>Lifetime</strong> and <strong>Lifetime Pro</strong> are not subscriptions — they cover one memorial page indefinitely while the service operates. Live avatar sessions in the Lifetime Pro pool never reset. Full billing terms ship with Stripe checkout.</p>
   </div>
 </section>
 

@@ -18,8 +18,12 @@ from app.services.billing import (
     check_animation_quota,
     check_tts_access,
     check_family_rag_access,
+    check_live_session_quota,
     increment_chat_usage,
     increment_animation_usage,
+    increment_live_session_usage,
+    get_limits,
+    _effective_plan,
 )
 from app.schemas import (
     PhotoAnimateRequest,
@@ -29,6 +33,8 @@ from app.schemas import (
     AnimationStatusRequest,
     AnimationStatusResponse,
     ElevenLabsQuotaResponse,
+    LiveSessionStartRequest,
+    LiveSessionStartResponse,
 )
 from app.services.ai_tasks import (
     get_embedding,
@@ -934,6 +940,67 @@ async def sync_family_memories_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка синхронизации: {str(e)}"
         )
+
+
+@router.post("/avatar/live", response_model=LiveSessionStartResponse)
+async def start_live_avatar_session(
+    request: LiveSessionStartRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Start a live avatar video session (Pro / Lifetime Pro only).
+
+    Pro plan:        deducts from monthly counter (UserUsage.live_sessions).
+    Lifetime Pro:    deducts from pre-paid pool (User.live_sessions_remaining).
+
+    The endpoint gates the session with billing checks and records usage.
+    Actual live video infrastructure (WebRTC / D-ID Live) must be integrated separately.
+    Returns a session_id that the client uses to initiate the video stream.
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == request.memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+
+    check_live_session_quota(current_user, db)
+    increment_live_session_usage(current_user, db)
+
+    # Build usage info for the response
+    db.refresh(current_user)
+    limits = get_limits(current_user)
+    plan = _effective_plan(current_user)
+    uses_pool = limits.get("live_session_pool", False)
+
+    from app.services.billing import _get_or_create_usage
+    usage = _get_or_create_usage(current_user.id, db)
+
+    session_id = uuid.uuid4().hex
+
+    if uses_pool:
+        return LiveSessionStartResponse(
+            session_id=session_id,
+            memorial_id=request.memorial_id,
+            sessions_used=0,
+            sessions_limit=None,
+            sessions_remaining=current_user.live_sessions_remaining,
+            message=(
+                f"Live avatar session started. "
+                f"{current_user.live_sessions_remaining} session(s) remaining in your pool."
+            ),
+        )
+
+    monthly_limit = limits.get("live_sessions_per_month", 0)
+    return LiveSessionStartResponse(
+        session_id=session_id,
+        memorial_id=request.memorial_id,
+        sessions_used=usage.live_sessions,
+        sessions_limit=monthly_limit,
+        sessions_remaining=max(0, monthly_limit - usage.live_sessions),
+        message=(
+            f"Live avatar session started. "
+            f"Used {usage.live_sessions}/{monthly_limit} sessions this month (plan: {plan})."
+        ),
+    )
 
 
 @router.get("/elevenlabs/quota", response_model=ElevenLabsQuotaResponse)
