@@ -173,6 +173,8 @@
   .avatar-chat {
     flex-direction: column;
     height: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .avatar-panel {
@@ -184,6 +186,16 @@
   .chat-panel {
     flex: 1;
     min-height: 380px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .chat-header {
+    padding: 0.75rem;
+  }
+
+  .chat-input-form {
+    padding: 0.75rem;
   }
 }
 

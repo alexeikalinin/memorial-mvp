@@ -1,13 +1,3 @@
-// AUTH_HIDDEN: авторизация временно скрыта для тестирования
-// Когда будет готова — убрать этот файл и раскомментировать полную версию ниже
-import { Outlet } from 'react-router-dom'
-
-export default function ProtectedRoute() {
-  return <Outlet />
-}
-
-/*
-// ПОЛНАЯ ВЕРСИЯ (включить когда авторизация будет активна):
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -22,10 +12,12 @@ export default function ProtectedRoute() {
     )
   }
 
-  if (!user) {
+  // Check localStorage too: login() sets the token synchronously before navigate(),
+  // but React's setUser() batches and may not have flushed yet when this renders.
+  const hasToken = !!localStorage.getItem('authToken')
+  if (!user && !hasToken) {
     return <Navigate to="/login" replace />
   }
 
   return <Outlet />
 }
-*/

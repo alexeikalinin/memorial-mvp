@@ -107,6 +107,71 @@ def test_animate_photo_no_redis(client, memorial, db_session):
     assert data["status"] in ("processing", "pending", "done")
 
 
+def test_avatar_chat_family_rag(auth_client, memorial, db_session):
+    """5.6 Семейный RAG: include_family_memories=true включает воспоминания родственного мемориала."""
+    mid = memorial["id"]
+
+    # Создаём второй мемориал (родственный)
+    resp2 = auth_client.post(
+        "/api/v1/memorials/",
+        json={"name": "Родственный мемориал", "is_public": False},
+    )
+    assert resp2.status_code == 201
+    mid2 = resp2.json()["id"]
+
+    # Связываем мемориалы
+    rel_resp = auth_client.post(
+        f"/api/v1/family/memorials/{mid}/relationships",
+        json={"related_memorial_id": mid2, "relationship_type": "parent"},
+    )
+    assert rel_resp.status_code == 201
+
+    # Добавляем воспоминание в основной мемориал (чтобы all_memories не был пуст)
+    auth_client.post(
+        f"/api/v1/memorials/{mid}/memories",
+        json={"title": "Основное", "content": "Он жил в Москве."},
+    )
+
+    # Добавляем воспоминание в родственный мемориал
+    mem_resp = auth_client.post(
+        f"/api/v1/memorials/{mid2}/memories",
+        json={"title": "Семейное", "content": "Его отец работал врачом."},
+    )
+    assert mem_resp.status_code == 201
+    family_mem_id = mem_resp.json()["id"]
+
+    with (
+        patch("app.api.ai.get_embedding", new_callable=AsyncMock) as mock_embed,
+        patch("app.api.ai.search_similar_memories", new_callable=AsyncMock) as mock_search,
+        patch("app.api.ai.generate_rag_response", new_callable=AsyncMock) as mock_gen,
+    ):
+        mock_embed.return_value = [0.0] * 1536
+        mock_search.return_value = [
+            {
+                "memory_id": family_mem_id,
+                "score": 0.85,
+                "text": "Его отец работал врачом.",
+                "title": "Семейное",
+            }
+        ]
+        mock_gen.return_value = ("Его отец был врачом.", [family_mem_id])
+
+        response = auth_client.post(
+            "/api/v1/ai/avatar/chat",
+            json={
+                "memorial_id": mid,
+                "question": "Кем работал его отец?",
+                "include_family_memories": True,
+                "use_persona": False,
+            },
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["answer"] == "Его отец был врачом."
+    assert len(data["sources"]) > 0
+
+
 def test_animation_status(client):
     """Статус анимации возвращается корректно при замоке get_animation_status."""
     with patch(

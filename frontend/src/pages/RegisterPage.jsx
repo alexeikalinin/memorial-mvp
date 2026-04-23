@@ -52,6 +52,7 @@ export default function RegisterPage() {
             <label>Email</label>
             <input
               type="email"
+              name="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               placeholder="your@email.com"
@@ -64,6 +65,7 @@ export default function RegisterPage() {
             <label>Username</label>
             <input
               type="text"
+              name="username"
               value={form.username}
               onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               placeholder="username"
@@ -75,6 +77,7 @@ export default function RegisterPage() {
             <label>Full name <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
             <input
               type="text"
+              name="full_name"
               value={form.full_name}
               onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
               placeholder="John Smith"
@@ -85,6 +88,7 @@ export default function RegisterPage() {
             <label>Password</label>
             <input
               type="password"
+              name="password"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               placeholder="Minimum 8 characters"

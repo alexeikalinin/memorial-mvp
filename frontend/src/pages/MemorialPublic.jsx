@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { memorialsAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useAuth } from '../context/AuthContext'
@@ -91,6 +91,17 @@ function MemorialPublic() {
 
   return (
     <div className="memorial-public">
+
+      {/* ── Demo banner ── */}
+      {memorial.is_demo && (
+        <div className="demo-banner">
+          <span>📖 This is a demo memorial.</span>
+          <span className="demo-banner-links">
+            <Link to="/demo">← All families</Link>
+            <Link to="/register" className="demo-banner-cta">Create your own →</Link>
+          </span>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <div className="public-hero">

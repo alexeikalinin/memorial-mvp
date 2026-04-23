@@ -566,7 +566,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('family') && (
           <div style={{ display: activeTab === 'family' ? 'block' : 'none' }}>
-            <FamilyTree memorialId={id} />
+            <FamilyTree memorialId={id} canEdit={canEdit} />
           </div>
         )}
         {mountedTabs.has('timeline') && (

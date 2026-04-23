@@ -52,6 +52,7 @@ export default function LoginPage() {
             <label>Email</label>
             <input
               type="email"
+              name="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               placeholder="your@email.com"
@@ -64,6 +65,7 @@ export default function LoginPage() {
             <label>Password</label>
             <input
               type="password"
+              name="password"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               placeholder="Minimum 8 characters"
@@ -71,7 +73,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert">{error}</div>}
 
           <button type="submit" className="btn-auth-primary" disabled={loading}>
             {loading ? 'Signing in…' : 'Sign In'}
@@ -81,6 +83,11 @@ export default function LoginPage() {
         <p className="auth-switch">
           Don't have an account? <Link to="/register">Sign up</Link>
         </p>
+
+        <div className="auth-demo-divider"><span>or</span></div>
+        <Link to="/demo" className="btn-demo-explore">
+          Explore Demo Families (no sign up)
+        </Link>
       </div>
     </div>
   )

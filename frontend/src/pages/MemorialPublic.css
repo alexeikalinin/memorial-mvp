@@ -1,9 +1,50 @@
 /* ─── Page ──────────────────────────────────────────────────────── */
 .memorial-public {
   max-width: 860px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 0 5rem;
   animation: fadeIn var(--t-slow) var(--ease) both;
+  overflow-x: hidden;
+}
+
+/* ─── Demo banner ───────────────────────────────────────────────── */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: rgba(196, 136, 74, 0.12);
+  border: 1px solid rgba(196, 136, 74, 0.3);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  margin: 1rem 1rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, rgba(255,255,255,0.75));
+}
+
+.demo-banner-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.demo-banner-links a {
+  color: var(--accent, #C4884A);
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: opacity 0.15s;
+}
+
+.demo-banner-links a:hover { opacity: 0.75; }
+
+.demo-banner-cta {
+  background: var(--accent, #C4884A);
+  color: #fff !important;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-weight: 600;
 }
 
 /* ─── Hero ──────────────────────────────────────────────────────── */

@@ -12,7 +12,7 @@ import httpx
 
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user
-from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User
+from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole
 from app.services.billing import (
     check_chat_quota,
     check_animation_quota,
@@ -204,6 +204,16 @@ async def avatar_chat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Memorial not found"
         )
+
+    # Приватный мемориал — только авторизованные пользователи с доступом
+    if not memorial.is_public and not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This memorial is private. Please sign in to access it.",
+        )
+    if not memorial.is_public and current_user:
+        from app.auth import require_memorial_access
+        require_memorial_access(memorial.id, current_user, db, min_role=UserRole.VIEWER)
 
     # ── Billing checks (authenticated users only) ──────────────────────────────
     if current_user:

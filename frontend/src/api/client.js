@@ -65,6 +65,7 @@ export const authAPI = {
 // API методы
 export const memorialsAPI = {
   list: (language = null) => apiClient.get('/memorials/', language ? { params: { language } } : {}),
+  listDemo: () => apiClient.get('/memorials/demo'),
   create: (data) => apiClient.post('/memorials/', data),
   get: (id) => apiClient.get(`/memorials/${id}`),
   update: (id, data) => apiClient.patch(`/memorials/${id}`, data),

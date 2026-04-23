@@ -12,6 +12,7 @@ def ensure_owner_user_id_1(db):
         username="en_demo_seed",
         hashed_password="x",
         full_name="EN demo seed owner",
+        is_demo=True,
     )
     db.add(owner)
     db.commit()

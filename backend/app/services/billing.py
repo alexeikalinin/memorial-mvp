@@ -80,7 +80,7 @@ PLAN_LIMITS: dict = {
     },
 }
 
-UPGRADE_URL = "/app/pricing"  # sent in 402 response detail
+UPGRADE_URL = "/#pricing"  # sent in 402 response detail
 
 
 def _current_period() -> str:

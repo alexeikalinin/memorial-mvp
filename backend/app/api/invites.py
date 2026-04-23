@@ -85,9 +85,6 @@ def validate_invite(token: str, db: Session = Depends(get_db)):
         if exp < now_utc:
             raise HTTPException(status_code=404, detail="Срок действия ссылки истёк")
 
-    invite.uses_count = (invite.uses_count or 0) + 1
-    db.commit()
-
     memorial = invite.memorial
     return InviteValidateResponse(
         memorial_id=memorial.id,

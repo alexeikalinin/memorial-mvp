@@ -8,6 +8,7 @@ import MemorialCreate from './pages/MemorialCreate'
 import MemorialDetail from './pages/MemorialDetail'
 import MemorialPublic from './pages/MemorialPublic'
 import ContributePage from './pages/ContributePage'
+import DemoPage from './pages/DemoPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GoogleAuthCallback from './pages/GoogleAuthCallback'
@@ -32,6 +33,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/auth/callback" element={<GoogleAuthCallback />} />
             <Route path="/m/:id" element={<MemorialPublic />} />
+            <Route path="/demo" element={<DemoPage />} />
             <Route path="/contribute/:token" element={<ContributePage />} />
 
             {/* Защищённые маршруты */}

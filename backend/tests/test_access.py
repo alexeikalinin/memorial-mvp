@@ -204,3 +204,144 @@ def test_approve_access_request(auth_client, memorial, client, second_user_heade
         headers=second_user_headers,
     )
     assert resp.status_code == 200
+
+
+def test_reject_access_request(auth_client, memorial, client, second_user_headers):
+    """Отклонение заявки: статус 204, пользователь доступа не получает."""
+    req_resp = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "viewer"},
+        headers=second_user_headers,
+    )
+    assert req_resp.status_code == 201
+    req_id = req_resp.json()["id"]
+
+    reject_resp = auth_client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/requests/{req_id}/reject"
+    )
+    assert reject_resp.status_code == 204
+
+    # Доступ по-прежнему закрыт
+    resp = client.get(
+        f"/api/v1/memorials/{memorial['id']}",
+        headers=second_user_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_re_request_after_rejection(auth_client, memorial, client, second_user_headers):
+    """После reject можно подать заявку снова — upsert сбрасывает в PENDING."""
+    req_resp = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "viewer"},
+        headers=second_user_headers,
+    )
+    req_id = req_resp.json()["id"]
+
+    # Отклоняем
+    auth_client.post(f"/api/v1/memorials/{memorial['id']}/access/requests/{req_id}/reject")
+
+    # Подаём снова
+    re_req = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "editor", "message": "Пожалуйста, разрешите!"},
+        headers=second_user_headers,
+    )
+    assert re_req.status_code == 201
+    assert re_req.json()["status"] == "pending"
+    assert re_req.json()["requested_role"] == "editor"
+
+
+def test_duplicate_request_upsert(auth_client, memorial, client, second_user_headers):
+    """Повторный запрос от того же пользователя — upsert, не дублирование."""
+    client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "viewer"},
+        headers=second_user_headers,
+    )
+    # Второй запрос — должен обновить, а не создать новую запись
+    second = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "editor"},
+        headers=second_user_headers,
+    )
+    assert second.status_code == 201
+    assert second.json()["requested_role"] == "editor"
+
+    # В списке заявок — только одна
+    requests_list = auth_client.get(f"/api/v1/memorials/{memorial['id']}/access/requests")
+    pending = [r for r in requests_list.json() if r["user_email"] == "other@example.com"]
+    assert len(pending) == 1
+
+
+def test_request_when_already_have_access(auth_client, memorial, client, second_user_headers):
+    """Пользователь с уже выданным доступом не может подавать заявку → 400."""
+    # Выдаём доступ
+    auth_client.post(
+        f"/api/v1/memorials/{memorial['id']}/access",
+        json={"email": "other@example.com", "role": "viewer"},
+    )
+    # Пытаемся запросить доступ, хотя уже есть
+    resp = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "editor"},
+        headers=second_user_headers,
+    )
+    assert resp.status_code == 400
+
+
+def test_non_owner_cannot_list_access(client, auth_client, memorial, second_user_headers):
+    """Не-owner не может просмотреть список доступа."""
+    # Выдаём viewer-доступ второму
+    auth_client.post(
+        f"/api/v1/memorials/{memorial['id']}/access",
+        json={"email": "other@example.com", "role": "viewer"},
+    )
+    resp = client.get(
+        f"/api/v1/memorials/{memorial['id']}/access",
+        headers=second_user_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_non_owner_cannot_see_access_requests(client, auth_client, memorial, second_user_headers):
+    """Viewer не может просматривать заявки на доступ."""
+    auth_client.post(
+        f"/api/v1/memorials/{memorial['id']}/access",
+        json={"email": "other@example.com", "role": "viewer"},
+    )
+    resp = client.get(
+        f"/api/v1/memorials/{memorial['id']}/access/requests",
+        headers=second_user_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_cannot_revoke_only_owner(auth_client, memorial):
+    """Нельзя удалить единственного владельца мемориала."""
+    # Получаем id первого пользователя через список доступа
+    access_list = auth_client.get(f"/api/v1/memorials/{memorial['id']}/access")
+    owner_entry = next(e for e in access_list.json() if e["role"] == "owner")
+    owner_user_id = owner_entry["user_id"]
+
+    resp = auth_client.delete(
+        f"/api/v1/memorials/{memorial['id']}/access/{owner_user_id}"
+    )
+    assert resp.status_code == 400
+
+
+def test_approve_already_approved_request(auth_client, memorial, client, second_user_headers):
+    """Повторное одобрение уже одобренной заявки → 400."""
+    req_resp = client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/request",
+        json={"requested_role": "viewer"},
+        headers=second_user_headers,
+    )
+    req_id = req_resp.json()["id"]
+
+    auth_client.post(f"/api/v1/memorials/{memorial['id']}/access/requests/{req_id}/approve")
+
+    second_approve = auth_client.post(
+        f"/api/v1/memorials/{memorial['id']}/access/requests/{req_id}/approve"
+    )
+    assert second_approve.status_code == 400

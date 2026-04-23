@@ -587,7 +587,7 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────
-export default function FamilyTree({ memorialId }) {
+export default function FamilyTree({ memorialId, canEdit = false }) {
   const navigate  = useNavigate()
   const { t }     = useLanguage()
   const canvasRef = useRef(null)
@@ -1244,8 +1244,8 @@ export default function FamilyTree({ memorialId }) {
         <p className="tree-controls-hint">{t('family.tree_controls')}</p>
       )}
 
-      {/* Add form */}
-      {showAddForm && (
+      {/* Add form (editor/owner only) */}
+      {canEdit && showAddForm && (
         <form onSubmit={handleAdd} className="relationship-form">
           <div className="form-group">
             <label>{t('family.form_memorial')}</label>
@@ -1683,41 +1683,43 @@ export default function FamilyTree({ memorialId }) {
           )}
         </button>
 
-        {/* Bottom-left: Edit + Add relation */}
-        <div className="ft-canvas-actions">
-          {layoutMode === 'generations' && (
-            <button
-              type="button"
-              className={`ft-canvas-action-btn${editMode ? ' ft-canvas-action-btn--active' : ''}`}
-              onClick={() => {
-                const next = !editMode
-                setEditMode(next)
-                setShowAddForm(false)
-                // Save immediately when exiting edit mode
-                if (!next) saveLayout(nodeOverridesRef.current)
-              }}
-              data-tooltip={editMode ? (t('family.edit_mode_exit') || 'Save and exit edit mode') : 'Drag cards to rearrange the tree'}
-            >
-              {editMode ? '✓' : '✎'}
-              <span className="ft-canvas-action-label">
-                {editMode ? (t('family.edit_mode_exit') || 'Done') : (t('family.edit_mode') || 'Edit')}
-              </span>
-            </button>
-          )}
-          {!editMode && (
-            <button
-              type="button"
-              className="ft-canvas-action-btn ft-canvas-action-btn--primary"
-              onClick={() => { setShowAddForm(!showAddForm); if (!showAddForm) loadAvailableMemorials() }}
-              data-tooltip={showAddForm ? t('common.cancel') : 'Add a family member to the tree'}
-            >
-              {showAddForm ? '✕' : '+'}
-              <span className="ft-canvas-action-label">
-                {showAddForm ? t('common.cancel') : t('family.add_relation')}
-              </span>
-            </button>
-          )}
-        </div>
+        {/* Bottom-left: Edit + Add relation (editor/owner only) */}
+        {canEdit && (
+          <div className="ft-canvas-actions">
+            {layoutMode === 'generations' && (
+              <button
+                type="button"
+                className={`ft-canvas-action-btn${editMode ? ' ft-canvas-action-btn--active' : ''}`}
+                onClick={() => {
+                  const next = !editMode
+                  setEditMode(next)
+                  setShowAddForm(false)
+                  // Save immediately when exiting edit mode
+                  if (!next) saveLayout(nodeOverridesRef.current)
+                }}
+                data-tooltip={editMode ? (t('family.edit_mode_exit') || 'Save and exit edit mode') : 'Drag cards to rearrange the tree'}
+              >
+                {editMode ? '✓' : '✎'}
+                <span className="ft-canvas-action-label">
+                  {editMode ? (t('family.edit_mode_exit') || 'Done') : (t('family.edit_mode') || 'Edit')}
+                </span>
+              </button>
+            )}
+            {!editMode && (
+              <button
+                type="button"
+                className="ft-canvas-action-btn ft-canvas-action-btn--primary"
+                onClick={() => { setShowAddForm(!showAddForm); if (!showAddForm) loadAvailableMemorials() }}
+                data-tooltip={showAddForm ? t('common.cancel') : 'Add a family member to the tree'}
+              >
+                {showAddForm ? '✕' : '+'}
+                <span className="ft-canvas-action-label">
+                  {showAddForm ? t('common.cancel') : t('family.add_relation')}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Nav controls — bottom-right, always visible during zoom */}
         <div className="ft-canvas-nav">
@@ -1758,9 +1760,11 @@ export default function FamilyTree({ memorialId }) {
                   ? rel.custom_label
                   : t(`family.${rel.relationship_type}`)}
               </span>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(rel.id)}>
-                {t('family.delete')}
-              </button>
+              {canEdit && (
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(rel.id)}>
+                  {t('family.delete')}
+                </button>
+              )}
             </div>
           ))}
         </div>

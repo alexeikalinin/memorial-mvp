@@ -106,6 +106,7 @@ class MemorialResponse(MemorialBase):
     tree_layout_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    is_demo: bool = False
 
     class Config:
         from_attributes = True

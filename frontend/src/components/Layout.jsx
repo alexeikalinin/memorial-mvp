@@ -57,7 +57,7 @@ function Layout({ children }) {
                 <span className="nav-user" title={user.email || user.username}>
                   {user.email || user.username}
                 </span>
-                <button type="button" className="nav-logout" onClick={handleLogout}>
+                <button type="button" className="nav-logout" data-testid="logout-btn" onClick={handleLogout}>
                   {t('nav.logout')}
                 </button>
               </div>

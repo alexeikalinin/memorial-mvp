@@ -48,10 +48,25 @@ def _add_missing_columns():
             user_alters.append("ALTER TABLE users ADD COLUMN plan_expires_at TIMESTAMP WITH TIME ZONE")
         if "lifetime_memorial_id" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN lifetime_memorial_id INTEGER")
+        if "is_demo" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT false")
+        if "extra_memorials" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN extra_memorials INTEGER NOT NULL DEFAULT 0")
+        if "live_sessions_remaining" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN live_sessions_remaining INTEGER NOT NULL DEFAULT 0")
         if user_alters:
             with engine.begin() as conn:
                 for sql in user_alters:
                     conn.execute(text(sql))
+
+    # user_usage table: live_sessions column
+    if insp.has_table("user_usage"):
+        usage_cols = {c["name"] for c in insp.get_columns("user_usage")}
+        if "live_sessions" not in usage_cols:
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE user_usage ADD COLUMN live_sessions INTEGER NOT NULL DEFAULT 0"
+                ))
 
 
 _add_missing_columns()

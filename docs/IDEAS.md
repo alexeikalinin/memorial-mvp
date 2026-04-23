@@ -4,6 +4,8 @@
 > Обновляется вручную или через скилл `/idea`.
 > Статусы: `idea` → `planned` → `in-progress` → `done` | `dropped`
 
+> **Полный структурированный roadmap MVP → Product:** [`docs/ROADMAP.md`](ROADMAP.md)
+
 ---
 
 ## Продуктовые идеи (новые фичи)

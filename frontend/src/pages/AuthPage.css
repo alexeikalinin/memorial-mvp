@@ -144,3 +144,37 @@
   color: #3c4043;
   text-decoration: none;
 }
+
+.auth-demo-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0.75rem;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.85rem;
+}
+
+.auth-demo-divider::before,
+.auth-demo-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+
+.btn-demo-explore {
+  display: block;
+  text-align: center;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(196, 136, 74, 0.4);
+  color: var(--accent, #C4884A);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-demo-explore:hover {
+  border-color: var(--accent, #C4884A);
+  background: rgba(196, 136, 74, 0.08);
+}

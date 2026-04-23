@@ -154,6 +154,59 @@ async def list_memorials(
     ]
 
 
+@router.get("/demo", response_model=List[MemorialListItem])
+async def list_demo_memorials(db: Session = Depends(get_db)):
+    """
+    Public endpoint — returns all memorials owned by demo users (no auth required).
+    Used by the /demo landing page to showcase families.
+    """
+    memories_count_sq = (
+        db.query(Memory.memorial_id, func.count(Memory.id).label("cnt"))
+        .group_by(Memory.memorial_id).subquery()
+    )
+    media_count_sq = (
+        db.query(Media.memorial_id, func.count(Media.id).label("cnt"))
+        .group_by(Media.memorial_id).subquery()
+    )
+    rows = (
+        db.query(
+            Memorial,
+            func.coalesce(memories_count_sq.c.cnt, 0).label("memories_count"),
+            func.coalesce(media_count_sq.c.cnt, 0).label("media_count"),
+        )
+        .join(User, User.id == Memorial.owner_id)
+        .outerjoin(memories_count_sq, Memorial.id == memories_count_sq.c.memorial_id)
+        .outerjoin(media_count_sq, Memorial.id == media_count_sq.c.memorial_id)
+        .filter(User.is_demo == True, Memorial.is_public == True)
+        .order_by(Memorial.birth_date.asc().nulls_last())
+        .all()
+    )
+    cover_ids = [m.cover_photo_id for m, _, _ in rows if m.cover_photo_id]
+    cover_urls: dict[int, str] = {}
+    if cover_ids:
+        media_rows = db.query(Media.id, Media.file_url).filter(Media.id.in_(cover_ids)).all()
+        cover_urls = {mid: url for mid, url in media_rows if url}
+
+    return [
+        MemorialListItem(
+            id=m.id,
+            name=m.name,
+            description=m.description,
+            birth_date=m.birth_date,
+            death_date=m.death_date,
+            is_public=m.is_public,
+            cover_photo_id=m.cover_photo_id,
+            cover_photo_url=cover_urls.get(m.cover_photo_id) if m.cover_photo_id else None,
+            memories_count=mc,
+            media_count=mc2,
+            language=getattr(m, "language", "en"),
+            created_at=m.created_at,
+            is_demo_seed=True,
+        )
+        for m, mc, mc2 in rows
+    ]
+
+
 @router.post("/", response_model=MemorialResponse, status_code=status.HTTP_201_CREATED)
 async def create_memorial(
     memorial: MemorialCreate,
@@ -212,6 +265,9 @@ async def get_memorial(
 
     response = MemorialDetailResponse.model_validate(memorial)
     response.current_user_role = current_user_role
+    # Populate is_demo from owner
+    owner = db.query(User).filter(User.id == memorial.owner_id).first()
+    response.is_demo = bool(owner and getattr(owner, "is_demo", False))
     return response
 
 
@@ -558,15 +614,19 @@ async def create_memory(
         memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
         if not memorial:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+        # Инкрементируем счётчик использований только при фактическом добавлении
+        invite.uses_count = (invite.uses_count or 0) + 1
     elif current_user:
+        invite = None
         memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    
+
+    memory_source = "invite" if invite_token else "user"
     db_memory = Memory(
         **memory.dict(),
         memorial_id=memorial_id,
-        source="user"
+        source=memory_source
     )
     db.add(db_memory)
     db.commit()

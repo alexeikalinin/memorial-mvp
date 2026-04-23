@@ -52,6 +52,7 @@ function MemorialCreate() {
     try {
       const submitData = {
         ...formData,
+        language: lang,
         birth_date: br.iso ? `${br.iso}T00:00:00Z` : null,
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: formData.voice_gender || null,

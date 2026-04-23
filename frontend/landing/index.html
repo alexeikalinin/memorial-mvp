@@ -513,15 +513,15 @@
     }
     .pricing-grid {
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 48px;
-      align-items: stretch;
+      align-items: stretch; grid-auto-rows: 1fr;
     }
-    @media (max-width: 1200px) { .pricing-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 780px)  { .pricing-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1200px) { .pricing-grid { grid-template-columns: repeat(3, 1fr); grid-auto-rows: auto; } }
+    @media (max-width: 780px)  { .pricing-grid { grid-template-columns: 1fr; grid-auto-rows: auto; } }
     .pricing-card {
       background: var(--bg3); border: 1px solid var(--border); border-radius: 24px; padding: 32px 28px;
       position: relative; transition: all .3s;
-      display: flex; flex-direction: column; height: 100%;
-      text-align: left; align-items: stretch;
+      display: flex; flex-direction: column;
+      text-align: left; align-items: stretch; min-height: 0;
     }
     .pricing-card:hover { transform: translateY(-4px); }
     .pricing-card.featured {

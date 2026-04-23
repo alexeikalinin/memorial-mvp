@@ -28,7 +28,9 @@ class SubscriptionPlan(str, enum.Enum):
     """Тарифный план пользователя."""
     FREE = "free"
     PLUS = "plus"
+    PRO = "pro"
     LIFETIME = "lifetime"
+    LIFETIME_PRO = "lifetime_pro"
 
 
 class User(Base):
@@ -43,10 +45,13 @@ class User(Base):
     google_id = Column(String(255), unique=True, nullable=True, index=True)
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_demo = Column(Boolean, default=False, nullable=False, server_default="false")  # Demo/seed accounts bypass all billing limits
     # Subscription / billing
     subscription_plan = Column(String(20), default="free", nullable=False, server_default="free")
-    plan_expires_at = Column(DateTime(timezone=True), nullable=True)   # None = free or lifetime (no expiry)
-    lifetime_memorial_id = Column(Integer, nullable=True)               # Locked memorial for lifetime plan
+    plan_expires_at = Column(DateTime(timezone=True), nullable=True)        # None = free or lifetime (no expiry)
+    lifetime_memorial_id = Column(Integer, nullable=True)                   # Locked memorial for lifetime/lifetime_pro plan
+    extra_memorials = Column(Integer, default=0, nullable=False, server_default="0")         # Add-on: bought extra memorial slots
+    live_sessions_remaining = Column(Integer, default=0, nullable=False, server_default="0") # Lifetime Pro: pre-paid session pool
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -285,6 +290,7 @@ class UserUsage(Base):
     period = Column(String(7), nullable=False)  # "2026-04" — год-месяц UTC
     chat_messages = Column(Integer, default=0, nullable=False)
     animations = Column(Integer, default=0, nullable=False)
+    live_sessions = Column(Integer, default=0, nullable=False, server_default="0")  # Pro: monthly live-avatar session counter
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
