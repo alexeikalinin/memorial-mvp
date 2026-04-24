@@ -125,8 +125,11 @@ def _get_or_create_usage(user_id: int, db: Session) -> "UserUsage":
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def is_demo_account(user: User) -> bool:
-    """Demo/seed accounts bypass all billing checks."""
-    return bool(getattr(user, "is_demo", False))
+    """Demo/seed accounts and global admins bypass all billing checks."""
+    if getattr(user, "is_demo", False):
+        return True
+    from app.auth import is_global_admin
+    return is_global_admin(user)
 
 
 # ─── Guards ───────────────────────────────────────────────────────────────────

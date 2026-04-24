@@ -749,8 +749,8 @@
     <a href="#faq">FAQ</a>
   </div>
   <div style="display:flex;gap:12px">
-    <a href="/app/login" class="btn btn-outline">Sign in</a>
-    <a href="/app/register" class="btn btn-primary">Get started free</a>
+    <a href="/login" class="btn btn-outline">Sign in</a>
+    <a href="/register" class="btn btn-primary">Get started free</a>
   </div>
 </nav>
 
@@ -768,7 +768,7 @@
         A living memorial powered by real memories — not generic AI. Hear their voice, explore your family tree, and discover relatives you never knew existed.
       </p>
       <div class="hero-cta">
-        <a href="/app/register" class="btn btn-primary btn-xl">Create a memorial — it's free</a>
+        <a href="/register" class="btn btn-primary btn-xl">Create a memorial — it's free</a>
         <a href="#demo" class="btn btn-outline btn-lg">▶ Watch demo</a>
       </div>
       <div class="hero-note">
@@ -943,7 +943,7 @@
             <img src="/images/feat-voice.png" alt="Voice cloning from recordings" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag">Voice Cloning</div>
+            <div class="feat-tag">Voice Cloning <span class="badge-soon">Coming soon</span></div>
             <h3 class="feat-title">Hear them,<br>not a robot.</h3>
             <p class="feat-desc">Upload recordings you already have — voicemail, a birthday clip, a message they left you. We build their voice so the avatar sounds like them, not a generic assistant.</p>
             <ul class="feat-points">
@@ -955,14 +955,14 @@
               <strong>Video avatar</strong> — animate their portrait from video
               <span class="badge-soon">Coming soon</span>
             </p>
-            <div class="voice-widget">
+            <div class="voice-widget" style="opacity:0.5;cursor:default;pointer-events:none">
               <div class="voice-play-btn">▶</div>
               <div class="voice-bars">
                 <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
                 <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
                 <div class="vbar"></div>
               </div>
-              <span class="voice-label">Listen to a voice clone</span>
+              <span class="voice-label">Voice cloning — we're working on it</span>
             </div>
           </div>
         </div>
@@ -1053,7 +1053,7 @@
           </div>
         </div>
 
-        <a href="/app/register" class="btn btn-primary btn-lg reveal" style="margin-top:40px;display:inline-flex">Find your hidden connections →</a>
+        <a href="/register" class="btn btn-primary btn-lg reveal" style="margin-top:40px;display:inline-flex">Find your hidden connections →</a>
       </div>
 
       <div class="hidden-visual">
@@ -1125,7 +1125,7 @@
             </div>
           </div>
         </div>
-        <a href="/app/register" class="btn btn-outline btn-lg" style="margin-top:32px;display:inline-flex">Explore memorial plaques →</a>
+        <a href="/register" class="btn btn-outline btn-lg" style="margin-top:32px;display:inline-flex">Explore memorial plaques →</a>
       </div>
     </div>
   </div>
@@ -1267,7 +1267,7 @@
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Full graph discovery — Plus only.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Get started free</a>
+        <a href="/register" class="btn btn-outline btn-lg pricing-cta">Get started free</a>
         <p class="pricing-note" aria-hidden="true">&nbsp;</p>
         </div>
       </div>
@@ -1284,14 +1284,14 @@
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Full media features per memorial.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Plus optional family context (below).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> shared across the account.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">Upload a voice sample — AI replies in their voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>5</strong> renders / month (account-wide).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Upload a voice sample — AI replies in their voice.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>5</strong> renders / month (account-wide).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat can pull from up to <strong>10 linked</strong> memorials when enabled.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Discovery across the family graph (where available).</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <button type="button" class="btn btn-primary btn-lg pricing-cta js-waitlist-open">Join waitlist</button>
-        <p class="pricing-note">We’ll email you when checkout opens. You can still use Free today.</p>
+        <a href="/register" class="btn btn-primary btn-lg pricing-cta">Get started — Plus</a>
+        <p class="pricing-note">Start free, upgrade anytime. Cancel at any time.</p>
         </div>
       </div>
       <!-- Pro -->
@@ -1303,15 +1303,15 @@
         <ul class="pricing-features">
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>Up to 10</strong> pages + add-on slots.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>500 messages / month</strong> with voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS</span><span class="pricing-li-note">Upload a sample — AI replies in their voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Upload a sample — AI replies in their voice.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat across up to <strong>10 linked</strong> memorials.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note"><strong>5 sessions / month</strong> — real-time video avatar.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>15 GB</strong> shared across the account.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <button type="button" class="btn btn-outline btn-lg pricing-cta js-waitlist-open">Join waitlist</button>
-        <p class="pricing-note">We’ll email you when checkout opens.</p>
+        <a href="/register" class="btn btn-outline btn-lg pricing-cta">Get started — Pro</a>
+        <p class="pricing-note">Start free, upgrade anytime. Cancel at any time.</p>
         </div>
       </div>
       <!-- Lifetime -->
@@ -1328,13 +1328,13 @@
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Long-term access to this page while the service operates.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Only from memories on <strong>this</strong> memorial (no cross-memorial RAG).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> for this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">Same voice features as Plus, for this memorial only.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>5</strong> renders / month for this memorial (resets monthly).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Same voice features as Plus, for this memorial only.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>5</strong> renders / month for this memorial (resets monthly).</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note"><strong>Not included</strong> — avatar only uses memories from this page. <strong>Plus only</strong>.</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note"><strong>Not included</strong> — full graph discovery stays on <strong>Plus</strong>.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime</a>
+        <a href="/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime</a>
         <p class="pricing-note">One payment, no subscription — full AI features for one page, forever.</p>
         </div>
       </div>
@@ -1348,14 +1348,14 @@
         <ul class="pricing-features">
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> page — locked to this memorial.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>200 messages / month</strong> on this page.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS</span><span class="pricing-li-note">Same voice features as Plus, for this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Same voice features as Plus, for this memorial.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note">Pre-paid pool of <strong>100 sessions</strong> — never resets. Buy more as needed.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>10 GB</strong> for this memorial.</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Not included — avatar uses only this page's memories.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime Pro</a>
+        <a href="/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime Pro</a>
         <p class="pricing-note">One payment — get 100 live avatar sessions that never expire.</p>
         </div>
       </div>
@@ -1410,7 +1410,7 @@
       Every day without a memorial<br>is a memory lost.
     </h2>
     <p class="final-sub">It takes 5 minutes to create.<br>It lasts forever.</p>
-    <a href="/app/register" class="btn btn-primary btn-xl">Preserve their memory — start free</a>
+    <a href="/register" class="btn btn-primary btn-xl">Preserve their memory — start free</a>
     <div class="final-trust">
       <div class="final-trust-item">Fair, simple plans</div>
       <div class="final-trust-item">Start free</div>
@@ -1464,7 +1464,7 @@
     <button type="button" class="waitlist-close-x" id="waitlist-close" aria-label="Close">×</button>
     <div id="waitlist-form-view">
       <h3 id="waitlist-modal-title" class="waitlist-modal-title">Get notified</h3>
-      <p class="waitlist-modal-sub">Voice cloning, photo animation, and paid plans aren’t live yet. Leave your email — we’ll let you know when everything is ready.</p>
+      <p class="waitlist-modal-sub">Voice cloning and photo animation are coming soon. Leave your email — we’ll let you know the moment they go live.</p>
       <form id="waitlist-form" novalidate>
         <div class="waitlist-field">
           <label for="waitlist-email">Email</label>
