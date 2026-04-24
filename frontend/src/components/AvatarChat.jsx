@@ -57,7 +57,7 @@ function getPlayableAudioUrl(url) {
   return `${base}/media/audio/${url}`
 }
 
-function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
+function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -226,6 +226,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName }) {
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text: userMessage }])
     setLoading(true)
+    onMessageSent?.()  // notify parent (e.g. for anonymous limit tracking)
 
     try {
       const response = await aiAPI.chat({

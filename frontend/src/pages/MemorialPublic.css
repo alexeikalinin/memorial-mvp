@@ -535,3 +535,213 @@
 
 .btn-request-access:hover:not(:disabled) { opacity: 0.85; }
 .btn-request-access:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Anonymous chat limit banner ───────────────────────────────── */
+.anon-limit-banner {
+  max-width: 520px;
+  margin: 2rem auto;
+  padding: 2rem 1.75rem;
+  background: var(--surface, #fffdf8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.anon-limit-title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: var(--text-dark);
+}
+
+.anon-limit-sub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+.anon-limit-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-anon-signup {
+  background: var(--accent, #c8a97e);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-xs);
+  padding: 0.6rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.btn-anon-signup:hover { opacity: 0.85; }
+
+.btn-anon-login {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.btn-anon-login:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── Memory contributor badge ──────────────────────────────────── */
+.memory-contributor {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.5rem;
+}
+
+/* ─── Submit a memory (public form) ────────────────────────────── */
+.public-submit-memory {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-share-memory {
+  background: transparent;
+  border: 1.5px dashed var(--accent, #c8a97e);
+  color: var(--accent, #c8a97e);
+  border-radius: var(--radius-xs);
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  font-family: var(--font-body);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+
+.btn-share-memory:hover {
+  background: rgba(200,169,126,0.08);
+}
+
+.mem-submit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mem-form-title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-dark);
+}
+
+.mem-form-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mem-input {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface, #fffdf8);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mem-input:focus { outline: none; border-color: var(--accent); }
+
+.mem-textarea {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface, #fffdf8);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  resize: vertical;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.mem-textarea:focus { outline: none; border-color: var(--accent); }
+
+.mem-error {
+  font-size: 0.85rem;
+  color: #e57373;
+  margin: 0;
+}
+
+.mem-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-mem-submit {
+  background: var(--accent, #c8a97e);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-xs);
+  padding: 0.6rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: opacity var(--t-fast) var(--ease);
+}
+
+.btn-mem-submit:hover:not(:disabled) { opacity: 0.85; }
+.btn-mem-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-mem-cancel {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-body);
+  text-decoration: underline;
+}
+
+.mem-submitted-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #5d8a5e;
+  background: rgba(93, 138, 94, 0.08);
+  border: 1px solid rgba(93, 138, 94, 0.25);
+  border-radius: var(--radius-xs);
+  padding: 0.85rem 1.1rem;
+  flex-wrap: wrap;
+}
+
+.btn-mem-another {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-family: var(--font-body);
+}

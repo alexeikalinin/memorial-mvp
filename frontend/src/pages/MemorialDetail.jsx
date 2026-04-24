@@ -59,6 +59,8 @@ function MemorialDetail() {
   const [accessError, setAccessError] = useState(null)
   const [pendingRequests, setPendingRequests] = useState([])
   const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false)
+  const [pendingMemories, setPendingMemories] = useState([])
+  const [pendingMemoriesLoading, setPendingMemoriesLoading] = useState(false)
 
   useEffect(() => {
     loadMemorial()
@@ -244,18 +246,41 @@ function MemorialDetail() {
     setAccessError(null)
     setAccessListLoading(true)
     setPendingRequestsLoading(true)
+    setPendingMemoriesLoading(true)
     try {
-      const [accessRes, requestsRes] = await Promise.all([
+      const [accessRes, requestsRes, pendingMemRes] = await Promise.all([
         accessAPI.list(id),
         accessAPI.listRequests(id).catch(() => ({ data: [] })),
+        memorialsAPI.getPendingMemories(id).catch(() => ({ data: [] })),
       ])
       setAccessList(accessRes.data)
       setPendingRequests(requestsRes.data)
+      setPendingMemories(pendingMemRes.data)
     } catch {
       setAccessList([])
     } finally {
       setAccessListLoading(false)
       setPendingRequestsLoading(false)
+      setPendingMemoriesLoading(false)
+    }
+  }
+
+  const handleApproveMemory = async (memoryId) => {
+    try {
+      await memorialsAPI.approveMemory(id, memoryId)
+      setPendingMemories(prev => prev.filter(m => m.id !== memoryId))
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to approve memory')
+    }
+  }
+
+  const handleRejectMemory = async (memoryId) => {
+    if (!window.confirm('Delete this memory permanently?')) return
+    try {
+      await memorialsAPI.rejectMemory(id, memoryId)
+      setPendingMemories(prev => prev.filter(m => m.id !== memoryId))
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to reject memory')
     }
   }
 
@@ -639,6 +664,50 @@ function MemorialDetail() {
               </button>
               {accessError && <p className="error-message" style={{ marginTop: '8px' }}>{accessError}</p>}
             </div>
+
+            {/* Pending memories moderation */}
+            {(pendingMemoriesLoading || pendingMemories.length > 0) && (
+              <div className="invite-list-section">
+                <h4>
+                  Memories awaiting review
+                  {pendingMemories.length > 0 && ` (${pendingMemories.length})`}
+                </h4>
+                {pendingMemoriesLoading ? (
+                  <p className="invite-list-empty">Loading…</p>
+                ) : (
+                  <ul className="invite-list">
+                    {pendingMemories.map(mem => (
+                      <li key={mem.id} className="invite-item" style={{ alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1 }}>
+                          {mem.contributor_name && (
+                            <span className="invite-item-label">{mem.contributor_name}</span>
+                          )}
+                          {mem.title && (
+                            <span style={{ color: '#888', fontSize: '12px', marginLeft: '6px' }}>"{mem.title}"</span>
+                          )}
+                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#ccc', lineHeight: 1.4 }}>
+                            {mem.content.length > 160 ? mem.content.slice(0, 160) + '…' : mem.content}
+                          </p>
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          style={{ fontSize: '12px', padding: '4px 10px' }}
+                          onClick={() => handleApproveMemory(mem.id)}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn-revoke"
+                          onClick={() => handleRejectMemory(mem.id)}
+                        >
+                          Reject
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {(pendingRequestsLoading || pendingRequests.length > 0) && (
               <div className="invite-list-section">

@@ -92,6 +92,14 @@ export const memorialsAPI = {
     apiClient.delete(`/memorials/${memorialId}/memories/${memoryId}`),
   getMemories: (memorialId, q = null) =>
     apiClient.get(`/memorials/${memorialId}/memories`, q ? { params: { q } } : {}),
+  submitPublicMemory: (memorialId, data) =>
+    apiClient.post(`/memorials/${memorialId}/memories/public`, data),
+  getPendingMemories: (memorialId) =>
+    apiClient.get(`/memorials/${memorialId}/memories/pending`),
+  approveMemory: (memorialId, memoryId) =>
+    apiClient.post(`/memorials/${memorialId}/memories/${memoryId}/approve`),
+  rejectMemory: (memorialId, memoryId) =>
+    apiClient.post(`/memorials/${memorialId}/memories/${memoryId}/reject`),
   setCover: (memorialId, mediaId) =>
     apiClient.patch(`/memorials/${memorialId}/cover`, { media_id: mediaId }),
   getTimeline: (memorialId) =>

@@ -160,11 +160,20 @@ class MemoryResponse(MemoryBase):
     memorial_id: int
     embedding_id: Optional[str] = None
     source: Optional[str] = None
+    status: str = 'approved'
+    contributor_name: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+
+class PublicMemorySubmit(BaseModel):
+    """Schema for anonymous visitors submitting a memory for moderation."""
+    title: Optional[str] = Field(None, max_length=255)
+    content: str = Field(..., min_length=10, max_length=5000)
+    contributor_name: str = Field(..., min_length=1, max_length=100)
 
 
 class MemorialDetailResponse(MemorialResponse):

@@ -28,6 +28,7 @@ from app.schemas import (
     MemoryCreate,
     MemoryResponse,
     MemoryUpdate,
+    PublicMemorySubmit,
     SetCoverRequest,
     TimelineItem,
 )
@@ -800,18 +801,114 @@ async def delete_memory(
     return None
 
 
+@router.post("/{memorial_id}/memories/public", response_model=MemoryResponse, status_code=status.HTTP_201_CREATED)
+async def submit_public_memory(
+    memorial_id: int,
+    body: PublicMemorySubmit,
+    db: Session = Depends(get_db),
+):
+    """
+    Anyone (anonymous or authenticated) can submit a memory for moderation.
+    Goes into status='pending'; owner must approve before it appears publicly.
+    """
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+    if not memorial.is_public:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Memorial is private")
+    db_memory = Memory(
+        memorial_id=memorial_id,
+        title=body.title,
+        content=body.content,
+        contributor_name=body.contributor_name,
+        source="public",
+        status="pending",
+    )
+    db.add(db_memory)
+    db.commit()
+    db.refresh(db_memory)
+    return db_memory
+
+
+@router.get("/{memorial_id}/memories/pending", response_model=List[MemoryResponse])
+async def get_pending_memories(
+    memorial_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return all pending (unmoderated) memories. Owner/editor only."""
+    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    return db.query(Memory).filter(
+        Memory.memorial_id == memorial_id,
+        Memory.status == "pending",
+    ).order_by(Memory.created_at.asc()).all()
+
+
+@router.post("/{memorial_id}/memories/{memory_id}/approve", response_model=MemoryResponse)
+async def approve_memory(
+    memorial_id: int,
+    memory_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Approve a pending memory — makes it publicly visible. Owner/editor only."""
+    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
+    if not mem:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    mem.status = "approved"
+    db.commit()
+    db.refresh(mem)
+    # Create embedding for newly approved memory
+    try:
+        from app.workers.worker import create_memory_embedding_task
+        create_memory_embedding_task.delay(memory_id=mem.id, memorial_id=memorial_id, text=mem.content)
+    except Exception:
+        pass
+    return mem
+
+
+@router.post("/{memorial_id}/memories/{memory_id}/reject", status_code=status.HTTP_204_NO_CONTENT)
+async def reject_memory(
+    memorial_id: int,
+    memory_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Reject (delete) a pending memory. Owner/editor only."""
+    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
+    if not mem:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    db.delete(mem)
+    db.commit()
+    return None
+
+
 @router.get("/{memorial_id}/memories", response_model=List[MemoryResponse])
 async def get_memorial_memories(
     memorial_id: int,
     q: Optional[str] = None,
+    include_pending: bool = False,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
     """
     Получить воспоминания мемориала. Публичные мемориалы доступны без авторизации.
+    Approved-only by default; owners/editors can pass include_pending=true.
     """
     require_memorial_access(memorial_id, current_user, db, allow_public=True)
     query = db.query(Memory).filter(Memory.memorial_id == memorial_id)
+    # Determine if requester has editor+ role
+    is_editor = False
+    if current_user:
+        try:
+            require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+            is_editor = True
+        except HTTPException:
+            pass
+    if not (is_editor and include_pending):
+        query = query.filter(Memory.status == "approved")
     if q:
         pattern = f"%{q}%"
         query = query.filter(

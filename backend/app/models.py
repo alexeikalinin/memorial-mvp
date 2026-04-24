@@ -123,17 +123,20 @@ class Media(Base):
 class Memory(Base):
     """Модель воспоминания (текстовый фрагмент для RAG)."""
     __tablename__ = "memories"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False, index=True)
     title = Column(String(255), nullable=True)
     content = Column(Text, nullable=False)  # Текст воспоминания
     embedding_id = Column(String(255), nullable=True)  # ID вектора в Pinecone
-    source = Column(String(100), nullable=True)  # Источник: "user", "document", "transcription"
+    source = Column(String(100), nullable=True)  # Источник: "user", "document", "transcription", "public"
     event_date = Column(DateTime(timezone=True), nullable=True)  # Дата события в воспоминании
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+    # Moderation: 'approved' (default for owner/editor) or 'pending' (public submissions)
+    status = Column(String(20), nullable=False, server_default='approved', default='approved', index=True)
+    contributor_name = Column(String(255), nullable=True)  # Name for anonymous contributors
+
     # Связи
     memorial = relationship("Memorial", back_populates="memories")
 
