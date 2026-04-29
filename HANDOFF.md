@@ -1,21 +1,12 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-04-23 20:32
+> Автообновлено: 2026-04-29 20:01
 > Ветка: main
 
 ## Последний коммит
-e6d6ea6 feat: Stripe billing integration (checkout, webhook, usage, admin)
+462c097 feat: public memory submission + anon chat limit + EN translation on /m/:id
 
 ## Изменённые файлы (uncommitted)
-- .gitignore
 - HANDOFF.md
-- backend/app/api/ai.py
-- backend/app/api/invites.py
-- backend/app/api/memorials.py
-- backend/app/main.py
-- backend/app/models.py
-- backend/app/schemas.py
-- backend/app/services/billing.py
-- backend/seed_ensure_owner.py
 
 ## Новые файлы (untracked)
 - .agents/skills/stripe-best-practices/SKILL.md
@@ -25,9 +16,9 @@ e6d6ea6 feat: Stripe billing integration (checkout, webhook, usage, admin)
 - .agents/skills/stripe-best-practices/references/security.md
 
 ## Последние 3 коммита
-e6d6ea6 feat: Stripe billing integration (checkout, webhook, usage, admin)
-d608938 billing: add Pro + Lifetime Pro plans, live session endpoint, pricing on landing
-e0127ad tests: bypass billing guards in conftest; fix 402 on multi-memorial tests
+462c097 feat: public memory submission + anon chat limit + EN translation on /m/:id
+052f472 fix: equal-height pricing cards + E2E auto-cleanup after test runs
+48d7008 fix: landing Sign-in links and pricing button height
 
 ## Запуск стека
 ```bash

@@ -2,6 +2,7 @@
   "name": "memorial-mvp-e2e",
   "version": "1.0.0",
   "description": "Playwright E2E tests for Memorial MVP",
+  "type": "module",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
