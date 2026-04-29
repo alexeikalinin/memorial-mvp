@@ -1694,8 +1694,16 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
                   const next = !editMode
                   setEditMode(next)
                   setShowAddForm(false)
-                  // Save immediately when exiting edit mode
-                  if (!next) saveLayout(nodeOverridesRef.current)
+                  if (!next) {
+                    // Snapshot ALL current positions so layout is fully frozen for this user
+                    const snapshot = {}
+                    const ep = effectivePositionsRef.current || {}
+                    for (const [id, pos] of Object.entries(ep)) {
+                      snapshot[id] = { x: pos.x, y: pos.y }
+                    }
+                    setNodeOverrides(snapshot)
+                    saveLayout(snapshot)
+                  }
                 }}
                 data-tooltip={editMode ? (t('family.edit_mode_exit') || 'Save and exit edit mode') : 'Drag cards to rearrange the tree'}
               >

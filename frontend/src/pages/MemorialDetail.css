@@ -129,7 +129,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.55rem 1.1rem;
+  padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.82rem;
   font-weight: 500;
@@ -140,6 +140,8 @@
   backdrop-filter: blur(8px);
   transition: all var(--t-fast) var(--ease);
   white-space: nowrap;
+  height: 2rem;
+  box-sizing: border-box;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -336,6 +338,9 @@
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: all var(--t-fast) var(--ease);
+  white-space: nowrap;
+  height: 2rem;
+  box-sizing: border-box;
 }
 
 .btn-edit-header:hover {
@@ -343,15 +348,22 @@
 }
 
 .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   background: rgba(185, 28, 28, 0.15);
   border: 1px solid rgba(185, 28, 28, 0.35);
   color: rgba(255, 160, 160, 0.9);
   padding: 0.5rem 1rem;
   border-radius: var(--radius-sm);
   font-size: 0.82rem;
+  font-weight: 500;
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: all var(--t-fast) var(--ease);
+  white-space: nowrap;
+  height: 2rem;
+  box-sizing: border-box;
 }
 
 .btn-danger:hover:not(:disabled) {
