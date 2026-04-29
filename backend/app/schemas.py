@@ -294,6 +294,14 @@ class FamilyRelationshipCreate(BaseModel):
     relationship_type: RelationshipType
     custom_label: Optional[str] = Field(None, max_length=100)  # обязательно для CUSTOM типа
     notes: Optional[str] = None
+    nickname_for_visitor: Optional[str] = Field(None, max_length=100)
+
+
+class FamilyRelationshipUpdate(BaseModel):
+    relationship_type: Optional[RelationshipType] = None
+    custom_label: Optional[str] = Field(None, max_length=100)
+    notes: Optional[str] = None
+    nickname_for_visitor: Optional[str] = Field(None, max_length=100)
 
 
 class FamilyRelationshipResponse(BaseModel):
@@ -303,9 +311,10 @@ class FamilyRelationshipResponse(BaseModel):
     relationship_type: RelationshipType
     custom_label: Optional[str] = None
     notes: Optional[str] = None
+    nickname_for_visitor: Optional[str] = None
     related_memorial_name: Optional[str] = None  # Имя связанного мемориала
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

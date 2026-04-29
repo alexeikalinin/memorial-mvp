@@ -195,6 +195,7 @@ class FamilyRelationship(Base):
     relationship_type = Column(RelationshipTypeColumn(), nullable=False, index=True)
     custom_label = Column(String(100), nullable=True)  # Заполняется только для CUSTOM типа
     notes = Column(Text, nullable=True)  # Дополнительные заметки о связи
+    nickname_for_visitor = Column(String(100), nullable=True)  # Как аватар обращался к владельцу (напр. «Лёшик»)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Связи

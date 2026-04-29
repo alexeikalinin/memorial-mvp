@@ -597,7 +597,7 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
   const [loading,      setLoading]      = useState(true)
 
   const [showAddForm,        setShowAddForm]        = useState(false)
-  const [formData,           setFormData]           = useState({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '' })
+  const [formData,           setFormData]           = useState({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
   const [availableMemorials, setAvailableMemorials] = useState([])
   const availableLoaded = useRef(false)
   const [submitting, setSubmitting] = useState(false)
@@ -637,7 +637,7 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
   const saveTimerRef = useRef(null)
   const [drawingEdge, setDrawingEdge] = useState(null)  // {fromId, curX, curY}
   const [pendingEdge, setPendingEdge] = useState(null)  // {fromId, toId}
-  const [pendingEdgeForm, setPendingEdgeForm] = useState({ relationship_type: 'parent', custom_label: '', notes: '' })
+  const [pendingEdgeForm, setPendingEdgeForm] = useState({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
 
   // ── Data loading ───────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -957,9 +957,10 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
         relationship_type: pendingEdgeForm.relationship_type,
         custom_label: pendingEdgeForm.custom_label || undefined,
         notes: pendingEdgeForm.notes || undefined,
+        nickname_for_visitor: pendingEdgeForm.nickname_for_visitor || undefined,
       })
       setPendingEdge(null)
-      setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '' })
+      setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
       await loadData()
     } catch (err) {
       alert(err.response?.data?.detail || t('family.add_error'))
@@ -1081,7 +1082,7 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
         const toId = nodeEl.getAttribute('data-memorial-id')
         if (toId && toId !== drawingEdge.fromId) {
           setPendingEdge({ fromId: drawingEdge.fromId, toId })
-          setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '' })
+          setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
         }
       }
       setDrawingEdge(null)
@@ -1145,7 +1146,7 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
     setSubmitting(true)
     try {
       await familyAPI.createRelationship(memorialId, formData)
-      setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '' })
+      setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
       setShowAddForm(false)
       availableLoaded.current = false
       await loadData()
@@ -1310,6 +1311,17 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
             </div>
           )}
           <div className="form-group">
+            <label>{t('family.form_nickname') || 'How did they address you?'} <span className="form-optional">{t('common.optional') || 'optional'}</span></label>
+            <input
+              type="text"
+              value={formData.nickname_for_visitor}
+              onChange={e => setFormData({ ...formData, nickname_for_visitor: e.target.value })}
+              maxLength={100}
+              placeholder={t('family.form_nickname_placeholder') || 'e.g. Lyoshik, sunshine, grandson…'}
+            />
+            <span className="form-hint">{t('family.form_nickname_hint') || 'The avatar will use this name when chatting with you'}</span>
+          </div>
+          <div className="form-group">
             <label>{t('family.form_notes')}</label>
             <textarea
               value={formData.notes}
@@ -1372,6 +1384,17 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
                 />
               </div>
             )}
+            <div className="form-group">
+              <label>{t('family.form_nickname') || 'How did they address you?'} <span className="form-optional">{t('common.optional') || 'optional'}</span></label>
+              <input
+                type="text"
+                value={pendingEdgeForm.nickname_for_visitor}
+                onChange={e => setPendingEdgeForm(f => ({ ...f, nickname_for_visitor: e.target.value }))}
+                maxLength={100}
+                placeholder={t('family.form_nickname_placeholder') || 'e.g. Lyoshik, sunshine, grandson…'}
+              />
+              <span className="form-hint">{t('family.form_nickname_hint') || 'The avatar will use this name when chatting with you'}</span>
+            </div>
             <div className="ft-pending-edge-actions">
               <button className="btn btn-primary" onClick={handleCreatePendingEdge} disabled={submitting}>
                 {submitting ? t('common.saving') : t('family.add_submit')}

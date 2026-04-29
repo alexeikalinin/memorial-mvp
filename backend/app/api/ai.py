@@ -505,6 +505,25 @@ async def avatar_chat(
                 except Exception as e2:
                     print(f"Warning: Could not build avatar persona: {e2}")
 
+        # Nickname: если текущий пользователь связан с этим мемориалом и задал обращение
+        if current_user:
+            visitor_rel = db.query(FamilyRelationship).filter(
+                FamilyRelationship.related_memorial_id == request.memorial_id,
+                FamilyRelationship.nickname_for_visitor.isnot(None),
+                FamilyRelationship.nickname_for_visitor != "",
+            ).join(
+                Memorial, Memorial.id == FamilyRelationship.memorial_id
+            ).filter(
+                Memorial.owner_id == current_user.id
+            ).first()
+            if visitor_rel and visitor_rel.nickname_for_visitor:
+                nick = visitor_rel.nickname_for_visitor.strip()
+                if request.language == "en":
+                    nick_note = f'\n\nThe person speaking with you is a close relative. You used to call them "{nick}". Address them by this name in your replies.'
+                else:
+                    nick_note = f'\n\nС тобой разговаривает близкий родственник. Ты обращался к нему "{nick}". Обращайся к нему по этому имени в ответах.'
+                persona_prompt = (persona_prompt or "") + nick_note
+
         # Если в контексте есть воспоминания родственников — дополняем system prompt
         if has_family_context:
             if request.language == "en":

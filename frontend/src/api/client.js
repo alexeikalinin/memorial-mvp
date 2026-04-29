@@ -187,6 +187,8 @@ export const familyAPI = {
     const params = relationshipType ? { relationship_type: relationshipType } : {}
     return apiClient.get(`/family/memorials/${memorialId}/relationships`, { params })
   },
+  updateRelationship: (relationshipId, data) =>
+    apiClient.patch(`/family/relationships/${relationshipId}`, data),
   deleteRelationship: (relationshipId) =>
     apiClient.delete(`/family/relationships/${relationshipId}`),
   getFamilyTree: (memorialId, maxDepth = 3) =>

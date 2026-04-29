@@ -144,6 +144,27 @@ p.tree-controls-hint.ft-gen-hint {
 
 .relationship-form .form-group { margin-bottom: 1rem; }
 
+.form-optional {
+  font-weight: 400;
+  opacity: 0.55;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.75rem;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+/* Same styles inside ft-pending-edge-modal */
+.ft-pending-edge-modal .form-optional { font-weight: 400; opacity: 0.55; font-size: 0.75rem; }
+.ft-pending-edge-modal .form-hint { display: block; margin-top: 0.3rem; font-size: 0.75rem; color: var(--text-muted); opacity: 0.7; }
+
 .relationship-form label {
   display: block;
   margin-bottom: 0.35rem;

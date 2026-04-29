@@ -12,6 +12,7 @@ from app.db import get_db
 from app.models import Memorial, FamilyRelationship, RelationshipType, User, UserRole
 from app.schemas import (
     FamilyRelationshipCreate,
+    FamilyRelationshipUpdate,
     FamilyRelationshipResponse,
     FamilyTreeResponse,
     FamilyTreeNode,
@@ -299,7 +300,8 @@ async def create_relationship(
         related_memorial_id=relationship.related_memorial_id,
         relationship_type=relationship.relationship_type,
         custom_label=relationship.custom_label,
-        notes=relationship.notes
+        notes=relationship.notes,
+        nickname_for_visitor=relationship.nickname_for_visitor,
     )
     db.add(db_relationship)
 
@@ -452,8 +454,34 @@ async def delete_relationship(
     
     db.delete(relationship)
     db.commit()
-    
+
     return None
+
+
+@router.patch("/relationships/{relationship_id}", response_model=FamilyRelationshipResponse)
+async def update_relationship(
+    relationship_id: int,
+    data: FamilyRelationshipUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Обновить семейную связь (nickname_for_visitor, notes, custom_label)."""
+    relationship = db.query(FamilyRelationship).filter(FamilyRelationship.id == relationship_id).first()
+    if not relationship:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Relationship not found")
+
+    require_memorial_access(relationship.memorial_id, current_user, db, min_role=UserRole.EDITOR)
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(relationship, field, value)
+
+    db.commit()
+    db.refresh(relationship)
+
+    related = db.query(Memorial).filter(Memorial.id == relationship.related_memorial_id).first()
+    response = FamilyRelationshipResponse.model_validate(relationship)
+    response.related_memorial_name = related.name if related else None
+    return response
 
 
 @router.get("/memorials/{memorial_id}/tree", response_model=FamilyTreeResponse)
