@@ -519,9 +519,17 @@ async def avatar_chat(
             if visitor_rel and visitor_rel.nickname_for_visitor:
                 nick = visitor_rel.nickname_for_visitor.strip()
                 if request.language == "en":
-                    nick_note = f'\n\nThe person speaking with you is a close relative. You used to call them "{nick}". Address them by this name in your replies.'
+                    nick_note = (
+                        f'\n\nThe person speaking with you is a close relative. You used to call them "{nick}". '
+                        f'Use this name naturally — greet them by name in your very first reply, '
+                        f'then use it occasionally when it feels warm and natural, not in every sentence.'
+                    )
                 else:
-                    nick_note = f'\n\nС тобой разговаривает близкий родственник. Ты обращался к нему "{nick}". Обращайся к нему по этому имени в ответах.'
+                    nick_note = (
+                        f'\n\nС тобой разговаривает близкий родственник. Ты обращался к нему "{nick}". '
+                        f'Используй это имя естественно — обратись по имени в самом первом ответе, '
+                        f'затем изредка, когда это звучит тепло и уместно, но не в каждой фразе.'
+                    )
                 persona_prompt = (persona_prompt or "") + nick_note
 
         # Если в контексте есть воспоминания родственников — дополняем system prompt
