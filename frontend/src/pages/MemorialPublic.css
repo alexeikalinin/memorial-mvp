@@ -537,6 +537,47 @@
 .btn-request-access:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── Anonymous chat limit banner ───────────────────────────────── */
+/* ─── Anonymous chat counter hint ───────────────────────────────── */
+.anon-chat-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 520px;
+  margin: 0.75rem auto 0;
+  padding: 0.5rem 0.85rem;
+  background: var(--surface-warm, #faf7f2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.anon-chat-hint-dots {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.anon-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.anon-dot--used {
+  background: var(--accent, #c8a97e);
+}
+
+.anon-chat-hint-text { line-height: 1.45; }
+
+.anon-hint-link {
+  color: var(--accent, #c8a97e);
+  text-decoration: none;
+  font-weight: 500;
+}
+.anon-hint-link:hover { text-decoration: underline; }
+
 .anon-limit-banner {
   max-width: 520px;
   margin: 2rem auto;

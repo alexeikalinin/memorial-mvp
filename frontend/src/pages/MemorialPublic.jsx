@@ -210,13 +210,32 @@ function MemorialPublic() {
       <div className="public-content">
         {activeSection === 'chat' && (
           <>
-            {/* Anonymous chat limit prompt */}
+            {/* Anonymous chat counter hint — shown before limit is reached */}
+            {!user && !showAuthPrompt && (
+              <div className="anon-chat-hint">
+                <span className="anon-chat-hint-dots">
+                  {Array.from({ length: ANON_CHAT_LIMIT }, (_, i) => (
+                    <span key={i} className={`anon-dot${i < anonCount ? ' anon-dot--used' : ''}`} />
+                  ))}
+                </span>
+                <span className="anon-chat-hint-text">
+                  {anonCount === 0
+                    ? `${ANON_CHAT_LIMIT} free questions · sign in for 15/month`
+                    : `${ANON_CHAT_LIMIT - anonCount} of ${ANON_CHAT_LIMIT} free questions left · `}
+                  {anonCount > 0 && <Link to="/register" className="anon-hint-link">sign up free for 15/month</Link>}
+                </span>
+              </div>
+            )}
+            {/* Limit reached: sign-up prompt */}
             {showAuthPrompt && (
               <div className="anon-limit-banner">
-                <p className="anon-limit-title">You've asked {ANON_CHAT_LIMIT} questions</p>
-                <p className="anon-limit-sub">Create a free account to keep chatting and save your conversation.</p>
+                <p className="anon-limit-title">You've used all {ANON_CHAT_LIMIT} free questions</p>
+                <p className="anon-limit-sub">
+                  Create a free account — <strong>15 messages/month</strong> included.<br />
+                  Upgrade to Plus for <strong>200 messages/month</strong> + voice & photo animation.
+                </p>
                 <div className="anon-limit-actions">
-                  <Link to="/register" className="btn-anon-signup">Sign up — it's free</Link>
+                  <Link to="/register" className="btn-anon-signup">Sign up free</Link>
                   <Link to="/login" className="btn-anon-login">Sign in</Link>
                 </div>
               </div>
