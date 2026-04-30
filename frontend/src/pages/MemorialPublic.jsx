@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { memorialsAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useAuth } from '../context/AuthContext'
 import AvatarChat from '../components/AvatarChat'
+import DemoTutorial from '../components/DemoTutorial'
 import './MemorialPublic.css'
+
+const TUTORIAL_KEY = 'demo_tutorial_v1'
 
 const ANON_CHAT_LIMIT = 5
 
 function MemorialPublic() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [memorial, setMemorial] = useState(null)
   const [memories, setMemories] = useState([])
   const [photos, setPhotos] = useState([])
@@ -39,6 +43,38 @@ function MemorialPublic() {
   const [memError, setMemError] = useState(null)
 
   const { user } = useAuth()
+
+  // Demo tutorial state — picks up from step 3 when coming from /demo
+  const [tutorialStep, setTutorialStep] = useState(() => {
+    try {
+      const fromDemo = searchParams.get('demo_step')
+      if (fromDemo) return parseInt(fromDemo, 10)
+      const saved = localStorage.getItem(TUTORIAL_KEY)
+      if (!saved || saved === 'done') return null
+      const n = parseInt(saved, 10)
+      return n >= 3 ? n : null
+    } catch { return null }
+  })
+
+  const advanceTutorial = () => {
+    const next = (tutorialStep || 0) + 1
+    try { localStorage.setItem(TUTORIAL_KEY, next > 5 ? 'done' : String(next)) } catch {}
+    setTutorialStep(next <= 5 ? next : null)
+    // strip ?demo_step from URL without navigation
+    if (searchParams.has('demo_step')) {
+      searchParams.delete('demo_step')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }
+
+  const skipTutorial = () => {
+    try { localStorage.setItem(TUTORIAL_KEY, 'done') } catch {}
+    setTutorialStep(null)
+    if (searchParams.has('demo_step')) {
+      searchParams.delete('demo_step')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -191,7 +227,10 @@ function MemorialPublic() {
           </button>
           <button
             className={activeSection === 'memories' ? 'active' : ''}
-            onClick={() => setActiveSection('memories')}
+            onClick={() => {
+              setActiveSection('memories')
+              if (tutorialStep === 3) advanceTutorial()
+            }}
           >
             Memories {memories.length > 0 && `(${memories.length})`}
           </button>
@@ -240,6 +279,9 @@ function MemorialPublic() {
                 </div>
               </div>
             )}
+            {tutorialStep === 3 && (
+              <DemoTutorial step={3} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
+            )}
             {!chatLimitReached && (
               <AvatarChat
                 memorialId={id}
@@ -253,6 +295,9 @@ function MemorialPublic() {
 
         {activeSection === 'memories' && (
           <div className="public-memories">
+            {(tutorialStep === 4 || tutorialStep === 5) && (
+              <DemoTutorial step={tutorialStep} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
+            )}
             {memories.length === 0 ? (
               <div className="public-empty"><p>No memories have been shared yet.</p></div>
             ) : (
