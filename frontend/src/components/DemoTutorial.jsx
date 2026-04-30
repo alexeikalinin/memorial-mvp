@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import './DemoTutorial.css'
 
 const STEPS = {
@@ -28,13 +29,22 @@ const STEPS = {
   5: {
     emoji: '🌳',
     title: 'One big family',
-    text: 'All these people are connected across generations. Avatars can reference shared memories — ask Sean about his great-grandchildren.',
+    text: 'All these people are connected across generations. Avatars can reference shared memories across multiple memorials.',
     next: 'Got it',
   },
 }
 
 export default function DemoTutorial({ step, type, onNext, onSkip }) {
   const content = STEPS[step]
+  const hintRef = useRef(null)
+
+  // Scroll hint into view when it first appears (step 3 lands below the fold)
+  useEffect(() => {
+    if (type === 'hint' && hintRef.current) {
+      hintRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [step, type])
+
   if (!content) return null
 
   if (type === 'overlay') {
@@ -54,7 +64,7 @@ export default function DemoTutorial({ step, type, onNext, onSkip }) {
   }
 
   return (
-    <div className="dt-hint">
+    <div className="dt-hint" ref={hintRef}>
       <span className="dt-hint-emoji">{content.emoji}</span>
       <div className="dt-hint-body">
         <strong className="dt-hint-title">{content.title}</strong>
