@@ -1,266 +1,381 @@
 # Session Log — Memorial MVP
 
-> **Где хранится:** этот файл в корне репозитория — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
+> **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
-## Как вести журнал (Claude Code / Cursor)
+## [2026-05-02] Demo tutorial — 5-шаговый онбординг
+**Статус:** завершено, запушено
 
-| Файл | Назначение |
-|------|------------|
-| **`SESSION_LOG.md`** (этот файл) | **Единый подробный журнал сессий:** что сделали, результат, решения, что не сделали / отложили. Новые блоки — **в начало**, после вводного абзаца. |
-| **`HANDOFF.md`** | **Краткий handoff:** текущий фокус, последнее действие в 3–7 строк, следующий шаг, незавершённое. На длинные отчёты — **ссылка сюда** (`SESSION_LOG` + дата), без копипасты всего текста. |
-| **`CLAUDE.md`** | Указывает читать `HANDOFF.md` в начале и дополнять его после существенной работы — имеется в виду **краткое** обновление + отсылка к `SESSION_LOG` для деталей. |
+**Что делали:**
+1. Реализован `DemoTutorial` компонент (overlay + hint, шаги 1–5) — `frontend/src/components/DemoTutorial.jsx` + `.css`
+2. Шаги 1–2 встроены в `DemoPage.jsx`: step 1 = overlay при первом визите, step 2 = hint после клика на семью
+3. Шаги 3–5 встроены в `MemorialPublic.jsx`: переход через `?demo_step=3` в URL, step 3 = hint над чатом, step 4 = hint при переходе на Memories, step 5 = следующий hint там же
+4. Прогресс сохраняется в `localStorage` (ключ `demo_tutorial_v1`)
+5. E2E тест `tutorial_audit.spec.js` — 7/7 прошли со скриншотами
 
-**Не размазывать** одну и ту же историю по `HANDOFF`, `CLAUDE` и разным md — детали сессии = один блок в **`SESSION_LOG.md`**.
+**Проблемы и решения:**
+- CRITICAL: overlay был невидим (белый текст на белом фоне) — `:root { --surface: #FFFFFF }`, `--text-primary` не определён → fallback `#fff`. Фикс: явные цвета `#1e1c19` / `#fff` в CSS вместо переменных
+- Step 3 hint уходил ниже вьюпорта (AvatarChat загружается и скроллит страницу) → добавлен `scrollIntoView` через `useEffect` в компоненте
+- Step 5 содержал "ask Sean about his great-grandchildren" — имя хардкодом → заменено на нейтральное
+- Тест "No tutorial when already done": `context.addInitScript` в `beforeEach` перебивал `page.evaluate` при reload → фикс: `page.addInitScript` выполняется ПОСЛЕ context-скрипта
+
+**Изменённые файлы:**
+- `frontend/src/components/DemoTutorial.jsx` — новый (с `useRef` + `scrollIntoView`)
+- `frontend/src/components/DemoTutorial.css` — новый (explicit dark colors)
+- `frontend/src/pages/DemoPage.jsx` — шаги 1–2
+- `frontend/src/pages/MemorialPublic.jsx` — шаги 3–5, `useSearchParams`
+- `e2e/tests/tutorial_audit.spec.js` — новый (7 тестов)
+
+**Коммиты:**
+- `5a8553b feat: demo tutorial — 5-step onboarding across DemoPage and MemorialPublic`
+- `a59e641 fix: tutorial CSS colors explicit + step 3 scroll + step 5 generic text`
+
+**Состояние БД (production-like):**
+- 10 пользователей: 2 живых (verameeva77@mail.ru, onemmanwarrior@gmail.com, оба free, 0 мемориалов)
+- ID=1 admin@memorial.app — демо-аккаунт (is_demo=True), 43 мемориала
+- ID=9 1alexeikalinin1@gmail.com — аккаунт разработчика
+
+**Осталось сделать:**
+- E2E тесты с живым стеком (полный прогон)
+- Полный регресс pytest (192 теста)
+
+## [2026-04-23] Тесты биллинга и управления доступом — 67/67
+**Статус:** завершено
+
+**Что делали:**
+1. Аудит покрытия тестами: обнаружили что conftest._bypass_billing глобально отключает все billing-проверки → 0 тестов биллинга
+2. Создан `tests/test_billing.py` (44 теста): unit-тесты billing.py с mock User/DB
+   - `_effective_plan`: free, expired plus→free, lifetime без expiry
+   - `check_memorial_limit`: free=1, plus=10, extra_slots, demo bypass
+   - `check_chat_quota`: free=15, plus=200, lifetime locked memorial, demo bypass
+   - `check_animation_quota`: free=0→402, plus=5, pro=15, demo bypass
+   - `check_tts_access`: free→402, plus/pro/lifetime OK, demo bypass
+   - `check_family_rag_access`: free+lifetime→402, plus/pro OK, demo bypass
+   - `check_live_session_quota`: free/plus→402, pro=5, lifetime_pro pool, demo bypass
+   - Инкременты: chat, animation, live_session, lifetime_pro pool decrement
+   - HTTP-level: free plan limit via API (1st OK, 2nd → 402)
+   - Переопределяем autouse через `_bypass_billing` в самом test_billing.py
+3. Добавлены 8 новых тестов в `tests/test_access.py`:
+   - `test_reject_access_request` — reject → нет доступа
+   - `test_re_request_after_rejection` — upsert после reject → PENDING
+   - `test_duplicate_request_upsert` — дубль → обновление, не дублирование
+   - `test_request_when_already_have_access` → 400
+   - `test_non_owner_cannot_list_access` → 403
+   - `test_non_owner_cannot_see_access_requests` → 403
+   - `test_cannot_revoke_only_owner` → 400
+   - `test_approve_already_approved_request` → 400
+4. Проверен стек: backend и frontend НЕ запущены, Redis OK, Qdrant embedded (через QDRANT_LOCAL_PATH)
+
+**Итог:** 67/67 тестов прошли. Общий счёт теперь 125+67 = 192 теста.
+
+**Изменённые файлы:**
+- `backend/tests/test_billing.py` — новый файл (44 теста)
+- `backend/tests/test_access.py` — +8 тестов
+
+**Осталось сделать:**
+- Запустить полный регресс (`pytest` всей suite)
+- Закоммитить все незакоммиченные изменения (33 файла + demo mode)
+- Запустить E2E тесты с живым стеком
 
 ---
 
-## [2026-04-03] Family tree: критический баг в коннекторах — parent/child инверсия
+## [2026-04-20] Баги инвайт/биллинг исправлены + демо-режим спроектирован
+**Статус:** частично завершено (баги пофикшены, демо-режим НЕ реализован — токены закончились)
+
+**Что сделали:**
+1. Исправлен CRITICAL баг: `POST /ai/avatar/chat` не проверял `is_public` → анонимы могли читать воспоминания приватных мемориалов. Добавлена проверка + `require_memorial_access(VIEWER)` для авторизованных без доступа. Файл: `backend/app/api/ai.py`
+2. `uses_count` инвайта инкрементировался при каждом открытии ContributePage (`validate_invite`), а не при реальном добавлении воспоминания. Перенесён инкремент в `create_memory`. Файлы: `api/invites.py`, `api/memorials.py`
+3. `source` воспоминаний теперь `"invite"` при гостевом вкладе (было всегда `"user"`). Файл: `api/memorials.py`
+4. `UPGRADE_URL` исправлен с `/app/pricing` (404) на `/#pricing`. Файл: `services/billing.py`
+
+**Демо-режим — спроектировано, не реализовано:**
+- 43 демо-мемориала уже в БД (`is_public=True`, `user_id=1`, `is_demo=True`)
+- 4 семьи: Kelly, Anderson, Chang, Rossi — связаны деревом + hidden connections
+- Нужно: `/demo` страница (DemoPage.jsx), баннер на `/m/:id`, кнопка "Try Demo" на логине
+- Подробный план в HANDOFF.md
+
+**Изменённые файлы:**
+- `backend/app/api/ai.py`
+- `backend/app/api/invites.py`
+- `backend/app/api/memorials.py`
+- `backend/app/services/billing.py`
+
+**Осталось сделать:** Реализовать демо-режим (см. HANDOFF.md — 4 шага)
+
+---
+
+## [2026-04-20] /run-tests — pytest 125/125, E2E SKIPPED (backend offline)
+**Статус:** завершено
+**Что делали:** Запустили полный набор тестов. pytest — все 125 прошли. E2E упали потому что бэкенд не был запущен.
+**Фиксы E2E:** RegisterPage.jsx + LoginPage.jsx — добавлены атрибуты `name=` на все input'ы (без них Playwright не мог найти поля). Установлен webkit (npx playwright install webkit) — мобильные тесты больше не падают с 0ms.
+**Изменённые файлы:** `frontend/src/pages/RegisterPage.jsx`, `frontend/src/pages/LoginPage.jsx`
+**Следующий шаг:** Запустить бэкенд + фронт и повторить E2E.
+
+## [2026-04-18] Роли, уровни доступа, демо-аккаунты + подготовка к Stripe
 
 **Статус:** завершено
 
-**Проблема:** В `normalizeParentChildEdges` (`familyTreeOrthogonalConnectors.js`) роли parent и child были перепутаны местами — следствие неверного понимания семантики API:
-
-```
-API: PARENT edge — source = memorial_id = ребёнок, target = related = родитель
-     CHILD  edge — source = memorial_id = родитель, target = related = ребёнок
-```
-
-**Было (неправильно):**
-```js
-if (isParentEdgeType(typ)) { parent = src; child = tgt }  // src=ребёнок, tgt=родитель — ИНВЕРСИЯ
-else if (isChildEdgeType(typ)) { parent = tgt; child = src }  // tgt=ребёнок, src=родитель — ИНВЕРСИЯ
-```
-
-**Последствия бага:**
-1. `childrenOf` маппил `actual_child → set(actual_parents)` вместо `parent → set(children)`
-2. Секция 2 (брачная линия → форк → дети) искала «общих родителей» пары супругов — почти всегда пустой список → форк **никогда не рисовался**
-3. Секция 3 рисовала линии от нижней карточки (дети) вверх к верхней (родители) — технически SVG рисует, но эстетика и направление были неверными
-
-**Исправление** (`familyTreeOrthogonalConnectors.js`):
-```js
-if (isParentEdgeType(typ)) { parent = tgt; child = src }  // ✓
-else if (isChildEdgeType(typ)) { parent = src; child = tgt }  // ✓
-```
-
-**Дополнительно:** уточнено именование переменных в `stripSiblingConflictingParentEdges` (`familyTreeGenerations.js`) — функционально не влияло (siblingPairKey симметричен), но вводило путаницу.
+**Что делали:**
+- Добавили поле `User.is_demo` (Boolean, default=False) в models.py — демо-аккаунты bypass биллинга
+- Обновили billing.py: все 5 check-функций теперь делают ранний return для is_demo=True
+- Добавили `is_demo_account()` helper в billing.py
+- Обновили UserResponse в schemas.py: добавили поля `is_demo` и `subscription_plan`
+- Обновили seed_ensure_owner.py: демо-юзер id=1 создаётся с `is_demo=True`
+- Создали `docs/ACCESS_LEVELS.md` — исчерпывающая документация ролей × тарифов + Stripe-план
+- Обновили `docs/MONETIZATION.md`: ссылка на ACCESS_LEVELS.md
 
 **Изменённые файлы:**
-- `frontend/src/utils/familyTreeOrthogonalConnectors.js` — фикс parent/child в `normalizeParentChildEdges`
-- `frontend/src/utils/familyTreeGenerations.js` — именование переменных в filter
+- `backend/app/models.py` — +`is_demo` поле на User
+- `backend/app/schemas.py` — +`is_demo`, `subscription_plan` в UserResponse
+- `backend/app/services/billing.py` — +`is_demo_account()`, bypass во всех check-функциях
+- `backend/seed_ensure_owner.py` — `is_demo=True` для seed-юзера
+- `docs/ACCESS_LEVELS.md` — новый файл (матрица ролей × планов, Stripe-план)
+- `docs/MONETIZATION.md` — ссылка на ACCESS_LEVELS.md
 
-**Проверка:** `npm run build` — успешно, lint — без ошибок.
+**Важно для деплоя:**
+- Нужна DB-миграция: `ALTER TABLE users ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT false;`
+- В prod поставить `is_demo=True` для `en-demo@memorial.local` и `demo@memorial.app`
 
-**Статус незакоммиченного:** 31 файл изменён с последнего коммита (`d574d48`). Весь пакет готов к коммиту.
+**Следующий шаг:** Stripe-интеграция — `POST /billing/checkout` + webhook + `PATCH /admin/users/{id}/plan`
 
----
+## [2026-04-18] Supabase Storage — завершение миграции медиа
 
-## [2026-04-02] Лендинг: демо-видео по плану (скрипт, сборка, субтитры)
+**Статус:** завершено
 
-**Сделано:** зафиксирован EN-сценарий и VO (`frontend/landing/video/DEMO_VIDEO_SCRIPT.md`), инструкция живой записи экрана (`SCREEN_RECORDING.md`), опциональный B-roll (`BROLL_SHOT_LIST.md`). Ролик **~85 с**, 16:9, собирается `build_landing_demo.sh` → `render_landing_demo.py` (Pillow + ffmpeg без `drawtext`): титры + кадры из `landing/images/feat-timeline.png`, `feat-chat.png`, `feat-tree.png`; обновлены `demo.mp4` (~1.8 MB) и `images/demo-poster.png`. Добавлены **`demo.vtt`** и `<track kind="captions">` в `frontend/landing/index.html` и `landing/index.html`. В **`vite.config.js`**: корректный `Content-Type` для `.vtt`, в прод **`dist/video`** копируются только `demo.mp4` и `demo.vtt` (без исходников сборки).
+**Что делали:** Завершили миграцию 43 seed-медиа на Supabase Storage.
 
-**Дальше:** при желании заменить ролик живым screen capture по `SCREEN_RECORDING.md`.
+**Контекст:** `USE_S3=true`, Supabase S3 Access Keys уже были в `.env`, bucket `memorial-media` существовал, 43 портрета уже лежали в `portraits/` Supabase. Но `file_path` в БД указывал на `uploads/xxx.jpg`, а `thumbnail_path` — на `uploads/thumbnails/...`.
 
----
+**Сделано:**
+1. `backend/app/api/media.py` — фикс S3 fallback: теперь приоритет `media.file_url` → не нужно конструировать URL из `file_path` (было: `get_public_url(str(media.file_path))` → неправильный URL в проде)
+2. БД: обновлены все 43 Media записи — `file_path` = `portraits/name.jpg` (S3-ключ, извлечён из `file_url`)
+3. Supabase: загружены 43 thumbnails в `thumbnails/` префикс; `thumbnail_path` обновлён в БД
 
-## [2026-04-01] Family tree: зазоры поколений + документ раскладки
+**Итог:**
+- `file_path` → S3-ключ (`portraits/...`)
+- `file_url` → публичный Supabase URL
+- `thumbnail_path` → S3-ключ (`thumbnails/...`)
+- Все новые загрузки уже шли в S3; аудио TTS тоже
 
-**Симптомы:** карточки визуально «лежат друг на друге», линии/кольца брака кажутся смещёнными; частично из‑за **нулевого** вертикального зазора между **разными** поколениями при большом `box-shadow` у `.ft-node--gen-cluster`, частично из‑за малого `SUB_ROW_GAP` относительно свечения.
+**Изменённые файлы:**
+- `backend/app/api/media.py` (строки ~113-118: fallback redirect)
+- БД Supabase Postgres: таблица `media`, все 43 строк
 
-**Код:** `familyTreeGenerationLayout.js` — добавлен **`INTER_GEN_GAP`** между этажами поколений; увеличен **`SUB_ROW_GAP`** для подстрок внутри одного поколения. Размеры узла по-прежнему одни: `nodeSize` из раскладки = коннекторы = `GenTreeNodeCard`.
+## [2026-04-15] Монетизация — Вариант C, гейтинг фич
 
-**Док:** краткая точка правды — [docs/FAMILY_TREE_LAYOUT.md](docs/FAMILY_TREE_LAYOUT.md) (ссылка на `SESSION_LOG` для истории).
+**Статус:** завершено
 
----
+**Что делали:** Выбрали и реализовали монетизационную модель Вариант C.
 
-## [2026-04-01] EN demo: исправление Chang/Rossi PARENT/CHILD + паритет локал/прод
+**Изменения:**
+- `frontend/landing/index.html` — обновлены цены: Plus $7/мес ($59/год), Lifetime $99; лимиты: Free 15 msg/мес, Plus 10 мемориалов / 200 msg / 5 анимаций
+- `backend/app/models.py` — добавлен `SubscriptionPlan` enum; в `User`: `subscription_plan`, `plan_expires_at`, `lifetime_memorial_id`; новая таблица `UserUsage` (счётчики по периоду YYYY-MM)
+- `backend/app/main.py` — миграция новых колонок users при старте
+- `backend/app/services/billing.py` — СОЗДАН: `PLAN_LIMITS`, `check_memorial_limit`, `check_chat_quota`, `check_animation_quota`, `check_tts_access`, `check_family_rag_access`, `increment_*_usage`
+- `backend/app/api/ai.py` — гейты в `avatar_chat` (chat quota + family RAG + TTS), `animate_photo` (animation quota, теперь требует auth), `upload_voice` (TTS gate, теперь требует auth)
+- `backend/app/api/memorials.py` — `check_memorial_limit` перед созданием мемориала
+- `docs/MONETIZATION.md` — перезаписан: лимиты, архитектура гейтинга, следующие шаги
 
-**Проблема:** в `seed_english_cluster2.py` рёбра `CHANG_RELATIONSHIPS` и `ROSSI_RELATIONSHIPS` были ориентированы против семантики API (`PARENT`: memorial = ребёнок, related = родитель; `CHILD`: наоборот) — родители и дети в графе оказывались перепутаны.
+**Следующие шаги:**
+1. Stripe Checkout — `POST /billing/checkout`
+2. Stripe Webhook — обновление плана в БД
+3. `GET /billing/usage` — endpoint для UI (показывать остаток квоты)
+4. Страница `/app/pricing` в React
+5. Admin endpoint для ручного апгрейда при тестировании
 
-**Сделано:** переписаны массивы под правильную ориентацию; добавлены `backend/verify_en_demo_graph.py` (проверка 43 имён, родителей и ключевых браков), `tests/test_en_demo_canonical.py`, `docs/DEMO_PARITY.md`, `backend/scripts/rebuild_en_demo.sh`, ссылка в `ENVIRONMENT.md`. В git по-прежнему **нет** `memorial.db` — идентичность только через общий сид и общий бэкенд для фронта.
+## [2026-04-14] Family Tree Miro-like Editor — Drag + Draw Connections + DB Storage
 
----
+**Статус:** завершено
 
-## [2026-04-01] Home: демо-мемориалы в `<details>` (как Sources в чате), стиль лендинга
+**Что делали:** Реализовали интерактивный редактор семейного дерева: перетаскивание узлов, рисование связей мышью, сохранение в БД.
 
-Убраны дублирующие кнопки «Show demo memorials» и состояние `showDemoMemorials`. Основная сетка — только не-демо (`is_demo_seed`); демо в одном сворачиваемом блоке под сеткой (`home-demo-details`), тёмная панель и золотой акцент `#c8a97e`, шеврон как у `.chat-sources-summary`. Счётчик в шапке — число не-демо страниц. Локали: `demo_reveal_summary`, обновлён `demo_hint`; удалены `show_demo` / `hide_demo` / `demo_only_hidden`.
+**Реализовано:**
+1. **Backend**: новая колонка `tree_layout_json JSON` в `Memorial`, авто-миграция в `_add_missing_columns()`, поля в `MemorialUpdate` / `MemorialResponse`
+2. **Frontend — Edit Mode**: кнопка `✎ Edit layout` в тулбаре (только для generations layout). В edit mode скрывается кнопка "Add relation"
+3. **Drag nodes**: `onMouseDown` на карточках → `nodeDragRef` → `onMouseMove` на канвасе обновляет `nodeOverrides` → `stopPropagation` предотвращает pan. Scale-корректировка: delta / transform.scale
+4. **Effective positions**: `effectivePositions = genLayout.positions + nodeOverrides`. Все коннекторы/маркеры пересчитываются из них
+5. **Автосохранение**: debounce 800ms после drag end → PATCH /memorials/{id} с tree_layout_json
+6. **Port handles**: 4 точки (top/right/bottom/left) появляются при hover в edit mode
+7. **Draw connections**: drag от порта → temp SVG line следует за мышью → отпускание на другой карточке → модал выбора типа связи
+8. **Edge drop detection**: `data-memorial-id` атрибут на карточках + `e.target.closest('[data-memorial-id]')` в onMouseUp
+9. **Pending edge modal**: модал с выбором типа связи → POST /family/relationships → reload
 
-**Файлы:** `frontend/src/pages/Home.jsx`, `Home.css`, `locales/en.js`, `ru.js`.
+**Изменённые файлы:**
+- `backend/app/models.py` — `tree_layout_json = Column(JSON, nullable=True)` в Memorial
+- `backend/app/main.py` — ALTER TABLE в `_add_missing_columns()`
+- `backend/app/schemas.py` — `tree_layout_json` в MemorialUpdate + MemorialResponse
+- `frontend/src/components/FamilyTree.jsx` — всё выше + новый state + handlers
+- `frontend/src/components/FamilyTree.css` — стили edit toggle, port handles, pending edge modal
+- `frontend/src/locales/en.js`, `ru.js` — новые ключи: edit_mode, edit_mode_exit, connect_title
 
----
+**Не реализовано (отложено):**
+- Клик по коннектору для удаления связи (сложно из-за thin SVG lines; удаление через список ниже дерева)
+- Сброс позиций в auto-layout (кнопка "Reset layout")
 
-## [2026-04-01] Family tree: split-рамка только при «девичьей» семье в графе
+**Верификация:** `npm run build` — OK, `python -c "from app.models import Memorial..."` — OK
 
-**Правило:** двухцветная рамка (как у Helen Anderson Kelly: зелёная Anderson + синяя Kelly) — **только** если в текущем `displayGraph` есть **не-супружеское** ребро к мемориалу, у которого **последняя фамилия = девичья** (родитель, ребёнок, брат/сестра и т.д.; супруги и `custom` не считаются). Иначе при двух фамилиях в имени рамка **одного цвета** — кластер **последней** фамилии (линия мужа после замужества).
+## [2026-04-11] Family Tree GOT-style circles + stub fix + generation positioning
 
-**Код:** `hasMaidenFamilyLinkInGraph` в `FamilyTree.jsx`; подсказки в `en.js` / `ru.js` (`gen_legend_help_borders`).
+**Статус:** завершено
 
----
+**Что делали:** Завершили переход на GOT-style визуализацию семейного дерева (круглые аватары вместо карточек) + исправили два бага.
 
-## [2026-04-01] Family tree: восстановление `kelly_anderson_four` + split-рамка жены (градиент)
+**Bug 1 — ft-circle-info wrong position:** Текст (имя/годы) рендерился ПОВЕРХ аватара. `top: calc(100% - 44px)` при nodeH=118 даёт top=74px, тогда как аватар заканчивается на 80px. **Решение:** inline `style={{ top: avatarSize + 4 }}` в JSX для `GenTreeNodeCard` и `StubNodeCard`, убрали неправильное CSS правило.
 
-**Проблема:** в `familyTreeKellyFilter.js` снова стояло `FAMILY_TREE_SCOPE = 'full'` — терялась задуманная раскладка 4 семей (Kelly / Anderson / Chang / Rossi) и легенда; двухцветная рамка у супруги с двойной фамилией опиралась на `border-image` и давала слабый/нестабильный рендер рядом с `border-radius`.
+**Bug 2 — Anderson stubs в неправильном поколении:** `computeLayoutDepthOldestTop` помещал Андерсон-стабы в G2 (по birth_year 1865) даже если их Kelly-сосед в G3. **Решение:** В `buildGenerationLayout`, после вычисления `layoutDepth`, в singleFamilyMode пробегаем все stub-узлы и переопределяем их глубину = среднее по gen их visible (non-stub) соседей.
 
-**Решение:**
-- **`FAMILY_TREE_SCOPE = 'kelly_anderson_four'`** — как в записи ниже про 4 семьи.
-- **Рамка 50/50** для жены (две фамилии в имени, `voice_gender !== 'male'`): вместо `border-image` — **двойной `background`** (`padding-box` + `border-box`) и прозрачный `border`, плюс класс `.ft-node--gen-split` в `FamilyTree.css`.
-- **Цвета:** по-прежнему половинки переставляются по положению ветки (`oldOnRight` от соседей с «девичьей» фамилией); если цвет не найден по мемориалу — **`borderColorForSurname`** по фамилии, затем **`neutralSurnameRingStroke(фамилия)`** (средняя фамилия вроде Chen без отдельного кластера).
-- **API:** в `FullTreeNode` добавлено поле **`voice_gender`**, в `GET .../full-tree` пробрасывается из `Memorial` — чтобы рамку «жена» не применять к явному `male`.
+**Изменённые файлы:**
+- `frontend/src/components/FamilyTree.jsx` — top inline style в GenTreeNodeCard и StubNodeCard
+- `frontend/src/components/FamilyTree.css` — убрано неправильное CSS `top: calc(100% - 44px)`
+- `frontend/src/utils/familyTreeGenerationLayout.js` — stub generation snap в singleFamilyMode
 
-**Файлы:** `frontend/src/utils/familyTreeKellyFilter.js`, `frontend/src/components/FamilyTree.jsx`, `frontend/src/components/FamilyTree.css`, `backend/app/schemas.py`, `backend/app/api/family.py`.
-
----
-
-## [2026-04-01] Family tree: 4 семьи + split-рамка по стороне связи + релиз
-
-**Сделано (frontend):**
-- `FAMILY_TREE_SCOPE = 'kelly_anderson_four'` в `familyTreeKellyFilter.js`: показываем 4 фамильные ветки — Kelly, Anderson и ещё 2 самые частые фамилии среди остальных (обычно Chang + Rossi), без возврата полного шума.
-- `familyTreeGenerationLayout.js`: раскладка расширена до 5 полос `A | center | B | C | D`; фиксированные колонки и зазоры сохранены, чтобы карточки/линии не накрывались.
-- `FamilyTree.jsx` + локали `ru/en`: баннеры для режимов `kelly_anderson_third` / `kelly_anderson_four`.
-- Для карточек с двойной фамилией (пример: `Helen Margaret Anderson Kelly`) добавлена split-рамка 50/50:
-  - цвет «текущей» фамилии и «исходной» фамилии;
-  - сторона выбирается по фактическому положению связанной ветки (если Anderson-ветка справа, правая половина рамки — Anderson).
-
-**Проверка:**
-- `frontend`: `npm run build` — успешно (`vite build`, `dist/app`, копирование лендинга в `dist/index.html`).
-- `ReadLints` по изменённым фронтовым файлам — без ошибок.
-
-**Git / релиз:**
-- Изменения закоммичены локально и готовы к push.
-- Попытка `vercel --prod --yes` из CLI: ошибка токена (`The specified token is not valid`), т.е. в этой среде нужен повторный `vercel login`/валидный `VERCEL_TOKEN`.
-- После `git push` Vercel обычно подхватит автодеплой, если проект привязан к репозиторию.
-
----
-
-## [2026-04-01] Family tree (поколения): колонки Kelly/Anderson, коннекторы, читаемость
-
-**Контекст:** после `FAMILY_TREE_SCOPE = 'kelly_anderson'` и фиксированных колонок A/B пользователь подтвердил, что связи стали понятнее; ниже — зафиксированные замечания и решения.
-
-| Замечание | Причина | Решение |
-|-----------|---------|---------|
-| Все семьи EN-демо в дереве | `full-tree` отдаёт весь граф | `FAMILY_TREE_SCOPE` в `familyTreeKellyFilter.js`: только Kelly+Anderson по последней фамилии |
-| Kelly и Anderson «в одной колонке» по центру | каждый ряд центрировался по ширине холста | в `buildGenerationLayout` фиксированные ширины колонок left/center/right + выравнивание; Kelly=A, Anderson=B при обеих фамилиях в графе |
-| Нет линии до второго супруга / кольца «висят» | при отсутствии зазора по X брак схлопывался в точку | `marriageBarInGap`: отрезок ненулевой ширины вокруг `mx` |
-| Линии parent→child через чужие карточки (Rose) | горизональ на середине большого Δy | §3: `yH` сразу под родителем, не по середине интервала |
-| Разрыв ствол↔вилка у Anderson | горизонталь вилки [xMin,xMax] не включала `mx` | расширение до `[min(xMin,mx), max(xMax,mx)]` |
-| Вилка через Rose к Helen | `yFork` по середине брак↔дети попадал в промежуточный ряд | §2: `yFork` в зазоре над детским рядом (`minChildY - forkMargin`) |
-| Тонкая связь брат/сестра (half_sibling и т.д.) | тонкий пунктир | §4: `strokeWidth` 2.2, пунктир `8 5`, выше непрозрачность |
-| Короткая вертикаль вилка→ребёнок | малый `forkMargin` | увеличен диапазон `forkMargin` (~12–20 px по шагу ряда) |
-
-**Файлы:** `familyTreeKellyFilter.js`, `familyTreeGenerationLayout.js`, `familyTreeOrthogonalConnectors.js`.
-
----
-
-## [2026-03-31] Family tree: брат и сестра в один ряд (Kelly + Anderson)
-
-**Проблема:** у пары родителей (Michael + Catherine) дети Sarah и Daniel отображались **вертикально** (как родитель→ребёнок), а не **на одной горизонтали**.
-
-**Причины:**
-1. В БД могло быть **ложное** ребро PARENT/CHILD между сиблингами (или инвертированные пары от старого сида).
-2. BFS поколений в `full-tree` и раскладка на фронте не всегда выравнивали сиблингов без явной пары «общий родитель».
-
-**Решение (комплекс):**
-
-| Слой | Что сделано |
-|------|-------------|
-| **БД** | `backend/repair_expanded_family_rels.py`: удаление PARENT/CHILD между **Sarah ↔ Daniel** (id-зависимо), добавление **SIBLING** в обе стороны при отсутствии; то же для **George ↔ Helen** (ветка Anderson, полные сиблинги William+Agnes). Пересборка корректных PARENT/CHILD к родителям. В скрипте **`engine.echo = false`**, чтобы не заливать консоль SQL при `DEBUG=true`. |
-| **API** | `backend/app/api/family.py`: в `refine_generations_parent_child` добавлены пары из **`_infer_sibling_pairs_from_shared_parents(parents_of)`** — любые двое детей с **общим родителем** получают одно поколение в `full-tree`. |
-| **Фронт** | `stripSiblingConflictingParentEdges`, пересечение детей у супругов в `finalizeSiblingGenerations`, `stripSiblingConflictingParentEdges` в коннекторах и `buildGenerationLayout` — не рисовать и не считать глубину по ложному parent/child между сиблингами. |
-
-**UI «вторая семья» (Anderson):** в `familyTreeKellyFilter.js` **`FAMILY_TREE_SCOPE`**: `'kelly_anderson'` — узлы с последней фамилией **Kelly** или **Anderson** (остальные семьи API не рисуем); `'kelly'` — только Kelly; `'full'` — весь граф.
-
-**Запуск ремонта БД:** из `backend/`: `python repair_expanded_family_rels.py`
-
-**Подтверждение:** после правок дерево отображается как задумано (сиблинги в один ряд под родителями; вторая ветка — Anderson — при `FAMILY_TREE_KELLY_ONLY = false`).
+**Осталось сделать:**
+- Проверить визуально в браузере (Kelly-only режим → GOT circles → Anderson stubs на правильном поколении)
+- Разблокировка Anderson → должен добавиться в дерево и показать cross-family связи
 
 ---
 
-## [2026-03-30] Лендинг (видео, QR на камне), чат/timeline/инвайты, перф мемориала
+## [2026-03-29] Перевод ContributePage на i18n
 
-**Статус:** сделано в коде (часть коммитов могла быть запушена ранее; сверить `git log`).
+**Статус:** завершено
 
-### Лендинг (`frontend/landing/`, зеркало `landing/`)
-- **Демо-видео:** секция `#demo` — `<video poster="/images/demo-poster.png" src="/video/demo.mp4">`; `frontend/landing/video/demo.mp4` в репо; `vite.config.js` — копирование `landing/video` → `dist/video`, dev-middleware с **HTTP Range** для seek.
-- **`.gitignore`:** игнор дубликата `landing/video/*.mp4` в корне; канон — `frontend/landing/video/`.
-- **Hero + Physical memorial:** чат с портрета перенесён **вниз слева** (не перекрывает лицо); карточка «телефона» у QR-секции — **вправо внизу** (не перекрывает цветы/основание камня).
-- **Согласование копирайта с картинкой:** на фото добавлена **иллюстрация таблички с декоративным QR** (SVG) + подпись, что фото стоковое, имя/даты в цифровом мемориале после скана.
+**Что делали:** ContributePage.jsx использовал захардкоженные русские строки — не работал в EN-режиме. Подключили `useLanguage` и вынесли все строки в локализацию.
 
-### Продукт (SPA под `/app/`)
-- **Источники в чате:** список источников RAG — в **`<details>`**, по умолчанию свёрнут; ключи `chat.sources_toggle` (en/ru). Файлы: `AvatarChat.jsx`, `AvatarChat.css`, `locales/en.js`, `ru.js`.
-- **Timeline API:** `GET /memorials/{id}/timeline` — сначала воспоминания **с `event_date`**, затем **без даты** (подпись «Без даты» / «No date», язык от `memorial.language`). `TimelineItem.event_date` опционален. Файлы: `memorials.py`, `schemas.py`, `LifeTimeline.jsx`, локали.
-- **Инвайты «поделиться»:** создание/список/отзыв инвайта для роли **EDITOR** (раньше только OWNER → 403 у редакторов). URL приглашения на фронте: **`frontend/src/utils/inviteUrl.js`** — `buildContributeInviteUrl(token)` с учётом `import.meta.env.BASE_URL` (`/app/` на Vercel). Бэкенд: `_make_invite_url` — первый непустой из `PUBLIC_FRONTEND_URL` / `FRONTEND_URL`. Использование: `MemoryList.jsx`, `MemorialDetail.jsx` (создание ссылки).
-- **Переключение между мемориалами:** в `MemorialDetail` при смене `id` — сброс вкладок на **Media**, `revokeObjectURL` для QR blob, снятие модалки QR (меньше одновременных тяжёлых вкладок).
-
-### Тесты
-- `backend/tests/test_timeline.py` — переписаны под undated + порядок dated→undated.
-- `pytest tests/test_timeline.py tests/test_invites.py` — ок. Полный `pytest` в песочнице может падать на несвязанных тестах (сеть/прокси, см. `test_cover_photo`).
-
-### Не сделано / на потом
-- Отдельный **React Query / prefetch** списка мемориалов — не внедряли; только сброс вкладок при смене `id`.
-- **Пуш в git** после последних правок — пользователь должен проверить `git status` и при необходимости запушить.
-- Дублирующий файл `~/.claude/.../session_log.md` — при необходимости синхронизировать вручную с этим файлом (в репо источник правды — **`SESSION_LOG.md`** здесь).
-
-### Ключевые пути кода
-- Лендинг: `frontend/landing/index.html`, `frontend/vite.config.js`, `.gitignore`
-- Чат: `frontend/src/components/AvatarChat.jsx`, `AvatarChat.css`
-- Таймлайн: `backend/app/api/memorials.py` (`get_timeline`), `frontend/src/components/LifeTimeline.jsx`
-- Инвайты: `backend/app/api/invites.py`, `frontend/src/utils/inviteUrl.js`, `MemoryList.jsx`, `MemorialDetail.jsx`
+**Изменённые файлы:**
+- `frontend/src/pages/ContributePage.jsx` — подключён `useLanguage`, все строки заменены на `t('contribute.*')`
+- `frontend/src/locales/en.js` — добавлена секция `contribute` (35 ключей)
+- `frontend/src/locales/ru.js` — добавлена секция `contribute` (35 ключей)
 
 ---
 
-## [2026-03-29] Сводка сессий Cursor — консультации, код, git
+## [2026-03-28] Avatar chat split-layout
+**Статус:** завершено
+**Что делали:** Реализован новый дизайн AvatarChat — split layout (левая панель с фото аватара, правая с чатом). Desktop: row, 40%/60%. Mobile ≤768px: column, фото 220px сверху.
+**Изменённые файлы:** `AvatarChat.jsx`, `AvatarChat.css`, `locales/en.js`, `locales/ru.js`
+**Детали:** avatar-panel с полноразмерным фото (object-fit: cover), gradient footer (имя + статус-дот), thinking overlay при loading=true. Удалено дублирующее фото/avatar из chat-header.
 
-Ниже — всё, что происходило в связанных сессиях чата (ответы ассистента + выполненные действия).
+---
 
-### 1. Обзор репозитория и «памяти»
-- Прочитан **`HANDOFF.md`**: актуальный фокус на тот момент — Family Network / Family Tree, EN-демо, следующие шаги по сидам и RAG.
-- Прочитан **`SESSION_LOG.md`**, упомянут **`.claude/commands/memory-audit.md`** (чеклист RAG, не журнал).
-- Отдельного файла `memory.md` в корне нет: handoff — **`HANDOFF.md`**, история — **`SESSION_LOG.md`**.
+## [2026-03-28] — /run-tests (полный тест связей)
+**Статус:** pytest 116/116, E2E SKIPPED (backend offline)
+**Упавшие тесты:** нет
+**Новый файл:** `tests/test_family_relationships_full.py` — 46 тестов по всем типам связей
 
-### 2. Лендинг
-- Подтверждено наличие **`landing/index.html`** и зеркала для сборки **`frontend/landing/index.html`**.
-- В **`frontend/vite.config.js`** при production build лендинг копируется из **`frontend/landing/index.html`** в **`frontend/dist/index.html`** (корень артефакта на Vercel). Изменения в корневом `landing/` имеет смысл **дублировать** в `frontend/landing/`, если правите только один файл.
+---
 
-### 3. Деплой: лендинг на `/`, SPA на `/app/`
-**Цель:** по домену Vercel открывается лендинг; приложение — под **`/app/*`**; CTA ведут на **`/app/login`**, **`/app/register`**.
+## [2026-03-28] Расширение типов семейных связей
 
-**В коде (фиксировалось ранее в сессии):**
-- **`frontend/vite.config.js`:** при `build` — `base: '/app/'`, `outDir: 'dist/app'`, плагин в `closeBundle` копирует лендинг в `dist/index.html`; при dev — `base: '/'`, порт по умолчанию **5173** (если локально **5174** — отдельный запуск/настройка, на прод не влияет).
-- **`frontend/src/App.jsx`:** `BrowserRouter` с `basename` из `BASE_URL` (в проде `/app`).
-- **`vercel.json` (корень):** rewrites для `/app`, `/app/`, `/app/(.*)` → `/app/index.html`; **нет** общего `/(.*) → /index.html`.
-- **`frontend/vercel.json`:** согласован с корнем при деплое из `frontend/`.
-- **`landing/index.html` / `frontend/landing/index.html`:** ссылки на приложение, якоря в футере.
-- **`backend/.env.example`:** **`FRONTEND_URL`**, **`PUBLIC_FRONTEND_URL`** с суффиксом **`/app`** для прод; комментарии к OAuth (`.../app/auth/callback`).
+**Статус:** завершено
 
-**Проверка сборки:** `cd frontend && npm run build` → `dist/index.html` (лендинг) + `dist/app/` (SPA + assets).
+**Что делали:** Добавили 7 новых типов + CUSTOM для произвольных связей.
 
-### 4. Консультации (без изменения кода в тот момент)
-- **Vercel + репозиторий:** деплой из **текущего репо**, отдельная ветка только под лендинг не обязательна; «пуш только лендинга» данных не даёт — нужна полная сборка.
-- **ElevenLabs:** план **Creator** часто достаточен для пилота; **Pro** — при выходе за лимиты символов/нагрузки, не как обязательный минимум.
-- **Оживление фото:** сравнение **D-ID / HeyGen / Hedra / self-hosted**; что можно попробовать бесплатно (trial/веб) и где есть **официальный API**; у **Hedra** API обычно с платного плана.
-- **Self-hosted (SadTalker и т.д.):** «бесплатно по деньгам» ≈ нет оплаты вендору за секунду, но **есть** стоимость GPU/времени и **своя** эксплуатация API.
-- **Чеклист «всё работает в вебе»:** фазы: Postgres + S3, деплой бэкенда и env, Google OAuth URI, **`VITE_API_URL`** на Vercel, публичные URL для медиа/D-ID, проверка маршрутов (см. также `ENVIRONMENT.md`).
-- **MCP:** в чате Cursor ассистенту доступны только переданные инструменты; список MCP в Cursor он не видит; **Claude Code** — отдельный контекст от Cursor.
+**Новые типы:** step_parent/step_child, adoptive_parent/adoptive_child, half_sibling, partner, ex_spouse, custom (с полем custom_label).
 
-### 5. Синхронизация мемориалов локально ↔ прод
-- **`git push` не переносит** `*.db`, `uploads/` (в `.gitignore`).
-- Совпадение данных: **одна `DATABASE_URL`** (например Supabase) для локального и прод-бэкенда + сиды; медиа — общий **S3** при **`USE_S3=true`**.
+**Изменённые файлы:**
+- `backend/app/models.py` — расширен RelationshipType enum + поле custom_label
+- `backend/app/schemas.py` — custom_label в FamilyRelationshipCreate/Response
+- `backend/app/api/family.py` — REVERSE_MAP/DELETE_REVERSE_MAP, валидация custom_label
+- `frontend/src/components/FamilyTree.jsx` — новые типы в select (с группами), поле custom_label, маппинг в дереве
+- `frontend/src/locales/ru.js` + `en.js` — переводы
 
-### 6. Git: проверка и push
-- До коммита: много **modified** и **untracked**; ветка отслеживала `origin/main`.
-- Выполнено ассистентом: **`git add -A`** (с учётом `.gitignore`), коммит и push.
-- **Коммит `0afa1a3`** → **`main`**, remote при push: `https://github.com/alexeikalinin/memorial-mvp.git` (у себя сверить: `git remote -v`).
-- Сообщение коммита: *Sync: EN memorials seeds, Family Tree UX, landing /app CTAs, deploy docs* — **58 файлов** (сиды, бэкенд, фронт, лендинг, docs, e2e, bot, `.claude` commands, превью и пр.).
+**Осталось:** Миграция production БД (Supabase) — добавить enum значения + колонку custom_label
 
-### 7. Обновления журналов в сессии
-- В **`SESSION_LOG.md`** и **`HANDOFF.md`** добавлены пометки про схему **`/app`** и ссылка друг на друга.
+---
 
-### 8. Чеклист для ревью (Claude Code / прод)
-- [ ] `vite.config.js`: dev не сломан; путь к лендингу **`frontend/landing/index.html`** в CI существует.
-- [ ] SPA с `basename`: маршруты `/m/:id`, `/contribute/:token`, `/auth/callback` в проде под **`/app/...`**.
-- [ ] Vercel: **`VITE_API_URL=https://<backend>/api/v1`**, redeploy после смены env.
-- [ ] Бэкенд прод: **`FRONTEND_URL`** и **`PUBLIC_FRONTEND_URL`** с **`/app`**.
-- [ ] Google OAuth: redirect бэкенда ок; финальный редирект на **`FRONTEND_URL/auth/callback`** совпадает с развёрнутым SPA.
-- [ ] `/` отдаёт статический лендинг, не SPA.
+## [2026-03-28] Фикс тестов: 70/70 passed
+
+**Статус:** завершено ✅
+
+**Что делали:** Запустили все pytest-тесты, нашли 70 падений/ошибок, исправили все.
+
+**Проблемы и решения:**
+
+1. **bcrypt 5.0.0 + passlib 1.7.4 несовместимы** → заменили passlib в `app/auth.py` на прямые вызовы `bcrypt.hashpw`/`bcrypt.checkpw`. Ошибка `ValueError: password cannot be longer than 72 bytes` даже для коротких паролей — известный баг.
+
+2. **Старые тесты не использовали auth** → `test_memorials.py` полностью переписан (убран свой engine, используют conftest fixtures с `auth_client`); `test_memorials_extended.py` и `test_family_tree.py` — `client` заменён на `auth_client`.
+
+3. **invites.py** — три проблемы: `create_invite` возвращал 200 вместо 201; `revoke_invite` возвращал `{"message": ...}` 200 вместо 204; `validate_invite` не принимал `expires_at` (только `expires_days`). Исправлены все три + добавлено поле `expires_at` и `permissions` в `InviteCreate` схему.
+
+4. **Timezone naive vs aware** — SQLite возвращает naive datetimes, сравнение с `datetime.now(timezone.utc)` бросало `TypeError`. Исправлено в `invites.py::validate_invite` и `memorials.py::create_memory` — оба используют `datetime.utcnow()` для сравнения.
+
+5. **family.py tree builder** — не обрабатывал `CHILD` тип отношений в `children_map`, только `PARENT`. Добавлена ветка для `CHILD`: `children_map[rel.memorial_id].append(rel.related_memorial_id)`.
+
+6. **test_update_access_role** — не регистрировал второго пользователя (нужен `second_user_headers`); использовал `grant_resp.json()["id"]` вместо `user_id` (endpoint принимает user_id, не access entry id).
+
+7. **Тесты анонимного доступа** — `auth_client` изменяет `client.headers` in-place, поэтому "anonymous" `client` всегда имел auth-заголовок. Решение: `monkeypatch("app.auth._get_dev_user", lambda db: None)` + явный `headers={"Authorization": ""}` в запросе.
+
+**Изменённые файлы:**
+- `backend/app/auth.py` — passlib → bcrypt
+- `backend/app/api/invites.py` — status_code, expires_at, 204 delete, naive datetime
+- `backend/app/api/memorials.py` — naive datetime в invite validation
+- `backend/app/api/family.py` — CHILD в children_map
+- `backend/app/schemas.py` — expires_at + permissions в InviteCreate
+- `backend/tests/test_memorials.py` — переписан с auth_client
+- `backend/tests/test_memorials_extended.py` — auth_client
+- `backend/tests/test_family_tree.py` — auth_client
+- `backend/tests/test_access.py` — second_user_headers + monkeypatch
+- `backend/tests/test_invites.py` — monkeypatch + headers
+
+**Результат:** 70/70 pytest passed, E2E: SKIPPED (backend offline)
+
+**Осталось сделать:**
+- MemorialDetail UI: роли по `current_user_role`
+- i18n: MemorialPublic и другие страницы
+
+---
+
+## [2026-03-28] Синхронизация с Cursor + проверка MCP
+
+**Статус:** завершено ✅
+
+**Что делали:**
+- Проверили установленные MCP серверы в проекте → не установлено ни одного (пустой `mcpServers` в обоих конфигах)
+- Получили список 9 MCP из документа пользователя; приоритет: Supabase MCP + Browser MCP
+- Обновили `HANDOFF.md` с полным состоянием проекта: Фазы 1-3 авторизации, незавершённые задачи, API endpoints
+
+**Изменённые файлы:** `HANDOFF.md`
+
+**Осталось сделать:**
+- Фаза 2: UI шаринга в MemorialDetail (accessAPI в client.js + таб "Доступ")
+- Фаза 3: Запрос доступа из MemorialPublic + панель approve/reject для owner
+- Установить Supabase MCP и Browser MCP
+
+---
+
+## [2026-03-28] Фаза 1 авторизации: JWT + MemorialAccess + frontend auth
+
+**Статус:** завершено ✅
+
+**Что делали:**
+Реализовали полную систему аутентификации и базовой авторизации (Фаза 1 из 3).
+
+**Backend:**
+- `backend/app/auth.py` — JWT utilities: `hash_password`, `verify_password`, `create_access_token`, `decode_access_token`; FastAPI dependencies: `get_current_user` (обязательный), `get_optional_user` (опциональный), `require_memorial_access(memorial_id, user, db, min_role, allow_public)` с иерархией ROLE_PRIORITY
+- `backend/app/api/auth.py` — POST /auth/register, POST /auth/token (OAuth2), POST /auth/login (JSON), GET /auth/me
+- `backend/app/models.py` — добавлена `MemorialAccess(id, memorial_id, user_id, role, granted_by, created_at)` + связи в User/Memorial
+- `backend/app/schemas.py` — Token, TokenWithUser, LoginRequest (размещены ПОСЛЕ UserResponse — иначе Pydantic v2 падал с forward ref error); MemorialDetailResponse.current_user_role
+- `backend/app/api/memorials.py` — убран `owner_id=1` везде; `create_memorial` auto-creates `MemorialAccess(OWNER)`; все write-endpoints защищены; read-endpoints используют `get_optional_user + allow_public=True`; `create_memory` поддерживает `?invite_token=` (проверяет MemorialInvite) для анонимных вкладчиков
+- `backend/app/main.py` — убран `_ensure_default_user()`, добавлен `_migrate_existing_access()` (создаёт OWNER записи для существующих мемориалов при старте), добавлен auth router
+- `backend/app/config.py` — ACCESS_TOKEN_EXPIRE_MINUTES=10080 (было 30)
+
+**Frontend:**
+- `frontend/src/context/AuthContext.jsx` — AuthProvider + useAuth hook; при монтировании читает localStorage → /auth/me для верификации
+- `frontend/src/components/ProtectedRoute.jsx` — redirect /login если нет user
+- `frontend/src/pages/LoginPage.jsx` + `RegisterPage.jsx` + `AuthPage.css` — формы входа/регистрации
+- `frontend/src/App.jsx` — AuthProvider wrapper, /login и /register публичные, / /memorials/new /memorials/:id защищены через ProtectedRoute
+- `frontend/src/api/client.js` — Bearer token interceptor (читает из localStorage), добавлены authAPI + createMemory принимает inviteToken
+- `frontend/src/components/Layout.jsx` — показывает username + кнопку Выйти если авторизован, иначе Войти/Регистрация
+- `frontend/src/pages/ContributePage.jsx` — передаёт `token` в `createMemory(..., token)`
+
+**Проблемы и решения:**
+- Pydantic v2 forward ref error: `TokenWithUser` ссылался на `"UserResponse"` строкой, но класс не был ещё определён. Решение: разместить Token schemas ПОСЛЕ UserResponse.
+- `_migrate_existing_access`: нужно LEFT OUTER JOIN на условии `(memorial_id=X AND role=OWNER)` + `WHERE access.id IS NULL` — работает в SQLAlchemy через `.outerjoin(MemorialAccess, condition)`.
+
+**Изменённые файлы:** см. HANDOFF.md
+
+**Осталось сделать:**
+- Фаза 2: `backend/app/api/access.py` + защита family.py/invites.py + UI шаринга в MemorialDetail
+- Фаза 3: AccessRequest модель + "Запросить доступ" UI
+- MemorialDetail: UI должен показывать owner-панель только при `current_user_role === 'owner'`
 
 ---
 
@@ -770,3 +885,14 @@ getFullTree: (memorialId, maxDepth = 6) =>
 
 **Решение:** Переключились на локальный файловый режим Qdrant.
 Позже переключились обратно на Cloud (us-east-1-1): QDRANT_URL задан в .env
+
+## 2026-04-19 — /run-tests + Stripe интеграция
+**Статус:** завершено
+**Что делали:** 
+- Запустили pytest: 125/125 ✅
+- E2E: SKIPPED — Playwright browsers не установлены (`npx playwright install` не запускался)
+- Нашли баг: в memorial.spec.js:170 orphan-код вне test() — пофикшен, добавлен заголовок "13.7 Мобайл: карточки мемориалов не выходят за ширину 375px"
+- Добавлены Pro + Lifetime Pro на лендинг (landing/index.html)
+- Stripe интеграция: billing.py роутер, 4 endpoint'а, config.py с STRIPE_* переменными
+**Изменённые файлы:** e2e/tests/memorial.spec.js, docs/TEST_PLAN.md, backend/app/api/billing.py, backend/app/config.py, backend/requirements.txt
+**Осталось сделать:** npx playwright install chromium; заполнить STRIPE_* в .env и подключить webhook в Stripe Dashboard
