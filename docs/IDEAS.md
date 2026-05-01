@@ -168,6 +168,103 @@
 
 ---
 
+---
+
+## 🔴 Launch Blockers — незавершённые (аудит 2026-05-02)
+
+### AUTH-2: Email верификация при регистрации
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** После `POST /auth/register` — письмо с токеном верификации. До подтверждения — нельзя создавать мемориалы и платить. Нужно: email-провайдер (Resend / SendGrid), шаблон письма, `GET /auth/verify/{token}`.
+
+---
+
+### AUTH-3: Сброс пароля
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** `POST /auth/password-reset` (запрос) + `POST /auth/password-reset/confirm` (токен из письма). Email-провайдер тот же что AUTH-2. UI форма.
+
+---
+
+### AUTH-4: OAuth Google — end-to-end на проде
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Код callback есть, но на проде не тестировался. Проверить `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, полный флоу.
+
+---
+
+### BILLING-1: Stripe Checkout — end-to-end
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Код `POST /billing/checkout` есть. Проверить: Session → редирект → webhook `checkout.session.completed` → `subscription_plan` обновился в БД. Тестировать все 5 планов.
+
+---
+
+### BILLING-2: Stripe Webhooks — полное покрытие
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Обработать: `invoice.payment_succeeded` → продление `plan_expires_at`, `customer.subscription.deleted` → даунгрейд до Free, add-on события (extra_memorial, live_session_pack).
+
+---
+
+### BILLING-3: Billing UI — страница подписки
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Страница `/app/billing`: текущий план + дата продления, кнопка апгрейда → Stripe Checkout, использование (чаты, анимации) через `GET /billing/usage`, Stripe Customer Portal для отмены.
+
+---
+
+### SECURITY-1: Rate limiting
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** `slowapi` (FastAPI) или nginx. Login: 5 req/мин на IP; Chat: 60 req/мин на user; Animate: 10 req/мин на user; все публичные: 100 req/мин на IP.
+
+---
+
+### SECURITY-2: Валидация файлов по MIME + лимиты по тарифу
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Проверять MIME по содержимому файла (не расширению). Лимиты размера: Free 500MB, Plus 5GB, Pro 15GB. `media_service.py` сейчас проверяет ограниченно.
+
+---
+
+### MONITORING-1: Sentry (backend + frontend)
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** `sentry-sdk` в FastAPI, `@sentry/react` в Vite. Алерты на 5xx и деградацию AI-сервисов. Без мониторинга о падениях узнаём от пользователей.
+
+---
+
+### INFRA-1: CI/CD GitHub Actions
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** При PR → pytest + Playwright. При merge в main → деплой backend (Railway/Fly.io) + frontend (Vercel). Обновить `VERCEL_TOKEN` (истёк после 2026-04-01).
+
+---
+
+## 🟡 Core UX — незавершённые
+
+### UX-1: Онбординг нового пользователя
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Checklist или guided tour после регистрации: создай мемориал → загрузи фото → добавь воспоминание → попробуй чат. Метрика: % дошедших до первого воспоминания.
+
+---
+
+### UX-2: Инвайт по email
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Сейчас `POST /invites/` создаёт токен, но письмо не шлётся. Нужно автоматически отправлять email с ссылкой `/contribute/:token`. Email-провайдер тот же что AUTH-2/3.
+
+---
+
+### UX-3: Email-уведомление о новых воспоминаниях
+**Статус:** `planned`
+**Откуда:** ROADMAP.md, аудит 2026-05-02
+**Описание:** Когда родственник добавил воспоминание через инвайт — email владельцу мемориала. «Иван добавил воспоминание о Сергее Иванове».
+
+---
+
 ## Идеи из обсуждений (лог)
 
 | Дата | Идея | Статус |
@@ -175,7 +272,13 @@
 | 2026-04-13 | Memory Graph View (Obsidian-стиль) | `idea` |
 | 2026-04-13 | Obsidian как vault для документации проекта | `idea` |
 | 2026-04-14 | Family Tree Editor: кликабельные коннекторы (удалить / сменить тип связи) | `idea` |
+| 2026-05-02 | AUTH-2/3: Email верификация + сброс пароля (Resend/SendGrid) | `planned` |
+| 2026-05-02 | BILLING-1/2/3: Stripe Checkout e2e + webhooks + billing UI | `planned` |
+| 2026-05-02 | SECURITY-1/2: Rate limiting + MIME-валидация файлов | `planned` |
+| 2026-05-02 | MONITORING-1: Sentry backend + frontend | `planned` |
+| 2026-05-02 | INFRA-1: CI/CD GitHub Actions + обновить VERCEL_TOKEN | `planned` |
+| 2026-05-02 | UX-1/2/3: Онбординг + инвайт по email + уведомления | `planned` |
 
 ---
 
-*Обновляй этот файл через `/idea "название идеи"` или вручную. Статусы: `idea` → `planned` → `in-progress` → `done` | `dropped`.*
+*Обновляй этот файл через `/idea "название идеи"` или `/defer "идея"` (для отложенных). Статусы: `idea` → `planned` → `in-progress` → `done` | `dropped`.*
