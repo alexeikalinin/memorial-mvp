@@ -937,3 +937,10 @@
     margin: 0 auto;
   }
 }
+
+/* ── Onboarding checklist wrapper ── */
+.home-onboarding-wrap {
+  max-width: 780px;
+  margin: 2rem auto 0;
+  padding: 0 1.5rem;
+}

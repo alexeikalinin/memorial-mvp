@@ -2,10 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { memorialsAPI } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 import ApiMediaImage from '../components/ApiMediaImage'
 import CreateMemorialHeroButton from '../components/CreateMemorialHeroButton'
+import OnboardingChecklist from '../components/OnboardingChecklist'
 import { isDeceasedMemorial } from '../utils/memorialStatus'
 import './Home.css'
+
+const OB_DISMISSED_KEY = 'onboarding_dismissed_v1'
+const OB_CHAT_KEY = 'onboarding_chat_tried'
 
 async function waitForHeroFonts() {
   if (typeof document === 'undefined' || !document.fonts?.load) {
@@ -35,7 +40,11 @@ function Home() {
     () => localStorage.getItem('home_demo_revealed') === '1'
   )
   const [heroFontsReady, setHeroFontsReady] = useState(false)
+  const [obDismissed, setObDismissed] = useState(
+    () => { try { return localStorage.getItem(OB_DISMISSED_KEY) === '1' } catch { return false } }
+  )
   const { t, lang } = useLanguage()
+  const { user } = useAuth()
   const homeContentRef = useRef(null)
 
   useEffect(() => {
@@ -75,6 +84,22 @@ function Home() {
     requestAnimationFrame(() => {
       homeContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
+  }
+
+  // Onboarding checklist — only for logged-in users, not loading, not dismissed
+  const firstNonDemo = nonDemoMemorials[0]
+  const obDone = {
+    memorial: nonDemoMemorials.length > 0,
+    photo: nonDemoMemorials.some((m) => (m.media_count ?? 0) > 0),
+    memory: nonDemoMemorials.some((m) => (m.memories_count ?? 0) > 0),
+    chat: (() => { try { return localStorage.getItem(OB_CHAT_KEY) === '1' } catch { return false } })(),
+  }
+  const allObDone = Object.values(obDone).every(Boolean)
+  const showOnboarding = user && !loading && !obDismissed && !allObDone
+
+  const handleObDismiss = () => {
+    try { localStorage.setItem(OB_DISMISSED_KEY, '1') } catch {}
+    setObDismissed(true)
   }
 
   const renderMemorialCard = (memorial, i) => {
@@ -259,6 +284,17 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── Onboarding checklist — вне gate, всегда видна залогиненному новому пользователю ── */}
+      {showOnboarding && (
+        <div className="home-onboarding-wrap">
+          <OnboardingChecklist
+            done={obDone}
+            firstMemorialId={firstNonDemo?.id}
+            onDismiss={handleObDismiss}
+          />
+        </div>
+      )}
 
       {/* ── Memorials List (скрыт на первом экране, если в списке только демо-сиды) ── */}
       {showMemorialsContent && (

@@ -81,6 +81,9 @@ function MemorialDetail() {
     if (!tab || !MEMORIAL_TABS.has(tab)) return
     setActiveTab(tab)
     setMountedTabs((prev) => new Set([...prev, tab]))
+    if (tab === 'chat') {
+      try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
+    }
   }, [id, searchParams])
 
   const loadMemorial = async () => {
@@ -555,6 +558,9 @@ function MemorialDetail() {
             onClick={() => {
               setActiveTab(key)
               setMountedTabs(prev => new Set([...prev, key]))
+              if (key === 'chat') {
+                try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
+              }
             }}
           >
             {label}

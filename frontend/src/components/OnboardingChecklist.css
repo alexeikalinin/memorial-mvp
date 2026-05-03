@@ -1,0 +1,141 @@
+.ob-wrap {
+  background: #fff;
+  border: 1.5px solid var(--accent, #C4A882);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem 1rem;
+  margin: 0 0 2rem;
+  box-shadow: 0 2px 12px rgba(196, 168, 130, 0.12);
+}
+
+.ob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.ob-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.ob-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a1208;
+  letter-spacing: 0.01em;
+}
+
+.ob-progress {
+  font-size: 0.78rem;
+  color: var(--accent-dark, #8B5E3C);
+  font-weight: 500;
+}
+
+.ob-dismiss {
+  background: none;
+  border: none;
+  color: rgba(30, 20, 10, 0.3);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.25rem;
+  transition: color 0.15s;
+  line-height: 1;
+}
+.ob-dismiss:hover { color: rgba(30, 20, 10, 0.6); }
+
+/* Steps */
+.ob-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ob-step {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 9px;
+  background: var(--surface-warm, #F5F0E8);
+  transition: background 0.15s;
+}
+
+.ob-step--done {
+  background: rgba(196, 168, 130, 0.1);
+  opacity: 0.65;
+}
+
+.ob-step-icon {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ob-check {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent, #C4A882);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ob-step-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ob-step-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1208;
+  line-height: 1.3;
+}
+
+.ob-step--done .ob-step-title {
+  text-decoration: line-through;
+  color: rgba(30, 20, 10, 0.45);
+}
+
+.ob-step-desc {
+  font-size: 0.78rem;
+  color: rgba(30, 20, 10, 0.55);
+  line-height: 1.4;
+}
+
+.ob-step-cta {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-dark, #8B5E3C);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(196, 168, 130, 0.5);
+  border-radius: 6px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ob-step-cta:hover {
+  background: rgba(196, 168, 130, 0.15);
+  border-color: var(--accent, #C4A882);
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .ob-wrap { padding: 1rem 1rem 0.85rem; }
+  .ob-step { flex-wrap: wrap; gap: 0.5rem; }
+  .ob-step-cta { margin-left: 2.85rem; }
+}
