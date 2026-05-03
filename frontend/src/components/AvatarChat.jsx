@@ -4,6 +4,7 @@ import ApiMediaImage from './ApiMediaImage'
 import ChatAudioPlayer from './ChatAudioPlayer'
 import { instrumentalName } from '../utils/declension'
 import { useLanguage } from '../contexts/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 import './AvatarChat.css'
 
 // Запись аудио для клона голоса
@@ -63,6 +64,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
   const [loading, setLoading] = useState(false)
   const [includeAudio, setIncludeAudio] = useState(false)
   const { lang, t } = useLanguage()
+  const { user } = useAuth()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -89,6 +91,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     let cancelled = false
     setElQuota(null)
     setElQuotaErr(null)
+    if (!user) return () => { cancelled = true }
     aiAPI
       .getElevenLabsQuota()
       .then((res) => {
@@ -100,7 +103,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     return () => {
       cancelled = true
     }
-  }, [memorialId])
+  }, [memorialId, user])
 
   // Load chat history from localStorage
   useEffect(() => {
