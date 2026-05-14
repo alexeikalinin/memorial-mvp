@@ -19,6 +19,7 @@ export default {
     empty: 'No memorials created yet',
     create_first: 'Create your first memorial',
     show_demo: 'Show demo memorials',
+    explore_demo: 'Explore demo families →',
     demo_hint:
       'English demo pages from the repo seed set are listed here when expanded — same data as in production, tucked away for a cleaner home list.',
     pricing_title: 'Simple, transparent pricing',

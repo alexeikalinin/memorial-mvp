@@ -326,7 +326,7 @@ function Home() {
                 )}
               </div>
 
-              {demoMemorials.length > 0 && (
+              {demoMemorials.length > 0 && nonDemoMemorials.length === 0 && (
                 <div className="home-demo-panel">
                   <div className="home-demo-body">
                     <p className="home-demo-hint">{t('home.demo_hint')}</p>
@@ -334,6 +334,12 @@ function Home() {
                       {demoMemorials.map((memorial, i) => renderMemorialCard(memorial, i))}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {nonDemoMemorials.length > 0 && (
+                <div className="home-demo-explore-link">
+                  <Link to="/app/demo">{t('home.explore_demo')}</Link>
                 </div>
               )}
             </>
