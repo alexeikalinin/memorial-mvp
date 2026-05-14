@@ -36,9 +36,6 @@ async function waitForHeroFonts() {
 function Home() {
   const [memorials, setMemorials] = useState([])
   const [loading, setLoading] = useState(true)
-  const [memorialsPanelRevealed, setMemorialsPanelRevealed] = useState(
-    () => localStorage.getItem('home_demo_revealed') === '1'
-  )
   const [heroFontsReady, setHeroFontsReady] = useState(false)
   const [obDismissed, setObDismissed] = useState(
     () => { try { return localStorage.getItem(OB_DISMISSED_KEY) === '1' } catch { return false } }
@@ -69,22 +66,10 @@ function Home() {
       .finally(() => setLoading(false))
   }, [lang])
 
-  const demoMemorials = memorials.filter((m) => m.is_demo_seed)
   const nonDemoMemorials = memorials.filter((m) => !m.is_demo_seed)
 
-  /** Только демо из сидов, без своих страниц — первый экран: hero + одна кнопка; белый блок после клика */
-  const isDemoOnlyHomeGate =
-    !loading && nonDemoMemorials.length === 0 && demoMemorials.length > 0
-  const showMemorialsContent = !isDemoOnlyHomeGate || memorialsPanelRevealed
-  const showDemoRevealStrip = isDemoOnlyHomeGate && !memorialsPanelRevealed
-
-  const revealMemorialsPanel = () => {
-    localStorage.setItem('home_demo_revealed', '1')
-    setMemorialsPanelRevealed(true)
-    requestAnimationFrame(() => {
-      homeContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }
+  const showMemorialsContent = true
+  const showDemoRevealStrip = false
 
   // Onboarding checklist — only for logged-in users, not loading, not dismissed
   const firstNonDemo = nonDemoMemorials[0]
@@ -220,21 +205,6 @@ function Home() {
           </div>
         </div>
 
-        {showDemoRevealStrip && (
-          <div className="hero-demo-reveal">
-            <button
-              type="button"
-              className="home-demo-jump-btn"
-              onClick={revealMemorialsPanel}
-            >
-              <span className="home-demo-jump-btn__text">{t('home.show_demo')}</span>
-              <span className="home-demo-jump-btn__hint" aria-hidden>
-                ↓
-              </span>
-            </button>
-          </div>
-        )}
-
         <div className="hero-scroll-cue" aria-hidden="true">
           <div className="scroll-line" />
         </div>
@@ -313,29 +283,21 @@ function Home() {
           ) : (
             <>
               <div className="memorials-grid">
-                {nonDemoMemorials.length === 0 && memorials.length === 0 ? (
+                {nonDemoMemorials.length === 0 ? (
                   <div className="home-empty">
                     <div className="home-empty-icon">🕯</div>
                     <p>{t('home.empty')}</p>
                     <Link to="/memorials/new" className="btn btn-primary">
                       {t('home.create_first')}
                     </Link>
+                    <div className="home-demo-explore-link">
+                      <Link to="/app/demo">{t('home.explore_demo')}</Link>
+                    </div>
                   </div>
                 ) : (
                   nonDemoMemorials.map((memorial, i) => renderMemorialCard(memorial, i))
                 )}
               </div>
-
-              {demoMemorials.length > 0 && nonDemoMemorials.length === 0 && (
-                <div className="home-demo-panel">
-                  <div className="home-demo-body">
-                    <p className="home-demo-hint">{t('home.demo_hint')}</p>
-                    <div className="memorials-grid memorials-grid--in-demo">
-                      {demoMemorials.map((memorial, i) => renderMemorialCard(memorial, i))}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {nonDemoMemorials.length > 0 && (
                 <div className="home-demo-explore-link">
