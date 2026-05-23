@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-02 Velvet Night — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #120A1E; color: #F0EBF8; font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.5);
+  color: #A78BFA; font-family: 'Inter', sans-serif; font-size: 0.72rem;
+  font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 6px 14px; border-radius: 20px; backdrop-filter: blur(8px);
+}
+
+/* Header */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(18,10,30,0.9); backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(124,58,237,0.2);
+  padding: 0 2.5rem; height: 70px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo-wrap { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.logo-mark {
+  width: 38px; height: 38px; border-radius: 12px; position: relative;
+  background: linear-gradient(135deg, #7C3AED 0%, #F59E0B 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #fff;
+  box-shadow: 0 0 24px rgba(124,58,237,0.5), 0 0 8px rgba(245,158,11,0.3);
+}
+.logo-name { font-family: 'Cinzel', serif; font-size: 1.1rem; letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #A78BFA, #F59E0B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+nav { display: flex; align-items: center; gap: 2rem; }
+nav a { color: rgba(240,235,248,0.5); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+nav a:hover { color: #A78BFA; }
+.nav-cta {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  color: #fff; font-size: 0.86rem; font-weight: 600;
+  padding: 9px 22px; border-radius: 8px; text-decoration: none;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+}
+
+/* HERO */
+.hero {
+  position: relative; min-height: 95vh;
+  display: flex; flex-direction: column; justify-content: center; overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 50%, rgba(124,58,237,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 20%, rgba(245,158,11,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 30% 25% at 15% 85%, rgba(245,158,11,0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #120A1E 0%, #1E0F35 50%, #120A1E 100%);
+}
+/* Stars */
+.stars { position: absolute; inset: 0; }
+.star { position: absolute; background: #fff; border-radius: 50%; animation: twinkle ease-in-out infinite; }
+@keyframes twinkle { 0%,100%{opacity:0.1} 50%{opacity:0.7} }
+
+.hero-inner {
+  position: relative; z-index: 2; max-width: 900px; margin: 0 auto;
+  padding: 8rem 2rem 6rem; text-align: center;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px; margin-bottom: 2rem;
+  color: rgba(167,139,250,0.8); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.eyebrow-line { width: 32px; height: 1px; background: rgba(167,139,250,0.4); }
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  font-weight: 300; line-height: 1.1; margin-bottom: 1.8rem;
+  letter-spacing: -0.02em;
+}
+.hero-title strong { font-weight: 700;
+  background: linear-gradient(135deg, #A78BFA 0%, #F59E0B 60%, #D97706 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+  font-size: 1.1rem; color: rgba(240,235,248,0.5); line-height: 1.75;
+  max-width: 560px; margin: 0 auto 3rem; font-weight: 300;
+}
+.hero-cta-row { display: flex; justify-content: center; gap: 1rem; margin-bottom: 4rem; }
+.btn-hero {
+  background: linear-gradient(135deg, #7C3AED 0%, #F59E0B 100%);
+  color: #fff; font-weight: 600; font-size: 1rem; padding: 15px 32px;
+  border-radius: 50px; text-decoration: none;
+  box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+  transition: all 0.3s; letter-spacing: 0.02em;
+}
+.btn-hero:hover { transform: translateY(-3px); box-shadow: 0 14px 40px rgba(124,58,237,0.5); }
+.btn-outline {
+  background: transparent; border: 1px solid rgba(167,139,250,0.3);
+  color: rgba(240,235,248,0.7); font-size: 1rem; padding: 15px 32px;
+  border-radius: 50px; text-decoration: none; transition: all 0.2s;
+}
+.btn-outline:hover { border-color: rgba(167,139,250,0.6); color: #A78BFA; }
+
+/* Memorial preview cards */
+.hero-cards {
+  display: flex; gap: 1.5rem; justify-content: center; align-items: flex-start;
+}
+.m-card {
+  background: rgba(30,15,53,0.8); border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 18px; padding: 1.5rem; width: 240px; text-align: left;
+  backdrop-filter: blur(20px); box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  transition: all 0.3s;
+}
+.m-card:hover { transform: translateY(-6px); border-color: rgba(124,58,237,0.4); }
+.m-card.featured {
+  border-color: rgba(245,158,11,0.3);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.05) inset;
+}
+.m-card-photo {
+  width: 100%; aspect-ratio: 1; border-radius: 12px; margin-bottom: 1rem;
+  background: linear-gradient(145deg, rgba(124,58,237,0.15), rgba(245,158,11,0.08));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; border: 1px solid rgba(124,58,237,0.15);
+}
+.m-card-name { font-family: 'Playfair Display', serif; font-size: 0.95rem; margin-bottom: 0.25rem; }
+.m-card-year { font-size: 0.75rem; color: rgba(245,158,11,0.6); font-weight: 500; margin-bottom: 0.8rem; }
+.m-card-tag {
+  display: inline-block; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.2);
+  color: #A78BFA; font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; padding: 3px 10px; border-radius: 20px;
+}
+
+/* SECTION: How it works */
+.how-section {
+  background: #0E0819; border-top: 1px solid rgba(124,58,237,0.12);
+  padding: 6rem 2rem;
+}
+.how-inner { max-width: 1000px; margin: 0 auto; }
+.section-tag { text-align: center; color: #A78BFA; font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.8rem; }
+.section-h { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-weight: 300; text-align: center; margin-bottom: 4rem; }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.step { text-align: center; padding: 1.5rem 1rem; }
+.step-num {
+  width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 1.2rem;
+  background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 1.3rem; color: #A78BFA;
+}
+.step-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; }
+.step-desc { font-size: 0.8rem; color: rgba(240,235,248,0.4); line-height: 1.6; }
+
+/* Footer */
+footer {
+  border-top: 1px solid rgba(124,58,237,0.1); padding: 2.5rem 2rem;
+  text-align: center; color: rgba(240,235,248,0.25); font-size: 0.82rem;
+}
+footer strong { color: #A78BFA; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-02 · Velvet Night</div>
+
+<header>
+  <a href="#" class="logo-wrap">
+    <div class="logo-mark">∞</div>
+    <span class="logo-name">vspomin.ai</span>
+  </a>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#">Gallery</a>
+    <a href="#">About</a>
+    <a href="#" class="nav-cta">+ New Memorial</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="stars">
+    <div class="star" style="width:2px;height:2px;top:8%;left:12%;animation-duration:3s;"></div>
+    <div class="star" style="width:1px;height:1px;top:15%;left:35%;animation-duration:4s;animation-delay:1s;"></div>
+    <div class="star" style="width:2px;height:2px;top:5%;left:60%;animation-duration:2.5s;animation-delay:0.5s;"></div>
+    <div class="star" style="width:1px;height:1px;top:20%;left:80%;animation-duration:5s;"></div>
+    <div class="star" style="width:2px;height:2px;top:12%;left:90%;animation-duration:3.5s;animation-delay:2s;"></div>
+    <div class="star" style="width:1px;height:1px;top:3%;left:50%;animation-duration:4.5s;animation-delay:1.5s;"></div>
+    <div class="star" style="width:3px;height:3px;top:25%;left:5%;animation-duration:6s;"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-line"></span>
+      Digital Memorial Platform
+      <span class="eyebrow-line"></span>
+    </div>
+    <h1 class="hero-title">
+      They live on<br>in <strong>eternal memory</strong>
+    </h1>
+    <p class="hero-sub">
+      A sacred space where love never fades. Preserve the stories, voices, and memories of those who shaped your world.
+    </p>
+    <div class="hero-cta-row">
+      <a href="#" class="btn-hero">Begin a Memorial</a>
+      <a href="#" class="btn-outline">View Gallery</a>
+    </div>
+    <div class="hero-cards">
+      <div class="m-card" style="transform: rotate(-2deg) translateY(8px);">
+        <div class="m-card-photo">👤</div>
+        <div class="m-card-name">Eleanor Grace</div>
+        <div class="m-card-year">1938 — 2022</div>
+        <span class="m-card-tag">47 memories</span>
+      </div>
+      <div class="m-card featured">
+        <div class="m-card-photo" style="background: linear-gradient(145deg, rgba(245,158,11,0.12), rgba(124,58,237,0.08));">👴</div>
+        <div class="m-card-name">Robert James Collins</div>
+        <div class="m-card-year">1945 — 2024</div>
+        <span class="m-card-tag" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.2);color:#F59E0B;">23 photos</span>
+      </div>
+      <div class="m-card" style="transform: rotate(2deg) translateY(8px);">
+        <div class="m-card-photo">👵</div>
+        <div class="m-card-name">Maria Valentina</div>
+        <div class="m-card-year">1952 — 2023</div>
+        <span class="m-card-tag">Voice cloned</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how-section">
+  <div class="how-inner">
+    <div class="section-tag">How it works</div>
+    <h2 class="section-h">Four steps to forever</h2>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-title">Create a page</div><div class="step-desc">Set up a beautiful memorial with name, dates and a personal story.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-title">Upload memories</div><div class="step-desc">Add photos, videos, audio recordings and written memories.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-title">Invite family</div><div class="step-desc">Share with loved ones so everyone can contribute their own stories.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-title">Talk to the avatar</div><div class="step-desc">Chat with a compassionate AI shaped by all those precious memories.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>© 2025 <strong>vspomin.ai</strong> — Where memories live forever. 🕯</p>
+</footer>
+
+</body>
+</html>

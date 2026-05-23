@@ -80,7 +80,7 @@ async def check_all():
             warnings.append(f"🚨 Qdrant недоступен: {e}")
 
     # Вывод
-    print("\n=== API Quotas — Memorial MVP ===\n")
+    print("\n=== API Quotas — vspomin.ai ===\n")
     print(f"📊 OpenAI:     {results.get('openai', 'N/A')}")
     print(f"🎙️  ElevenLabs: {results.get('elevenlabs', 'N/A')}")
     print(f"🔍 Qdrant:     {results.get('qdrant', 'N/A')}")

@@ -1,4 +1,4 @@
-# Сверка лендинга с кодом (Memorial MVP)
+# Сверка лендинга с кодом (vspomin.ai)
 
 Обновлено: 2026-03-30. Источник лендинга для деплоя: **`frontend/landing/index.html`** (копируется в `dist/index.html` при `npm run build`).
 

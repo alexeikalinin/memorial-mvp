@@ -5,8 +5,12 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.db import engine, Base
+from app.limiter import limiter
 from app.api import health, memorials, ai, media, s3, embeddings, family, invites, access as access_router, waitlist, billing as billing_router
 from app.api import auth as auth_router
 
@@ -141,8 +145,8 @@ _warn_qdrant_if_deployed_without_cloud()
 
 # Создание FastAPI приложения
 app = FastAPI(
-    title="Memorial MVP API",
-    description="API для веб-сервиса хранения цифровой памяти и создания ИИ-аватаров",
+    title="vspomin.ai API",
+    description="API сервиса vspomin.ai — цифровая память и ИИ-аватары",
     version="0.1.0",
     debug=settings.DEBUG,
 )
@@ -155,6 +159,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting (slowapi) — глобально на IP из конфига
+limiter.default_limits = [settings.RATE_LIMIT_GLOBAL]
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Подключение роутеров
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
@@ -224,7 +234,7 @@ async def _auto_rebuild_embeddings_if_empty():
 async def root():
     """Корневой endpoint."""
     return {
-        "message": "Memorial MVP API",
+        "message": "vspomin.ai API",
         "version": "0.1.0",
         "docs": "/docs"
     }

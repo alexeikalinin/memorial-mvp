@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-10 Aurora — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #0B0A12; color: #F0ECE8; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(11,10,18,0.8); border: 1px solid rgba(167,139,250,0.4);
+  color: #C4B5FD; padding: 6px 14px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+/* HEADER */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: 66px; display: flex; align-items: center; padding: 0 2.5rem;
+  justify-content: space-between;
+  background: rgba(11,10,18,0.75); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(167,139,250,0.12);
+}
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-aura {
+  width: 36px; height: 36px; border-radius: 50%; position: relative;
+  background: conic-gradient(from 0deg, #7C3AED, #F59E0B, #7C3AED);
+  display: flex; align-items: center; justify-content: center;
+  animation: rotate-slow 8s linear infinite;
+}
+@keyframes rotate-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.logo-aura::after { content: '∞'; position: absolute; font-size: 1rem; color: #fff;
+  animation: counter-rotate 8s linear infinite; }
+@keyframes counter-rotate { from{transform:rotate(0deg)} to{transform:rotate(-360deg)} }
+.logo-name { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 500; letter-spacing: 0.06em;
+  background: linear-gradient(90deg, #C4B5FD, #FDE68A); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+nav { display: flex; align-items: center; gap: 2rem; }
+nav a { color: rgba(240,236,232,0.4); font-size: 0.85rem; text-decoration: none; transition: color 0.2s; }
+nav a:hover { color: rgba(240,236,232,0.8); }
+.nav-cta {
+  background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(245,158,11,0.2));
+  border: 1px solid rgba(167,139,250,0.25);
+  color: rgba(240,236,232,0.8) !important; padding: 7px 18px; border-radius: 20px;
+  transition: all 0.2s;
+}
+.nav-cta:hover { border-color: rgba(167,139,250,0.5); }
+
+/* HERO with aurora effect */
+.hero {
+  position: relative; min-height: 100vh; overflow: hidden;
+  display: flex; align-items: center;
+}
+
+/* Aurora layers */
+.aurora {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.aurora-band {
+  position: absolute; left: -50%; right: -50%; border-radius: 50%;
+  filter: blur(60px); opacity: 0.12;
+  animation: aurora-drift ease-in-out infinite;
+}
+@keyframes aurora-drift {
+  0%,100% { transform: translateY(0) scaleX(1); opacity: 0.12; }
+  50% { transform: translateY(-30px) scaleX(1.1); opacity: 0.18; }
+}
+.ab1 { top: 10%; height: 200px; background: linear-gradient(135deg, #7C3AED, #4C1D95);
+  animation-duration: 12s; }
+.ab2 { top: 20%; height: 150px; background: linear-gradient(135deg, #F59E0B, #D97706);
+  animation-duration: 15s; animation-delay: 3s; }
+.ab3 { top: 30%; height: 180px; background: linear-gradient(135deg, #6D28D9, #F59E0B);
+  animation-duration: 18s; animation-delay: 6s; }
+.ab4 { top: 5%; height: 120px; background: linear-gradient(135deg, #8B5CF6, #C4B5FD);
+  animation-duration: 10s; animation-delay: 1s; }
+
+/* Base gradient */
+.hero-base {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 60%, rgba(245,158,11,0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #0B0A12 0%, #0F0D1E 40%, #0B0A12 100%);
+}
+
+.hero-inner {
+  position: relative; z-index: 2; max-width: 1140px; margin: 0 auto;
+  padding: 8rem 2rem 6rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+}
+
+.hero-left {}
+.aurora-badge {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 2rem;
+  padding: 6px 16px; border-radius: 20px;
+  background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2);
+  font-size: 0.75rem; font-weight: 500; letter-spacing: 0.06em;
+  color: rgba(196,181,253,0.8);
+}
+.aurora-badge-icon { width: 6px; height: 6px; border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #F59E0B); animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.h-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.5rem, 4.5vw, 4rem);
+  font-weight: 300; line-height: 1.1; margin-bottom: 1.8rem; letter-spacing: -0.02em;
+}
+.h-title .shimmer {
+  font-style: italic; font-weight: 400;
+  background: linear-gradient(90deg, #C4B5FD, #8B5CF6, #F59E0B, #FDE68A, #C4B5FD);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: aurora-shimmer 6s ease infinite;
+}
+@keyframes aurora-shimmer { 0%,100%{background-position:0%50%} 50%{background-position:100%50%} }
+.h-para { font-size: 1rem; line-height: 1.8; color: rgba(240,236,232,0.45);
+  max-width: 420px; margin-bottom: 2.5rem; font-weight: 300; }
+.h-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+.btn-aurora {
+  background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 50%, #F59E0B 100%);
+  background-size: 200% 100%; background-position: 0% 0%;
+  color: #fff; font-weight: 600; font-size: 0.92rem; padding: 13px 28px;
+  border-radius: 10px; text-decoration: none;
+  box-shadow: 0 8px 32px rgba(124,58,237,0.35);
+  transition: all 0.4s; letter-spacing: 0.01em;
+}
+.btn-aurora:hover { background-position: 100% 0%; box-shadow: 0 12px 40px rgba(245,158,11,0.35); transform: translateY(-2px); }
+.btn-aurora-ghost {
+  background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2);
+  color: rgba(196,181,253,0.7); font-size: 0.9rem; padding: 13px 24px;
+  border-radius: 10px; text-decoration: none; transition: all 0.2s;
+}
+.btn-aurora-ghost:hover { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.4); }
+
+/* Memorial panel on right */
+.memorial-panel {
+  background: rgba(15,13,30,0.8); backdrop-filter: blur(20px);
+  border: 1px solid rgba(167,139,250,0.12); border-radius: 22px;
+  overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  position: relative;
+}
+.mp-aurora-top {
+  height: 120px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(245,158,11,0.1), rgba(124,58,237,0.15));
+}
+.mp-aurora-top::before { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(15,13,30,0.9)); }
+.mp-photo-circle {
+  position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #D97706);
+  border: 3px solid rgba(15,13,30,0.8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; overflow: hidden;
+}
+.mp-body { padding: 2.5rem 1.8rem 1.8rem; text-align: center; }
+.mp-name { font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 0.3rem; }
+.mp-dates { font-size: 0.78rem; color: rgba(196,181,253,0.6); margin-bottom: 0.8rem; }
+.mp-tags { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+.mp-tag { font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; }
+.mp-tag-p { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.25); color: #A78BFA; }
+.mp-tag-g { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.2); color: #D97706; }
+.mp-divider { height: 1px; background: rgba(167,139,250,0.1); margin-bottom: 1.5rem; }
+
+/* Chat interface embedded in card */
+.mp-chat { text-align: left; }
+.mp-chat-msg { padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.82rem; line-height: 1.55; margin-bottom: 0.6rem; }
+.mp-chat-msg.user { background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.15); margin-left: 1.5rem; }
+.mp-chat-msg.avatar { background: rgba(20,17,35,0.8); border: 1px solid rgba(245,158,11,0.08);
+  font-style: italic; font-family: 'Playfair Display', serif; color: rgba(240,236,232,0.6); margin-right: 1.5rem; }
+.mp-chat-input {
+  margin-top: 1rem; display: flex; gap: 0.6rem; align-items: center;
+  background: rgba(167,139,250,0.05); border: 1px solid rgba(167,139,250,0.1);
+  border-radius: 10px; padding: 0.5rem 0.5rem 0.5rem 1rem;
+}
+.mp-chat-input span { flex: 1; font-size: 0.78rem; color: rgba(240,236,232,0.25); font-style: italic; }
+.mp-chat-send { background: linear-gradient(135deg, #7C3AED, #D97706);
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+
+/* FEATURES */
+.features { padding: 6rem 2rem; background: #080710; border-top: 1px solid rgba(167,139,250,0.07); }
+.f-inner { max-width: 1140px; margin: 0 auto; }
+.f-kicker { text-align: center; font-family: 'Cinzel', serif; font-size: 0.62rem;
+  letter-spacing: 0.2em; text-transform: uppercase; color: rgba(167,139,250,0.45); margin-bottom: 0.6rem; }
+.f-title { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 300;
+  text-align: center; margin-bottom: 3.5rem; }
+.f-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.f-card {
+  background: rgba(15,13,30,0.6); border-radius: 16px; padding: 1.8rem;
+  border: 1px solid rgba(167,139,250,0.08); position: relative; overflow: hidden;
+  transition: all 0.3s;
+}
+.f-card:hover { border-color: rgba(167,139,250,0.2); transform: translateY(-3px); }
+.f-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(124,58,237,0.5), rgba(245,158,11,0.5), transparent); }
+.f-icon { font-size: 1.6rem; margin-bottom: 1rem;
+  filter: drop-shadow(0 0 8px rgba(245,158,11,0.4)); }
+.f-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; margin-bottom: 0.5rem; }
+.f-desc { font-size: 0.84rem; color: rgba(240,236,232,0.4); line-height: 1.65; font-weight: 300; }
+
+footer { border-top: 1px solid rgba(167,139,250,0.07); padding: 2.5rem; text-align: center;
+  color: rgba(240,236,232,0.2); font-size: 0.8rem; }
+footer strong { color: rgba(167,139,250,0.5); }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-10 · Aurora</div>
+
+<header>
+  <a href="#" class="logo">
+    <div class="logo-aura"></div>
+    <span class="logo-name">vspomin.ai</span>
+  </a>
+  <nav>
+    <a href="#">Memorials</a>
+    <a href="#">Gallery</a>
+    <a href="#">About</a>
+    <a href="#" class="nav-cta">+ Create</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-base"></div>
+  <div class="aurora">
+    <div class="aurora-band ab1"></div>
+    <div class="aurora-band ab2"></div>
+    <div class="aurora-band ab3"></div>
+    <div class="aurora-band ab4"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="aurora-badge">
+        <span class="aurora-badge-icon"></span>
+        Digital Memorial Platform
+      </div>
+      <h1 class="h-title">
+        Love that<br>shines <span class="shimmer">like aurora</span><br>forever
+      </h1>
+      <p class="h-para">
+        A luminous space where the people you've loved live on. Share their story, preserve their voice, and speak with them again through AI.
+      </p>
+      <div class="h-btns">
+        <a href="#" class="btn-aurora">Create a Memorial</a>
+        <a href="#" class="btn-aurora-ghost">Explore Gallery</a>
+      </div>
+    </div>
+    <div class="memorial-panel">
+      <div class="mp-aurora-top">
+        <div class="mp-photo-circle">👵</div>
+      </div>
+      <div class="mp-body">
+        <div class="mp-name">Margaret Eleanor Collins</div>
+        <div class="mp-dates">1942 — 2023 · Beloved Mother</div>
+        <div class="mp-tags">
+          <span class="mp-tag mp-tag-p">47 memories</span>
+          <span class="mp-tag mp-tag-g">Voice cloned</span>
+        </div>
+        <div class="mp-divider"></div>
+        <div class="mp-chat">
+          <div class="mp-chat-msg user">Gran, tell me about Cornwall in the summer…</div>
+          <div class="mp-chat-msg avatar">"The sea was always restless in the mornings, but by afternoon it would settle into the most beautiful stillness…"</div>
+          <div class="mp-chat-input">
+            <span>Ask something…</span>
+            <div class="mp-chat-send">✦</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="f-inner">
+    <div class="f-kicker">What we offer</div>
+    <h2 class="f-title">Everything love leaves behind</h2>
+    <div class="f-grid">
+      <div class="f-card">
+        <div class="f-icon">🖼</div>
+        <div class="f-name">Gallery & Media</div>
+        <div class="f-desc">A lifetime of photos, videos, and audio — preserved beautifully, accessible forever.</div>
+      </div>
+      <div class="f-card">
+        <div class="f-icon">✦</div>
+        <div class="f-name">AI Avatar Chat</div>
+        <div class="f-desc">Speak with a compassionate AI shaped by real memories — warm, thoughtful, and deeply personal.</div>
+      </div>
+      <div class="f-card">
+        <div class="f-icon">🎙</div>
+        <div class="f-name">Voice Cloning</div>
+        <div class="f-desc">Let future generations hear how they sounded — their laugh, their warmth, their words.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>© 2025 <strong>vspomin.ai</strong> — Where love shines like aurora, forever 🕯</footer>
+
+</body>
+</html>

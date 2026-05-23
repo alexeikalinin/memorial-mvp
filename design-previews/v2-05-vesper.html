@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>05 — Vesper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#0E0A06; color:#EDE0C8; min-height:100vh; display:flex; flex-direction:column; }
+
+nav { display:flex; align-items:center; justify-content:space-between; padding:0 3rem; height:64px;
+  background:rgba(14,10,6,0.95); border-bottom:1px solid rgba(245,158,11,0.1);
+  position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); }
+.lw { display:flex; align-items:center; gap:0.7rem; }
+.li { width:32px; height:32px; object-fit:contain; }
+.lt { font-size:1.1rem; font-weight:500; }
+.lt span { color:#F59E0B; }
+.nl { display:flex; gap:2.5rem; }
+.nl a { font-size:0.75rem; color:rgba(237,224,200,0.4); text-decoration:none; }
+.nc { padding:0.48rem 1.2rem; background:#F59E0B; border-radius:6px; font-size:0.82rem; font-weight:600; color:#0E0A06; text-decoration:none; }
+
+/* SPLIT HERO */
+.hero-split { display:grid; grid-template-columns:1fr 1fr; flex:1; }
+.hl { background:linear-gradient(160deg,#1A120B,#2C1F14); padding:5rem 4rem 5rem 3rem; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden; }
+.hl::before { content:''; position:absolute; top:-30%; right:-20%; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle,rgba(245,158,11,0.08) 0%,transparent 70%); pointer-events:none; }
+.el { font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase; color:#D97706; margin-bottom:1.75rem; display:flex; align-items:center; gap:0.75rem; }
+.el::before { content:''; width:2rem; height:1px; background:#D97706; opacity:0.7; display:block; }
+h1 { font-family:'Playfair Display',serif; font-size:3.5rem; font-weight:400; line-height:1.1; margin-bottom:1.5rem; }
+h1 em { font-style:italic; color:#F59E0B; }
+.hp { font-size:0.93rem; line-height:1.85; color:rgba(237,224,200,0.5); max-width:40ch; margin-bottom:2.5rem; font-weight:300; }
+.btns { display:flex; flex-direction:column; gap:0.75rem; max-width:240px; }
+.b1 { padding:0.8rem 2rem; background:linear-gradient(135deg,#F59E0B,#D97706); border-radius:8px; font-size:0.88rem; font-weight:600; color:#0E0A06; text-decoration:none; text-align:center; }
+.b2 { padding:0.8rem 2rem; border:1px solid rgba(245,158,11,0.3); border-radius:8px; font-size:0.85rem; color:rgba(245,158,11,0.7); text-decoration:none; text-align:center; }
+
+/* RIGHT panel */
+.hr { background:#F5EFE5; padding:3.5rem 3rem; display:flex; flex-direction:column; gap:1rem; overflow-y:auto; }
+.hr-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.5rem; }
+.hr-title { font-family:'Playfair Display',serif; font-size:1.4rem; color:#1A120B; }
+.hr-count { font-size:0.78rem; color:#7A6858; }
+.mcard { background:#fff; border:1px solid #E0D8CA; border-radius:12px; padding:1.25rem; color:#1A120B; border-left:4px solid transparent; transition:border-left-color 0.2s, box-shadow 0.2s; }
+.mcard:hover { border-left-color:#D97706; box-shadow:0 4px 20px rgba(26,18,11,0.1); }
+.mch { display:flex; align-items:center; gap:1rem; margin-bottom:0.85rem; }
+.mca { width:44px; height:44px; border-radius:8px; background:linear-gradient(135deg,#F59E0B,#D97706); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; color:#fff; }
+.mcn { font-size:0.95rem; font-weight:500; color:#1A120B; }
+.mcd { font-size:0.75rem; color:#D97706; margin-top:0.1rem; }
+.mcq { font-family:'Playfair Display',serif; font-style:italic; font-size:0.84rem; line-height:1.6; color:#6A5848; margin-bottom:0.85rem; border-left:2px solid #E0D8CA; padding-left:0.75rem; }
+.mcf { display:flex; justify-content:space-between; font-size:0.72rem; color:#8A7860; }
+.new-card { background:rgba(245,158,11,0.06); border:1px dashed rgba(217,119,6,0.3); border-radius:12px; padding:1.5rem; display:flex; align-items:center; justify-content:center; gap:0.75rem; cursor:pointer; color:#D97706; font-size:0.85rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="lw"><img src="logo.png" class="li" alt=""><div class="lt">vspomin<span>.ai</span></div></div>
+  <div class="nl"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nc">Create memorial</a>
+</nav>
+<div class="hero-split">
+  <div class="hl">
+    <div class="el">Digital Memorial Service</div>
+    <h1>We preserve the person,<br><em>not just the photographs</em></h1>
+    <p class="hp">Create a lasting digital memory of your loved one — with voice, stories and a family tree.</p>
+    <div class="btns">
+      <a href="#" class="b1">Create memorial</a>
+      <a href="#" class="b2">Free to start · no card</a>
+    </div>
+  </div>
+  <div class="hr">
+    <div class="hr-head"><div class="hr-title">Your memorials</div><div class="hr-count">4 pages</div></div>
+    <div class="mcard">
+      <div class="mch"><div class="mca">AP</div><div><div class="mcn">Anna Petrova</div><div class="mcd">1947 — 2018</div></div></div>
+      <div class="mcq">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+      <div class="mcf"><span>12 memories</span><span>34 files · AI avatar</span></div>
+    </div>
+    <div class="mcard">
+      <div class="mch"><div class="mca" style="background:linear-gradient(135deg,#7C3AED,#6D28D9)">DP</div><div><div class="mcn">Dmitri Petrov</div><div class="mcd" style="color:#7C3AED">1942 — 2021</div></div></div>
+      <div class="mcq">"He taught himself English from the radio and could fix anything with wire and patience."</div>
+      <div class="mcf"><span>8 memories</span><span>19 files</span></div>
+    </div>
+    <div class="mcard">
+      <div class="mch"><div class="mca" style="background:linear-gradient(135deg,#92400E,#78350F)">MV</div><div><div class="mcn">Maria Volkova</div><div class="mcd">1938 — 2015</div></div></div>
+      <div class="mcq">"Her paintings filled three rooms and the smell of oils and turpentine never left the flat."</div>
+      <div class="mcf"><span>21 memories</span><span>48 files · AI avatar</span></div>
+    </div>
+    <div class="new-card"><span style="font-size:1.5rem">+</span><span>Create new memorial</span></div>
+  </div>
+</div>
+</body>
+</html>

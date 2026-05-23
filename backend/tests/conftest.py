@@ -67,6 +67,13 @@ def client(db_session):
 
 
 @pytest.fixture(autouse=True)
+def _bypass_rate_limit(monkeypatch):
+    """Disable rate limiting globally in tests — rate limits are tested separately in test_rate_limit.py."""
+    from app.main import app
+    monkeypatch.setattr(app.state.limiter, "enabled", False)
+
+
+@pytest.fixture(autouse=True)
 def _bypass_billing(monkeypatch):
     """Disable billing guards globally in tests — quota/plan checks are not the subject under test."""
     import app.api.memorials as mem_api

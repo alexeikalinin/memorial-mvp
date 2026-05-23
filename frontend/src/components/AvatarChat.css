@@ -291,6 +291,30 @@
   position: relative;
 }
 
+.family-memories-toggle.feature-locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.family-memories-toggle.feature-locked input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.plan-badge {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #1a1410;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
 .info-trigger {
   display: inline-flex;
   align-items: center;

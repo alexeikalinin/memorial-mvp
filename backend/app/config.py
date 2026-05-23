@@ -117,6 +117,11 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Email (Resend)
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "noreply@vspomin.ai"
+    EMAIL_FROM_NAME: str = "vspomin.ai"
+
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_BOT_USERNAME: str = ""  # Имя бота без @, для deep links
@@ -141,6 +146,11 @@ class Settings(BaseSettings):
     # Investor / walkthrough demo: any authenticated user is treated as owner on all memorials
     # (list all, edit, invites, chat, etc.). Turn OFF before real multi-tenant launch.
     INVESTOR_DEMO_MODE: bool = False
+
+    # Rate limiting
+    RATE_LIMIT_GLOBAL: str = "200/minute"  # Global IP-based rate limit (slowapi format)
+    RATE_LIMIT_AUTH: str = "10/minute"     # Auth endpoints (login/register)
+    RATE_LIMIT_AI: str = "30/minute"       # AI endpoints (chat, animate)
 
     # Application
     DEBUG: bool = True

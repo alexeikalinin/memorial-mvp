@@ -1,4 +1,4 @@
-# Memorial MVP — План тестирования
+# vspomin.ai — План тестирования
 
 > Последнее обновление: 2026-04-18
 > Статус: живой документ — обновляется при добавлении новых фич
@@ -247,3 +247,4 @@ curl http://localhost:8000/health
 | 2026-04-18 | Добавлены новые тесты | +1 pytest (family RAG 5.6), +5 E2E (1.9, 2.2, 6.4, 13.5, 13.6) | — |
 | 2026-04-19 | /run-tests | pytest: 125/125 ✅, E2E: SKIPPED (Playwright browsers not installed) | E2E orphan code в memorial.spec.js:170 — пофикшен (добавлен заголовок test 13.7) |
 | 2026-04-20 | /run-tests | pytest: 125/125 ✅, E2E: 0/32 (backend offline во время запуска) | RegisterPage+LoginPage: добавлены name= атрибуты на input'ы; установлен webkit |
+| 2026-05-18 | /run-tests | pytest: 177/177 ✅, E2E: SKIPPED (services offline) | Нет |

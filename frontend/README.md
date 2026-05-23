@@ -1,4 +1,4 @@
-# Memorial MVP - Frontend
+# vspomin.ai - Frontend
 
 React frontend для веб-сервиса хранения цифровой памяти и создания ИИ-аватаров.
 

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-04 Obsidian Gold — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #0A0806; color: #EDE8DF; font-family: 'Inter', sans-serif; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(0,0,0,0.6); border: 1px solid rgba(245,158,11,0.5);
+  color: #F59E0B; padding: 6px 14px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+/* HEADER — LUXURY THIN */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  border-bottom: 1px solid rgba(245,158,11,0.12);
+  background: rgba(10,8,6,0.92); backdrop-filter: blur(20px);
+  height: 60px; display: flex; align-items: center;
+  padding: 0 4rem; justify-content: space-between;
+}
+.logo-area { display: flex; align-items: center; gap: 16px; text-decoration: none; }
+/* Gold horizontal rule before logo */
+.logo-rule { width: 28px; height: 1px; background: linear-gradient(90deg, transparent, #F59E0B); }
+.logo-text {
+  font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(237,232,223,0.85);
+}
+.logo-dot-sep { color: rgba(245,158,11,0.5); margin: 0 6px; font-size: 0.6rem; }
+.logo-ai { color: #D97706; }
+nav { display: flex; align-items: center; gap: 3rem; }
+nav a { color: rgba(237,232,223,0.35); text-decoration: none; font-size: 0.78rem;
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; transition: color 0.2s; }
+nav a:hover { color: rgba(237,232,223,0.75); }
+.nav-cta {
+  color: #F59E0B; border-bottom: 1px solid rgba(245,158,11,0.3);
+  padding-bottom: 1px; letter-spacing: 0.1em;
+}
+.nav-cta:hover { color: #FBBF24; border-bottom-color: #FBBF24; }
+
+/* HERO — editorial split */
+.hero {
+  min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+  padding-top: 60px; overflow: hidden;
+}
+.hero-left {
+  position: relative; display: flex; flex-direction: column;
+  justify-content: center; padding: 6rem 4rem 6rem 4rem;
+  background: #0A0806;
+}
+/* Thin gold vertical line */
+.hero-left::after {
+  content: ''; position: absolute; right: 0; top: 10%; bottom: 10%;
+  width: 1px; background: linear-gradient(to bottom, transparent, rgba(245,158,11,0.3) 30%, rgba(245,158,11,0.3) 70%, transparent);
+}
+.hero-right {
+  position: relative; background: #0D0A07;
+  display: flex; align-items: center; justify-content: center; padding: 4rem;
+}
+/* Subtle texture on right side */
+.hero-right::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 80% at 60% 40%, rgba(245,158,11,0.05) 0%, transparent 70%);
+}
+
+.eyebrow-row { display: flex; align-items: center; gap: 12px; margin-bottom: 3rem; }
+.eyebrow-rule { flex: 1; max-width: 40px; height: 1px; background: rgba(245,158,11,0.3); }
+.eyebrow-text { font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 400;
+  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(245,158,11,0.6); }
+
+.hero-h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 4.5vw, 4.5rem);
+  font-weight: 300; line-height: 1.1; letter-spacing: -0.02em;
+  margin-bottom: 2rem;
+}
+.hero-h1 .line-italic { display: block; font-style: italic; font-weight: 400;
+  background: linear-gradient(90deg, #F59E0B, #D97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-para {
+  font-size: 0.92rem; line-height: 1.8; color: rgba(237,232,223,0.4);
+  max-width: 380px; margin-bottom: 3.5rem; font-weight: 300;
+}
+.cta-row { display: flex; align-items: center; gap: 2rem; }
+.btn-gold-line {
+  font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: #0A0806; background: #F59E0B;
+  padding: 12px 32px; text-decoration: none;
+  border: 1px solid #F59E0B; transition: all 0.25s;
+}
+.btn-gold-line:hover { background: #FBBF24; border-color: #FBBF24; }
+.btn-ghost-line {
+  font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(237,232,223,0.35); text-decoration: none;
+  border-bottom: 1px solid rgba(237,232,223,0.15); padding-bottom: 2px;
+  transition: all 0.2s;
+}
+.btn-ghost-line:hover { color: rgba(237,232,223,0.7); border-bottom-color: rgba(237,232,223,0.4); }
+
+/* Large editorial card on right */
+.editorial-card {
+  position: relative; z-index: 1; width: 100%; max-width: 380px;
+}
+.ed-photo {
+  width: 100%; aspect-ratio: 3/4; background: linear-gradient(160deg, #1A1208, #0A0806);
+  border: 1px solid rgba(245,158,11,0.1); display: flex; align-items: center;
+  justify-content: center; font-size: 6rem; opacity: 0.25;
+  position: relative; overflow: hidden;
+}
+.ed-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(10,8,6,0.95) 100%);
+}
+.ed-caption {
+  margin-top: -1px; border: 1px solid rgba(245,158,11,0.1); border-top: none;
+  padding: 1.8rem; background: #0D0A07;
+}
+.ed-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 400; margin-bottom: 0.3rem; }
+.ed-dates {
+  font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 400;
+  letter-spacing: 0.12em; color: rgba(245,158,11,0.5); margin-bottom: 1.2rem;
+}
+.ed-divider { height: 1px; background: rgba(245,158,11,0.1); margin-bottom: 1.2rem; }
+.ed-stat-row { display: flex; justify-content: space-between; }
+.ed-stat label { display: block; font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(237,232,223,0.3); margin-bottom: 0.2rem; }
+.ed-stat span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #F59E0B; }
+
+/* SECTION — typography-led */
+.values-section {
+  padding: 7rem 4rem; border-top: 1px solid rgba(245,158,11,0.08);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center;
+}
+.values-left {}
+.values-super { font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 400;
+  letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,158,11,0.5); margin-bottom: 1rem; }
+.values-h { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 300; line-height: 1.2; margin-bottom: 2rem; }
+.values-h em { font-style: italic; color: #D97706; }
+.values-body { color: rgba(237,232,223,0.4); font-size: 0.9rem; line-height: 1.8; font-weight: 300; }
+.values-right { display: flex; flex-direction: column; gap: 1.5rem; }
+.value-item { display: flex; gap: 1.5rem; padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(245,158,11,0.07); }
+.value-item:last-child { border-bottom: none; }
+.value-num { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: rgba(245,158,11,0.25);
+  flex-shrink: 0; width: 28px; padding-top: 2px; }
+.value-content {}
+.value-name { font-size: 0.88rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0.4rem; }
+.value-desc { font-size: 0.82rem; color: rgba(237,232,223,0.35); line-height: 1.65; font-weight: 300; }
+
+/* Footer */
+footer {
+  border-top: 1px solid rgba(245,158,11,0.08); padding: 2.5rem 4rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ft-logo { font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(237,232,223,0.3); }
+.ft-copy { font-size: 0.75rem; color: rgba(237,232,223,0.2); }
+.ft-flame { color: #D97706; font-size: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-04 · Obsidian Gold</div>
+
+<header>
+  <a href="#" class="logo-area">
+    <div class="logo-rule"></div>
+    <span class="logo-text">vspomin<span class="logo-dot-sep">·</span><span class="logo-ai">ai</span></span>
+  </a>
+  <nav>
+    <a href="#">Memorials</a>
+    <a href="#">Stories</a>
+    <a href="#">Pricing</a>
+    <a href="#" class="nav-cta">Begin →</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="eyebrow-row">
+      <div class="eyebrow-rule"></div>
+      <span class="eyebrow-text">Digital Memorial · AI Preserved</span>
+    </div>
+    <h1 class="hero-h1">
+      A place where<br>love endures<br>
+      <span class="line-italic">beyond time</span>
+    </h1>
+    <p class="hero-para">
+      We preserve what matters most — the voice, the smile, the stories of those who shaped you. Built with care. Designed for reverence.
+    </p>
+    <div class="cta-row">
+      <a href="#" class="btn-gold-line">Create Memorial</a>
+      <a href="#" class="btn-ghost-line">Explore Gallery</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="editorial-card">
+      <div class="ed-photo">👤</div>
+      <div class="ed-caption">
+        <div class="ed-name">Margaret Eleanor Collins</div>
+        <div class="ed-dates">1942 — 2023 · Beloved Mother</div>
+        <div class="ed-divider"></div>
+        <div class="ed-stat-row">
+          <div class="ed-stat"><label>Memories</label><span>47</span></div>
+          <div class="ed-stat"><label>Photos</label><span>23</span></div>
+          <div class="ed-stat"><label>Family</label><span>8</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="values-section">
+  <div class="values-left">
+    <div class="values-super">Our philosophy</div>
+    <h2 class="values-h">Grief is love<br>with <em>nowhere to go.</em><br>We give it a home.</h2>
+    <p class="values-body">
+      vspomin.ai is built on the belief that the people we lose deserve more than a fading photograph. They deserve a living, breathing memorial — one that speaks, listens, and remembers.
+    </p>
+  </div>
+  <div class="values-right">
+    <div class="value-item">
+      <div class="value-num">I</div>
+      <div class="value-content"><div class="value-name">Preserve every memory</div><div class="value-desc">Upload photos, videos, voice recordings and written stories. Nothing is lost.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-num">II</div>
+      <div class="value-content"><div class="value-name">AI that speaks with their voice</div><div class="value-desc">Our avatar is shaped by real memories — respectful, warm, never cold or mechanical.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-num">III</div>
+      <div class="value-content"><div class="value-name">A family space, forever</div><div class="value-desc">Invite loved ones to contribute their own stories and keep the memorial alive.</div></div>
+    </div>
+    <div class="value-item">
+      <div class="value-num">IV</div>
+      <div class="value-content"><div class="value-name">Secure and private</div><div class="value-desc">Your memories belong to you. Private by default, shared only when you choose.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="ft-logo">vspomin.ai</span>
+  <span class="ft-copy">© 2025 — All rights reserved</span>
+  <span class="ft-flame">🕯</span>
+</footer>
+
+</body>
+</html>

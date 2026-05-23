@@ -48,6 +48,7 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     is_demo: bool = False
+    email_verified: bool = False
     subscription_plan: str = "free"
     created_at: datetime
 
@@ -68,6 +69,15 @@ class TokenWithUser(Token):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
 
 
 # Memorial Schemas

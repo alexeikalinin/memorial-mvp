@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-09 Dark Marble — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #0D0C0B; color: #EDE8DF; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(13,12,11,0.9); border: 1px solid rgba(245,158,11,0.4);
+  color: #D97706; padding: 6px 14px; border-radius: 3px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+/* Marble texture via SVG filter */
+.marble-texture {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.03;
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,12,11,0.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(245,158,11,0.1);
+  height: 68px; display: flex; align-items: center; padding: 0 3rem;
+  justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+/* Marble column logo */
+.logo-col {
+  width: 34px; height: 34px; background: linear-gradient(135deg, #1C1A17, #2A2520);
+  border: 1px solid rgba(245,158,11,0.3); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px rgba(245,158,11,0.15), inset 0 1px 0 rgba(245,158,11,0.1);
+  position: relative; overflow: hidden;
+}
+.logo-col::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 30%, rgba(245,158,11,0.08) 50%, transparent 70%);
+}
+.logo-col-text { font-family: 'Cinzel', serif; font-size: 1rem; color: #D97706; z-index: 1; }
+.logo-name { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 500; letter-spacing: 0.08em;
+  color: rgba(237,232,223,0.85); }
+.logo-name span { color: rgba(217,119,6,0.8); }
+nav { display: flex; align-items: center; gap: 2.5rem; }
+nav a { color: rgba(237,232,223,0.35); text-decoration: none; font-size: 0.82rem;
+  letter-spacing: 0.06em; font-weight: 400; transition: color 0.2s; }
+nav a:hover { color: rgba(237,232,223,0.7); }
+.nav-cta {
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+  color: #D97706 !important; padding: 8px 20px; border-radius: 3px; letter-spacing: 0.08em;
+  transition: all 0.2s;
+}
+.nav-cta:hover { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.4); }
+
+/* HERO */
+.hero {
+  position: relative; min-height: 95vh; overflow: hidden;
+  display: flex; align-items: center;
+}
+
+/* Marble SVG veins */
+.marble-veins {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden; opacity: 0.07;
+}
+
+.hero-ambient {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 50% 60% at 70% 50%, rgba(245,158,11,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 20% 30%, rgba(124,58,237,0.04) 0%, transparent 50%),
+    linear-gradient(160deg, #0D0C0B 0%, #14120F 50%, #0D0C0B 100%);
+}
+
+/* Gold vein lines animated */
+.vein { position: absolute; pointer-events: none; }
+
+.hero-inner {
+  position: relative; z-index: 2; max-width: 1200px; margin: 0 auto;
+  padding: 6rem 3rem; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;
+}
+
+.hero-left {}
+.hl-overline {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 2.5rem;
+}
+.hl-rule { height: 1px; width: 32px; background: linear-gradient(90deg, transparent, rgba(245,158,11,0.4)); }
+.hl-text { font-family: 'Cinzel', serif; font-size: 0.62rem; font-weight: 400;
+  letter-spacing: 0.25em; text-transform: uppercase; color: rgba(245,158,11,0.5); }
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 4.5vw, 4.2rem);
+  font-weight: 300; line-height: 1.12; margin-bottom: 2rem; letter-spacing: -0.01em;
+}
+.hero-title em { font-style: italic; font-weight: 400;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #92400E 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-para { font-size: 0.92rem; line-height: 1.8; color: rgba(237,232,223,0.4);
+  max-width: 400px; margin-bottom: 3rem; font-weight: 300; }
+.hero-cta { display: flex; gap: 1rem; }
+.btn-marble-primary {
+  font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  background: linear-gradient(135deg, #92400E 0%, #D97706 50%, #F59E0B 100%);
+  color: #0D0C0B; padding: 13px 32px; text-decoration: none; border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+  transition: all 0.25s;
+}
+.btn-marble-primary:hover { box-shadow: 0 8px 32px rgba(245,158,11,0.4); transform: translateY(-2px); }
+.btn-marble-outline {
+  font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid rgba(245,158,11,0.2); color: rgba(237,232,223,0.4);
+  padding: 13px 24px; text-decoration: none; border-radius: 2px; transition: all 0.2s;
+}
+.btn-marble-outline:hover { border-color: rgba(245,158,11,0.4); color: rgba(237,232,223,0.7); }
+
+/* Memorial card — marble slab */
+.slab {
+  background: linear-gradient(145deg, #1A1814, #0D0C0B);
+  border: 1px solid rgba(245,158,11,0.12); border-radius: 6px;
+  overflow: hidden; position: relative;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.04) inset;
+}
+/* Marble vein on slab */
+.slab::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent 20%, rgba(245,158,11,0.03) 35%, transparent 50%,
+    rgba(245,158,11,0.02) 65%, transparent 80%);
+  pointer-events: none;
+}
+.slab-img {
+  width: 100%; aspect-ratio: 4/3;
+  background: linear-gradient(145deg, #201D18, #141210);
+  display: flex; align-items: center; justify-content: center; font-size: 5rem; opacity: 0.2;
+  position: relative; border-bottom: 1px solid rgba(245,158,11,0.08);
+}
+.slab-img::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(13,12,11,0.95) 100%); }
+.slab-body { padding: 1.8rem 2rem 2rem; }
+.slab-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 400; margin-bottom: 0.4rem; }
+.slab-dates { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em;
+  color: rgba(245,158,11,0.5); margin-bottom: 1.2rem; }
+.slab-divider { height: 1px; background: linear-gradient(90deg, rgba(245,158,11,0.2), transparent); margin-bottom: 1.2rem; }
+.slab-verse { font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 0.88rem; line-height: 1.65; color: rgba(237,232,223,0.4); margin-bottom: 1.2rem; }
+.slab-stats { display: flex; gap: 1.5rem; }
+.slab-stat label { display: block; font-family: 'Cinzel', serif; font-size: 0.58rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: rgba(237,232,223,0.25); margin-bottom: 0.2rem; }
+.slab-stat span { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: rgba(245,158,11,0.7); }
+
+/* GRID section */
+.grid-section { padding: 5rem 3rem; background: #0A0908; border-top: 1px solid rgba(245,158,11,0.06); }
+.gs-inner { max-width: 1200px; margin: 0 auto; }
+.gs-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
+.gs-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 300; }
+.gs-link { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(245,158,11,0.5); text-decoration: none; transition: color 0.2s; }
+.gs-link:hover { color: #D97706; }
+.gs-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+.gs-card {
+  background: linear-gradient(160deg, #17150F, #0D0C0B);
+  border: 1px solid rgba(245,158,11,0.08); border-radius: 4px; overflow: hidden;
+  transition: all 0.3s; cursor: pointer;
+}
+.gs-card:hover { border-color: rgba(245,158,11,0.2); transform: translateY(-3px); }
+.gs-photo { height: 140px; background: linear-gradient(145deg, #1E1B15, #0D0C0B);
+  display: flex; align-items: center; justify-content: center; font-size: 2.5rem; opacity: 0.3; }
+.gs-info { padding: 0.9rem 1rem; }
+.gs-name { font-family: 'Playfair Display', serif; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.gs-years { font-size: 0.68rem; color: rgba(245,158,11,0.4); font-family: 'Cinzel', serif; letter-spacing: 0.06em; }
+
+footer { border-top: 1px solid rgba(245,158,11,0.06); padding: 2.5rem 3rem;
+  display: flex; align-items: center; justify-content: space-between; background: #080706; }
+.ft-brand { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(237,232,223,0.25); }
+.ft-copy { font-size: 0.75rem; color: rgba(237,232,223,0.15); }
+.ft-flame { color: #92400E; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-09 · Dark Marble</div>
+
+<!-- Marble vein SVG -->
+<svg class="marble-veins" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.06" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice">
+  <path d="M 0,200 Q 200,150 400,250 Q 600,350 800,200 Q 1000,50 1200,180 Q 1400,310 1500,250" fill="none" stroke="#F59E0B" stroke-width="1.5"/>
+  <path d="M -50,500 Q 150,420 350,520 Q 550,620 750,480 Q 950,340 1150,450 Q 1350,560 1500,480" fill="none" stroke="#F59E0B" stroke-width="0.8"/>
+  <path d="M 200,800 Q 350,700 500,750 Q 650,800 800,700 Q 950,600 1100,680" fill="none" stroke="#D97706" stroke-width="0.6"/>
+  <path d="M 1200,0 Q 1100,200 1000,300 Q 900,400 1050,600 Q 1200,800 1100,900" fill="none" stroke="#F59E0B" stroke-width="0.7"/>
+</svg>
+
+<header>
+  <a href="#" class="logo">
+    <div class="logo-col"><span class="logo-col-text">∞</span></div>
+    <span class="logo-name">vspomin<span>.</span>ai</span>
+  </a>
+  <nav>
+    <a href="#">Memorials</a>
+    <a href="#">Gallery</a>
+    <a href="#">Stories</a>
+    <a href="#">About</a>
+    <a href="#" class="nav-cta">Create Memorial</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-ambient"></div>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hl-overline">
+        <div class="hl-rule"></div>
+        <span class="hl-text">Eternal Memory · Premium Memorial</span>
+      </div>
+      <h1 class="hero-title">
+        Carved in<br><em>living memory,</em><br>forever
+      </h1>
+      <p class="hero-para">
+        Like marble — enduring, beautiful, permanent. We preserve the people you love with the reverence they deserve.
+      </p>
+      <div class="hero-cta">
+        <a href="#" class="btn-marble-primary">Create Memorial</a>
+        <a href="#" class="btn-marble-outline">View Gallery</a>
+      </div>
+    </div>
+    <div class="slab">
+      <div class="slab-img">👤</div>
+      <div class="slab-body">
+        <div class="slab-name">Margaret Eleanor Collins</div>
+        <div class="slab-dates">1 March 1942 · 15 November 2023</div>
+        <div class="slab-divider"></div>
+        <div class="slab-verse">"She was warmth itself — every room lighter, every heart fuller for her presence."</div>
+        <div class="slab-stats">
+          <div class="slab-stat"><label>Memories</label><span>47</span></div>
+          <div class="slab-stat"><label>Photos</label><span>23</span></div>
+          <div class="slab-stat"><label>Family</label><span>8</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="grid-section">
+  <div class="gs-inner">
+    <div class="gs-hd">
+      <h2 class="gs-title">Recently preserved</h2>
+      <a href="#" class="gs-link">View all memorials →</a>
+    </div>
+    <div class="gs-grid">
+      <div class="gs-card"><div class="gs-photo">👤</div><div class="gs-info"><div class="gs-name">James Harrington</div><div class="gs-years">1948 — 2024</div></div></div>
+      <div class="gs-card"><div class="gs-photo">👵</div><div class="gs-info"><div class="gs-name">Sofia V. Moretti</div><div class="gs-years">1965 — 2023</div></div></div>
+      <div class="gs-card"><div class="gs-photo">👴</div><div class="gs-info"><div class="gs-name">Thomas W. Shaw</div><div class="gs-years">1941 — 2022</div></div></div>
+      <div class="gs-card"><div class="gs-photo">👤</div><div class="gs-info"><div class="gs-name">Ruth Abigail Moore</div><div class="gs-years">1959 — 2024</div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="ft-brand">vspomin.ai</span>
+  <span class="ft-copy">© 2025 — All rights reserved · Preserving memory</span>
+  <span class="ft-flame">🕯</span>
+</footer>
+
+</body>
+</html>

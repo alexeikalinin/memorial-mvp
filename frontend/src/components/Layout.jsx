@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, SHOW_RU_LANGUAGE_OPTION } from '../contexts/LanguageContext'
+import VerificationBanner from './VerificationBanner'
 import './Layout.css'
 
 function Layout({ children }) {
@@ -65,6 +66,7 @@ function Layout({ children }) {
           </nav>
         </div>
       </header>
+      <VerificationBanner />
       <main className="main">
         {children}
       </main>

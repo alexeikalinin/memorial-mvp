@@ -1,10 +1,14 @@
 """
-Authentication endpoints: register, login, me, Google OAuth.
+Authentication endpoints: register, login, me, Google OAuth,
+email verification, password reset.
 """
+import secrets
 import urllib.parse
+from datetime import datetime, timedelta, timezone
+
 import httpx
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -12,8 +16,13 @@ from sqlalchemy.orm import Session
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.config import settings
 from app.db import get_db
+from app.limiter import limiter
 from app.models import User
-from app.schemas import LoginRequest, Token, TokenWithUser, UserCreate, UserResponse
+from app.schemas import (
+    LoginRequest, PasswordResetConfirm, PasswordResetRequest,
+    Token, TokenWithUser, UserCreate, UserResponse,
+)
+from app.services.email_service import send_password_reset_email, send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -23,27 +32,39 @@ _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     if db.query(User).filter(User.email == user_data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     if db.query(User).filter(User.username == user_data.username).first():
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    verification_token = secrets.token_urlsafe(32)
+    token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
     user = User(
         email=user_data.email,
         username=user_data.username,
         full_name=user_data.full_name,
         hashed_password=hash_password(user_data.password),
+        email_verified=False,
+        verification_token=verification_token,
+        verification_token_expires=token_expires,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Send verification email (non-blocking — failure doesn't break registration)
+    send_verification_email(user.email, verification_token, user.full_name or user.username)
+
     return user
 
 
 @router.post("/token", response_model=Token)
-def login_oauth2(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+def login_oauth2(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """OAuth2 token endpoint. The 'username' field must contain the user's email."""
     user = db.query(User).filter(User.email == form_data.username, User.is_active == True).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -56,7 +77,8 @@ def login_oauth2(form_data: OAuth2PasswordRequestForm = Depends(), db: Session =
 
 
 @router.post("/login", response_model=TokenWithUser)
-def login_json(body: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+def login_json(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     """JSON login endpoint. Returns token + user object."""
     user = db.query(User).filter(User.email == body.email, User.is_active == True).first()
     if not user or not verify_password(body.password, user.hashed_password):
@@ -168,7 +190,110 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
     # 4. Выдать JWT и редиректнуть на фронт
     jwt_token = create_access_token({"sub": str(user.id)})
     frontend_url = settings.FRONTEND_URL or "http://localhost:5173"
+    # Google users are considered verified automatically
+    if not user.email_verified:
+        user.email_verified = True
+        db.commit()
     return RedirectResponse(
         f"{frontend_url}/auth/callback?token={jwt_token}",
         status_code=302,
     )
+
+
+# ── Email Verification ────────────────────────────────────────────────────────
+
+@router.post("/verify-email", status_code=200)
+@limiter.limit("10/minute")
+def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
+    """Verify email address using token from the verification email."""
+    now = datetime.now(timezone.utc)
+    user = db.query(User).filter(User.verification_token == token).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    if user.email_verified:
+        return {"message": "Email already verified"}
+    expires = user.verification_token_expires
+    if expires:
+        # SQLite returns naive datetimes; make comparison tz-safe
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        if expires < now:
+            raise HTTPException(status_code=400, detail="Verification token has expired. Please request a new one.")
+
+    user.email_verified = True
+    user.verification_token = None
+    user.verification_token_expires = None
+    db.commit()
+    return {"message": "Email verified successfully"}
+
+
+@router.post("/resend-verification", status_code=200)
+@limiter.limit("3/minute")
+def resend_verification(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Resend email verification link to the current user."""
+    if current_user.email_verified:
+        return {"message": "Email already verified"}
+
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc) + timedelta(hours=24)
+    current_user.verification_token = token
+    current_user.verification_token_expires = expires
+    db.commit()
+
+    send_verification_email(current_user.email, token, current_user.full_name or current_user.username)
+    return {"message": "Verification email sent"}
+
+
+# ── Password Reset ────────────────────────────────────────────────────────────
+
+@router.post("/password-reset", status_code=200)
+@limiter.limit("5/minute")
+def request_password_reset(
+    request: Request,
+    body: PasswordResetRequest,
+    db: Session = Depends(get_db),
+):
+    """Request a password reset link. Always returns 200 to prevent email enumeration."""
+    user = db.query(User).filter(User.email == body.email, User.is_active == True).first()
+    if user:
+        token = secrets.token_urlsafe(32)
+        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        user.password_reset_token = token
+        user.password_reset_token_expires = expires
+        db.commit()
+        send_password_reset_email(user.email, token, user.full_name or user.username)
+    # Always return 200 regardless (security: don't reveal if email exists)
+    return {"message": "If this email is registered, you will receive a password reset link shortly."}
+
+
+@router.post("/password-reset/confirm", status_code=200)
+@limiter.limit("10/minute")
+def confirm_password_reset(
+    request: Request,
+    body: PasswordResetConfirm,
+    db: Session = Depends(get_db),
+):
+    """Set a new password using the reset token."""
+    now = datetime.now(timezone.utc)
+    user = db.query(User).filter(User.password_reset_token == body.token).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    reset_expires = user.password_reset_token_expires
+    if reset_expires:
+        # SQLite returns naive datetimes; make comparison tz-safe
+        if reset_expires.tzinfo is None:
+            reset_expires = reset_expires.replace(tzinfo=timezone.utc)
+        if reset_expires < now:
+            raise HTTPException(status_code=400, detail="Reset token has expired. Please request a new password reset.")
+
+    user.hashed_password = hash_password(body.new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires = None
+    db.commit()
+    return {"message": "Password updated successfully"}

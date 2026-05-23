@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>07 — Warm Fog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2EDE6;
+    --surface: #F9F5EF;
+    --surface2: #FFFFFF;
+    --text: #282016;
+    --text-muted: #7A6858;
+    --accent: #9B7A54;
+    --accent-dark: #6B5038;
+    --border: #E0D8CC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 3rem; height: 60px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .logo { font-family: 'Instrument Serif', serif; font-size: 1.3rem; letter-spacing: -0.01em; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2.5rem; }
+  .nav-links a { font-size: 0.75rem; color: var(--text-muted); text-decoration: none; font-weight: 500; }
+  .nav-cta { padding: 0.45rem 1.1rem; background: var(--accent-dark); border-radius: 6px; font-size: 0.82rem; font-weight: 500; color: #F9F5EF; text-decoration: none; }
+
+  .hero { display: grid; grid-template-columns: 3fr 2fr; gap: 4rem; align-items: center; max-width: 1100px; margin: 0 auto; padding: 5rem 3rem; }
+  .kicker { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.5rem; }
+  .kicker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .kicker-text { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .hero h1 { font-family: 'Instrument Serif', serif; font-size: 3.2rem; font-weight: 400; line-height: 1.12; margin-bottom: 1.5rem; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 0.95rem; line-height: 1.75; color: var(--text-muted); margin-bottom: 2rem; max-width: 40ch; }
+  .btn-row { display: flex; align-items: center; gap: 0.75rem; }
+  .btn { padding: 0.7rem 1.6rem; background: var(--accent-dark); border-radius: 6px; font-size: 0.88rem; font-weight: 500; color: #F9F5EF; text-decoration: none; }
+  .btn-text { font-size: 0.82rem; color: var(--text-muted); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .stat-num { font-family: 'Instrument Serif', serif; font-size: 2rem; color: var(--accent); margin-bottom: 0.2rem; }
+  .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+  .stat-card.featured { grid-column: 1 / -1; background: var(--accent-dark); border-color: transparent; }
+  .stat-card.featured .stat-num { color: #F9F5EF; font-size: 1.1rem; font-family: 'Instrument Serif', serif; font-style: italic; line-height: 1.5; }
+  .stat-card.featured .stat-label { color: rgba(249,245,239,0.6); }
+
+  .cards-section { background: var(--surface); border-top: 1px solid var(--border); padding: 3.5rem 3rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: baseline; max-width: 1100px; margin: 0 auto 1.75rem; }
+  .section-title { font-family: 'Instrument Serif', serif; font-size: 1.4rem; }
+  .section-count { font-size: 0.78rem; color: var(--text-muted); }
+  .card-list { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.65rem; }
+  .mem-card { display: flex; align-items: center; gap: 1.25rem; padding: 1rem 1.25rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; }
+  .avatar { width: 44px; height: 44px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', serif; color: #F9F5EF; flex-shrink: 0; }
+  .mem-info { flex: 1; }
+  .mem-name { font-size: 0.95rem; font-weight: 500; margin-bottom: 0.1rem; }
+  .mem-sub { font-size: 0.78rem; color: var(--text-muted); }
+  .mem-dates { font-size: 0.78rem; color: var(--accent); }
+  .mem-count { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">vspomin<span>.ai</span></div>
+  <div class="nav-links"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nav-cta">Create memorial</a>
+</nav>
+<div class="hero">
+  <div>
+    <div class="kicker"><span class="kicker-dot"></span><span class="kicker-text">Digital Memorial</span></div>
+    <h1>We preserve the person,<br><em>not just the photographs</em></h1>
+    <p>Create a lasting digital memory of your loved one — with voice, stories and a family tree.</p>
+    <div class="btn-row">
+      <a href="#" class="btn">Create memorial</a>
+      <span class="btn-text">Free to start · no card</span>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card featured">
+      <div class="stat-num">"She kept everyone's birthdays in a green leather book…"</div>
+      <div class="stat-label">Anna Petrova · 1947–2018 · 12 memories</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">12</div>
+      <div class="stat-label">memories saved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">34</div>
+      <div class="stat-label">photos & files</div>
+    </div>
+  </div>
+</div>
+<div class="cards-section">
+  <div class="section-header">
+    <div class="section-title">Memorials</div>
+    <div class="section-count">4 memory pages</div>
+  </div>
+  <div class="card-list">
+    <div class="mem-card">
+      <div class="avatar">AP</div>
+      <div class="mem-info"><div class="mem-name">Anna Petrova</div><div class="mem-sub">Lifelong teacher, gardener</div></div>
+      <div style="text-align:right"><div class="mem-dates">1947 — 2018</div><div class="mem-count">12 memories</div></div>
+    </div>
+    <div class="mem-card">
+      <div class="avatar" style="background:#6B5038">DP</div>
+      <div class="mem-info"><div class="mem-name">Dmitri Petrov</div><div class="mem-sub">Father, engineer</div></div>
+      <div style="text-align:right"><div class="mem-dates">1942 — 2021</div><div class="mem-count">8 memories</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

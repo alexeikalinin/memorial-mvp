@@ -1,4 +1,4 @@
-# Полный план тестирования — Memorial MVP
+# Полный план тестирования — vspomin.ai
 > Создан: 2026-04-12 | Охват: backend (pytest) + E2E (Playwright)
 
 ---

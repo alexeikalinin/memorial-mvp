@@ -2,6 +2,7 @@
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
+slowapi==0.1.9
 
 # Database
 sqlalchemy==2.0.23
@@ -50,3 +51,6 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 
 stripe==11.5.0
+
+# Email
+resend==2.10.0

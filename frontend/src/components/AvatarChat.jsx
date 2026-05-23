@@ -67,6 +67,9 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
   const { user } = useAuth()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
+
+  // Family RAG is a paid feature (Plus / Pro). Free users see a locked toggle.
+  const hasFamilyRag = user && ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan)
   const [syncing, setSyncing] = useState(false)
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [voiceName, setVoiceName] = useState('')
@@ -265,11 +268,22 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
       setMessages((prev) => [...prev, assistantMessage])
     } catch (err) {
       console.error('Chat error:', err)
-      const errorMessage = {
-        role: 'error',
-        text: err.response?.data?.detail || err.message || t('chat.chat_error'),
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || err.message || t('chat.chat_error')
+      // 402 = paid feature — show upgrade prompt, not a generic error
+      if (status === 402) {
+        if (includeFamilyMemories) {
+          setIncludeFamilyMemories(false)
+        }
+        const errorMessage = {
+          role: 'error',
+          text: t('chat.family_upgrade_prompt'),
+        }
+        setMessages((prev) => [...prev, errorMessage])
+      } else {
+        const errorMessage = { role: 'error', text: detail }
+        setMessages((prev) => [...prev, errorMessage])
       }
-      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setLoading(false)
     }
@@ -375,19 +389,32 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
             />
             {t('chat.audio_label')}
           </label>
-          <label className="audio-toggle family-memories-toggle">
+          <label
+            className={`audio-toggle family-memories-toggle${!hasFamilyRag ? ' feature-locked' : ''}`}
+            title={!hasFamilyRag ? t('chat.family_locked_tooltip') : undefined}
+          >
             <input
               type="checkbox"
               checked={includeFamilyMemories}
-              onChange={(e) => setIncludeFamilyMemories(e.target.checked)}
+              disabled={!hasFamilyRag}
+              onChange={(e) => {
+                if (!hasFamilyRag) return
+                setIncludeFamilyMemories(e.target.checked)
+              }}
             />
             {t('chat.family_label')}
-            <span className="info-trigger" title={t('chat.family_tooltip_title')} tabIndex={0}>?</span>
-            <span className="info-tooltip">
-              {t('chat.family_tooltip_on')}
-              <br /><br />
-              {t('chat.family_tooltip_off')}
-            </span>
+            {hasFamilyRag ? (
+              <>
+                <span className="info-trigger" title={t('chat.family_tooltip_title')} tabIndex={0}>?</span>
+                <span className="info-tooltip">
+                  {t('chat.family_tooltip_on')}
+                  <br /><br />
+                  {t('chat.family_tooltip_off')}
+                </span>
+              </>
+            ) : (
+              <span className="plan-badge">Plus</span>
+            )}
           </label>
           <button
             className="btn-clear-history"

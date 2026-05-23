@@ -1,4 +1,4 @@
-# Roadmap — Memorial MVP → Product
+# Roadmap — vspomin.ai → Product
 
 > Обновлено: 2026-04-20  
 > Статусы: `todo` | `in-progress` | `done` | `blocked`  

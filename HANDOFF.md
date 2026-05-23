@@ -1,12 +1,21 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-04-30 20:00
+> Автообновлено: 2026-05-23 03:51
 > Ветка: main
 
 ## Последний коммит
-a59e641 fix: tutorial CSS colors explicit + step 3 scroll + step 5 generic text
+de96dfa feat: remove demo panel from home — link only
 
 ## Изменённые файлы (uncommitted)
+- .claude/commands/check-quotas.md
+- .claude/commands/handoff.md
+- .claude/commands/run-tests.md
+- .claude/commands/test-and-fix.md
+- ENVIRONMENT.md
 - HANDOFF.md
+- INVESTOR_DEMO_PLAN.md
+- README.md
+- SESSION_LOG.md
+- TESTING_GUIDE.md
 
 ## Новые файлы (untracked)
 - .agents/skills/stripe-best-practices/SKILL.md
@@ -16,9 +25,9 @@ a59e641 fix: tutorial CSS colors explicit + step 3 scroll + step 5 generic text
 - .agents/skills/stripe-best-practices/references/security.md
 
 ## Последние 3 коммита
-a59e641 fix: tutorial CSS colors explicit + step 3 scroll + step 5 generic text
-5a8553b feat: demo tutorial — 5-step onboarding across DemoPage and MemorialPublic
-234e5a4 feat: demo page fully working — landing CTA + production DB fix
+de96dfa feat: remove demo panel from home — link only
+7da7bca feat: hide demo memorials once user has own memorials
+8c39b97 fix: hide ElevenLabs quota error for unauthenticated users
 
 ## Запуск стека
 ```bash
@@ -27,12 +36,4 @@ cd frontend && npm run dev
 ```
 
 ## Следующий шаг
-- Полный регресс `pytest` (192 теста)
-- E2E с живым стеком
-- Возможно: кнопка "Restart tutorial" в демо-баннере
-
-## Критический контекст (сессия 2026-05-02)
-- `--surface: #FFFFFF` в `:root` — overlay/hint компоненты обязаны использовать явные цвета, не CSS vars
-- 2 живых пользователя: verameeva77@mail.ru, onemmanwarrior@gmail.com (оба free, 0 мемориалов, апрель 2026)
-- Демо-аккаунт ID=1 (is_demo=True) — владелец 43 мемориалов
-- SESSION_LOG.md — последняя запись: [2026-05-02] Demo tutorial
+См. SESSION_LOG.md — последняя запись

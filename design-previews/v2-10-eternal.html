@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>10 — Eternal (Ultra Premium)</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#08050A; color:#EDE0D4; min-height:100vh; overflow-x:hidden; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -5%, rgba(109,40,217,0.15) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 50%, rgba(245,158,11,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 5% 85%, rgba(124,58,237,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(44,31,20,0.8) 0%, transparent 60%);
+}
+
+/* TOP GRADIENT LINE */
+body::after { content:''; position:fixed; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent 5%,#7C3AED 35%,#F59E0B 65%,transparent 95%); pointer-events:none; z-index:200; }
+
+nav { display:flex; align-items:center; justify-content:space-between; padding:0 3rem; height:70px;
+  background:rgba(8,5,10,0.85); border-bottom:1px solid rgba(124,58,237,0.12);
+  backdrop-filter:blur(20px); position:sticky; top:0; z-index:100; }
+.lw { display:flex; align-items:center; gap:0.75rem; }
+.li { width:38px; height:38px; object-fit:contain; }
+.lt { font-family:'Cinzel',serif; font-size:1.05rem; letter-spacing:0.06em; color:#EDE0D4; }
+.lt span { background:linear-gradient(90deg,#7C3AED,#F59E0B); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.nl { display:flex; gap:2.5rem; }
+.nl a { font-size:0.72rem; color:rgba(237,224,212,0.4); text-decoration:none; letter-spacing:0.04em; }
+.nl a:hover { color:rgba(237,224,212,0.8); }
+.nav-right { display:flex; align-items:center; gap:0.85rem; }
+.nc-ghost { padding:0.45rem 1.1rem; border:1px solid rgba(124,58,237,0.35); border-radius:6px; font-size:0.8rem; color:#C4B5FD; text-decoration:none; }
+.nc-filled { padding:0.48rem 1.2rem; background:linear-gradient(135deg,#7C3AED,#6D28D9); border-radius:6px; font-size:0.8rem; font-weight:500; color:#fff; text-decoration:none; box-shadow:0 4px 20px rgba(124,58,237,0.35); }
+
+/* HERO */
+.hero { position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:7rem 3rem 5rem; }
+.hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:7rem; align-items:center; }
+
+.hl {}
+.live-badge { display:inline-flex; align-items:center; gap:0.5rem; padding:0.3rem 0.9rem; background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.25); border-radius:20px; font-size:0.65rem; color:#C4B5FD; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:2rem; }
+.lb-dot { width:6px; height:6px; border-radius:50%; background:#7C3AED; animation:pulse 2s infinite; box-shadow:0 0 6px #7C3AED; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+h1 { font-family:'Playfair Display',serif; font-size:4rem; font-weight:400; line-height:1.07; margin-bottom:1.75rem; }
+h1 em { font-style:italic; background:linear-gradient(135deg,#F59E0B,#D97706); -webkit-background-clip:text; -webkit-text-fill-color:transparent; display:block; }
+.hp { font-size:0.93rem; line-height:1.9; color:rgba(237,224,212,0.45); max-width:40ch; margin-bottom:2.5rem; font-weight:300; }
+.btn-group { display:flex; gap:0.85rem; align-items:center; }
+.b1 { padding:0.85rem 2.2rem; background:linear-gradient(135deg,#F59E0B,#D97706); color:#08050A; border-radius:8px; font-size:0.88rem; font-weight:600; text-decoration:none; box-shadow:0 8px 28px rgba(245,158,11,0.3); }
+.b2 { padding:0.85rem 1.75rem; background:rgba(124,58,237,0.15); border:1px solid rgba(124,58,237,0.3); color:#C4B5FD; border-radius:8px; font-size:0.88rem; text-decoration:none; }
+
+/* ULTRA GLASS CARD */
+.gc {
+  position:relative;
+  background:linear-gradient(135deg,rgba(30,15,50,0.7),rgba(44,31,20,0.5));
+  border:1px solid rgba(124,58,237,0.2);
+  border-radius:24px; padding:2rem;
+  backdrop-filter:blur(24px);
+  box-shadow:0 0 100px rgba(124,58,237,0.1), 0 30px 80px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  overflow:hidden;
+}
+.gc::before { content:''; position:absolute; top:-50%; right:-30%; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle,rgba(245,158,11,0.06) 0%,transparent 70%); pointer-events:none; }
+.gc::after { content:''; position:absolute; bottom:-40%; left:-20%; width:250px; height:250px; border-radius:50%; background:radial-gradient(circle,rgba(124,58,237,0.08) 0%,transparent 70%); pointer-events:none; }
+
+.gc-head { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; position:relative; z-index:1; }
+.gc-av { width:54px; height:54px; border-radius:14px;
+  background:linear-gradient(135deg,#7C3AED,#F59E0B);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Playfair Display',serif; color:#fff; font-size:1.2rem;
+  box-shadow:0 4px 20px rgba(124,58,237,0.5); }
+.gc-name { font-family:'Playfair Display',serif; font-size:1.15rem; margin-bottom:0.25rem; }
+.gc-date { font-size:0.72rem; }
+.gc-date-y1 { color:#7C3AED; }
+.gc-date-y2 { color:#F59E0B; }
+.gc-sep { height:1px; background:linear-gradient(90deg,rgba(124,58,237,0.3),rgba(245,158,11,0.2),transparent); margin:1.25rem 0; position:relative; z-index:1; }
+.gc-q { font-family:'Playfair Display',serif; font-style:italic; font-size:0.98rem; line-height:1.72; color:rgba(237,224,212,0.6); margin-bottom:1.5rem; position:relative; z-index:1; }
+.gc-foot { display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1; }
+.gc-stats { display:flex; gap:2rem; }
+.gc-sv { font-family:'Playfair Display',serif; font-size:1.5rem; color:#F59E0B; display:block; line-height:1; }
+.gc-sl { font-size:0.62rem; color:rgba(237,224,212,0.3); text-transform:uppercase; letter-spacing:0.08em; }
+.gc-badge { display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.85rem; background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(109,40,217,0.15)); border:1px solid rgba(124,58,237,0.35); border-radius:20px; font-size:0.65rem; color:#C4B5FD; }
+.gc-badge-dot { width:5px; height:5px; border-radius:50%; background:#7C3AED; }
+
+/* MEMORIALS */
+.msection { position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:2rem 3rem 5rem; }
+.msh { display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; }
+.mst { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:400; }
+.msl { flex:1; height:1px; background:linear-gradient(90deg,rgba(124,58,237,0.15),rgba(245,158,11,0.08),transparent); }
+.msc { font-size:0.73rem; color:rgba(237,224,212,0.25); }
+.mlist { display:flex; flex-direction:column; gap:0.75rem; }
+.mr {
+  display:flex; align-items:center; gap:1.25rem;
+  padding:1.1rem 1.5rem;
+  background:rgba(20,10,32,0.5);
+  border:1px solid rgba(124,58,237,0.1);
+  border-radius:14px; backdrop-filter:blur(8px);
+  border-left:3px solid transparent;
+  transition:all 0.2s;
+}
+.mr:hover { border-left-color:#7C3AED; background:rgba(20,10,32,0.8); box-shadow:0 4px 24px rgba(124,58,237,0.08); }
+.mav { width:46px; height:46px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:1rem; }
+.mn { font-size:0.95rem; font-weight:500; }
+.ms { font-size:0.76rem; color:rgba(237,224,212,0.4); margin-top:0.1rem; }
+.md { font-size:0.79rem; }
+.mc { font-size:0.72rem; color:rgba(237,224,212,0.3); margin-top:0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="lw"><img src="logo.png" class="li" alt=""><div class="lt">vspomin<span>.ai</span></div></div>
+  <div class="nl"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public page</a></div>
+  <div class="nav-right">
+    <a href="#" class="nc-ghost">Sign in</a>
+    <a href="#" class="nc-filled">Create memorial</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="live-badge"><span class="lb-dot"></span>AI-powered · Digital Memorial</div>
+      <h1>We preserve the person,<em>not just the photographs</em></h1>
+      <p class="hp">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives across generations.</p>
+      <div class="btn-group">
+        <a href="#" class="b1">Create memorial</a>
+        <a href="#" class="b2">Free to start · no card</a>
+      </div>
+    </div>
+    <div>
+      <div class="gc">
+        <div class="gc-head">
+          <div class="gc-av">AP</div>
+          <div>
+            <div class="gc-name">Anna Petrova</div>
+            <div class="gc-date"><span class="gc-date-y1">1947</span> <span style="color:rgba(237,224,212,0.3)">—</span> <span class="gc-date-y2">2018</span></div>
+          </div>
+        </div>
+        <div class="gc-sep"></div>
+        <div class="gc-q">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring without fail."</div>
+        <div class="gc-foot">
+          <div class="gc-stats">
+            <div><div class="gc-sv">12</div><div class="gc-sl">memories</div></div>
+            <div><div class="gc-sv">34</div><div class="gc-sl">files</div></div>
+          </div>
+          <div class="gc-badge"><span class="gc-badge-dot"></span>AI avatar active</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="msection">
+  <div class="msh"><div class="mst">Memorials</div><div class="msl"></div><div class="msc">4 memory pages</div></div>
+  <div class="mlist">
+    <div class="mr">
+      <div class="mav" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#08050A">AP</div>
+      <div><div class="mn">Anna Petrova</div><div class="ms">Lifelong teacher, gardener</div></div>
+      <div style="margin-left:auto;text-align:right"><div class="md" style="color:#F59E0B">1947 — 2018</div><div class="mc">12 memories · AI active</div></div>
+    </div>
+    <div class="mr">
+      <div class="mav" style="background:linear-gradient(135deg,#7C3AED,#6D28D9);color:#fff">DP</div>
+      <div><div class="mn">Dmitri Petrov</div><div class="ms">Father, engineer</div></div>
+      <div style="margin-left:auto;text-align:right"><div class="md" style="color:#A78BFA">1942 — 2021</div><div class="mc">8 memories</div></div>
+    </div>
+    <div class="mr">
+      <div class="mav" style="background:linear-gradient(135deg,#92400E,#78350F);color:#EDE0D4">MV</div>
+      <div><div class="mn">Maria Volkova</div><div class="ms">Artist, poet</div></div>
+      <div style="margin-left:auto;text-align:right"><div class="md" style="color:#D97706">1938 — 2015</div><div class="mc">21 memories · AI active</div></div>
+    </div>
+    <div class="mr" style="border-style:dashed;border-color:rgba(245,158,11,0.15);justify-content:center;cursor:pointer">
+      <span style="font-size:1.2rem;color:rgba(245,158,11,0.4)">+</span>
+      <span style="font-size:0.85rem;color:rgba(245,158,11,0.4)">Create new memorial</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

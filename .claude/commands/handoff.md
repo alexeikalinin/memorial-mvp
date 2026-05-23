@@ -22,7 +22,7 @@
 **Шаблон HANDOFF.md:**
 
 ```markdown
-# Handoff — Memorial MVP
+# Handoff — vspomin.ai
 > Сгенерировано: {дата и время}
 > Для продолжения в: Cursor IDE
 

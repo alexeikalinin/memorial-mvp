@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>07 — Aurum</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#0A0705; color:#EDE0C8; min-height:100vh; }
+/* Subtle gold top gradient */
+body::after { content:''; position:fixed; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,#F59E0B,#D97706,transparent); pointer-events:none; }
+
+nav { display:flex; align-items:center; justify-content:space-between; padding:0 3rem; height:64px; border-bottom:1px solid rgba(245,158,11,0.08); }
+.lw { display:flex; align-items:center; gap:0.65rem; }
+.li { width:30px; height:30px; object-fit:contain; }
+.lt { font-size:1.1rem; font-weight:300; letter-spacing:0.06em; }
+.lt strong { font-weight:500; color:#F59E0B; }
+.nl { display:flex; gap:3rem; }
+.nl a { font-size:0.72rem; color:rgba(237,224,200,0.35); text-decoration:none; letter-spacing:0.06em; }
+.nc { padding:0.45rem 1.2rem; background:transparent; border:1px solid rgba(245,158,11,0.4); color:#F59E0B; font-size:0.8rem; text-decoration:none; border-radius:4px; }
+
+/* LARGE HERO */
+.hero { max-width:1300px; margin:0 auto; padding:8rem 3rem 5rem; display:grid; grid-template-columns:1fr 1fr; gap:8rem; align-items:center; }
+.hl { }
+.number { font-family:'Playfair Display',serif; font-size:9rem; font-weight:700; line-height:1; color:rgba(245,158,11,0.06); margin-bottom:-3.5rem; }
+.el { font-size:0.62rem; letter-spacing:0.22em; text-transform:uppercase; color:rgba(245,158,11,0.6); margin-bottom:1.5rem; display:flex; align-items:center; gap:0.6rem; }
+.el-line { width:24px; height:1px; background:rgba(245,158,11,0.4); }
+h1 { font-family:'Playfair Display',serif; font-size:4.2rem; font-weight:400; line-height:1.06; margin-bottom:2rem; }
+h1 em { font-style:italic; color:#F59E0B; display:block; }
+.hp { font-size:0.9rem; line-height:1.9; color:rgba(237,224,200,0.4); max-width:38ch; margin-bottom:3rem; font-weight:300; letter-spacing:0.01em; }
+.btn { display:inline-block; padding:0.9rem 2.8rem; background:linear-gradient(135deg,#F59E0B,#D97706); color:#0A0705; font-family:'Playfair Display',serif; font-size:0.9rem; letter-spacing:0.04em; border-radius:4px; text-decoration:none; box-shadow:0 8px 32px rgba(245,158,11,0.25); }
+.ns { display:block; margin-top:1.25rem; font-size:0.72rem; color:rgba(237,224,200,0.25); letter-spacing:0.04em; }
+
+/* RIGHT: stat blocks */
+.stat-panel { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.stat-b { padding:1.75rem; border:1px solid rgba(245,158,11,0.1); border-radius:12px; }
+.stat-b.featured { grid-column:1/-1; background:rgba(245,158,11,0.06); border-color:rgba(245,158,11,0.2); }
+.sb-num { font-family:'Playfair Display',serif; font-size:2.5rem; color:#F59E0B; line-height:1; margin-bottom:0.3rem; }
+.sb-label { font-size:0.68rem; color:rgba(237,224,200,0.35); letter-spacing:0.1em; text-transform:uppercase; }
+.sb-quote { font-family:'Playfair Display',serif; font-style:italic; font-size:1rem; line-height:1.65; color:rgba(237,224,200,0.5); margin-bottom:0.75rem; }
+.sb-author { font-size:0.72rem; color:#F59E0B; letter-spacing:0.04em; }
+
+.sep { height:1px; background:rgba(245,158,11,0.06); margin:0 3rem 3rem; }
+.section { max-width:1300px; margin:0 auto; padding:0 3rem 5rem; }
+.sh { display:flex; align-items:center; gap:2rem; margin-bottom:2rem; }
+.st { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:400; }
+.sl { flex:1; height:1px; background:rgba(245,158,11,0.06); }
+.sc { font-size:0.72rem; color:rgba(237,224,200,0.25); }
+.mlist { display:flex; flex-direction:column; gap:0.6rem; }
+.mr { display:flex; align-items:center; gap:1.5rem; padding:1.1rem 1.5rem; border:1px solid rgba(245,158,11,0.07); border-radius:10px; border-left:2px solid transparent; transition:all 0.2s; }
+.mr:hover { border-left-color:#F59E0B; background:rgba(245,158,11,0.03); }
+.mav { width:44px; height:44px; border-radius:8px; background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1)); border:1px solid rgba(245,158,11,0.15); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; color:#F59E0B; }
+.mn { font-size:0.93rem; font-weight:400; }
+.ms { font-size:0.75rem; color:rgba(237,224,200,0.35); margin-top:0.1rem; }
+.md { font-size:0.78rem; color:#F59E0B; letter-spacing:0.04em; }
+.mc { font-size:0.7rem; color:rgba(237,224,200,0.25); }
+</style>
+</head>
+<body>
+<nav>
+  <div class="lw"><img src="logo.png" class="li" alt=""><div class="lt">vspomin<strong>.ai</strong></div></div>
+  <div class="nl"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nc">Create memorial</a>
+</nav>
+<div class="hero">
+  <div class="hl">
+    <div class="number">∞</div>
+    <div class="el"><span class="el-line"></span>Digital Memorial Service</div>
+    <h1>We preserve<br>the person,<em>not just<br>the photographs</em></h1>
+    <p class="hp">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives forever.</p>
+    <a href="#" class="btn">Create memorial</a>
+    <span class="ns">Free to start · no card required</span>
+  </div>
+  <div class="stat-panel">
+    <div class="stat-b featured">
+      <div class="sb-quote">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+      <div class="sb-author">Anna Petrova · 1947 — 2018</div>
+    </div>
+    <div class="stat-b"><div class="sb-num">12</div><div class="sb-label">Memories</div></div>
+    <div class="stat-b"><div class="sb-num">34</div><div class="sb-label">Files</div></div>
+    <div class="stat-b"><div class="sb-num">AI</div><div class="sb-label">Avatar active</div></div>
+    <div class="stat-b"><div class="sb-num">4</div><div class="sb-label">Family members</div></div>
+  </div>
+</div>
+<div class="sep"></div>
+<div class="section">
+  <div class="sh"><div class="st">Memorials</div><div class="sl"></div><div class="sc">4 memory pages</div></div>
+  <div class="mlist">
+    <div class="mr"><div class="mav">AP</div><div><div class="mn">Anna Petrova</div><div class="ms">Lifelong teacher, gardener</div></div><div style="margin-left:auto;text-align:right"><div class="md">1947 — 2018</div><div class="mc">12 memories</div></div></div>
+    <div class="mr"><div class="mav" style="background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(109,40,217,0.1));border-color:rgba(124,58,237,0.2);color:#C4B5FD">DP</div><div><div class="mn">Dmitri Petrov</div><div class="ms">Father, engineer</div></div><div style="margin-left:auto;text-align:right"><div class="md" style="color:#C4B5FD">1942 — 2021</div><div class="mc">8 memories</div></div></div>
+    <div class="mr"><div class="mav">MV</div><div><div class="mn">Maria Volkova</div><div class="ms">Artist, poet</div></div><div style="margin-left:auto;text-align:right"><div class="md">1938 — 2015</div><div class="mc">21 memories</div></div></div>
+  </div>
+</div>
+</body>
+</html>

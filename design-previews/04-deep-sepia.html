@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>04 — Deep Sepia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1A1310;
+    --surface: #261C14;
+    --surface2: #302318;
+    --text: #EDE0CC;
+    --text-muted: #9A8060;
+    --accent: #C8944A;
+    --border: rgba(237,224,204,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 3rem; height: 60px; background: rgba(26,19,16,0.95); border-bottom: 1px solid var(--border); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 10; }
+  .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; letter-spacing: 0.05em; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2.5rem; }
+  .nav-links a { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); text-decoration: none; }
+  .nav-cta { font-size: 0.8rem; padding: 0.4rem 1rem; border: 1px solid var(--accent); border-radius: 4px; color: var(--accent); text-decoration: none; }
+
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; max-width: 1100px; margin: 0 auto; padding: 6rem 3rem; }
+  .hero-eyebrow { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; }
+  .hero-eyebrow::before { content: ''; width: 2.5rem; height: 1px; background: var(--accent); display: block; opacity: 0.6; }
+  .hero h1 { font-family: 'Cormorant Garamond', serif; font-size: 3.8rem; font-weight: 300; line-height: 1.08; margin-bottom: 1.5rem; letter-spacing: 0.01em; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 0.95rem; line-height: 1.8; color: var(--text-muted); margin-bottom: 2.5rem; max-width: 36ch; }
+  .btn { display: inline-block; padding: 0.7rem 2rem; background: var(--accent); color: #1A1310; border-radius: 4px; font-size: 0.85rem; font-weight: 500; text-decoration: none; letter-spacing: 0.04em; }
+  .btn-sub { display: block; margin-top: 1rem; font-size: 0.78rem; color: var(--text-muted); }
+
+  .float-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; box-shadow: 0 20px 80px rgba(0,0,0,0.6); }
+  .fc-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .fc-avatar { width: 46px; height: 46px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), #8B6340); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; color: #1A1310; font-size: 1.1rem; }
+  .fc-name { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 400; color: var(--text); }
+  .fc-date { font-size: 0.75rem; color: var(--accent); margin-top: 0.1rem; }
+  .fc-quote { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 300; font-style: italic; line-height: 1.7; color: var(--text-muted); margin-bottom: 1.25rem; }
+  .fc-footer { display: flex; gap: 1.5rem; font-size: 0.72rem; color: var(--text-muted); }
+
+  .cards-section { background: var(--surface); border-top: 1px solid var(--border); padding: 3.5rem 3rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: baseline; max-width: 1100px; margin: 0 auto 1.75rem; }
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 300; letter-spacing: 0.03em; }
+  .section-count { font-size: 0.78rem; color: var(--text-muted); }
+  .card-list { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.6rem; }
+  .mem-card { display: flex; align-items: center; gap: 1.25rem; padding: 1rem 1.25rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; border-left: 2px solid transparent; transition: border-left-color 0.2s; }
+  .mem-card:hover { border-left-color: var(--accent); }
+  .avatar { width: 44px; height: 44px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), #8B6340); display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 1rem; color: #1A1310; flex-shrink: 0; }
+  .mem-info { flex: 1; }
+  .mem-name { font-size: 0.95rem; font-weight: 500; color: var(--text); margin-bottom: 0.1rem; }
+  .mem-sub { font-size: 0.78rem; color: var(--text-muted); }
+  .mem-dates { font-size: 0.78rem; color: var(--accent); }
+  .mem-count { font-size: 0.73rem; color: var(--text-muted); margin-top: 0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">vspomin<span>.ai</span></div>
+  <div class="nav-links"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nav-cta">Create memorial</a>
+</nav>
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow">Digital Memorial</div>
+    <h1>We preserve<br>the person,<br><em>not just<br>the photographs</em></h1>
+    <p>Create a lasting digital memory of your loved one — with voice, stories and a family tree.</p>
+    <a href="#" class="btn">Create memorial</a>
+    <span class="btn-sub">Free to start · no card required</span>
+  </div>
+  <div>
+    <div class="float-card">
+      <div class="fc-header">
+        <div class="fc-avatar">AP</div>
+        <div><div class="fc-name">Anna Petrova</div><div class="fc-date">1947 — 2018</div></div>
+      </div>
+      <div class="fc-quote">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+      <div class="fc-footer"><span>12 memories</span><span>34 files</span><span>· ai avatar</span></div>
+    </div>
+  </div>
+</div>
+<div class="cards-section">
+  <div class="section-header">
+    <div class="section-title">Memorials</div>
+    <div class="section-count">4 memory pages</div>
+  </div>
+  <div class="card-list">
+    <div class="mem-card">
+      <div class="avatar">AP</div>
+      <div class="mem-info"><div class="mem-name">Anna Petrova</div><div class="mem-sub">Lifelong teacher, gardener</div></div>
+      <div style="text-align:right"><div class="mem-dates">1947 — 2018</div><div class="mem-count">12 memories</div></div>
+    </div>
+    <div class="mem-card">
+      <div class="avatar" style="background:linear-gradient(135deg,#8B6340,#5C3D20)">DP</div>
+      <div class="mem-info"><div class="mem-name">Dmitri Petrov</div><div class="mem-sub">Father, engineer</div></div>
+      <div style="text-align:right"><div class="mem-dates">1942 — 2021</div><div class="mem-count">8 memories</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

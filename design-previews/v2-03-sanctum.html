@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>03 — Sanctum</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0F0A12;
+  color: #EDE0D4;
+  min-height: 100vh;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 70%, rgba(245,158,11,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 40% at 15% 90%, rgba(109,40,217,0.06) 0%, transparent 50%);
+}
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 3rem; height: 66px;
+  border-bottom: 1px solid rgba(124,58,237,0.15);
+  background: rgba(15,10,18,0.85); backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo-wrap { display: flex; align-items: center; gap: 0.7rem; }
+.logo-img { width: 34px; height: 34px; object-fit: contain; }
+.logo-text { font-size: 1.1rem; font-weight: 500; }
+.logo-text span { background: linear-gradient(90deg, #7C3AED, #F59E0B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.nav-links { display: flex; gap: 2.5rem; }
+.nav-links a { font-size: 0.75rem; color: rgba(237,224,212,0.4); text-decoration: none; }
+.nav-cta {
+  padding: 0.48rem 1.2rem;
+  background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(245,158,11,0.15));
+  border: 1px solid rgba(124,58,237,0.35);
+  border-radius: 8px; font-size: 0.82rem; color: #C4B5FD;
+  text-decoration: none;
+}
+
+.hero {
+  position: relative; z-index: 1;
+  max-width: 1200px; margin: 0 auto;
+  padding: 6.5rem 3rem 4rem;
+  display: grid; grid-template-columns: 5fr 4fr;
+  gap: 5rem; align-items: center;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  padding: 0.28rem 0.9rem;
+  background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(245,158,11,0.1));
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 20px; margin-bottom: 2rem;
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #C4B5FD;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; background: #7C3AED; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.5rem; font-weight: 400; line-height: 1.1; margin-bottom: 1.5rem;
+}
+h1 em { font-style: italic; color: #F59E0B; }
+.hero-p { font-size: 0.93rem; line-height: 1.85; color: rgba(237,224,212,0.45); max-width: 40ch; margin-bottom: 2.5rem; font-weight: 300; }
+.btns { display: flex; gap: 0.85rem; flex-wrap: wrap; }
+.btn-main {
+  padding: 0.8rem 2rem;
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  border-radius: 8px; font-size: 0.87rem; font-weight: 500;
+  color: #fff; text-decoration: none;
+  box-shadow: 0 8px 24px rgba(124,58,237,0.35);
+}
+.btn-gold {
+  padding: 0.8rem 1.6rem;
+  border: 1px solid rgba(245,158,11,0.35);
+  border-radius: 8px; font-size: 0.87rem;
+  color: #F59E0B; text-decoration: none;
+}
+
+/* dual-color card */
+.card {
+  background: rgba(30,18,40,0.5);
+  border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 18px; padding: 1.75rem;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 60px rgba(124,58,237,0.1), 0 20px 60px rgba(0,0,0,0.5);
+  position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(124,58,237,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+.card-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+.cav {
+  width: 50px; height: 50px; border-radius: 12px;
+  background: linear-gradient(135deg, #7C3AED, #F59E0B);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; color: #fff; font-size: 1.1rem;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+}
+.cname { font-family: 'Playfair Display', serif; font-size: 1.1rem; }
+.cyear { font-size: 0.74rem; margin-top: 0.15rem; }
+.cyear span:first-child { color: #7C3AED; }
+.cyear span:last-child { color: #F59E0B; margin-left: 0.3rem; }
+.csep { height: 1px; background: linear-gradient(90deg, rgba(124,58,237,0.3), rgba(245,158,11,0.3), transparent); margin: 1rem 0; }
+.cquote {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 0.95rem; line-height: 1.7;
+  color: rgba(237,224,212,0.55); margin-bottom: 1.25rem;
+}
+.cfooter { display: flex; justify-content: space-between; align-items: center; }
+.cstats { display: flex; gap: 1.5rem; }
+.csv { font-size: 1.4rem; font-family: 'Playfair Display', serif; }
+.csl { font-size: 0.68rem; color: rgba(237,224,212,0.35); letter-spacing: 0.06em; text-transform: uppercase; }
+.cbadge-purple { padding: 0.25rem 0.7rem; background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.3); border-radius: 20px; font-size: 0.68rem; color: #C4B5FD; }
+
+.section { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 2.5rem 3rem 5rem; }
+.sh { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.75rem; }
+.st { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 400; }
+.sl { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(124,58,237,0.2), rgba(245,158,11,0.1), transparent); }
+.sc { font-size: 0.74rem; color: rgba(237,224,212,0.3); }
+.mlist { display: flex; flex-direction: column; gap: 0.65rem; }
+.mr {
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: rgba(30,18,40,0.4);
+  border: 1px solid rgba(124,58,237,0.1);
+  border-radius: 12px; border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.mr:hover { border-left-color: #7C3AED; background: rgba(30,18,40,0.7); }
+.mra {
+  width: 44px; height: 44px; border-radius: 9px;
+  background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(245,158,11,0.1));
+  border: 1px solid rgba(124,58,237,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; color: #C4B5FD;
+}
+.mn { font-size: 0.93rem; font-weight: 500; }
+.ms { font-size: 0.76rem; color: rgba(237,224,212,0.4); margin-top: 0.1rem; }
+.md { font-size: 0.78rem; color: #F59E0B; }
+.mc { font-size: 0.72rem; color: rgba(237,224,212,0.3); margin-top: 0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo-wrap">
+    <img src="logo.png" alt="" class="logo-img">
+    <div class="logo-text">vspomin<span>.ai</span></div>
+  </div>
+  <div class="nav-links"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nav-cta">Create memorial</a>
+</nav>
+<div class="hero">
+  <div>
+    <div class="badge"><span class="badge-dot"></span>Digital Memorial · AI-powered</div>
+    <h1>We preserve the person,<br><em>not just the photographs</em></h1>
+    <p class="hero-p">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives forever.</p>
+    <div class="btns">
+      <a href="#" class="btn-main">Create memorial</a>
+      <a href="#" class="btn-gold">Free to start · no card</a>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-head">
+        <div class="cav">AP</div>
+        <div>
+          <div class="cname">Anna Petrova</div>
+          <div class="cyear"><span>1947</span><span>— 2018</span></div>
+        </div>
+      </div>
+      <div class="csep"></div>
+      <div class="cquote">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+      <div class="cfooter">
+        <div class="cstats">
+          <div><div class="csv" style="color:#F59E0B">12</div><div class="csl">memories</div></div>
+          <div><div class="csv" style="color:#C4B5FD">34</div><div class="csl">files</div></div>
+        </div>
+        <div class="cbadge-purple">AI avatar</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="sh"><div class="st">Memorials</div><div class="sl"></div><div class="sc">4 pages</div></div>
+  <div class="mlist">
+    <div class="mr"><div class="mra">AP</div><div><div class="mn">Anna Petrova</div><div class="ms">Lifelong teacher, gardener</div></div><div style="margin-left:auto;text-align:right"><div class="md">1947 — 2018</div><div class="mc">12 memories</div></div></div>
+    <div class="mr"><div class="mra" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1));border-color:rgba(245,158,11,0.2);color:#F59E0B">DP</div><div><div class="mn">Dmitri Petrov</div><div class="ms">Father, engineer</div></div><div style="margin-left:auto;text-align:right"><div class="md">1942 — 2021</div><div class="mc">8 memories</div></div></div>
+    <div class="mr"><div class="mra">MV</div><div><div class="mn">Maria Volkova</div><div class="ms">Artist, poet</div></div><div style="margin-left:auto;text-align:right"><div class="md">1938 — 2015</div><div class="mc">21 memories</div></div></div>
+  </div>
+</div>
+</body>
+</html>

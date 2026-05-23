@@ -46,6 +46,13 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     is_demo = Column(Boolean, default=False, nullable=False, server_default="false")  # Demo/seed accounts bypass all billing limits
+    # Email verification
+    email_verified = Column(Boolean, default=False, nullable=False, server_default="false")
+    verification_token = Column(String(64), nullable=True, index=True)
+    verification_token_expires = Column(DateTime(timezone=True), nullable=True)
+    # Password reset
+    password_reset_token = Column(String(64), nullable=True, index=True)
+    password_reset_token_expires = Column(DateTime(timezone=True), nullable=True)
     # Subscription / billing
     subscription_plan = Column(String(20), default="free", nullable=False, server_default="free")
     plan_expires_at = Column(DateTime(timezone=True), nullable=True)        # None = free or lifetime (no expiry)

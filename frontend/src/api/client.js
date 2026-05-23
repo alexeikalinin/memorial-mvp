@@ -57,9 +57,14 @@ apiClient.interceptors.response.use(
 export default apiClient
 
 export const authAPI = {
-  register: (data) => apiClient.post('/auth/register', data),
-  login:    (data) => apiClient.post('/auth/login', data),
-  me:       ()     => apiClient.get('/auth/me'),
+  register:             (data)    => apiClient.post('/auth/register', data),
+  login:                (data)    => apiClient.post('/auth/login', data),
+  me:                   ()        => apiClient.get('/auth/me'),
+  verifyEmail:          (token)   => apiClient.post(`/auth/verify-email?token=${token}`),
+  resendVerification:   ()        => apiClient.post('/auth/resend-verification'),
+  requestPasswordReset: (email)   => apiClient.post('/auth/password-reset', { email }),
+  confirmPasswordReset: (token, new_password) =>
+    apiClient.post('/auth/password-reset/confirm', { token, new_password }),
 }
 
 // API методы

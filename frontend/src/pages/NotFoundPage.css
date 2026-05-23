@@ -1,0 +1,77 @@
+.error-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.error-page__inner {
+  max-width: 420px;
+}
+
+.error-page__code {
+  font-size: 6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-faint, rgba(255,255,255,0.12));
+  letter-spacing: -2px;
+  margin-bottom: 0;
+}
+
+.error-page__candle {
+  font-size: 2.5rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.error-page__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary, #f5f0e8);
+  margin: 0 0 0.75rem;
+}
+
+.error-page__sub {
+  color: var(--text-secondary, rgba(255,255,255,0.55));
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 2rem;
+}
+
+.error-page__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-page__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.65rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s, background 0.2s;
+  border: none;
+  font-family: inherit;
+}
+
+.error-page__btn--primary {
+  background: var(--accent, #c8602a);
+  color: #fff;
+}
+.error-page__btn--primary:hover { opacity: 0.88; }
+
+.error-page__btn--secondary {
+  background: transparent;
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+  border: 1px solid var(--border, rgba(255,255,255,0.15));
+}
+.error-page__btn--secondary:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary, #f5f0e8);
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-05 Cathedral — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=IM+Fell+English:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #0F0B08; color: #EDE5D4; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(20,12,5,0.8); border: 1px solid rgba(245,158,11,0.35);
+  color: #D97706; padding: 6px 14px; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+/* HEADER */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(15,11,8,0.9); backdrop-filter: blur(20px);
+  height: 66px; display: flex; align-items: center;
+  padding: 0 2.5rem; justify-content: space-between;
+  border-bottom: 1px solid rgba(245,158,11,0.1);
+}
+.hdr-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+/* Arch-inspired logo */
+.hdr-logo-icon {
+  width: 34px; height: 34px; position: relative;
+  background: linear-gradient(135deg, #4C1D95, #7C3AED, #D97706);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 100%, 0% 100%, 0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+}
+.hdr-logo-text { font-family: 'IM Fell English', serif; font-size: 1.15rem; color: rgba(237,229,212,0.85); letter-spacing: 0.02em; }
+nav { display: flex; align-items: center; gap: 2rem; }
+nav a { color: rgba(237,229,212,0.4); text-decoration: none; font-size: 0.85rem; font-weight: 400; transition: color 0.2s; }
+nav a:hover { color: rgba(237,229,212,0.8); }
+.nav-btn {
+  background: linear-gradient(135deg, #78350F, #D97706);
+  color: #FEF3C7; font-size: 0.82rem; font-weight: 600;
+  padding: 8px 20px; border-radius: 6px; text-decoration: none;
+}
+
+/* HERO — cathedral arch */
+.hero {
+  position: relative; min-height: 96vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 60%, rgba(217,119,6,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 50% 100%, rgba(217,119,6,0.18) 0%, transparent 50%),
+    linear-gradient(180deg, #0F0B08 0%, #160E05 50%, #0F0B08 100%);
+}
+/* Cathedral arch SVG overlay */
+.arch-overlay {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 600px; pointer-events: none;
+}
+.arch-overlay path { fill: none; stroke: rgba(245,158,11,0.06); stroke-width: 1.5; }
+
+/* Candle columns */
+.candles-left, .candles-right {
+  position: absolute; bottom: 0; display: flex; gap: 2rem;
+  pointer-events: none;
+}
+.candles-left { left: 5%; }
+.candles-right { right: 5%; }
+.candle {
+  display: flex; flex-direction: column; align-items: center;
+}
+.candle-body { width: 8px; background: linear-gradient(to bottom, #FEF9C3, #FDE68A, #D97706); }
+.candle-flame {
+  font-size: 1.2rem; animation: flame-sway 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(245,158,11,0.8));
+}
+@keyframes flame-sway { 0%,100%{transform:rotate(-3deg)} 50%{transform:rotate(3deg)} }
+.c1 .candle-body { height: 120px; }
+.c2 .candle-body { height: 80px; }
+.c3 .candle-body { height: 100px; }
+
+/* Glow pool at base of candles */
+.glow-pool {
+  position: absolute; bottom: -20px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(245,158,11,0.15) 0%, transparent 70%);
+}
+
+.hero-content { position: relative; z-index: 2; text-align: center; max-width: 720px; padding: 2rem; }
+
+.hero-ornament {
+  margin-bottom: 1.5rem; position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.orn-line { flex: 1; max-width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245,158,11,0.35)); }
+.orn-line.right { transform: scaleX(-1); }
+.orn-diamond {
+  width: 8px; height: 8px; background: #D97706;
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(217,119,6,0.6);
+}
+
+.hero-kicker { font-family: 'Cinzel', serif; font-size: 0.68rem; font-weight: 400;
+  letter-spacing: 0.3em; text-transform: uppercase; color: rgba(245,158,11,0.55);
+  margin-bottom: 1.5rem; }
+.hero-title {
+  font-family: 'IM Fell English', serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 400; line-height: 1.1; margin-bottom: 1.2rem; letter-spacing: 0.01em;
+}
+.hero-title .italic { font-style: italic;
+  background: linear-gradient(160deg, #FBBF24 0%, #D97706 70%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-verse {
+  font-family: 'IM Fell English', serif; font-style: italic;
+  color: rgba(237,229,212,0.35); font-size: 1rem; line-height: 1.8;
+  margin-bottom: 3rem; max-width: 500px; margin-left: auto; margin-right: auto;
+}
+.hero-cta-wrap { display: flex; justify-content: center; gap: 1.2rem; }
+.btn-cathedral {
+  background: linear-gradient(160deg, #92400E, #D97706, #F59E0B);
+  color: #1A0C02; font-family: 'Cinzel', serif; font-size: 0.78rem;
+  font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 13px 34px; text-decoration: none;
+  border-radius: 2px;
+  box-shadow: 0 6px 24px rgba(217,119,6,0.3);
+  transition: all 0.25s;
+}
+.btn-cathedral:hover { box-shadow: 0 10px 32px rgba(217,119,6,0.5); transform: translateY(-2px); }
+.btn-scroll {
+  color: rgba(237,229,212,0.35); font-family: 'Cinzel', serif;
+  font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  text-decoration: none; padding: 13px 20px; border-bottom: 1px solid rgba(237,229,212,0.1);
+  transition: all 0.2s;
+}
+.btn-scroll:hover { color: rgba(237,229,212,0.65); border-bottom-color: rgba(237,229,212,0.3); }
+
+/* MEMORIAL PANEL */
+.memorials-panel { padding: 6rem 2rem; background: #0D0905; border-top: 1px solid rgba(245,158,11,0.08); }
+.mp-inner { max-width: 1100px; margin: 0 auto; }
+.mp-header { text-align: center; margin-bottom: 4rem; }
+.mp-kicker { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,158,11,0.45); margin-bottom: 0.6rem; }
+.mp-title { font-family: 'IM Fell English', serif; font-size: 2.4rem; font-weight: 400; }
+
+.mc-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+.mc { background: linear-gradient(160deg, #171008, #0D0905); border: 1px solid rgba(245,158,11,0.1);
+  border-radius: 12px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+.mc:hover { border-color: rgba(245,158,11,0.25); transform: translateY(-4px); }
+.mc-img {
+  height: 180px; background: linear-gradient(145deg, #231508, #0D0905);
+  display: flex; align-items: center; justify-content: center; font-size: 4rem; opacity: 0.3;
+  position: relative;
+}
+.mc-img::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(13,9,5,0.9) 100%); }
+.mc-data { padding: 1.2rem 1.4rem 1.4rem; }
+.mc-n { font-family: 'IM Fell English', serif; font-size: 1.1rem; margin-bottom: 0.2rem; }
+.mc-d { color: rgba(245,158,11,0.5); font-size: 0.75rem; font-weight: 500; font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+
+/* Chat preview */
+.chat-preview {
+  background: linear-gradient(160deg, #171008, #120D05);
+  border: 1px solid rgba(245,158,11,0.1); border-radius: 16px; padding: 2rem;
+  display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;
+}
+.chat-avatar-block { text-align: center; }
+.chat-avatar-img {
+  width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 0.8rem;
+  background: linear-gradient(145deg, #2A1B08, #120D05);
+  border: 2px solid rgba(245,158,11,0.2);
+  display: flex; align-items: center; justify-content: center; font-size: 3rem; opacity: 0.5;
+}
+.chat-avatar-name { font-family: 'IM Fell English', serif; font-size: 1rem; margin-bottom: 0.2rem; }
+.chat-avatar-tag { font-size: 0.7rem; color: rgba(245,158,11,0.5); }
+.chat-msgs { display: flex; flex-direction: column; gap: 0.8rem; }
+.msg { padding: 0.8rem 1.1rem; border-radius: 10px; font-size: 0.85rem; line-height: 1.55; max-width: 85%; }
+.msg-user { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.12); align-self: flex-end; }
+.msg-avatar { background: rgba(30,20,8,0.8); border: 1px solid rgba(245,158,11,0.06);
+  font-family: 'IM Fell English', serif; font-style: italic; color: rgba(237,229,212,0.65); }
+
+footer { border-top: 1px solid rgba(245,158,11,0.07); padding: 2.5rem;
+  text-align: center; color: rgba(237,229,212,0.25); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-05 · Cathedral</div>
+
+<header>
+  <a href="#" class="hdr-logo">
+    <div class="hdr-logo-icon">∞</div>
+    <span class="hdr-logo-text">vspomin.ai</span>
+  </a>
+  <nav>
+    <a href="#">Memorials</a>
+    <a href="#">Family</a>
+    <a href="#">Stories</a>
+    <a href="#" class="nav-btn">Light a Candle</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+
+  <!-- SVG arch -->
+  <svg class="arch-overlay" viewBox="0 0 800 600" preserveAspectRatio="none">
+    <path d="M 50,600 L 50,200 Q 50,40 400,40 Q 750,40 750,200 L 750,600"/>
+    <path d="M 120,600 L 120,220 Q 120,100 400,100 Q 680,100 680,220 L 680,600"/>
+    <path d="M 190,600 L 190,250 Q 190,160 400,160 Q 610,160 610,250 L 610,600"/>
+  </svg>
+
+  <!-- Candles left -->
+  <div class="candles-left">
+    <div class="candle c1"><div class="candle-flame">🔥</div><div class="candle-body"></div></div>
+    <div class="candle c2"><div class="candle-flame">🔥</div><div class="candle-body"></div></div>
+  </div>
+  <!-- Candles right -->
+  <div class="candles-right">
+    <div class="candle c2"><div class="candle-flame">🔥</div><div class="candle-body"></div></div>
+    <div class="candle c3"><div class="candle-flame">🔥</div><div class="candle-body"></div></div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-ornament">
+      <div class="orn-line"></div>
+      <div class="orn-diamond"></div>
+      <div class="orn-line right"></div>
+    </div>
+    <div class="hero-kicker">A sacred memorial for those we love</div>
+    <h1 class="hero-title">
+      In <span class="italic">loving</span><br>memory
+    </h1>
+    <p class="hero-verse">
+      "What we have once enjoyed we can never lose;<br>
+      all that we love deeply becomes a part of us."
+    </p>
+    <div class="hero-cta-wrap">
+      <a href="#" class="btn-cathedral">Create a Memorial</a>
+      <a href="#" class="btn-scroll">Browse Memorials</a>
+    </div>
+  </div>
+</section>
+
+<section class="memorials-panel">
+  <div class="mp-inner">
+    <div class="mp-header">
+      <div class="mp-kicker">Their stories live on</div>
+      <h2 class="mp-title">Cherished souls</h2>
+    </div>
+    <div class="mc-row">
+      <div class="mc"><div class="mc-img">👤</div><div class="mc-data"><div class="mc-n">James Robert Harrington</div><div class="mc-d">1948 · 2024</div></div></div>
+      <div class="mc"><div class="mc-img">👤</div><div class="mc-data"><div class="mc-n">Eleanor Grace Whitfield</div><div class="mc-d">1936 · 2022</div></div></div>
+      <div class="mc"><div class="mc-img">👤</div><div class="mc-data"><div class="mc-n">Thomas William Shaw</div><div class="mc-d">1941 · 2023</div></div></div>
+    </div>
+    <div class="chat-preview">
+      <div class="chat-avatar-block">
+        <div class="chat-avatar-img">👵</div>
+        <div class="chat-avatar-name">Margaret Collins</div>
+        <div class="chat-avatar-tag">AI Avatar · 47 memories</div>
+      </div>
+      <div class="chat-msgs">
+        <div class="msg msg-user">Gran, what was your favourite place in the world?</div>
+        <div class="msg msg-avatar">"Oh, without question — that little cottage in Cornwall where we spent every August. The smell of sea salt in the morning, and the sound of your grandfather reading on the porch…"</div>
+        <div class="msg msg-user">Do you remember the summer of '78?</div>
+        <div class="msg msg-avatar">"How could I forget? That was the summer your father learned to swim…"</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>© 2025 vspomin.ai — Remembering is an act of love 🕯</footer>
+
+</body>
+</html>

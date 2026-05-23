@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-03 Amber Shrine — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #100B04; color: #F5EDD8; font-family: 'Inter', sans-serif; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4);
+  color: #FBBF24; padding: 6px 14px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+/* HEADER — ultra minimal */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 3rem; height: 64px;
+  background: linear-gradient(180deg, rgba(16,11,4,0.95) 0%, transparent 100%);
+}
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-infinity {
+  font-size: 1.6rem; line-height: 1;
+  background: linear-gradient(135deg, #7C3AED, #F59E0B);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(245,158,11,0.4));
+}
+.logo-wordmark { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 500;
+  color: rgba(245,237,216,0.9); letter-spacing: 0.08em; }
+nav { display: flex; align-items: center; gap: 2.5rem; }
+nav a { color: rgba(245,237,216,0.45); text-decoration: none; font-size: 0.84rem;
+  letter-spacing: 0.04em; transition: color 0.2s; }
+nav a:hover { color: #F59E0B; }
+.cta-btn {
+  background: transparent; border: 1px solid rgba(245,158,11,0.4);
+  color: #F59E0B; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.06em;
+  padding: 8px 20px; border-radius: 6px; text-decoration: none; transition: all 0.2s;
+}
+.cta-btn:hover { background: rgba(245,158,11,0.1); border-color: #F59E0B; }
+
+/* HERO — full viewport, centred shrine */
+.hero {
+  position: relative; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.hero-ambient {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 55% at 50% 55%, rgba(245,158,11,0.14) 0%, rgba(245,158,11,0.04) 35%, transparent 70%),
+    radial-gradient(ellipse 30% 20% at 50% 100%, rgba(217,119,6,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, #1C1204 30%, #100B04 100%);
+}
+/* Candle glow at bottom */
+.candle-glow {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 300px; height: 300px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(245,158,11,0.25) 0%, transparent 70%);
+  filter: blur(30px); pointer-events: none;
+}
+/* Vignette */
+.vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+.shrine-content {
+  position: relative; z-index: 2; text-align: center;
+  max-width: 740px; padding: 2rem;
+}
+/* Ornamental divider */
+.ornament { color: rgba(245,158,11,0.5); font-size: 1.2rem; letter-spacing: 0.5em; margin-bottom: 2rem; }
+.candle-icon {
+  font-size: 2.5rem; margin-bottom: 1.5rem;
+  filter: drop-shadow(0 0 16px rgba(245,158,11,0.6));
+  animation: flicker 2s ease-in-out infinite;
+}
+@keyframes flicker { 0%,100%{filter:drop-shadow(0 0 16px rgba(245,158,11,0.6))} 50%{filter:drop-shadow(0 0 24px rgba(245,158,11,0.9))} }
+.shrine-super {
+  font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 400;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: rgba(245,158,11,0.6); margin-bottom: 1.5rem;
+}
+.shrine-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 300; line-height: 1.08; margin-bottom: 1rem; letter-spacing: -0.02em;
+}
+.shrine-title .gold-word {
+  font-style: italic; font-weight: 400;
+  background: linear-gradient(180deg, #FBBF24 0%, #D97706 60%, #92400E 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.shrine-tagline {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 1.1rem; color: rgba(245,237,216,0.4);
+  margin-bottom: 3rem; line-height: 1.6;
+}
+.shrine-actions { display: flex; justify-content: center; gap: 1.2rem; }
+.btn-golden {
+  background: linear-gradient(135deg, #FBBF24 0%, #D97706 50%, #92400E 100%);
+  color: #1A0C02; font-family: 'Cinzel', serif; font-size: 0.85rem;
+  font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 14px 36px; border-radius: 4px; text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(245,158,11,0.3), 0 8px 32px rgba(245,158,11,0.3);
+  transition: all 0.3s;
+}
+.btn-golden:hover { box-shadow: 0 0 0 1px rgba(245,158,11,0.6), 0 12px 40px rgba(245,158,11,0.4); transform: translateY(-2px); }
+.btn-text {
+  color: rgba(245,237,216,0.5); font-size: 0.88rem; letter-spacing: 0.04em;
+  text-decoration: none; padding: 14px 24px; transition: color 0.2s;
+}
+.btn-text:hover { color: rgba(245,237,216,0.8); }
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: rgba(245,237,216,0.25); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+  animation: bob 2s ease-in-out infinite;
+}
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+.scroll-line { width: 1px; height: 32px; background: linear-gradient(to bottom, rgba(245,158,11,0.4), transparent); }
+
+/* SECTION — Memorial showcase */
+.showcase {
+  background: #0E0A03; padding: 6rem 2rem; border-top: 1px solid rgba(245,158,11,0.08);
+}
+.showcase-inner { max-width: 1100px; margin: 0 auto; }
+.showcase-hd { text-align: center; margin-bottom: 4rem; }
+.showcase-suptitle { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(245,158,11,0.5); margin-bottom: 0.8rem; }
+.showcase-title { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 300; }
+.showcase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+/* Large memorial card */
+.mc-large {
+  grid-row: span 2;
+  background: linear-gradient(160deg, #1C1204, #100B04);
+  border: 1px solid rgba(245,158,11,0.15); border-radius: 20px; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.mc-large-photo {
+  flex: 1; background: linear-gradient(145deg, #2A1B08, #1C1204);
+  min-height: 280px; display: flex; align-items: center; justify-content: center;
+  font-size: 5rem; opacity: 0.3; position: relative;
+}
+.mc-large-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(16,11,4,0.9));
+}
+.mc-large-body { padding: 1.8rem 2rem 2rem; }
+.mc-l-name { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.4rem; }
+.mc-l-dates { color: rgba(245,158,11,0.6); font-size: 0.82rem; font-weight: 500; margin-bottom: 1rem; }
+.mc-l-quote { font-family: 'Playfair Display', serif; font-style: italic;
+  color: rgba(245,237,216,0.45); font-size: 0.92rem; line-height: 1.65; margin-bottom: 1.2rem; }
+.chat-bubble-preview {
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.12);
+  border-radius: 12px; padding: 0.8rem 1rem; font-size: 0.82rem;
+  color: rgba(245,237,216,0.6); font-style: italic;
+}
+
+/* Small cards */
+.mc-small {
+  background: linear-gradient(160deg, #1A1206, #0E0A03);
+  border: 1px solid rgba(245,158,11,0.1); border-radius: 16px;
+  padding: 1.5rem; display: flex; align-items: center; gap: 1.2rem;
+  transition: all 0.3s;
+}
+.mc-small:hover { border-color: rgba(245,158,11,0.25); }
+.mc-s-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(145deg, #2A1B08, #1C1204);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; opacity: 0.5; border: 1px solid rgba(245,158,11,0.15);
+}
+.mc-s-name { font-family: 'Playfair Display', serif; font-size: 1rem; margin-bottom: 0.2rem; }
+.mc-s-dates { color: rgba(245,158,11,0.5); font-size: 0.75rem; }
+.mc-s-count { margin-top: 0.5rem; font-size: 0.72rem; color: rgba(245,237,216,0.35); }
+
+/* Footer */
+footer {
+  border-top: 1px solid rgba(245,158,11,0.08); padding: 3rem 2rem;
+  text-align: center;
+}
+.footer-logo { font-family: 'Cinzel', serif; font-size: 1.4rem;
+  background: linear-gradient(90deg, #FBBF24, #D97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 0.8rem; }
+.footer-copy { color: rgba(245,237,216,0.25); font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-03 · Amber Shrine</div>
+
+<header>
+  <a href="#" class="logo">
+    <span class="logo-infinity">∞</span>
+    <span class="logo-wordmark">vspomin.ai</span>
+  </a>
+  <nav>
+    <a href="#">Memorials</a>
+    <a href="#">Stories</a>
+    <a href="#">About</a>
+    <a href="#" class="cta-btn">Create Memorial</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-ambient"></div>
+  <div class="candle-glow"></div>
+  <div class="vignette"></div>
+  <div class="shrine-content">
+    <div class="ornament">✦ ✦ ✦</div>
+    <div class="candle-icon">🕯</div>
+    <div class="shrine-super">vspomin.ai · Digital Memorial</div>
+    <h1 class="shrine-title">
+      Their light<br>never <span class="gold-word">fades</span>
+    </h1>
+    <p class="shrine-tagline">
+      A sacred space for the ones who shaped your world.<br>
+      Preserve. Remember. Connect.
+    </p>
+    <div class="shrine-actions">
+      <a href="#" class="btn-golden">Create a Memorial</a>
+      <a href="#" class="btn-text">Explore →</a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<section class="showcase">
+  <div class="showcase-inner">
+    <div class="showcase-hd">
+      <div class="showcase-suptitle">Preserved with love</div>
+      <h2 class="showcase-title">Lives remembered</h2>
+    </div>
+    <div class="showcase-grid">
+      <div class="mc-large">
+        <div class="mc-large-photo">👤</div>
+        <div class="mc-large-body">
+          <div class="mc-l-name">Margaret Eleanor Collins</div>
+          <div class="mc-l-dates">1 March 1942 — 15 November 2023</div>
+          <div class="mc-l-quote">"She could light up any room. Her kindness was her superpower, and her laugh was the best sound in the world."</div>
+          <div class="chat-bubble-preview">
+            💬 "Gran, what was your favourite memory?" — AI avatar responds with her own words…
+          </div>
+        </div>
+      </div>
+      <div class="mc-small">
+        <div class="mc-s-avatar">👴</div>
+        <div><div class="mc-s-name">James Harrington</div><div class="mc-s-dates">1948 — 2024</div><div class="mc-s-count">34 memories · 8 photos</div></div>
+      </div>
+      <div class="mc-small">
+        <div class="mc-s-avatar">👵</div>
+        <div><div class="mc-s-name">Sofia Valentina</div><div class="mc-s-dates">1965 — 2023</div><div class="mc-s-count">Voice preserved · 12 memories</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">vspomin.ai</div>
+  <div class="footer-copy">© 2025 — Where the light never goes out. 🕯</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 — Dusk (split)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark: #1E1710;
+    --dark2: #2A2018;
+    --light: #F5EFE5;
+    --surface: #FFFFFF;
+    --text-dark: #F0E8D5;
+    --text-muted-dark: #8A7860;
+    --text-light: #1C1610;
+    --text-muted-light: #6A5848;
+    --accent: #C49050;
+    --accent-pale: rgba(196,144,80,0.15);
+    --border-dark: rgba(240,232,213,0.08);
+    --border-light: #E0D8CA;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 3rem; height: 60px; background: var(--dark); border-bottom: 1px solid var(--border-dark); }
+  .logo { font-family: 'Instrument Serif', serif; font-size: 1.3rem; color: var(--text-dark); }
+  .logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 2.5rem; }
+  .nav-links a { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted-dark); text-decoration: none; }
+  .nav-cta { padding: 0.45rem 1.1rem; background: var(--accent); border-radius: 6px; font-size: 0.82rem; font-weight: 500; color: var(--dark); text-decoration: none; }
+
+  /* Dark hero */
+  .hero { background: var(--dark); color: var(--text-dark); padding: 5.5rem 3rem; }
+  .hero-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; }
+  .eyebrow { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+  .eyebrow::before { content: ''; width: 2rem; height: 1px; background: var(--accent); display: block; opacity: 0.7; }
+  .hero h1 { font-family: 'Instrument Serif', serif; font-size: 3.2rem; font-weight: 400; line-height: 1.1; margin-bottom: 1.5rem; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 0.95rem; line-height: 1.75; color: var(--text-muted-dark); margin-bottom: 2rem; max-width: 38ch; }
+  .btn { display: inline-block; padding: 0.7rem 1.8rem; background: var(--accent); border-radius: 6px; font-size: 0.88rem; font-weight: 500; color: var(--dark); text-decoration: none; }
+  .sub { display: inline-block; margin-left: 1rem; font-size: 0.8rem; color: var(--text-muted-dark); }
+
+  .float-card { background: var(--dark2); border: 1px solid var(--border-dark); border-radius: 14px; padding: 1.5rem; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+  .fc-header { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-dark); }
+  .fc-avatar { width: 44px; height: 44px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', serif; color: var(--dark); }
+  .fc-name { font-size: 1rem; font-weight: 500; color: var(--text-dark); }
+  .fc-date { font-size: 0.76rem; color: var(--accent); }
+  .fc-quote { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 0.96rem; line-height: 1.65; color: var(--text-muted-dark); margin-bottom: 1rem; }
+  .fc-footer { display: flex; gap: 1rem; font-size: 0.73rem; color: var(--text-muted-dark); }
+
+  /* Light cards section */
+  .cards-section { background: var(--light); border-top: none; padding: 3.5rem 3rem; color: var(--text-light); }
+  .section-header { display: flex; justify-content: space-between; align-items: baseline; max-width: 1100px; margin: 0 auto 1.75rem; }
+  .section-title { font-family: 'Instrument Serif', serif; font-size: 1.4rem; color: var(--text-light); }
+  .section-count { font-size: 0.78rem; color: var(--text-muted-light); }
+  .card-list { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.65rem; }
+  .mem-card { display: flex; align-items: center; gap: 1.25rem; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border-light); border-radius: 8px; border-left: 3px solid transparent; transition: border-left-color 0.15s; }
+  .mem-card:hover { border-left-color: var(--accent); }
+  .avatar { width: 44px; height: 44px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', serif; color: var(--dark); flex-shrink: 0; }
+  .mem-info { flex: 1; }
+  .mem-name { font-size: 0.95rem; font-weight: 500; color: var(--text-light); margin-bottom: 0.1rem; }
+  .mem-sub { font-size: 0.78rem; color: var(--text-muted-light); }
+  .mem-dates { font-size: 0.78rem; color: var(--accent); }
+  .mem-count { font-size: 0.72rem; color: var(--text-muted-light); margin-top: 0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">vspomin<span>.ai</span></div>
+  <div class="nav-links"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nav-cta">Create memorial</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow">Digital Memorial</div>
+      <h1>We preserve the person,<br><em>not just the photographs</em></h1>
+      <p>Create a lasting digital memory of your loved one — with voice, stories and a family tree.</p>
+      <a href="#" class="btn">Create memorial</a>
+      <span class="sub">Free to start · no card</span>
+    </div>
+    <div>
+      <div class="float-card">
+        <div class="fc-header">
+          <div class="fc-avatar">AP</div>
+          <div><div class="fc-name">Anna Petrova</div><div class="fc-date">1947 — 2018</div></div>
+        </div>
+        <div class="fc-quote">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+        <div class="fc-footer"><span>12 memories</span><span>34 files</span><span>· ai avatar</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cards-section">
+  <div class="section-header">
+    <div class="section-title">Memorials</div>
+    <div class="section-count">4 memory pages</div>
+  </div>
+  <div class="card-list">
+    <div class="mem-card">
+      <div class="avatar">AP</div>
+      <div class="mem-info"><div class="mem-name">Anna Petrova</div><div class="mem-sub">Lifelong teacher, gardener</div></div>
+      <div style="text-align:right"><div class="mem-dates">1947 — 2018</div><div class="mem-count">12 memories</div></div>
+    </div>
+    <div class="mem-card">
+      <div class="avatar" style="background:#7A5C38">DP</div>
+      <div class="mem-info"><div class="mem-name">Dmitri Petrov</div><div class="mem-sub">Father, engineer</div></div>
+      <div style="text-align:right"><div class="mem-dates">1942 — 2021</div><div class="mem-count">8 memories</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>08 — Cosmos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#080612; color:#EDE0D4; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(109,40,217,0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 60%, rgba(245,158,11,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 50% at 10% 80%, rgba(124,58,237,0.08) 0%, transparent 50%); }
+
+nav { display:flex; align-items:center; justify-content:space-between; padding:0 3rem; height:66px;
+  border-bottom:1px solid rgba(124,58,237,0.15); background:rgba(8,6,18,0.9); backdrop-filter:blur(16px);
+  position:sticky; top:0; z-index:100; }
+.lw { display:flex; align-items:center; gap:0.7rem; }
+.li { width:34px; height:34px; object-fit:contain; }
+.lt { font-size:1.1rem; font-weight:500; }
+.lt span { background:linear-gradient(90deg,#7C3AED,#F59E0B); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.nl { display:flex; gap:2.5rem; }
+.nl a { font-size:0.75rem; color:rgba(237,224,212,0.4); text-decoration:none; }
+.nc { padding:0.48rem 1.2rem; background:linear-gradient(135deg,#7C3AED,#6D28D9); border-radius:8px; font-size:0.82rem; font-weight:500; color:#fff; text-decoration:none; box-shadow:0 4px 16px rgba(124,58,237,0.4); }
+
+.hero { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:6.5rem 3rem 4rem; }
+.hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; }
+.pill { display:inline-flex; align-items:center; gap:0.5rem; padding:0.3rem 0.9rem; background:rgba(124,58,237,0.15); border:1px solid rgba(124,58,237,0.3); border-radius:20px; font-size:0.68rem; color:#C4B5FD; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:1.75rem; }
+.pill-dot { width:5px; height:5px; border-radius:50%; background:linear-gradient(135deg,#7C3AED,#F59E0B); }
+h1 { font-family:'Playfair Display',serif; font-size:3.6rem; font-weight:400; line-height:1.1; margin-bottom:1.5rem; }
+h1 em { font-style:italic; background:linear-gradient(135deg,#F59E0B,#D97706); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.hp { font-size:0.93rem; line-height:1.85; color:rgba(237,224,212,0.45); max-width:40ch; margin-bottom:2.5rem; font-weight:300; }
+.btns { display:flex; gap:0.85rem; }
+.b1 { padding:0.8rem 2rem; background:linear-gradient(135deg,#7C3AED,#6D28D9); border-radius:8px; font-size:0.87rem; font-weight:500; color:#fff; text-decoration:none; box-shadow:0 8px 24px rgba(124,58,237,0.4); }
+.b2 { padding:0.8rem 1.6rem; border:1px solid rgba(245,158,11,0.3); border-radius:8px; font-size:0.87rem; color:#F59E0B; text-decoration:none; }
+
+/* CARD with purple glow */
+.card { background:rgba(20,12,36,0.6); border:1px solid rgba(124,58,237,0.2); border-radius:18px; padding:1.75rem; backdrop-filter:blur(20px);
+  box-shadow:0 0 80px rgba(124,58,237,0.12), 0 20px 60px rgba(0,0,0,0.6); }
+.ch { display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem; }
+.cav { width:50px; height:50px; border-radius:12px; background:linear-gradient(135deg,#7C3AED,#F59E0B); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; color:#fff; font-size:1.1rem; box-shadow:0 4px 20px rgba(124,58,237,0.5); }
+.cn { font-family:'Playfair Display',serif; font-size:1.1rem; }
+.cd { font-size:0.74rem; margin-top:0.15rem; background:linear-gradient(90deg,#7C3AED,#F59E0B); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.csep { height:1px; background:linear-gradient(90deg,rgba(124,58,237,0.3),rgba(245,158,11,0.2),transparent); margin:1rem 0; }
+.cq { font-family:'Playfair Display',serif; font-style:italic; font-size:0.95rem; line-height:1.7; color:rgba(237,224,212,0.55); margin-bottom:1.25rem; }
+.cf { display:flex; justify-content:space-between; align-items:center; }
+.cs { display:flex; gap:1.5rem; }
+.csv { font-size:1.3rem; font-family:'Playfair Display',serif; color:#F59E0B; display:block; }
+.csl { font-size:0.67rem; color:rgba(237,224,212,0.35); text-transform:uppercase; letter-spacing:0.06em; }
+.cbadge { padding:0.25rem 0.7rem; background:linear-gradient(135deg,rgba(124,58,237,0.3),rgba(109,40,217,0.2)); border:1px solid rgba(124,58,237,0.4); border-radius:20px; font-size:0.68rem; color:#C4B5FD; }
+
+.section { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:1.5rem 3rem 5rem; }
+.sh { display:flex; align-items:center; gap:1rem; margin-bottom:1.75rem; }
+.st { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:400; }
+.sl { flex:1; height:1px; background:linear-gradient(90deg,rgba(124,58,237,0.2),transparent); }
+.sc { font-size:0.74rem; color:rgba(237,224,212,0.3); }
+.mlist { display:flex; flex-direction:column; gap:0.65rem; }
+.mr { display:flex; align-items:center; gap:1.25rem; padding:1rem 1.25rem;
+  background:rgba(20,12,36,0.4); border:1px solid rgba(124,58,237,0.1); border-radius:12px;
+  border-left:3px solid transparent; transition:all 0.2s; }
+.mr:hover { border-left-color:#7C3AED; background:rgba(20,12,36,0.7); }
+.mav { width:44px; height:44px; border-radius:9px; background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(109,40,217,0.1)); border:1px solid rgba(124,58,237,0.2); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; color:#C4B5FD; }
+.mn { font-size:0.93rem; font-weight:500; }
+.ms { font-size:0.76rem; color:rgba(237,224,212,0.4); margin-top:0.1rem; }
+.md { font-size:0.78rem; color:#F59E0B; }
+.mc { font-size:0.72rem; color:rgba(237,224,212,0.3); margin-top:0.1rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="lw"><img src="logo.png" class="li" alt=""><div class="lt">vspomin<span>.ai</span></div></div>
+  <div class="nl"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="nc">Create memorial</a>
+</nav>
+<div class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="pill"><span class="pill-dot"></span>Digital Memorial · AI-powered</div>
+      <h1>We preserve the person,<br><em>not just the photographs</em></h1>
+      <p class="hp">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives forever.</p>
+      <div class="btns">
+        <a href="#" class="b1">Create memorial</a>
+        <a href="#" class="b2">Free to start · no card</a>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ch"><div class="cav">AP</div><div><div class="cn">Anna Petrova</div><div class="cd">1947 — 2018</div></div></div>
+        <div class="csep"></div>
+        <div class="cq">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+        <div class="cf"><div class="cs"><div><div class="csv">12</div><div class="csl">memories</div></div><div><div class="csv">34</div><div class="csl">files</div></div></div><div class="cbadge">AI avatar</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="section">
+  <div class="sh"><div class="st">Memorials</div><div class="sl"></div><div class="sc">4 pages</div></div>
+  <div class="mlist">
+    <div class="mr"><div class="mav">AP</div><div><div class="mn">Anna Petrova</div><div class="ms">Lifelong teacher, gardener</div></div><div style="margin-left:auto;text-align:right"><div class="md">1947 — 2018</div><div class="mc">12 memories</div></div></div>
+    <div class="mr"><div class="mav" style="background:linear-gradient(135deg,rgba(245,158,11,0.2),rgba(217,119,6,0.1));border-color:rgba(245,158,11,0.2);color:#F59E0B">DP</div><div><div class="mn">Dmitri Petrov</div><div class="ms">Father, engineer</div></div><div style="margin-left:auto;text-align:right"><div class="md">1942 — 2021</div><div class="mc">8 memories</div></div></div>
+    <div class="mr"><div class="mav">MV</div><div><div class="mn">Maria Volkova</div><div class="ms">Artist, poet</div></div><div style="margin-left:auto;text-align:right"><div class="md">1938 — 2015</div><div class="mc">21 memories</div></div></div>
+  </div>
+</div>
+</body>
+</html>

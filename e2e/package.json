@@ -1,7 +1,7 @@
 {
-  "name": "memorial-mvp-e2e",
+  "name": "vspomin-ai-e2e",
   "version": "1.0.0",
-  "description": "Playwright E2E tests for Memorial MVP",
+  "description": "Playwright E2E tests for vspomin.ai",
   "type": "module",
   "scripts": {
     "test": "playwright test",

@@ -2,6 +2,145 @@
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## [2026-05-23] Family RAG — ограничение по тарифу + вирусный шеринг баг
+**Статус:** завершено ✅
+
+**Что делали:**
+1. Viral share в ContributePage: анонимный пользователь пытался создать новый инвайт (401). Фикс: делится той же ссылкой, по которой зашёл.
+2. Family RAG guard: бэкенд правильно возвращает 402. Фронт показывал тоггл всем и глушил ошибку.
+
+**Изменения (Family RAG):**
+- `AvatarChat.jsx` — `hasFamilyRag` computed: `subscription_plan` в `['plus','pro','lifetime_pro']`
+- Тоггл для Free: `disabled + opacity:0.5 + cursor:not-allowed + бейдж "Plus"`
+- При 402 в чате: сбрасывает тоггл + показывает upgrade prompt (не ломаный `detail`)
+- `AvatarChat.css` — `.feature-locked` + `.plan-badge` стили
+- `locales/en.js` + `locales/ru.js` — 2 новых ключа: `family_locked_tooltip`, `family_upgrade_prompt`
+
+**Изменения (viral share):**
+- `ContributePage.jsx` — `handleViralShare` теперь использует `window.location.origin + /contribute/:token` вместо `invitesAPI.create()`
+
+**Билд:** ✅ без ошибок
+
+## [2026-05-23] Тесты email-верификации + фикс timezone-бага, все тесты 209/209 ✅
+**Статус:** завершено ✅
+
+**Что делали:**
+1. Написан `tests/test_auth_email.py` — 22 теста для 4 новых auth endpoint'ов
+2. Обнаружен и исправлен production-баг: SQLite возвращает naive datetime, endpoint сравнивал с `datetime.now(timezone.utc)` → `TypeError: can't compare offset-naive and offset-aware datetimes`
+3. Фикс в `backend/app/api/auth.py`: нормализация tzinfo перед сравнением в `verify_email` и `confirm_password_reset`
+
+**Изменённые файлы:**
+- `backend/tests/test_auth_email.py` — новый файл, 22 теста
+- `backend/app/api/auth.py` — timezone-safe сравнение в `verify_email` и `confirm_password_reset`
+
+**Тест-покрытие:**
+- `POST /auth/verify-email` — valid/invalid/expired/already-verified токен
+- `POST /auth/resend-verification` — auth required / already verified / token обновляется
+- `POST /auth/password-reset` — известный email / неизвестный (всегда 200) / срок токена
+- `POST /auth/password-reset/confirm` — valid / invalid / expired / one-time use / new password works / old password rejected
+- Full-flow: register → verify → /me | register → reset → login
+
+**Итог:** 209/209 тестов ✅
+
+## [2026-05-23] Supabase миграция — email verification + password reset
+**Статус:** завершено ✅
+**Что делали:** Применена SQL-миграция на Supabase (prod DB).
+**Результат:** 5 колонок добавлены в таблицу `users`:
+- `email_verified` BOOLEAN NOT NULL DEFAULT false
+- `verification_token` VARCHAR(64)
+- `verification_token_expires` TIMESTAMPTZ
+- `password_reset_token` VARCHAR(64)
+- `password_reset_token_expires` TIMESTAMPTZ
+- Индексы по токенам созданы.
+**Осталось:**
+- ⏳ `RESEND_API_KEY` — настроить на проде (Vercel/Railway env vars) — ОТЛОЖЕНО
+- ⏳ Написать тесты для auth endpoint'ов — ОТЛОЖЕНО
+
+## [2026-05-23] Email верификация + сброс пароля (Resend)
+**Статус:** завершено, тесты 187/187 ✅
+
+**Что делали:**
+1. Аудит готовности к проду: 5.5/10 — написана сводная таблица (что работает / что планировалось / что скрыть)
+2. Сохранён расширенный бэклог нереализованного в `docs/IDEAS.md`
+3. Реализована email-верификация + сброс пароля (провайдер: Resend)
+
+**Backend изменения:**
+- `models.py` — добавлены поля `email_verified`, `verification_token`, `verification_token_expires`, `password_reset_token`, `password_reset_token_expires` в `User`
+- `config.py` — добавлены `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME`
+- `services/email_service.py` — новый файл: HTML-шаблоны писем + отправка через Resend SDK
+- `schemas.py` — `UserResponse` +`email_verified`; новые схемы `PasswordResetRequest`, `PasswordResetConfirm`
+- `api/auth.py` — 4 новых endpoint: `POST /verify-email`, `POST /resend-verification`, `POST /password-reset`, `POST /password-reset/confirm`; регистрация теперь отправляет письмо верификации
+- `requirements.txt` — добавлен `resend==2.10.0`
+- `.env.example` — задокументированы новые env-переменные
+
+**Frontend изменения:**
+- `api/client.js` — 4 новых метода в `authAPI`
+- `pages/VerifyEmailPage.jsx` — новая страница `/verify-email?token=...`
+- `pages/ForgotPasswordPage.jsx` — новая страница `/forgot-password`
+- `pages/ResetPasswordPage.jsx` — новая страница `/reset-password?token=...`
+- `pages/AuthPage.css` — дополнен классами для новых страниц
+- `pages/LoginPage.jsx` — ссылка "Forgot password?" + баннер успешного сброса
+- `components/VerificationBanner.jsx` — мягкий баннер (не блокирует) для не-верифицированных юзеров
+- `components/VerificationBanner.css` — стили баннера
+- `components/Layout.jsx` — встроен `VerificationBanner`
+- `App.jsx` — 3 новых маршрута: `/verify-email`, `/forgot-password`, `/reset-password`
+
+**Поведение:**
+- Регистрация → письмо уходит (если `RESEND_API_KEY` задан). Если нет — токен логируется в консоль (dev mode)
+- Баннер показывается только авторизованным, не-demo юзерам с `email_verified=false`. Dismissable.
+- Google OAuth → `email_verified=True` автоматически
+- Сброс пароля всегда возвращает 200 (защита от перебора)
+- Токены: верификация 24ч, сброс пароля 1ч
+
+**Для активации на проде:**
+1. Завести аккаунт на resend.com, получить API ключ
+2. Верифицировать домен (или использовать `onboarding@resend.dev` для тестов)
+3. Добавить в `.env`: `RESEND_API_KEY=re_xxx`, `EMAIL_FROM=noreply@vspomin.ai`
+4. Выполнить SQL-миграцию на Supabase (см. ниже в Критический контекст)
+
+**Миграция Supabase:**
+```sql
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token VARCHAR(64);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(64);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS ix_users_verification_token ON users(verification_token);
+CREATE INDEX IF NOT EXISTS ix_users_password_reset_token ON users(password_reset_token);
+```
+
+**Осталось сделать:**
+- Запустить Supabase миграцию перед деплоем
+- Настроить `RESEND_API_KEY` в Vercel/Railway env vars
+- Написать тесты для новых auth endpoint'ов
+
+## [2026-05-23] 404 + Error Boundary
+**Статус:** завершено ✅
+**Изменённые файлы:**
+- `frontend/src/pages/NotFoundPage.jsx` + `.css` — кастомная 404 с кнопками "← Go back" и "Home"
+- `frontend/src/components/ErrorBoundary.jsx` — React class component, перехватывает render-ошибки
+- `frontend/src/App.jsx` — `<Route path="*">` + `<ErrorBoundary>` обёртка
+**Билд:** ✅ без ошибок
+
+## [2026-05-23] Аудит готовности к проду
+**Статус:** завершено (анализ)
+**Что делали:** Полный анализ проекта — 5.5/10, таблица работающего/нереализованного, ранжирование фич по приоритету скрытия. Результат сохранён в `docs/IDEAS.md`.
+
+## [2026-05-18] Полный аудит: тесты + бэклог + план
+**Статус:** завершено
+
+**Что делали:**
+1. Запущены все pytest: 177/177 ✅ — ни одного падения
+2. E2E: SKIPPED (backend + frontend не запущены)
+3. Проверен hardcode owner_id=1: не осталось — JWT auth везде
+4. Прочитаны IDEAS.md + ROADMAP.md — полный бэклог
+5. Составлен план дальнейшей реализации
+
+**Проблемы:**
+- Багов не найдено, все тесты зелёные
+- E2E не запускались (offline)
+- Много deferred/planned фич которые не начинались
+
 ## [2026-05-02] Demo tutorial — 5-шаговый онбординг
 **Статус:** завершено, запушено
 

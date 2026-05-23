@@ -1,4 +1,4 @@
-# Memorial MVP - Backend
+# vspomin.ai - Backend
 
 FastAPI backend для веб-сервиса хранения цифровой памяти и создания ИИ-аватаров.
 

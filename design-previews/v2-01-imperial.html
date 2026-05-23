@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — Imperial</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(160deg, #1A120B 0%, #2C1F14 50%, #1A120B 100%);
+  color: #F0E6D3;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 70% 20%, rgba(245,158,11,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(124,58,237,0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* NAV */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 3rem; height: 68px;
+  border-bottom: 1px solid rgba(245,158,11,0.12);
+  background: rgba(26,18,11,0.8);
+  backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo-wrap { display: flex; align-items: center; gap: 0.6rem; }
+.logo-img { width: 36px; height: 36px; object-fit: contain; }
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 400; letter-spacing: 0.08em; color: #F0E6D3; }
+.logo-text span { color: #F59E0B; }
+.nav-links { display: flex; gap: 3rem; }
+.nav-links a { font-size: 0.7rem; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(240,230,211,0.5); text-decoration: none; transition: color 0.2s; }
+.nav-links a:hover { color: #F59E0B; }
+.nav-cta {
+  padding: 0.5rem 1.4rem;
+  border: 1px solid rgba(245,158,11,0.5);
+  border-radius: 3px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: #F59E0B;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.nav-cta:hover { background: rgba(245,158,11,0.1); }
+
+/* HERO */
+.hero {
+  max-width: 1200px; margin: 0 auto;
+  padding: 7rem 3rem 5rem;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6rem; align-items: center;
+}
+.hero-divider {
+  width: 48px; height: 1px;
+  background: linear-gradient(90deg, #F59E0B, transparent);
+  margin-bottom: 2rem;
+}
+.eyebrow {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem; letter-spacing: 0.22em;
+  text-transform: uppercase; color: #D97706;
+  margin-bottom: 1.75rem;
+}
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.8rem; font-weight: 400;
+  line-height: 1.08; margin-bottom: 1.75rem;
+  letter-spacing: 0.01em;
+}
+h1 em { font-style: italic; color: #F59E0B; }
+.hero-desc {
+  font-size: 0.95rem; line-height: 1.85;
+  color: rgba(240,230,211,0.55);
+  max-width: 38ch; margin-bottom: 2.5rem;
+  font-weight: 300;
+}
+.btn-primary {
+  display: inline-block;
+  padding: 0.85rem 2.4rem;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #1A120B;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem; font-weight: 600;
+  letter-spacing: 0.1em;
+  border-radius: 3px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+.sub-note { display: block; margin-top: 1rem; font-size: 0.75rem; color: rgba(240,230,211,0.35); letter-spacing: 0.04em; }
+
+/* RIGHT CARD */
+.hero-right { position: relative; }
+.mem-card-featured {
+  background: rgba(44,31,20,0.6);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(245,158,11,0.1);
+}
+.card-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(245,158,11,0.1); }
+.avatar-ring {
+  width: 54px; height: 54px; border-radius: 10px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #1A120B;
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+}
+.card-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: #F0E6D3; margin-bottom: 0.25rem; }
+.card-years { font-size: 0.75rem; color: #F59E0B; letter-spacing: 0.06em; }
+.card-quote {
+  font-family: 'Playfair Display', serif; font-style: italic;
+  font-size: 0.98rem; line-height: 1.7;
+  color: rgba(240,230,211,0.65);
+  border-left: 2px solid rgba(245,158,11,0.3);
+  padding-left: 1rem; margin-bottom: 1.5rem;
+}
+.card-stats { display: flex; gap: 2rem; }
+.stat-val { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #F59E0B; display: block; }
+.stat-label { font-size: 0.7rem; color: rgba(240,230,211,0.4); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* MEMORIALS LIST */
+.section { max-width: 1200px; margin: 0 auto; padding: 3rem 3rem 5rem; }
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.section-title { font-family: 'Cinzel', serif; font-size: 1rem; letter-spacing: 0.12em; font-weight: 400; color: rgba(240,230,211,0.5); text-transform: uppercase; }
+.divider-line { flex: 1; height: 1px; background: rgba(245,158,11,0.08); margin: 0 2rem; }
+.section-count { font-size: 0.75rem; color: rgba(240,230,211,0.3); }
+.mem-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.mem-row {
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 1.1rem 1.5rem;
+  background: rgba(44,31,20,0.4);
+  border: 1px solid rgba(245,158,11,0.08);
+  border-radius: 10px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.mem-row:hover { border-left-color: #F59E0B; background: rgba(44,31,20,0.7); }
+.row-avatar {
+  width: 46px; height: 46px; border-radius: 8px;
+  background: linear-gradient(135deg, #F59E0B40, #D9770640);
+  border: 1px solid rgba(245,158,11,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; color: #F59E0B; font-size: 1rem;
+}
+.row-name { font-size: 0.95rem; font-weight: 500; color: #F0E6D3; }
+.row-sub { font-size: 0.78rem; color: rgba(240,230,211,0.4); margin-top: 0.15rem; }
+.row-right { text-align: right; margin-left: auto; }
+.row-dates { font-size: 0.8rem; color: #F59E0B; font-weight: 500; }
+.row-count { font-size: 0.72rem; color: rgba(240,230,211,0.35); margin-top: 0.15rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo-wrap">
+    <img src="logo.png" alt="" class="logo-img">
+    <div class="logo-text">vspomin<span>.ai</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#">Home</a><a href="#">Memorial</a><a href="#">Public page</a>
+  </div>
+  <a href="#" class="nav-cta">Create memorial</a>
+</nav>
+
+<div class="hero">
+  <div>
+    <div class="hero-divider"></div>
+    <div class="eyebrow">Digital Memorial Service</div>
+    <h1>We preserve the person,<br><em>not just<br>the photographs</em></h1>
+    <p class="hero-desc">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives forever.</p>
+    <a href="#" class="btn-primary">Create memorial</a>
+    <span class="sub-note">Free to start · no card required</span>
+  </div>
+  <div class="hero-right">
+    <div class="mem-card-featured">
+      <div class="card-header">
+        <div class="avatar-ring">AP</div>
+        <div>
+          <div class="card-name">Anna Petrova</div>
+          <div class="card-years">1947 — 2018</div>
+        </div>
+      </div>
+      <div class="card-quote">"She kept everyone's birthdays in a green leather book, and the hostas came back every spring."</div>
+      <div class="card-stats">
+        <div><span class="stat-val">12</span><span class="stat-label">Memories</span></div>
+        <div><span class="stat-val">34</span><span class="stat-label">Files</span></div>
+        <div><span class="stat-val">AI</span><span class="stat-label">Avatar</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <div class="section-title">Memorials</div>
+    <div class="divider-line"></div>
+    <div class="section-count">4 memory pages</div>
+  </div>
+  <div class="mem-list">
+    <div class="mem-row">
+      <div class="row-avatar">AP</div>
+      <div><div class="row-name">Anna Petrova</div><div class="row-sub">Lifelong teacher, gardener</div></div>
+      <div class="row-right"><div class="row-dates">1947 — 2018</div><div class="row-count">12 memories</div></div>
+    </div>
+    <div class="mem-row">
+      <div class="row-avatar" style="background:linear-gradient(135deg,#7C3AED30,#6D28D930);border-color:rgba(124,58,237,0.2);color:#9B6FFF">DP</div>
+      <div><div class="row-name">Dmitri Petrov</div><div class="row-sub">Father, engineer</div></div>
+      <div class="row-right"><div class="row-dates">1942 — 2021</div><div class="row-count">8 memories</div></div>
+    </div>
+    <div class="mem-row">
+      <div class="row-avatar" style="background:linear-gradient(135deg,#F59E0B30,#D9770630)">MV</div>
+      <div><div class="row-name">Maria Volkova</div><div class="row-sub">Artist, poet</div></div>
+      <div class="row-right"><div class="row-dates">1938 — 2015</div><div class="row-count">21 memories</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

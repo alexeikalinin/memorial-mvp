@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>04 — Chronicle</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:#120D08; color:#EDE0C8; min-height:100vh; }
+body::before { content:''; position:fixed; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 80% 30%,rgba(245,158,11,0.07) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 60% at 10% 70%,rgba(26,18,11,0.9) 0%,transparent 60%); }
+
+nav { display:flex; align-items:center; justify-content:space-between; padding:0 3rem; height:64px;
+  border-bottom:1px solid rgba(245,158,11,0.1); background:rgba(18,13,8,0.9); backdrop-filter:blur(12px); position:sticky; top:0; z-index:100; }
+.logo-wrap { display:flex; align-items:center; gap:0.6rem; }
+.logo-img { width:30px; height:30px; object-fit:contain; }
+.lt { font-family:'Cinzel',serif; font-size:0.95rem; letter-spacing:0.1em; color:#EDE0C8; }
+.lt span { color:#F59E0B; }
+.nl { display:flex; gap:2.5rem; }
+.nl a { font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; color:rgba(237,224,200,0.4); text-decoration:none; }
+.ncta { padding:0.4rem 1rem; border:1px solid rgba(245,158,11,0.4); border-radius:3px; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.1em; color:#F59E0B; text-decoration:none; }
+
+/* ASYMMETRIC HERO */
+.hero { display:grid; grid-template-columns:3fr 2fr; min-height:calc(100vh - 64px); position:relative; z-index:1; }
+.hero-left { padding:5rem 4rem 5rem 3rem; display:flex; flex-direction:column; justify-content:center; border-right:1px solid rgba(245,158,11,0.08); }
+.year-mark { font-family:'Cinzel',serif; font-size:5rem; font-weight:400; color:rgba(245,158,11,0.08); line-height:1; margin-bottom:-1.5rem; }
+.el { font-size:0.62rem; letter-spacing:0.2em; text-transform:uppercase; color:#D97706; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem; }
+.el::before { content:''; width:2.5rem; height:1px; background:#D97706; }
+h1 { font-family:'Playfair Display',serif; font-size:4rem; font-weight:400; line-height:1.06; margin-bottom:1.75rem; }
+h1 em { font-style:italic; color:#F59E0B; display:block; }
+.hp { font-size:0.93rem; line-height:1.85; color:rgba(237,224,200,0.45); max-width:42ch; margin-bottom:3rem; font-weight:300; }
+.btn { display:inline-block; padding:0.85rem 2.5rem; background:linear-gradient(135deg,#F59E0B,#D97706); color:#120D08; border-radius:3px; font-family:'Cinzel',serif; font-size:0.72rem; font-weight:600; letter-spacing:0.12em; text-decoration:none; text-transform:uppercase; }
+.ns { display:block; margin-top:1rem; font-size:0.72rem; color:rgba(237,224,200,0.3); }
+
+/* SIDEBAR */
+.hero-right { padding:3rem 2.5rem 3rem 3rem; display:flex; flex-direction:column; gap:1.25rem; justify-content:center; }
+.sidebar-label { font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.18em; text-transform:uppercase; color:rgba(237,224,200,0.25); margin-bottom:0.5rem; }
+.sc { background:rgba(44,31,20,0.5); border:1px solid rgba(245,158,11,0.12); border-radius:12px; padding:1.25rem; transition:border-color 0.2s; }
+.sc:hover { border-color:rgba(245,158,11,0.3); }
+.sc-head { display:flex; align-items:center; gap:0.85rem; margin-bottom:0.75rem; }
+.sc-av { width:40px; height:40px; border-radius:8px; background:linear-gradient(135deg,#F59E0B,#D97706); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; color:#120D08; font-size:0.9rem; }
+.sc-name { font-family:'Playfair Display',serif; font-size:0.95rem; }
+.sc-date { font-size:0.7rem; color:#F59E0B; margin-top:0.1rem; }
+.sc-q { font-family:'Playfair Display',serif; font-style:italic; font-size:0.82rem; line-height:1.6; color:rgba(237,224,200,0.5); margin-bottom:0.75rem; }
+.sc-f { display:flex; justify-content:space-between; font-size:0.68rem; color:rgba(237,224,200,0.3); }
+.sc-f .val { color:#F59E0B; font-weight:500; }
+.new-btn { display:flex; align-items:center; justify-content:center; gap:0.5rem; padding:0.8rem; border:1px dashed rgba(245,158,11,0.2); border-radius:10px; font-size:0.75rem; color:rgba(245,158,11,0.5); text-decoration:none; }
+.new-btn span { font-size:1.2rem; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo-wrap"><img src="logo.png" class="logo-img" alt=""><div class="lt">vspomin<span>.ai</span></div></div>
+  <div class="nl"><a href="#">Home</a><a href="#">Memorial</a><a href="#">Public</a></div>
+  <a href="#" class="ncta">Create memorial</a>
+</nav>
+<div class="hero">
+  <div class="hero-left">
+    <div class="year-mark">∞</div>
+    <div class="el">Digital Memorial Service</div>
+    <h1>We preserve the person,<em>not just the photographs</em></h1>
+    <p class="hp">Create a lasting digital memory of your loved one — with voice, stories and a family tree that lives forever.</p>
+    <a href="#" class="btn">Create memorial</a>
+    <span class="ns">Free to start · no card required</span>
+  </div>
+  <div class="hero-right">
+    <div class="sidebar-label">Recent memorials</div>
+    <div class="sc">
+      <div class="sc-head"><div class="sc-av">AP</div><div><div class="sc-name">Anna Petrova</div><div class="sc-date">1947 — 2018</div></div></div>
+      <div class="sc-q">"She kept everyone's birthdays in a green leather book…"</div>
+      <div class="sc-f"><span><span class="val">12</span> memories</span><span><span class="val">34</span> files</span></div>
+    </div>
+    <div class="sc">
+      <div class="sc-head"><div class="sc-av" style="background:linear-gradient(135deg,#7C3AED,#6D28D9)">DP</div><div><div class="sc-name">Dmitri Petrov</div><div class="sc-date" style="color:#A78BFA">1942 — 2021</div></div></div>
+      <div class="sc-q">"He taught himself English from the radio and could fix anything…"</div>
+      <div class="sc-f"><span><span class="val">8</span> memories</span><span><span class="val">19</span> files</span></div>
+    </div>
+    <div class="sc">
+      <div class="sc-head"><div class="sc-av" style="background:linear-gradient(135deg,#D97706,#92400E)">MV</div><div><div class="sc-name">Maria Volkova</div><div class="sc-date">1938 — 2015</div></div></div>
+      <div class="sc-q">"Her paintings filled three rooms and the smell of oils never left…"</div>
+      <div class="sc-f"><span><span class="val">21</span> memories</span><span><span class="val">48</span> files</span></div>
+    </div>
+    <a href="#" class="new-btn"><span>+</span>Create new memorial</a>
+  </div>
+</div>
+</body>
+</html>

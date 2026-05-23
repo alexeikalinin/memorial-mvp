@@ -1,13 +1,13 @@
 export default {
   nav: {
-    brand: 'Memorial',
+    brand: 'vspomin.ai',
     home: 'Home',
     create: 'Create Memorial',
     logout: 'Log out',
-    footer: '© 2025 Memorial. Preserving digital memories.',
+    footer: '© 2026 vspomin.ai — your memory. forever.',
   },
   home: {
-    label: 'Digital Memorial',
+    label: 'vspomin.ai',
     tagline_plain: 'We preserve the person,',
     tagline_em: 'not just the photographs',
     subtitle: 'Create a lasting digital memory of your loved one — with voice, stories and a family tree',
@@ -168,6 +168,8 @@ export default {
     family_tooltip_title: 'Hint',
     family_tooltip_on: "When enabled, answers use memories from this person and from relatives' memorials where they are mentioned.",
     family_tooltip_off: "When disabled, only this person's memories are used.",
+    family_locked_tooltip: 'Family memories across linked memorials is a Plus feature. Upgrade to unlock.',
+    family_upgrade_prompt: '🔒 Family RAG is available on Plus and Pro plans. Upgrade at /#pricing to chat across linked memorials.',
     sync_confirm: "Run family memory sync? This may create new memories on relatives' memorials based on this text.",
     sync_done: 'Sync complete. Created: {created}, skipped: {skipped}.',
     sync_error: 'Sync failed',

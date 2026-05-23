@@ -1,4 +1,4 @@
-# Ideas & Backlog — Memorial MVP
+# Ideas & Backlog — vspomin.ai
 
 > Единый список идей, незаконченных фич и roadmap-пунктов.
 > Обновляется вручную или через скилл `/idea`.
@@ -278,6 +278,86 @@
 | 2026-05-02 | MONITORING-1: Sentry backend + frontend | `planned` |
 | 2026-05-02 | INFRA-1: CI/CD GitHub Actions + обновить VERCEL_TOKEN | `planned` |
 | 2026-05-02 | UX-1/2/3: Онбординг + инвайт по email + уведомления | `planned` |
+
+---
+
+---
+
+## 🗂️ Аудит готовности к проду — нереализованное (2026-05-23)
+
+> Источник: анализ сессии 2026-05-23. Всё ниже было выявлено как незакрытое.
+
+### HIDE-1: Скрыть Animation button по feature-flag
+**Статус:** `planned`
+**Описание:** Анимация фото (D-ID/HeyGen) требует ngrok в dev и не проверена на проде. Добавить `ENABLE_ANIMATION=false` env-flag, скрыть кнопку в UI если выключено.
+
+### HIDE-2: Убрать FAQ пункт про Export данных
+**Статус:** `planned`
+**Описание:** FAQ лендинга обещает экспорт (ZIP/PDF), в коде нет. Убрать или заменить на "coming soon".
+
+### HIDE-3: Заменить Pricing CTA на waitlist / "coming soon"
+**Статус:** `planned`
+**Описание:** Stripe не протестирован e2e, нет Billing UI страницы. Кнопки "Buy" лучше заменить на форму ожидания до полного теста.
+
+### HIDE-4: Скрыть Google OAuth до проверки на проде
+**Статус:** `planned`
+**Описание:** Код callback есть, но флоу не тестировался. Скрыть кнопку "Sign in with Google" временно.
+
+### HIDE-5: FamilyTree — убрать edit mode из публичного доступа
+**Статус:** `planned`
+**Описание:** Edit mode коннекторов некликабелен, UX сырой. Оставить read-only.
+
+### HIDE-6: Ограничить Family RAG по тарифу
+**Статус:** `planned`  
+**Описание:** `include_family_memories: true` сейчас доступен всем. Добавить billing guard (только Plus/Pro).
+
+### INFRA-2: Sentry (backend + frontend)
+**Статус:** `planned`
+**Описание:** `sentry-sdk` в FastAPI + `@sentry/react` в Vite. Алерты на 5xx. Без этого о падениях узнаём от пользователей. ~30 мин настройки.
+
+### INFRA-3: 404 и Error страницы
+**Статус:** `done` ✅ (2026-05-23)
+**Описание:** `NotFoundPage.jsx` + `ErrorBoundary.jsx`. Route `path="*"` в App.jsx. ErrorBoundary оборачивает весь app.
+
+### INFRA-4: OG-теги для /m/:id
+**Статус:** `planned`
+**Описание:** Добавить `<meta og:title/image/description>` для вирального шэринга мемориалов в соцсетях.
+
+### INFRA-5: Alembic миграции БД
+**Статус:** `planned`  
+**Описание:** Сейчас `create_all()` — критично до любого изменения схемы на проде. Alembic уже в requirements, нет папки `alembic/`.
+
+### INFRA-6: Структурированное логирование (structlog)
+**Статус:** `planned`
+**Описание:** Заменить `print()` на `structlog` / `logging` с JSON-форматом. Нужно до Sentry и prod-мониторинга.
+
+### BILLING-4: Billing UI — страница /app/billing
+**Статус:** `planned`
+**Описание:** Страница управления подпиской: текущий план + дата продления, кнопка апгрейда, использование квот, Stripe Customer Portal.
+
+### BILLING-5: Add-on паки в UI
+**Статус:** `planned`
+**Описание:** extra_memorials + live_session_pack через Stripe. Модели и события уже в ACCESS_LEVELS.md.
+
+### STORAGE-1: Storage quota enforcement
+**Статус:** `planned`
+**Описание:** Лимиты 500MB/5GB/15GB описаны в ACCESS_LEVELS.md, в коде не реализованы. Счётчик в user_usage + проверка перед загрузкой.
+
+### STORAGE-2: MIME-валидация по содержимому файла
+**Статус:** `planned`
+**Описание:** media_service.py проверяет только расширение. Нужна проверка по реальному содержимому (magic bytes).
+
+### UX-EMAIL: Email-провайдер (Resend) — единый для всего
+**Статус:** `planned`
+**Описание:** Один провайдер нужен для: верификации, сброса пароля, инвайтов по email, уведомлений о новых воспоминаниях. Рекомендован Resend (простой API, хорошая доставка). Код написан, нужен только API ключ.
+
+### TEST-CLEANUP: Агент очистки тестовых мемориалов после E2E
+**Статус:** `planned`
+**Откуда:** обсуждение 2026-05-23
+**Описание:** После прогона E2E тестов (Playwright) автоматически удалять тестовые мемориалы и связанные данные — из интерфейса и из БД. Два варианта подхода:
+1. **Playwright teardown** — `globalTeardown` хук в `playwright.config.js`, удаляет через API (`DELETE /memorials/{id}`)
+2. **Отдельный скрипт** — `backend/cleanup_test_data.py`, идентифицирует по префиксу имени (`TEST_` / `e2e_`) или по тестовому user_id, удаляет через SQLAlchemy напрямую
+**Что нужно:** договориться о соглашении именования тестовых мемориалов + написать cleanup логику в обоих местах.
 
 ---
 

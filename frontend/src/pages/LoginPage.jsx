@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import './AuthPage.css'
 
@@ -7,7 +7,9 @@ export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const from = location.state?.from?.pathname || '/'
+  const resetSuccess = searchParams.get('reset') === 'success'
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState(null)
@@ -31,6 +33,11 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1 className="auth-title">Sign In</h1>
+        {resetSuccess && (
+          <div className="auth-success-banner">
+            ✓ Password updated successfully. Sign in with your new password.
+          </div>
+        )}
 
         <a
           href={`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google`}
@@ -79,6 +86,12 @@ export default function LoginPage() {
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
+
+        <p className="auth-switch" style={{ marginTop: '0.75rem' }}>
+          <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--text-secondary, rgba(255,255,255,0.5))' }}>
+            Forgot password?
+          </Link>
+        </p>
 
         <p className="auth-switch">
           Don't have an account? <Link to="/register">Sign up</Link>

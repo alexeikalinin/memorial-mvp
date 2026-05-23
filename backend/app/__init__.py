@@ -1,2 +1,2 @@
-# Memorial MVP Backend Application
+# vspomin.ai Backend Application
 

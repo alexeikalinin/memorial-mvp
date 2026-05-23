@@ -85,8 +85,8 @@ function ContributePage() {
   const handleViralShare = async () => {
     setViralSharing(true)
     try {
-      const res = await invitesAPI.create(info.memorial_id, {})
-      const url = res.data.invite_url
+      // Share the same invite link the contributor used — no auth needed
+      const url = `${window.location.origin}/contribute/${token}`
       const name = info.memorial_name || t('contribute.viral_name_fallback')
       const text = t('contribute.viral_text', { name, url })
       if (navigator.share) {

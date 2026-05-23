@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-01 Classic Ember — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #1A120B; color: #FAF3E8; font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+/* ── LABEL ── */
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+  color: #F59E0B; font-family: 'Inter', sans-serif; font-size: 0.72rem;
+  font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 6px 14px; border-radius: 20px; backdrop-filter: blur(8px);
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(26,18,11,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(245,158,11,0.12);
+  padding: 0 2rem; height: 68px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo-wrap { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #7C3AED 0%, #F59E0B 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; box-shadow: 0 0 16px rgba(245,158,11,0.3);
+}
+.logo-text { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 600;
+  background: linear-gradient(90deg, #F59E0B, #D97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+nav { display: flex; align-items: center; gap: 2rem; }
+nav a { color: rgba(250,243,232,0.65); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+nav a:hover { color: #F59E0B; }
+.btn-nav {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #1A120B; font-weight: 600; font-size: 0.85rem;
+  padding: 8px 20px; border-radius: 8px; text-decoration: none;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.3); transition: all 0.2s;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative; min-height: 92vh; display: flex; align-items: center;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 70% at 65% 45%, rgba(245,158,11,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(124,58,237,0.06) 0%, transparent 60%),
+    linear-gradient(160deg, #1A120B 0%, #2C1F14 50%, #1F1409 100%);
+}
+.hero-particles {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.particle {
+  position: absolute; border-radius: 50%;
+  background: rgba(245,158,11,0.6);
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0% { transform: translateY(0) scale(1); opacity: 0.6; }
+  100% { transform: translateY(-120px) scale(0); opacity: 0; }
+}
+.hero-inner {
+  position: relative; z-index: 2; max-width: 1140px; margin: 0 auto;
+  padding: 6rem 2rem 4rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+  color: #F59E0B; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 6px 16px; border-radius: 20px; margin-bottom: 1.5rem;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 4.5vw, 3.8rem);
+  font-weight: 400; line-height: 1.15; margin-bottom: 1.5rem; letter-spacing: -0.01em;
+}
+.hero-title em { font-style: italic;
+  background: linear-gradient(90deg, #F59E0B, #D97706, #F59E0B);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-size: 200% 100%; animation: shimmer 3s ease infinite;
+}
+@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+.hero-sub {
+  color: rgba(250,243,232,0.55); font-size: 1.05rem; line-height: 1.7;
+  margin-bottom: 2.5rem; max-width: 480px;
+}
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.btn-primary {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #1A120B; font-weight: 700; font-size: 0.95rem; padding: 14px 28px;
+  border-radius: 10px; text-decoration: none; border: none; cursor: pointer;
+  box-shadow: 0 6px 24px rgba(245,158,11,0.35), 0 1px 0 rgba(255,255,255,0.1) inset;
+  transition: all 0.25s; letter-spacing: 0.01em;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(245,158,11,0.45); }
+.btn-ghost {
+  background: rgba(250,243,232,0.06); border: 1px solid rgba(250,243,232,0.15);
+  color: rgba(250,243,232,0.75); font-size: 0.9rem; padding: 13px 24px;
+  border-radius: 10px; text-decoration: none; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { background: rgba(250,243,232,0.1); border-color: rgba(250,243,232,0.25); }
+
+/* ── HERO CARD ── */
+.hero-card {
+  background: linear-gradient(145deg, rgba(44,31,20,0.9), rgba(26,18,11,0.95));
+  border: 1px solid rgba(245,158,11,0.2); border-radius: 20px;
+  padding: 2rem; backdrop-filter: blur(20px);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.05) inset;
+}
+.memorial-photo {
+  width: 100%; aspect-ratio: 4/3; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(145deg, #2C1F14, #3D2B1A);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.25rem; position: relative;
+}
+.memorial-photo::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 40%, rgba(245,158,11,0.06), transparent);
+}
+.photo-placeholder {
+  font-size: 4rem; opacity: 0.3;
+}
+.memorial-name {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem;
+  font-weight: 400; margin-bottom: 0.3rem;
+}
+.memorial-dates { color: rgba(245,158,11,0.7); font-size: 0.85rem; font-weight: 500; margin-bottom: 1rem; }
+.memorial-quote {
+  color: rgba(250,243,232,0.5); font-size: 0.88rem; line-height: 1.6;
+  font-style: italic; font-family: 'Playfair Display', serif;
+  padding-top: 1rem; border-top: 1px solid rgba(245,158,11,0.1);
+}
+
+/* ── STATS ── */
+.stats-row { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.stat-badge {
+  flex: 1; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.12);
+  border-radius: 8px; padding: 8px 6px; text-align: center;
+}
+.stat-badge .num { font-size: 1.1rem; font-weight: 700; color: #F59E0B; font-family: 'Playfair Display', serif; }
+.stat-badge .lbl { font-size: 0.65rem; color: rgba(250,243,232,0.4); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+/* ── FEATURES ── */
+.features {
+  background: #1F1409; border-top: 1px solid rgba(245,158,11,0.08);
+  padding: 5rem 2rem;
+}
+.features-inner { max-width: 1140px; margin: 0 auto; }
+.section-label {
+  text-align: center; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em;
+  text-transform: uppercase; color: #D97706; margin-bottom: 0.8rem;
+}
+.section-title {
+  font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 400; text-align: center; margin-bottom: 3.5rem;
+}
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.feature-card {
+  background: linear-gradient(145deg, rgba(44,31,20,0.5), rgba(26,18,11,0.8));
+  border: 1px solid rgba(245,158,11,0.1); border-radius: 16px;
+  padding: 2rem 1.5rem; transition: all 0.3s;
+}
+.feature-card:hover { border-color: rgba(245,158,11,0.25); transform: translateY(-3px); }
+.feature-icon {
+  width: 48px; height: 48px; border-radius: 12px; margin-bottom: 1.2rem;
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.15);
+}
+.feature-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.6rem; font-weight: 500; }
+.feature-desc { color: rgba(250,243,232,0.5); font-size: 0.88rem; line-height: 1.65; }
+
+/* ── MEMORIALS GRID ── */
+.memorials-section { padding: 5rem 2rem; max-width: 1140px; margin: 0 auto; }
+.memorials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+.memorial-card {
+  background: linear-gradient(145deg, rgba(44,31,20,0.6), rgba(26,18,11,0.9));
+  border: 1px solid rgba(245,158,11,0.12); border-radius: 16px;
+  overflow: hidden; cursor: pointer; transition: all 0.3s;
+}
+.memorial-card:hover { border-color: rgba(245,158,11,0.3); transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+.mc-photo {
+  height: 160px; background: linear-gradient(145deg, #2C1F14, #3D2B1A);
+  display: flex; align-items: center; justify-content: center; font-size: 3rem; opacity: 0.4;
+  position: relative;
+}
+.mc-photo::after { content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 50%, rgba(26,18,11,0.8)); }
+.mc-body { padding: 1rem 1.2rem 1.2rem; }
+.mc-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; margin-bottom: 0.25rem; }
+.mc-dates { color: rgba(245,158,11,0.6); font-size: 0.78rem; font-weight: 500; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid rgba(245,158,11,0.1); padding: 2.5rem 2rem;
+  text-align: center; color: rgba(250,243,232,0.3); font-size: 0.82rem;
+}
+footer strong { color: #D97706; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-01 · Classic Ember</div>
+
+<!-- HEADER -->
+<header>
+  <a href="#" class="logo-wrap">
+    <div class="logo-icon">∞</div>
+    <span class="logo-text">vspomin.ai</span>
+  </a>
+  <nav>
+    <a href="#">Home</a>
+    <a href="#">Explore</a>
+    <a href="#" class="btn-nav">Create Memorial</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-particles">
+    <div class="particle" style="width:3px;height:3px;left:15%;bottom:20%;animation-duration:6s;animation-delay:0s;"></div>
+    <div class="particle" style="width:2px;height:2px;left:25%;bottom:30%;animation-duration:8s;animation-delay:1s;"></div>
+    <div class="particle" style="width:4px;height:4px;left:70%;bottom:15%;animation-duration:7s;animation-delay:2s;"></div>
+    <div class="particle" style="width:2px;height:2px;left:80%;bottom:40%;animation-duration:9s;animation-delay:0.5s;"></div>
+    <div class="particle" style="width:3px;height:3px;left:45%;bottom:10%;animation-duration:5s;animation-delay:3s;"></div>
+  </div>
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-badge">🕯 Digital Memorials &nbsp;·&nbsp; Forever in Memory</div>
+      <h1 class="hero-title">
+        Keep their<br><em>flame alive</em><br>forever
+      </h1>
+      <p class="hero-sub">
+        Create a living memorial — a sacred digital space where photos, memories and the voice of your loved one are preserved for generations.
+      </p>
+      <div class="hero-actions">
+        <a href="#" class="btn-primary">Create a Memorial</a>
+        <a href="#" class="btn-ghost">Explore Examples →</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-card">
+        <div class="memorial-photo">
+          <span class="photo-placeholder">👤</span>
+        </div>
+        <div class="memorial-name">Margaret Eleanor Collins</div>
+        <div class="memorial-dates">1 March 1942 — 15 November 2023</div>
+        <div class="memorial-quote">"She made every room warmer just by being in it. Her laughter was a gift we will carry always."</div>
+        <div class="stats-row">
+          <div class="stat-badge"><div class="num">47</div><div class="lbl">Memories</div></div>
+          <div class="stat-badge"><div class="num">12</div><div class="lbl">Photos</div></div>
+          <div class="stat-badge"><div class="num">3</div><div class="lbl">Voices</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="features-inner">
+    <div class="section-label">What we offer</div>
+    <h2 class="section-title">A space as precious as their memory</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🖼</div>
+        <div class="feature-title">Photo & Video Gallery</div>
+        <p class="feature-desc">Upload and preserve a lifetime of moments — photos, videos, and precious family recordings in one beautiful place.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✦</div>
+        <div class="feature-title">AI Avatar & Chat</div>
+        <p class="feature-desc">Speak with a compassionate AI avatar shaped by real memories — warm, respectful, and deeply personal.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎙</div>
+        <div class="feature-title">Voice Preservation</div>
+        <p class="feature-desc">Clone their voice from recordings so future generations can hear how they sounded, laughed, and spoke.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MEMORIALS -->
+<section class="memorials-section">
+  <div class="section-label">Recent Memorials</div>
+  <h2 class="section-title" style="text-align:left; margin-bottom:2rem;">Remembered with love</h2>
+  <div class="memorials-grid">
+    <div class="memorial-card"><div class="mc-photo">👤</div><div class="mc-body"><div class="mc-name">James Robert Harrington</div><div class="mc-dates">1955 — 2024</div></div></div>
+    <div class="memorial-card"><div class="mc-photo">👤</div><div class="mc-body"><div class="mc-name">Sofia Valentina Moretti</div><div class="mc-dates">1968 — 2023</div></div></div>
+    <div class="memorial-card"><div class="mc-photo">👤</div><div class="mc-body"><div class="mc-name">Thomas William Shaw</div><div class="mc-dates">1941 — 2022</div></div></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2025 <strong>vspomin.ai</strong> — Preserving memories, forever. &nbsp;🕯</p>
+</footer>
+
+</body>
+</html>

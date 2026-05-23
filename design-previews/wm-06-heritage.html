@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM-06 Heritage — vspomin.ai</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: #1A1208; color: #EDE2CC; font-family: 'Lora', serif; }
+
+.preview-label {
+  position: fixed; top: 16px; right: 16px; z-index: 999;
+  background: rgba(26,18,8,0.9); border: 1px solid rgba(245,158,11,0.3);
+  color: #D97706; padding: 6px 14px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* HEADER — newspaper style */
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(26,18,8,0.95); backdrop-filter: blur(12px);
+}
+.hdr-top {
+  border-bottom: 2px solid rgba(245,158,11,0.2); padding: 0.6rem 2.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 2rem;
+}
+.hdr-top-item { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(237,226,204,0.35); }
+.hdr-top-sep { color: rgba(245,158,11,0.25); }
+
+.hdr-main { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 2.5rem; }
+.hdr-logo-block { text-align: center; }
+.hdr-brand { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #F59E0B, #D97706); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hdr-tagline { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(237,226,204,0.35); margin-top: 2px; }
+nav { display: flex; gap: 1.8rem; }
+nav a { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(237,226,204,0.45); text-decoration: none; transition: color 0.2s; }
+nav a:hover { color: #F59E0B; }
+.hdr-cta-side { display: flex; align-items: center; gap: 1rem; }
+.hdr-create { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #0A0804; background: #D97706;
+  padding: 7px 18px; text-decoration: none; transition: background 0.2s; }
+.hdr-create:hover { background: #F59E0B; }
+
+/* Full-width double rule */
+.rule-double {
+  height: 4px; margin: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.2) 10%, rgba(245,158,11,0.5) 30%, rgba(245,158,11,0.5) 70%, rgba(245,158,11,0.2) 90%, transparent 100%);
+}
+
+/* HERO — editorial layout */
+.hero {
+  max-width: 1200px; margin: 0 auto; padding: 3rem 2.5rem;
+  display: grid; grid-template-columns: 3fr 1fr; gap: 0;
+  border-bottom: 1px solid rgba(245,158,11,0.1);
+}
+.hero-main {
+  padding-right: 2rem; border-right: 1px solid rgba(245,158,11,0.1);
+}
+.hero-sidebar { padding-left: 2rem; }
+
+.hero-date {
+  font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(237,226,204,0.35); margin-bottom: 1rem;
+}
+.hero-headline {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 4.5vw, 4rem);
+  font-weight: 400; line-height: 1.1; margin-bottom: 1rem; letter-spacing: -0.01em;
+}
+.hero-headline em { font-style: italic;
+  background: linear-gradient(90deg, #F59E0B, #D97706);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-subhead {
+  font-family: 'Lora', serif; font-style: italic; font-size: 1.05rem;
+  color: rgba(237,226,204,0.55); line-height: 1.6; margin-bottom: 1.5rem;
+}
+.hero-photo-block {
+  width: 100%; aspect-ratio: 16/9; background: linear-gradient(145deg, #2A1B08, #1A1208);
+  display: flex; align-items: center; justify-content: center; font-size: 5rem; opacity: 0.25;
+  margin-bottom: 1rem; position: relative;
+  border: 1px solid rgba(245,158,11,0.1);
+}
+.hero-photo-caption { font-family: 'Lora', serif; font-style: italic;
+  font-size: 0.78rem; color: rgba(237,226,204,0.3); margin-bottom: 1.5rem;
+  padding-top: 0.5rem; border-top: 1px solid rgba(245,158,11,0.08); }
+
+.hero-body { font-size: 0.95rem; line-height: 1.85; color: rgba(237,226,204,0.6);
+  column-count: 2; column-gap: 2rem; }
+.hero-body::first-letter { font-family: 'Playfair Display', serif; font-size: 3.5rem;
+  font-weight: 700; float: left; line-height: 0.8; margin-right: 8px; margin-top: 6px;
+  color: #D97706; }
+.hero-actions { margin-top: 1.5rem; display: flex; gap: 1rem; }
+.btn-heritage {
+  font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: #0A0804; background: #D97706;
+  padding: 10px 24px; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s;
+}
+.btn-heritage:hover { background: #F59E0B; }
+.btn-outline-hrt {
+  font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(237,226,204,0.45);
+  padding: 10px 20px; text-decoration: none;
+  border: 1px solid rgba(245,158,11,0.2); transition: all 0.2s;
+}
+.btn-outline-hrt:hover { border-color: rgba(245,158,11,0.5); color: rgba(237,226,204,0.75); }
+
+/* Sidebar */
+.sb-title { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(245,158,11,0.5);
+  padding-bottom: 0.6rem; border-bottom: 1px solid rgba(245,158,11,0.15); margin-bottom: 1rem; }
+.sb-item { padding-bottom: 1rem; margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(245,158,11,0.07); }
+.sb-item:last-child { border-bottom: none; }
+.sb-name { font-family: 'Playfair Display', serif; font-size: 0.95rem; margin-bottom: 0.2rem; }
+.sb-dates { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.08em;
+  color: rgba(245,158,11,0.5); margin-bottom: 0.4rem; }
+.sb-snippet { font-size: 0.75rem; color: rgba(237,226,204,0.35); line-height: 1.5; font-style: italic; }
+
+/* COLUMNS SECTION */
+.columns-section { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2.5rem; }
+.col-rule { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+.col-rule-line { flex: 1; height: 1px; background: rgba(245,158,11,0.15); }
+.col-rule-text { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: rgba(245,158,11,0.45); }
+
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.col-article { }
+.col-photo { width: 100%; aspect-ratio: 4/3; background: linear-gradient(145deg, #231508, #1A1208);
+  margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; opacity: 0.3; border: 1px solid rgba(245,158,11,0.08); }
+.col-art-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.4rem; font-weight: 700; }
+.col-art-sub { font-size: 0.78rem; color: rgba(237,226,204,0.4); line-height: 1.6; }
+.col-art-byline { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(245,158,11,0.4); margin-top: 0.5rem; }
+
+footer { border-top: 2px solid rgba(245,158,11,0.15); padding: 1.5rem 2.5rem;
+  display: flex; justify-content: space-between; align-items: center;
+  background: #140F07; }
+.ft-l { font-family: 'Playfair Display', serif; font-size: 1rem; color: rgba(237,226,204,0.4); }
+.ft-c { font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(237,226,204,0.2); text-align: center; }
+.ft-r { color: rgba(245,158,11,0.5); font-size: 1.2rem; }
+</style>
+</head>
+<body>
+
+<div class="preview-label">WM-06 · Heritage</div>
+
+<header>
+  <div class="hdr-top">
+    <span class="hdr-top-item">Est. 2024</span>
+    <span class="hdr-top-sep">✦</span>
+    <span class="hdr-top-item">Preserving Living Memory</span>
+    <span class="hdr-top-sep">✦</span>
+    <span class="hdr-top-item">Honoring Those We Love</span>
+  </div>
+  <div class="hdr-main">
+    <nav>
+      <a href="#">Memorials</a>
+      <a href="#">Stories</a>
+      <a href="#">Family</a>
+    </nav>
+    <div class="hdr-logo-block">
+      <div class="hdr-brand">vspomin.ai</div>
+      <div class="hdr-tagline">∞ · The memory archive · ∞</div>
+    </div>
+    <div class="hdr-cta-side">
+      <a href="#" class="hdr-create">Create Memorial</a>
+    </div>
+  </div>
+</header>
+<div class="rule-double"></div>
+
+<section class="hero">
+  <div class="hero-main">
+    <div class="hero-date">Thursday, 21 May 2026 · vspomin.ai</div>
+    <h1 class="hero-headline">
+      Preserving <em>living memory</em><br>for generations to come
+    </h1>
+    <p class="hero-subhead">
+      A new era of memorial — where artificial intelligence breathes life into precious memories, giving families a sacred space to grieve, remember, and connect.
+    </p>
+    <div class="hero-photo-block">👤</div>
+    <div class="hero-photo-caption">Margaret Eleanor Collins, photographed at Cornwall, Summer 1978 — remembered by family as "the heart of every gathering."</div>
+    <div class="hero-body">
+      When Eleanor's family gathered after her passing, they found themselves grasping at fragments — a laugh remembered differently, a story told in three versions. vspomin.ai was built for moments exactly like this. A place where every memory finds its home, where photographs live alongside stories, and where the AI avatar speaks with the warmth of someone who truly knew her. "We don't replace grief," says the platform's creator. "We give it somewhere to go."
+    </div>
+    <div class="hero-actions">
+      <a href="#" class="btn-heritage">Create a Memorial</a>
+      <a href="#" class="btn-outline-hrt">Read More Stories</a>
+    </div>
+  </div>
+  <div class="hero-sidebar">
+    <div class="sb-title">Recent Memorials</div>
+    <div class="sb-item">
+      <div class="sb-name">James Harrington</div>
+      <div class="sb-dates">1948 — 2024 · Yorkshire</div>
+      <div class="sb-snippet">"A man of few words, but every one counted."</div>
+    </div>
+    <div class="sb-item">
+      <div class="sb-name">Sofia Valentina</div>
+      <div class="sb-dates">1965 — 2023 · Melbourne</div>
+      <div class="sb-snippet">"Her garden was her cathedral."</div>
+    </div>
+    <div class="sb-item">
+      <div class="sb-name">Thomas Shaw</div>
+      <div class="sb-dates">1941 — 2022 · Edinburgh</div>
+      <div class="sb-snippet">"Forty years at sea, a lifetime of stories."</div>
+    </div>
+    <div class="sb-item">
+      <div class="sb-name">Ruth Abigail Moore</div>
+      <div class="sb-dates">1959 — 2024 · Toronto</div>
+      <div class="sb-snippet">"Every room felt warmer when she walked in."</div>
+    </div>
+  </div>
+</section>
+
+<section class="columns-section">
+  <div class="col-rule">
+    <div class="col-rule-line"></div>
+    <span class="col-rule-text">Stories of remembrance</span>
+    <div class="col-rule-line"></div>
+  </div>
+  <div class="cols3">
+    <div class="col-article">
+      <div class="col-photo">🌿</div>
+      <div class="col-art-title">The Garden She Left Behind</div>
+      <div class="col-art-sub">How a family used vspomin.ai to reconstruct 40 years of memories from a single shoebox of photographs.</div>
+      <div class="col-art-byline">By the Collins Family · 47 memories</div>
+    </div>
+    <div class="col-article">
+      <div class="col-photo">🎙</div>
+      <div class="col-art-title">The Voice That Still Speaks</div>
+      <div class="col-art-sub">Voice cloning technology is giving grieving families the chance to hear their loved ones one more time.</div>
+      <div class="col-art-byline">Feature · AI & Memory</div>
+    </div>
+    <div class="col-article">
+      <div class="col-photo">🌊</div>
+      <div class="col-art-title">Forty Years at Sea</div>
+      <div class="col-art-sub">Thomas Shaw's family created a memorial that spans four continents and three generations of stories.</div>
+      <div class="col-art-byline">By the Shaw Family · 12 nations</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="ft-l">vspomin.ai</span>
+  <span class="ft-c">© 2025 · Digital Memorial Platform · All rights reserved<br>Preserving memory, forever · 🕯</span>
+  <span class="ft-r">🕯</span>
+</footer>
+
+</body>
+</html>

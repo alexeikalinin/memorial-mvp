@@ -1,4 +1,4 @@
-# Access Levels & Roles — Memorial MVP
+# Access Levels & Roles — vspomin.ai
 
 > Версия: 2026-04-19. Stripe-интеграция — следующий шаг (см. раздел «Stripe»).
 
