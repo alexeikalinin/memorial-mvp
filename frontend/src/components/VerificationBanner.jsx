@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import { authAPI } from '../api/client'
 import './VerificationBanner.css'
 
@@ -10,6 +11,7 @@ import './VerificationBanner.css'
  */
 export default function VerificationBanner() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [dismissed, setDismissed] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -34,8 +36,8 @@ export default function VerificationBanner() {
       <span className="verify-banner__icon">✉</span>
       <span className="verify-banner__text">
         {sent
-          ? 'Verification email sent! Check your inbox.'
-          : <>Please verify your email address (<strong>{user.email}</strong>) to keep your account secure.</>
+          ? t('verifyBanner.sent')
+          : <>{t('verifyBanner.prompt_1')} (<strong>{user.email}</strong>) {t('verifyBanner.prompt_2')}</>
         }
       </span>
       {!sent && (
@@ -44,13 +46,13 @@ export default function VerificationBanner() {
           onClick={handleResend}
           disabled={sending}
         >
-          {sending ? 'Sending…' : 'Resend email'}
+          {sending ? t('verifyBanner.sending') : t('verifyBanner.resend')}
         </button>
       )}
       <button
         className="verify-banner__close"
         onClick={() => setDismissed(true)}
-        aria-label="Dismiss"
+        aria-label={t('verifyBanner.dismiss')}
       >
         ✕
       </button>

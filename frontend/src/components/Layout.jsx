@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useLanguage, SHOW_RU_LANGUAGE_OPTION } from '../contexts/LanguageContext'
+import { useLanguage, SHOW_EN_LANGUAGE_OPTION } from '../contexts/LanguageContext'
 import VerificationBanner from './VerificationBanner'
 import './Layout.css'
 
@@ -35,7 +35,7 @@ function Layout({ children }) {
             <Link to="/">{t('nav.home')}</Link>
             <Link to="/memorials/new" className="nav-cta">{t('nav.create')}</Link>
             <div className="lang-toggle">
-              {SHOW_RU_LANGUAGE_OPTION ? (
+              {SHOW_EN_LANGUAGE_OPTION ? (
                 <>
                   <button
                     type="button"
@@ -50,7 +50,7 @@ function Layout({ children }) {
                   >EN</button>
                 </>
               ) : (
-                <span className="lang-btn lang-btn--active" aria-current="true">EN</span>
+                <span className="lang-btn lang-btn--active" aria-current="true">RU</span>
               )}
             </div>
             {user ? (

@@ -235,6 +235,14 @@
 
 ---
 
+### SECURITY-3: `/code-review ultra` — полный security-аудит перед продом
+**Статус:** `deferred`
+**Откуда:** обсуждение 2026-06-24 — узкий ручной аудит JWT + RAG prompt injection сделан (2026-06-23/24, см. `.claude/skills/testing-jwt-token-security/`, `.claude/skills/testing-prompt-injection-in-rag-pipelines/`), но широкого прохода по всей кодовой базе не было.
+**Описание:** Прогнать `/code-review ultra` (multi-agent облачный ревью) по всему проекту. Покрыть зоны, которые ручной аудит не затронул: загрузка медиа, Stripe webhook signature verification, CORS/rate-limiting конфигурация, SQL во всех эндпоинтах (memorials/family/invites), фронтенд.
+**Вернуться когда:** проект почти готов к продакшен-деплою (после закрытия основных Launch Blockers выше).
+
+---
+
 ### INFRA-1: CI/CD GitHub Actions
 **Статус:** `planned`
 **Откуда:** ROADMAP.md, аудит 2026-05-02
@@ -278,6 +286,7 @@
 | 2026-05-02 | MONITORING-1: Sentry backend + frontend | `planned` |
 | 2026-05-02 | INFRA-1: CI/CD GitHub Actions + обновить VERCEL_TOKEN | `planned` |
 | 2026-05-02 | UX-1/2/3: Онбординг + инвайт по email + уведомления | `planned` |
+| 2026-06-24 | SECURITY-3: `/code-review ultra` полный аудит перед продом (после ручного JWT+RAG аудита) | `deferred` |
 
 ---
 

@@ -58,6 +58,8 @@ def _add_missing_columns():
             user_alters.append("ALTER TABLE users ADD COLUMN extra_memorials INTEGER NOT NULL DEFAULT 0")
         if "live_sessions_remaining" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN live_sessions_remaining INTEGER NOT NULL DEFAULT 0")
+        if "tokens_invalid_before" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN tokens_invalid_before TIMESTAMP WITH TIME ZONE")
         if user_alters:
             with engine.begin() as conn:
                 for sql in user_alters:

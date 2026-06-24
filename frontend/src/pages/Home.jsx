@@ -109,14 +109,14 @@ function Home() {
                   className="card-cover-img"
                   loading={i < 4 ? 'eager' : 'lazy'}
                   eager={i < 4}
-                  fallback={<div className="card-no-cover">🕯</div>}
+                  fallback={<div className="card-no-cover"><span>🕯</span></div>}
                 />
               ) : (
-                <div className="card-no-cover">🕯</div>
+                <div className="card-no-cover"><span>🕯</span></div>
               )}
             </div>
             {deceased && (
-              <span className="card-cover-candle" aria-hidden="true" title="Memorial">
+              <span className="card-cover-candle" aria-hidden="true" title={t('home.memorial_candle_title')}>
                 🕯
               </span>
             )}

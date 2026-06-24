@@ -612,7 +612,13 @@
   justify-content: center;
   background: linear-gradient(135deg, var(--surface-warm) 0%, var(--color-accent-light) 100%);
   font-size: 2.5rem;
+}
+
+.card-no-cover span {
+  display: inline-block;
   opacity: 0.6;
+  animation: home-card-candle-flicker 2.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
 }
 
 .memorial-card--deceased .card-no-cover {
@@ -646,6 +652,7 @@
   color: var(--text-muted);
   line-height: 1.55;
   margin-bottom: 0.75rem;
+  min-height: calc(1.55 * 0.88rem * 2); /* reserve 2 lines so cards don't jitter in height */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -689,9 +696,12 @@
 }
 
 .home-empty-icon {
+  display: inline-block;
   font-size: 3rem;
   margin-bottom: 1rem;
   opacity: 0.35;
+  animation: home-card-candle-flicker 2.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
 }
 
 .home-empty p {

@@ -30,6 +30,7 @@ def test_register_duplicate_email(client, registered_user):
             "full_name": "Another",
             "password": "password123",
         },
+        headers={"X-Lang": "en"},
     )
     assert resp.status_code == 400
     assert "Email already registered" in resp.json()["detail"]
@@ -44,6 +45,7 @@ def test_register_duplicate_username(client, registered_user):
             "full_name": "Another",
             "password": "password123",
         },
+        headers={"X-Lang": "en"},
     )
     assert resp.status_code == 400
     assert "Username already taken" in resp.json()["detail"]
@@ -78,6 +80,7 @@ def test_login_wrong_password(client, registered_user):
     resp = client.post(
         "/api/v1/auth/login",
         json={"email": "test@example.com", "password": "wrongpassword"},
+        headers={"X-Lang": "en"},
     )
     assert resp.status_code == 401
     assert "Incorrect" in resp.json()["detail"]

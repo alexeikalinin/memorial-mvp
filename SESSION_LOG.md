@@ -2,6 +2,32 @@
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## [2026-06-24] Точечный security-аудит: JWT + RAG prompt injection
+**Статус:** завершено ✅ (фиксы не закоммичены)
+
+**Что делали:**
+1. Изучили внешний репозиторий `mukul975/Anthropic-Cybersecurity-Skills` (817 skills для security ops) — признали избыточным для проекта целиком, но выбрали 2 точно релевантных: `testing-jwt-token-security` и `testing-prompt-injection-in-rag-pipelines`, скачали в `.claude/skills/`.
+2. Прогнали `/security-review` — диффа кода не было, перешли к ручному статическому аудиту по чек-листам новых скиллов.
+3. Нашли и исправили 4 риска (см. ниже). Часть находок субагента перепроверили руками и одну отбросили как false positive (invite-токены на самом деле жёстко скоплены по `memorial_id`, утечки нет).
+
+**Проблемы и решения:**
+- **Дефолтный SECRET_KEY в проде** (`config.py:21` — `"dev-secret-key-change-in-production"` как fallback). Решение: `model_validator` в `Settings` — падает при старте, если `DEBUG=false` и `SECRET_KEY` остался дефолтным.
+- **RAG prompt injection** (`ai_tasks.py` — memory.content интерполировался в промпт без разделителей). Решение: явные маркеры `===BEGIN/END MEMORY DATA===` + системный промпт с инструкцией не выполнять команды из данных + функция `_sanitize_memory_text()` (regex, нейтрализует фразы типа "ignore previous instructions" / "игнорируй инструкции" оборачиванием в кавычки, не вырезая текст).
+- **JWT не отзывался при смене пароля** (старый токен валиден все 7 дней после password reset). Решение: новая колонка `User.tokens_invalid_before` + `iat` в JWT (`auth.py: create_access_token`) + проверка в `_get_user_from_token` + установка в `confirm_password_reset`. Краевой случай: `iat` хранится как целые секунды, `tokens_invalid_before` — с микросекундами → токен, выпущенный в ту же секунду, ложно отклонялся. Исправлено округлением порога вниз до секунды (`invalid_before.replace(microsecond=0)`).
+- **Cross-memorial утечка через `sync_family_memories`** — `memory.content` шёл в промпт GPT-анализа без санитизации, а сгенерированный `reflected_text` сохранялся в ЧУЖОЙ мемориал и показывался в UI напрямую, минуя защиту чата. Решение: `_sanitize_memory_text()` применена и на входе (memory.content), и на выходе (reflected_text).
+
+**Изменённые файлы:**
+`backend/app/config.py`, `backend/app/auth.py`, `backend/app/api/auth.py`, `backend/app/models.py`, `backend/app/main.py`, `backend/app/services/ai_tasks.py`, `docs/IDEAS.md` (добавлена SECURITY-3 deferred), `.claude/skills/testing-jwt-token-security/`, `.claude/skills/testing-prompt-injection-in-rag-pipelines/` (новые)
+
+**Тесты:** ast.parse на все изменённые файлы + ручные integration-тесты ревокации JWT на SQLite (issue → reset → старый токен отклонён, новый принят, включая edge case с округлением секунд) — все прошли.
+
+**Осталось сделать:**
+- Закоммитить фиксы (сейчас uncommitted).
+- `/code-review ultra` — широкий аудит всей кодовой базы перед продом (медиа, Stripe webhooks, CORS/rate-limiting, SQL во всех эндпоинтах, фронтенд). Сохранено как `deferred` в `docs/IDEAS.md` → SECURITY-3.
+- Не реализовано (сознательно, низкий приоритет): logout-эндпоинта нет вообще (ревокация при logout не нужна без него); guardrails на выход LLM против утечки фактов другого мемориала при `include_family_memories=true`.
+
+---
+
 ## [2026-05-23] Family RAG — ограничение по тарифу + вирусный шеринг баг
 **Статус:** завершено ✅
 

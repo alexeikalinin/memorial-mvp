@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_memorial_access
 from app.db import get_db
+from app.i18n import get_lang, tr
 from app.models import AccessRequest, AccessRequestStatus, MemorialAccess, User, UserRole
 from app.schemas import (
     AccessEntryResponse,
@@ -227,13 +228,14 @@ async def request_access(
     data: AccessRequestCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """Запросить доступ к мемориалу. Только для зарегистрированных пользователей без доступа."""
     # Проверяем что мемориал существует (404 если нет)
     from app.models import Memorial
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
     if not memorial:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memorial_not_found"))
 
     # Проверяем что у пользователя ещё нет доступа
     existing_access = (
@@ -244,7 +246,7 @@ async def request_access(
     if existing_access:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You already have access to this memorial",
+            detail=tr(lang, "already_have_access"),
         )
 
     if data.requested_role not in ("editor", "viewer"):

@@ -53,6 +53,8 @@ class User(Base):
     # Password reset
     password_reset_token = Column(String(64), nullable=True, index=True)
     password_reset_token_expires = Column(DateTime(timezone=True), nullable=True)
+    # JWT-токены с iat раньше этого момента считаются недействительными (выставляется при смене пароля)
+    tokens_invalid_before = Column(DateTime(timezone=True), nullable=True)
     # Subscription / billing
     subscription_plan = Column(String(20), default="free", nullable=False, server_default="free")
     plan_expires_at = Column(DateTime(timezone=True), nullable=True)        # None = free or lifetime (no expiry)

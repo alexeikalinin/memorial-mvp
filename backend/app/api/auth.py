@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.auth import create_access_token, get_current_user, hash_password, verify_password
 from app.config import settings
 from app.db import get_db
+from app.i18n import get_lang, tr
 from app.limiter import limiter
 from app.models import User
 from app.schemas import (
@@ -33,12 +34,12 @@ _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit(settings.RATE_LIMIT_AUTH)
-def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
+def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """Register a new user."""
     if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail=tr(lang, "email_taken"))
     if db.query(User).filter(User.username == user_data.username).first():
-        raise HTTPException(status_code=400, detail="Username already taken")
+        raise HTTPException(status_code=400, detail=tr(lang, "username_taken"))
 
     verification_token = secrets.token_urlsafe(32)
     token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
@@ -57,20 +58,20 @@ def register(request: Request, user_data: UserCreate, db: Session = Depends(get_
     db.refresh(user)
 
     # Send verification email (non-blocking — failure doesn't break registration)
-    send_verification_email(user.email, verification_token, user.full_name or user.username)
+    send_verification_email(user.email, verification_token, user.full_name or user.username, lang=lang)
 
     return user
 
 
 @router.post("/token", response_model=Token)
 @limiter.limit(settings.RATE_LIMIT_AUTH)
-def login_oauth2(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login_oauth2(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """OAuth2 token endpoint. The 'username' field must contain the user's email."""
     user = db.query(User).filter(User.email == form_data.username, User.is_active == True).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail=tr(lang, "incorrect_credentials"),
             headers={"WWW-Authenticate": "Bearer"},
         )
     return Token(access_token=create_access_token({"sub": str(user.id)}))
@@ -78,13 +79,13 @@ def login_oauth2(request: Request, form_data: OAuth2PasswordRequestForm = Depend
 
 @router.post("/login", response_model=TokenWithUser)
 @limiter.limit(settings.RATE_LIMIT_AUTH)
-def login_json(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
+def login_json(request: Request, body: LoginRequest, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """JSON login endpoint. Returns token + user object."""
     user = db.query(User).filter(User.email == body.email, User.is_active == True).first()
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail=tr(lang, "incorrect_credentials"),
         )
     token = create_access_token({"sub": str(user.id)})
     return TokenWithUser(access_token=token, user=UserResponse.model_validate(user))
@@ -99,10 +100,10 @@ def get_me(current_user: User = Depends(get_current_user)):
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 @router.get("/google")
-def google_login():
+def google_login(lang: str = Depends(get_lang)):
     """Редирект на Google OAuth consent screen."""
     if not settings.GOOGLE_CLIENT_ID:
-        raise HTTPException(status_code=501, detail="Google OAuth not configured")
+        raise HTTPException(status_code=501, detail=tr(lang, "google_oauth_not_configured"))
     redirect_uri = f"{settings.API_V1_PREFIX}/auth/google/callback"
     # Используем PUBLIC_API_URL если задан (prod), иначе localhost
     base = settings.PUBLIC_API_URL or "http://localhost:8000"
@@ -118,10 +119,10 @@ def google_login():
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(code: str, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """Google OAuth callback: обменивает code на токен, создаёт/находит User, возвращает JWT."""
     if not settings.GOOGLE_CLIENT_ID:
-        raise HTTPException(status_code=501, detail="Google OAuth not configured")
+        raise HTTPException(status_code=501, detail=tr(lang, "google_oauth_not_configured"))
 
     base = settings.PUBLIC_API_URL or "http://localhost:8000"
     redirect_uri = f"{base}{settings.API_V1_PREFIX}/auth/google/callback"
@@ -136,7 +137,7 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
             "grant_type": "authorization_code",
         })
         if token_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to exchange Google code")
+            raise HTTPException(status_code=400, detail=tr(lang, "google_code_exchange_failed"))
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
 
@@ -146,7 +147,7 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
             headers={"Authorization": f"Bearer {access_token}"},
         )
         if userinfo_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch Google user info")
+            raise HTTPException(status_code=400, detail=tr(lang, "google_userinfo_failed"))
         info = userinfo_resp.json()
 
     google_id = info.get("sub")
@@ -155,7 +156,7 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
     avatar_url = info.get("picture")
 
     if not google_id or not email:
-        raise HTTPException(status_code=400, detail="Incomplete Google profile")
+        raise HTTPException(status_code=400, detail=tr(lang, "google_incomplete_profile"))
 
     # 3. Найти или создать пользователя
     user = db.query(User).filter(User.google_id == google_id).first()
@@ -204,28 +205,28 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
 
 @router.post("/verify-email", status_code=200)
 @limiter.limit("10/minute")
-def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
+def verify_email(request: Request, token: str, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """Verify email address using token from the verification email."""
     now = datetime.now(timezone.utc)
     user = db.query(User).filter(User.verification_token == token).first()
 
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+        raise HTTPException(status_code=400, detail=tr(lang, "verification_token_invalid"))
     if user.email_verified:
-        return {"message": "Email already verified"}
+        return {"message": tr(lang, "email_already_verified")}
     expires = user.verification_token_expires
     if expires:
         # SQLite returns naive datetimes; make comparison tz-safe
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
         if expires < now:
-            raise HTTPException(status_code=400, detail="Verification token has expired. Please request a new one.")
+            raise HTTPException(status_code=400, detail=tr(lang, "verification_token_expired"))
 
     user.email_verified = True
     user.verification_token = None
     user.verification_token_expires = None
     db.commit()
-    return {"message": "Email verified successfully"}
+    return {"message": tr(lang, "email_verified_success")}
 
 
 @router.post("/resend-verification", status_code=200)
@@ -234,10 +235,11 @@ def resend_verification(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """Resend email verification link to the current user."""
     if current_user.email_verified:
-        return {"message": "Email already verified"}
+        return {"message": tr(lang, "email_already_verified")}
 
     token = secrets.token_urlsafe(32)
     expires = datetime.now(timezone.utc) + timedelta(hours=24)
@@ -245,8 +247,8 @@ def resend_verification(
     current_user.verification_token_expires = expires
     db.commit()
 
-    send_verification_email(current_user.email, token, current_user.full_name or current_user.username)
-    return {"message": "Verification email sent"}
+    send_verification_email(current_user.email, token, current_user.full_name or current_user.username, lang=lang)
+    return {"message": tr(lang, "verification_email_sent")}
 
 
 # ── Password Reset ────────────────────────────────────────────────────────────
@@ -257,6 +259,7 @@ def request_password_reset(
     request: Request,
     body: PasswordResetRequest,
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """Request a password reset link. Always returns 200 to prevent email enumeration."""
     user = db.query(User).filter(User.email == body.email, User.is_active == True).first()
@@ -266,9 +269,9 @@ def request_password_reset(
         user.password_reset_token = token
         user.password_reset_token_expires = expires
         db.commit()
-        send_password_reset_email(user.email, token, user.full_name or user.username)
+        send_password_reset_email(user.email, token, user.full_name or user.username, lang=lang)
     # Always return 200 regardless (security: don't reveal if email exists)
-    return {"message": "If this email is registered, you will receive a password reset link shortly."}
+    return {"message": tr(lang, "password_reset_email_sent")}
 
 
 @router.post("/password-reset/confirm", status_code=200)
@@ -277,23 +280,26 @@ def confirm_password_reset(
     request: Request,
     body: PasswordResetConfirm,
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """Set a new password using the reset token."""
     now = datetime.now(timezone.utc)
     user = db.query(User).filter(User.password_reset_token == body.token).first()
 
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        raise HTTPException(status_code=400, detail=tr(lang, "reset_token_invalid"))
     reset_expires = user.password_reset_token_expires
     if reset_expires:
         # SQLite returns naive datetimes; make comparison tz-safe
         if reset_expires.tzinfo is None:
             reset_expires = reset_expires.replace(tzinfo=timezone.utc)
         if reset_expires < now:
-            raise HTTPException(status_code=400, detail="Reset token has expired. Please request a new password reset.")
+            raise HTTPException(status_code=400, detail=tr(lang, "reset_token_expired"))
 
     user.hashed_password = hash_password(body.new_password)
     user.password_reset_token = None
     user.password_reset_token_expires = None
+    # Отзываем все JWT, выпущенные до смены пароля (на случай компрометации старого пароля/токена)
+    user.tokens_invalid_before = now
     db.commit()
-    return {"message": "Password updated successfully"}
+    return {"message": tr(lang, "password_updated_success")}

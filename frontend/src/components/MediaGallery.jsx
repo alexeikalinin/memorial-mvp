@@ -39,7 +39,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
       await loadMedia()
       if (onReload) onReload()
     } catch (err) {
-      alert(err.response?.data?.detail || 'Ошибка при загрузке файла')
+      alert(err.response?.data?.detail || t('media.upload_error'))
     } finally {
       setUploading(false)
       e.target.value = '' // Сброс input
@@ -47,7 +47,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
   }
 
   const handleDelete = async (mediaId) => {
-    if (!window.confirm('Вы уверены, что хотите удалить этот файл? Это действие нельзя отменить.')) {
+    if (!window.confirm(t('media.delete_confirm'))) {
       return
     }
 
@@ -57,8 +57,8 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
       loadMedia()
       if (onReload) onReload()
     } catch (err) {
-      const errorDetail = err.response?.data?.detail || 'Ошибка при удалении файла'
-      alert(`Ошибка: ${errorDetail}`)
+      const errorDetail = err.response?.data?.detail || t('media.delete_error')
+      alert(`${t('media.error_prefix')} ${errorDetail}`)
       console.error('Error deleting media:', err)
     }
   }
@@ -77,26 +77,22 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
           status: 'pending',
           taskId: taskId,
           provider: provider,
-          message: response.data.message || 'Анимация запущена'
+          message: response.data.message || t('media.animation_started')
         }
       }))
-      
+
       // Начинаем polling для проверки статуса
       startAnimationPolling(mediaId, taskId, provider)
-      
+
     } catch (err) {
-      const errorDetail = err.response?.data?.detail || 'Ошибка при запуске анимации'
+      const errorDetail = err.response?.data?.detail || t('media.animation_error')
       let errorMessage = errorDetail
-      
+
       // Понятное сообщение для ошибки Redis
       if (errorDetail.includes('Redis') || errorDetail.includes('Celery') || errorDetail.includes('worker')) {
-        errorMessage = `⚠️ Для анимации фото необходимо запустить Redis и Celery worker.\n\n` +
-          `Инструкция:\n` +
-          `1. Запустите Redis: docker run -d -p 6379:6379 redis\n` +
-          `2. Запустите Celery worker: cd backend && celery -A app.workers.worker worker --loglevel=info\n\n` +
-          `Подробнее см. в документации.`
+        errorMessage = t('media.redis_setup_error')
       }
-      
+
       alert(errorMessage)
     } finally {
       setAnimating(null)
@@ -115,7 +111,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
           [mediaId]: {
             ...prev[mediaId],
             status: 'timeout',
-            message: 'Превышено время ожидания'
+            message: t('media.timeout')
           }
         }))
         return
@@ -170,7 +166,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
               [mediaId]: {
                 ...prev[mediaId],
                 status: 'processing',
-                message: 'Ожидание видео...'
+                message: t('media.waiting_video')
               }
             }))
             attempts++
@@ -186,7 +182,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
             [mediaId]: {
               ...prev[mediaId],
               status: 'failed',
-              message: error || 'Ошибка при создании анимации'
+              message: error || t('media.animation_error')
             }
           }))
           return
@@ -208,7 +204,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
             [mediaId]: {
               ...prev[mediaId],
               status: 'processing',
-              message: 'Обработка...'
+              message: t('media.processing')
             }
           }))
           attempts++
@@ -220,7 +216,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
               [mediaId]: {
                 ...prev[mediaId],
                 status: 'timeout',
-                message: 'Превышено время ожидания'
+                message: t('media.timeout')
               }
             }))
           }
@@ -235,14 +231,14 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
               [mediaId]: {
                 ...prev[mediaId],
                 status: 'timeout',
-                message: 'Превышено время ожидания'
+                message: t('media.timeout')
               }
             }))
           }
         }
       } catch (err) {
         // Ошибка при проверке статуса
-        const errorMsg = err.response?.data?.detail || err.message || 'Ошибка при проверке статуса'
+        const errorMsg = err.response?.data?.detail || err.message || t('media.status_check_error')
         
         // Если 404 или "not found", продолжаем проверку (возможно еще обрабатывается)
         if (err.response?.status === 404 || errorMsg.toLowerCase().includes('not found') || errorMsg.toLowerCase().includes('404')) {
@@ -253,7 +249,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
               [mediaId]: {
                 ...prev[mediaId],
                 status: 'processing',
-                message: 'Обработка...'
+                message: t('media.processing')
               }
             }))
             setTimeout(poll, pollInterval)
@@ -263,7 +259,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
               [mediaId]: {
                 ...prev[mediaId],
                 status: 'timeout',
-                message: 'Превышено время ожидания'
+                message: t('media.timeout')
               }
             }))
           }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import './AuthPage.css'
 
 export default function LoginPage() {
@@ -8,6 +9,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const { t } = useLanguage()
   const from = location.state?.from?.pathname || '/'
   const resetSuccess = searchParams.get('reset') === 'success'
 
@@ -23,7 +25,7 @@ export default function LoginPage() {
       await login(form.email, form.password)
       navigate(from, { replace: true })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password')
+      setError(err.response?.data?.detail || t('auth.login_error'))
     } finally {
       setLoading(false)
     }
@@ -32,10 +34,10 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Sign In</h1>
+        <h1 className="auth-title">{t('auth.signin_title')}</h1>
         {resetSuccess && (
           <div className="auth-success-banner">
-            ✓ Password updated successfully. Sign in with your new password.
+            ✓ {t('auth.password_updated')}
           </div>
         )}
 
@@ -49,33 +51,33 @@ export default function LoginPage() {
             <path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.2z"/>
             <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.8l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/>
           </svg>
-          Continue with Google
+          {t('auth.continue_google')}
         </a>
 
-        <div className="auth-divider"><span>or sign in with email</span></div>
+        <div className="auth-divider"><span>{t('auth.or_signin_email')}</span></div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label>Email</label>
+            <label>{t('auth.email')}</label>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="your@email.com"
+              placeholder={t('auth.email_placeholder')}
               required
               autoFocus
             />
           </div>
 
           <div className="auth-field">
-            <label>Password</label>
+            <label>{t('auth.password')}</label>
             <input
               type="password"
               name="password"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              placeholder="Minimum 8 characters"
+              placeholder={t('auth.password_min_placeholder')}
               required
             />
           </div>
@@ -83,23 +85,23 @@ export default function LoginPage() {
           {error && <div className="auth-error" role="alert">{error}</div>}
 
           <button type="submit" className="btn-auth-primary" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? t('auth.signing_in') : t('auth.signin_title')}
           </button>
         </form>
 
         <p className="auth-switch" style={{ marginTop: '0.75rem' }}>
           <Link to="/forgot-password" style={{ fontSize: '0.875rem', color: 'var(--text-secondary, rgba(255,255,255,0.5))' }}>
-            Forgot password?
+            {t('auth.forgot_password')}
           </Link>
         </p>
 
         <p className="auth-switch">
-          Don't have an account? <Link to="/register">Sign up</Link>
+          {t('auth.no_account')} <Link to="/register">{t('auth.signup_link')}</Link>
         </p>
 
-        <div className="auth-demo-divider"><span>or</span></div>
+        <div className="auth-demo-divider"><span>{t('auth.or')}</span></div>
         <Link to="/demo" className="btn-demo-explore">
-          Explore Demo Families (no sign up)
+          {t('auth.explore_demo')}
         </Link>
       </div>
     </div>

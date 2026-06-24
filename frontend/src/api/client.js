@@ -16,12 +16,13 @@ const apiClient = axios.create({
   },
 })
 
-// Добавляем Bearer token к каждому запросу
+// Добавляем Bearer token и текущий язык интерфейса (см. LanguageContext) к каждому запросу
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('authToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  config.headers['X-Lang'] = localStorage.getItem('lang') || 'ru'
   return config
 })
 

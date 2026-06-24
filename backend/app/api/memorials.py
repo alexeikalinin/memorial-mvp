@@ -17,6 +17,7 @@ from app.auth import (
     require_memorial_access,
 )
 from app.db import get_db
+from app.i18n import get_lang, tr
 from app.models import Memorial, Media, Memory, MediaType, MemorialAccess, MemorialInvite, User, UserRole
 from app.schemas import (
     MemorialCreate,
@@ -318,6 +319,7 @@ async def get_qr_code(
     memorial_id: int,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Получить QR-код для публичной страницы мемориала (PNG).
@@ -328,7 +330,7 @@ async def get_qr_code(
     except ImportError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="QR code library not installed. Run: pip install 'qrcode[pil]'"
+            detail=tr(lang, "qr_lib_missing")
         )
 
     memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
@@ -378,18 +380,19 @@ async def upload_media(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Загрузить медиа-файл для мемориала. Требуется роль EDITOR или выше.
     """
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
-    
+
     # Проверка расширения файла
     file_ext = Path(file.filename).suffix[1:].lower()
     if file_ext not in settings.allowed_extensions_list:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File extension '{file_ext}' not allowed. Allowed: {settings.ALLOWED_EXTENSIONS}"
+            detail=tr(lang, "file_extension_not_allowed", ext=file_ext, allowed=settings.ALLOWED_EXTENSIONS)
         )
     
     # Генерация уникального имени файла
@@ -403,7 +406,7 @@ async def upload_media(
         if len(contents) > settings.MAX_UPLOAD_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File size exceeds maximum allowed size of {settings.MAX_UPLOAD_SIZE} bytes"
+                detail=tr(lang, "file_too_large", max_size=settings.MAX_UPLOAD_SIZE)
             )
         
         with open(file_path, "wb") as f:
@@ -421,7 +424,7 @@ async def upload_media(
                 file_path.unlink()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid image file: {error_msg}"
+                    detail=tr(lang, "invalid_image_file", error=error_msg)
                 )
             
             # Оптимизация больших изображений (если больше 5MB)
@@ -442,7 +445,7 @@ async def upload_media(
                 file_path.unlink()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid video file: {error_msg}"
+                    detail=tr(lang, "invalid_video_file", error=error_msg)
                 )
             
             # Генерация превью для видео
@@ -495,7 +498,7 @@ async def upload_media(
             file_path.unlink()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error uploading file: {str(e)}"
+            detail=tr(lang, "file_upload_error", error=str(e))
         )
 
 
@@ -518,22 +521,23 @@ async def delete_media(
     media_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Удалить медиа-файл мемориала. Требуется роль EDITOR или выше.
     """
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
-    
+
     # Проверка существования медиа
     media = db.query(Media).filter(
         Media.id == media_id,
         Media.memorial_id == memorial_id
     ).first()
-    
+
     if not media:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media not found"
+            detail=tr(lang, "media_not_found")
         )
     
     # Удаление файлов с диска
@@ -599,6 +603,7 @@ async def create_memory(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
     invite_token: Optional[str] = Query(None, description="Инвайт-токен для анонимного вклада"),
+    lang: str = Depends(get_lang),
 ):
     """
     Добавить текстовое воспоминание к мемориалу.
@@ -607,21 +612,21 @@ async def create_memory(
     if invite_token:
         invite = db.query(MemorialInvite).filter(MemorialInvite.token == invite_token).first()
         if not invite or invite.memorial_id != memorial_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid invite token")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=tr(lang, "invite_token_invalid"))
         if invite.expires_at and invite.expires_at.replace(tzinfo=None) < datetime.utcnow():
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invite token expired")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=tr(lang, "invite_token_expired"))
         if not invite.permissions.get("add_memories"):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invite does not allow adding memories")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=tr(lang, "invite_no_memories_permission"))
         memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
         if not memorial:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memorial_not_found"))
         # Инкрементируем счётчик использований только при фактическом добавлении
         invite.uses_count = (invite.uses_count or 0) + 1
     elif current_user:
         invite = None
         memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     else:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=tr(lang, "authentication_required"))
 
     memory_source = "invite" if invite_token else "user"
     db_memory = Memory(
@@ -688,12 +693,13 @@ async def update_memory(
     memory_update: MemoryUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Обновить воспоминание. Требуется роль EDITOR или выше.
     """
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
-    
+
     # Проверка существования воспоминания
     db_memory = db.query(Memory).filter(
         Memory.id == memory_id,
@@ -702,7 +708,7 @@ async def update_memory(
     if not db_memory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memory not found"
+            detail=tr(lang, "memory_not_found")
         )
     
     # Сохраняем старый контент для проверки изменений
@@ -768,12 +774,13 @@ async def delete_memory(
     memory_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Удалить воспоминание. Требуется роль EDITOR или выше.
     """
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
-    
+
     # Проверка существования воспоминания
     db_memory = db.query(Memory).filter(
         Memory.id == memory_id,
@@ -782,7 +789,7 @@ async def delete_memory(
     if not db_memory:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memory not found"
+            detail=tr(lang, "memory_not_found")
         )
     
     # Удаляем embedding из векторной БД
@@ -806,6 +813,7 @@ async def submit_public_memory(
     memorial_id: int,
     body: PublicMemorySubmit,
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """
     Anyone (anonymous or authenticated) can submit a memory for moderation.
@@ -813,9 +821,9 @@ async def submit_public_memory(
     """
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
     if not memorial:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memorial not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memorial_not_found"))
     if not memorial.is_public:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Memorial is private")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=tr(lang, "memorial_is_private"))
     db_memory = Memory(
         memorial_id=memorial_id,
         title=body.title,
@@ -850,12 +858,13 @@ async def approve_memory(
     memory_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """Approve a pending memory — makes it publicly visible. Owner/editor only."""
     require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
     if not mem:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memory_not_found"))
     mem.status = "approved"
     db.commit()
     db.refresh(mem)
@@ -874,12 +883,13 @@ async def reject_memory(
     memory_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """Reject (delete) a pending memory. Owner/editor only."""
     require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
     if not mem:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memory_not_found"))
     db.delete(mem)
     db.commit()
     return None
@@ -923,6 +933,7 @@ async def set_cover_photo(
     body: SetCoverRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lang: str = Depends(get_lang),
 ):
     """
     Установить фото обложки мемориала. Требуется роль EDITOR или выше.
@@ -937,7 +948,7 @@ async def set_cover_photo(
         if not media:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Media not found in this memorial"
+                detail=tr(lang, "media_not_found_in_memorial")
             )
 
     memorial.cover_photo_id = body.media_id

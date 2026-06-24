@@ -69,7 +69,7 @@ class TestVerifyEmail:
         user = _get_user_from_db(db_session, "verify@example.com")
         token = user.verification_token
 
-        resp = client.post(f"/api/v1/auth/verify-email?token={token}", json={})
+        resp = client.post(f"/api/v1/auth/verify-email?token={token}", json={}, headers={"X-Lang": "en"})
         assert resp.status_code == 200
         assert resp.json()["message"] == "Email verified successfully"
 
@@ -80,7 +80,7 @@ class TestVerifyEmail:
 
     def test_verify_invalid_token(self, client):
         """Несуществующий токен → 400."""
-        resp = client.post("/api/v1/auth/verify-email?token=nonexistenttoken123")
+        resp = client.post("/api/v1/auth/verify-email?token=nonexistenttoken123", headers={"X-Lang": "en"})
         assert resp.status_code == 400
         assert "Invalid" in resp.json()["detail"]
 
@@ -102,7 +102,7 @@ class TestVerifyEmail:
         user.verification_token = new_token
         db_session.commit()
 
-        resp = client.post(f"/api/v1/auth/verify-email?token={new_token}", json={})
+        resp = client.post(f"/api/v1/auth/verify-email?token={new_token}", json={}, headers={"X-Lang": "en"})
         assert resp.status_code == 200
         assert "already verified" in resp.json()["message"]
 
@@ -118,7 +118,7 @@ class TestVerifyEmail:
         user.verification_token_expires = datetime.now(timezone.utc) - timedelta(hours=1)
         db_session.commit()
 
-        resp = client.post(f"/api/v1/auth/verify-email?token={user.verification_token}", json={})
+        resp = client.post(f"/api/v1/auth/verify-email?token={user.verification_token}", json={}, headers={"X-Lang": "en"})
         assert resp.status_code == 400
         assert "expired" in resp.json()["detail"].lower()
 
@@ -129,7 +129,7 @@ class TestResendVerification:
     def test_resend_for_unverified_user(self, client, db_session, auth_headers):
         """Неверифицированный пользователь — получает новый токен."""
         # registered_user уже создан через auth_headers (email_verified=False)
-        resp = client.post("/api/v1/auth/resend-verification", headers=auth_headers)
+        resp = client.post("/api/v1/auth/resend-verification", headers={**auth_headers, "X-Lang": "en"})
         assert resp.status_code == 200
         assert "sent" in resp.json()["message"].lower()
 
@@ -142,7 +142,7 @@ class TestResendVerification:
         user.email_verified = True
         db_session.commit()
 
-        resp = client.post("/api/v1/auth/resend-verification", headers=auth_headers)
+        resp = client.post("/api/v1/auth/resend-verification", headers={**auth_headers, "X-Lang": "en"})
         assert resp.status_code == 200
         assert "already verified" in resp.json()["message"]
 
@@ -167,7 +167,7 @@ class TestPasswordReset:
     def test_reset_known_email(self, client, db_session, registered_user):
         """Существующий email — создаёт токен, возвращает 200."""
         resp = client.post("/api/v1/auth/password-reset",
-                           json={"email": "test@example.com"})
+                           json={"email": "test@example.com"}, headers={"X-Lang": "en"})
         assert resp.status_code == 200
         assert "receive" in resp.json()["message"].lower()
 
@@ -210,7 +210,7 @@ class TestPasswordResetConfirm:
         """Валидный токен — меняет пароль, очищает токен."""
         token = self._get_reset_token(client, db_session)
         resp = client.post("/api/v1/auth/password-reset/confirm",
-                           json={"token": token, "new_password": "newpassword456"})
+                           json={"token": token, "new_password": "newpassword456"}, headers={"X-Lang": "en"})
         assert resp.status_code == 200
         assert "updated" in resp.json()["message"].lower()
 
@@ -243,7 +243,7 @@ class TestPasswordResetConfirm:
     def test_confirm_invalid_token(self, client, registered_user):
         """Несуществующий токен → 400."""
         resp = client.post("/api/v1/auth/password-reset/confirm",
-                           json={"token": "fakeresettoken999", "new_password": "newpassword456"})
+                           json={"token": "fakeresettoken999", "new_password": "newpassword456"}, headers={"X-Lang": "en"})
         assert resp.status_code == 400
         assert "Invalid" in resp.json()["detail"]
 
@@ -255,7 +255,7 @@ class TestPasswordResetConfirm:
         db_session.commit()
 
         resp = client.post("/api/v1/auth/password-reset/confirm",
-                           json={"token": token, "new_password": "newpassword456"})
+                           json={"token": token, "new_password": "newpassword456"}, headers={"X-Lang": "en"})
         assert resp.status_code == 400
         assert "expired" in resp.json()["detail"].lower()
 

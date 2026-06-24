@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import { authAPI } from '../api/client'
 import './AuthPage.css'
 
 export default function RegisterPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   const [form, setForm] = useState({ email: '', username: '', full_name: '', password: '' })
   const [error, setError] = useState(null)
@@ -21,7 +23,7 @@ export default function RegisterPage() {
       await login(form.email, form.password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.')
+      setError(err.response?.data?.detail || t('auth.register_error'))
     } finally {
       setLoading(false)
     }
@@ -30,7 +32,7 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-title">Create Account</h1>
+        <h1 className="auth-title">{t('auth.create_account_title')}</h1>
 
         <a
           href={`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google`}
@@ -42,56 +44,56 @@ export default function RegisterPage() {
             <path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.2z"/>
             <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.2 0-11.5-4.2-13.4-9.8l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/>
           </svg>
-          Continue with Google
+          {t('auth.continue_google')}
         </a>
 
-        <div className="auth-divider"><span>or register with email</span></div>
+        <div className="auth-divider"><span>{t('auth.or_register_email')}</span></div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label>Email</label>
+            <label>{t('auth.email')}</label>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="your@email.com"
+              placeholder={t('auth.email_placeholder')}
               required
               autoFocus
             />
           </div>
 
           <div className="auth-field">
-            <label>Username</label>
+            <label>{t('auth.username')}</label>
             <input
               type="text"
               name="username"
               value={form.username}
               onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-              placeholder="username"
+              placeholder={t('auth.username_placeholder')}
               required
             />
           </div>
 
           <div className="auth-field">
-            <label>Full name <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
+            <label>{t('auth.full_name')} <span style={{ opacity: 0.5, fontWeight: 400 }}>({t('auth.optional')})</span></label>
             <input
               type="text"
               name="full_name"
               value={form.full_name}
               onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-              placeholder="John Smith"
+              placeholder={t('auth.full_name_placeholder')}
             />
           </div>
 
           <div className="auth-field">
-            <label>Password</label>
+            <label>{t('auth.password')}</label>
             <input
               type="password"
               name="password"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              placeholder="Minimum 8 characters"
+              placeholder={t('auth.password_min_placeholder')}
               required
               minLength={8}
             />
@@ -100,12 +102,12 @@ export default function RegisterPage() {
           {error && <div className="auth-error">{error}</div>}
 
           <button type="submit" className="btn-auth-primary" disabled={loading}>
-            {loading ? 'Creating account…' : 'Create Account'}
+            {loading ? t('auth.creating_account') : t('auth.create_account_title')}
           </button>
         </form>
 
         <p className="auth-switch">
-          Already have an account? <Link to="/login">Sign in</Link>
+          {t('auth.have_account')} <Link to="/login">{t('auth.signin_link')}</Link>
         </p>
       </div>
     </div>

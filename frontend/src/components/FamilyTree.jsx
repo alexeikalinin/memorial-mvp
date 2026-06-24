@@ -324,6 +324,7 @@ function buildRelLabels(nodes, edges, rootId, t) {
 
 // ── Node Card ──────────────────────────────────────────────────────
 function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick }) {
+  const { t } = useLanguage()
   const memorial = nodeMap[extNode.id]
 
   const x = extNode.left * HW + OFF_X
@@ -342,7 +343,7 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick })
           </div>
         </div>
         <div className="ft-node-info">
-          <div className="ft-node-name ft-node-name--unknown">Unknown</div>
+          <div className="ft-node-name ft-node-name--unknown">{t('family.unknown')}</div>
         </div>
       </div>
     )
@@ -368,7 +369,7 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick })
     >
       <div className="ft-node-avatar-wrap">
         {isDeceased && (
-          <span className="ft-node-candle-badge" title="Deceased" aria-hidden="true">
+          <span className="ft-node-candle-badge" title={t('family.deceased')} aria-hidden="true">
             🕯
           </span>
         )}

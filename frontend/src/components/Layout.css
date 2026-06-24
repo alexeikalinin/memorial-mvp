@@ -181,8 +181,17 @@
 }
 
 .footer-flame {
+  display: inline-block;
   font-size: 0.9rem;
   opacity: 0.5;
+  animation: footer-flame-flicker 2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes footer-flame-flicker {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  45%      { opacity: 0.62; transform: scale(1.04); }
+  60%      { opacity: 0.5;  transform: scale(1.01); }
 }
 
 /* ─── Mobile Nav ────────────────────────────────────────────────── */

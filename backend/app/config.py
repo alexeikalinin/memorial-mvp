@@ -2,9 +2,11 @@
 Конфигурация приложения через переменные окружения.
 """
 from pathlib import Path
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
 from typing import List
+
+_DEV_SECRET_KEY = "dev-secret-key-change-in-production"
 
 # .env всегда ищем в корне backend (независимо от cwd при запуске uvicorn)
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -18,7 +20,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./memorial.db"
     
     # Security
-    SECRET_KEY: str = "dev-secret-key-change-in-production"
+    SECRET_KEY: str = _DEV_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 дней
     ADMIN_SECRET_KEY: str = ""  # Отдельный ключ для admin-эндпоинтов; если пусто — падает обратно на SECRET_KEY
@@ -175,6 +177,17 @@ class Settings(BaseSettings):
         """Преобразует строку ALLOWED_EXTENSIONS в список."""
         return [ext.strip().lower() for ext in self.ALLOWED_EXTENSIONS.split(",")]
     
+    @model_validator(mode="after")
+    def validate_production_secret_key(self):
+        """Падаем при старте, если в проде (DEBUG=false) остался дефолтный SECRET_KEY —
+        иначе JWT подписываются публично известной строкой и любой токен подделывается."""
+        if not self.DEBUG and self.SECRET_KEY == _DEV_SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY не задан в окружении: запуск с DEBUG=false и дефолтным "
+                "dev-secret-key запрещён, так как позволяет подделывать JWT-токены."
+            )
+        return self
+
     class Config:
         env_file = str(_ENV_FILE)
         case_sensitive = True

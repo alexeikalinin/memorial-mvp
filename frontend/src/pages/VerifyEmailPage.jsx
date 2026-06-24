@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { authAPI } from '../api/client'
+import { useLanguage } from '../contexts/LanguageContext'
 import './AuthPage.css'
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
+  const { t } = useLanguage()
 
   const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'error' | 'no-token'
   const [message, setMessage] = useState('')
@@ -18,11 +20,11 @@ export default function VerifyEmailPage() {
     authAPI.verifyEmail(token)
       .then(res => {
         setStatus('success')
-        setMessage(res.data.message || 'Email verified successfully')
+        setMessage(res.data.message || t('verifyEmail.default_success'))
       })
       .catch(err => {
         setStatus('error')
-        setMessage(err.response?.data?.detail || 'Verification failed. The link may be expired.')
+        setMessage(err.response?.data?.detail || t('verifyEmail.default_error'))
       })
   }, [token])
 
@@ -33,38 +35,38 @@ export default function VerifyEmailPage() {
 
         {status === 'loading' && (
           <>
-            <h1 className="auth-title">Verifying your email…</h1>
-            <p className="auth-sub">Please wait a moment.</p>
+            <h1 className="auth-title">{t('verifyEmail.loading_title')}</h1>
+            <p className="auth-sub">{t('verifyEmail.loading_sub')}</p>
           </>
         )}
 
         {status === 'success' && (
           <>
             <div className="auth-icon auth-icon--success">✓</div>
-            <h1 className="auth-title">Email verified!</h1>
-            <p className="auth-sub">Your account is now fully activated.</p>
-            <Link to="/" className="auth-btn">Go to Dashboard →</Link>
+            <h1 className="auth-title">{t('verifyEmail.success_title')}</h1>
+            <p className="auth-sub">{t('verifyEmail.success_sub')}</p>
+            <Link to="/" className="auth-btn">{t('verifyEmail.go_dashboard')}</Link>
           </>
         )}
 
         {status === 'error' && (
           <>
             <div className="auth-icon auth-icon--error">✕</div>
-            <h1 className="auth-title">Verification failed</h1>
+            <h1 className="auth-title">{t('verifyEmail.error_title')}</h1>
             <p className="auth-sub">{message}</p>
             <p className="auth-hint">
-              You can{' '}
-              <Link to="/" className="auth-link">sign in</Link>
-              {' '}and request a new verification email from the banner in the app.
+              {t('verifyEmail.error_hint_1')}{' '}
+              <Link to="/" className="auth-link">{t('verifyEmail.error_hint_link')}</Link>
+              {' '}{t('verifyEmail.error_hint_2')}
             </p>
           </>
         )}
 
         {status === 'no-token' && (
           <>
-            <h1 className="auth-title">Invalid link</h1>
-            <p className="auth-sub">No verification token found in the URL.</p>
-            <Link to="/login" className="auth-link">Back to login</Link>
+            <h1 className="auth-title">{t('verifyEmail.no_token_title')}</h1>
+            <p className="auth-sub">{t('verifyEmail.no_token_sub')}</p>
+            <Link to="/login" className="auth-link">{t('auth.back_to_login')}</Link>
           </>
         )}
       </div>

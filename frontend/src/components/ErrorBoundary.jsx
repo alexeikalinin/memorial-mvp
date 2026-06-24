@@ -1,5 +1,13 @@
 import { Component } from 'react'
+import ru from '../locales/ru'
+import en from '../locales/en'
 import '../pages/NotFoundPage.css'
+
+// Class component — нет хуков, читаем язык напрямую из того же localStorage-ключа,
+// что использует LanguageContext.
+function currentTranslations() {
+  return (typeof localStorage !== 'undefined' && localStorage.getItem('lang') === 'en') ? en : ru
+}
 
 /**
  * React Error Boundary — catches unhandled render errors anywhere in the tree.
@@ -28,26 +36,27 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children
 
-    const msg = this.state.error?.message || 'An unexpected error occurred.'
+    const t = currentTranslations().errorBoundary
+    const msg = this.state.error?.message || t.generic_error
 
     return (
       <div className="error-page">
         <div className="error-page__inner">
           <div className="error-page__candle" style={{ fontSize: '3rem' }}>⚠️</div>
-          <h1 className="error-page__title">Something went wrong</h1>
+          <h1 className="error-page__title">{t.title}</h1>
           <p className="error-page__sub">{msg}</p>
           <div className="error-page__actions">
             <button
               className="error-page__btn error-page__btn--primary"
               onClick={() => { this.handleReset(); window.location.href = '/' }}
             >
-              ← Go to Home
+              {t.go_home}
             </button>
             <button
               className="error-page__btn error-page__btn--secondary"
               onClick={() => window.location.reload()}
             >
-              Reload page
+              {t.reload}
             </button>
           </div>
         </div>

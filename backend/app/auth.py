@@ -59,8 +59,9 @@ def verify_password(plain: str, hashed: Optional[str]) -> bool:
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire, "iat": now})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
@@ -81,7 +82,22 @@ def _get_user_from_token(token: Optional[str], db: Session) -> Optional[User]:
     user_id_str = payload.get("sub")
     if not user_id_str:
         return None
-    return db.query(User).filter(User.id == int(user_id_str), User.is_active == True).first()
+    user = db.query(User).filter(User.id == int(user_id_str), User.is_active == True).first()
+    if user is None:
+        return None
+    if user.tokens_invalid_before is not None:
+        issued_at = payload.get("iat")
+        # Токены без iat (выпущенные до этого изменения) или с iat раньше последней
+        # смены пароля — считаем отозванными.
+        invalid_before = user.tokens_invalid_before
+        if invalid_before.tzinfo is None:
+            invalid_before = invalid_before.replace(tzinfo=timezone.utc)
+        # JWT "iat" хранится с точностью до секунды, а tokens_invalid_before — с микросекундами;
+        # округляем порог вниз до секунды, чтобы токен, выпущенный в ту же секунду, не отклонялся ложно.
+        invalid_before = invalid_before.replace(microsecond=0)
+        if issued_at is None or datetime.fromtimestamp(issued_at, tz=timezone.utc) < invalid_before:
+            return None
+    return user
 
 
 def _get_dev_user(db: Session) -> Optional[User]:

@@ -273,17 +273,17 @@ function MemorialDetail() {
       await memorialsAPI.approveMemory(id, memoryId)
       setPendingMemories(prev => prev.filter(m => m.id !== memoryId))
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to approve memory')
+      alert(err.response?.data?.detail || t('detail.approve_memory_error'))
     }
   }
 
   const handleRejectMemory = async (memoryId) => {
-    if (!window.confirm('Delete this memory permanently?')) return
+    if (!window.confirm(t('detail.reject_memory_confirm'))) return
     try {
       await memorialsAPI.rejectMemory(id, memoryId)
       setPendingMemories(prev => prev.filter(m => m.id !== memoryId))
     } catch (err) {
-      alert(err.response?.data?.detail || 'Failed to reject memory')
+      alert(err.response?.data?.detail || t('detail.reject_memory_error'))
     }
   }
 

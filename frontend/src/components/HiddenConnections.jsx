@@ -1,24 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { familyAPI } from '../api/client'
+import { useLanguage } from '../contexts/LanguageContext'
 import './HiddenConnections.css'
-
-const HOP_LABELS = {
-  2: 'Дедушка / бабушка по браку',
-  3: 'Двоюродный родственник',
-  4: 'Троюродный родственник',
-  5: 'Четвероюродный родственник',
-}
-
-function hopLabel(hops) {
-  return HOP_LABELS[hops] || `Дальний родственник (${hops} звена)`
-}
 
 export default function HiddenConnections({ memorialId }) {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(null)
+
+  const hopLabels = t('hiddenConnections.hop_labels')
+
+  const hopLabel = (hops) => hopLabels[hops] || t('hiddenConnections.hop_label_fallback', { hops })
 
   const discover = async () => {
     setLoading(true)
@@ -35,17 +30,16 @@ export default function HiddenConnections({ memorialId }) {
   return (
     <div className="hidden-connections">
       <div className="hc-header">
-        <h3>Скрытые родственные связи</h3>
+        <h3>{t('hiddenConnections.title')}</h3>
         <p className="hc-hint">
-          Найдём всех родственников через несколько поколений — включая тех,
-          кто сменил фамилию или связан через браки разных семей.
+          {t('hiddenConnections.hint')}
         </p>
         <button
           className="btn btn-secondary hc-discover-btn"
           onClick={discover}
           disabled={loading}
         >
-          {loading ? 'Ищем...' : result ? 'Обновить' : 'Найти скрытые связи'}
+          {loading ? t('hiddenConnections.searching') : result ? t('hiddenConnections.refresh') : t('hiddenConnections.discover')}
         </button>
       </div>
 
@@ -53,14 +47,15 @@ export default function HiddenConnections({ memorialId }) {
         <div className="hc-results">
           {result.hidden.length === 0 ? (
             <div className="hc-empty">
-              Скрытых связей не найдено. Добавьте больше родственников в дерево.
+              {t('hiddenConnections.empty')}
             </div>
           ) : (
             <>
               <div className="hc-count">
-                Найдено <strong>{result.hidden.length}</strong> неочевидных{' '}
-                {result.hidden.length === 1 ? 'связь' : 'связей'} через{' '}
-                {result.hidden.length > 0 ? `${result.hidden[0].hops}–${result.hidden[result.hidden.length - 1].hops}` : ''} поколений
+                {t('hiddenConnections.found_prefix')} <strong>{result.hidden.length}</strong>{' '}
+                {result.hidden.length === 1 ? t('hiddenConnections.connection_singular') : t('hiddenConnections.connection_plural')}{' '}
+                {t('hiddenConnections.through')}{' '}
+                {result.hidden.length > 0 ? `${result.hidden[0].hops}–${result.hidden[result.hidden.length - 1].hops}` : ''} {t('hiddenConnections.generations')}
               </div>
 
               <div className="hc-list">
@@ -96,7 +91,7 @@ export default function HiddenConnections({ memorialId }) {
 
                     {expanded === conn.target_memorial_id && (
                       <div className="hc-path">
-                        <div className="hc-path-label">Цепочка родства:</div>
+                        <div className="hc-path-label">{t('hiddenConnections.chain_label')}</div>
                         <div className="hc-chain">
                           {conn.path.map((step, i) => (
                             <span key={i} className="hc-chain-step">

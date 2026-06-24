@@ -1,33 +1,33 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-05-23 03:51
+> Автообновлено: 2026-06-24 13:58
 > Ветка: main
 
 ## Последний коммит
-de96dfa feat: remove demo panel from home — link only
+d81d159 feat: email verification, password reset, family RAG billing guard, viral share fix
 
 ## Изменённые файлы (uncommitted)
-- .claude/commands/check-quotas.md
-- .claude/commands/handoff.md
-- .claude/commands/run-tests.md
-- .claude/commands/test-and-fix.md
-- ENVIRONMENT.md
 - HANDOFF.md
-- INVESTOR_DEMO_PLAN.md
-- README.md
 - SESSION_LOG.md
-- TESTING_GUIDE.md
+- backend/app/api/access.py
+- backend/app/api/auth.py
+- backend/app/api/media.py
+- backend/app/api/memorials.py
+- backend/app/auth.py
+- backend/app/config.py
+- backend/app/main.py
+- backend/app/models.py
 
 ## Новые файлы (untracked)
-- .agents/skills/stripe-best-practices/SKILL.md
-- .agents/skills/stripe-best-practices/references/billing.md
-- .agents/skills/stripe-best-practices/references/connect.md
-- .agents/skills/stripe-best-practices/references/payments.md
-- .agents/skills/stripe-best-practices/references/security.md
+- .claude/agents/vspomin-design-agent.md
+- .claude/skills/testing-jwt-token-security/LICENSE
+- .claude/skills/testing-jwt-token-security/SKILL.md
+- .claude/skills/testing-jwt-token-security/references/api-reference.md
+- .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
+d81d159 feat: email verification, password reset, family RAG billing guard, viral share fix
 de96dfa feat: remove demo panel from home — link only
 7da7bca feat: hide demo memorials once user has own memorials
-8c39b97 fix: hide ElevenLabs quota error for unauthenticated users
 
 ## Запуск стека
 ```bash

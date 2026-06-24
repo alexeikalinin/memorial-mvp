@@ -4,13 +4,14 @@ import en from '../locales/en'
 
 const translations = { ru, en }
 
-/** Временно `false` для демо инвестору (только EN в шапке); вернуть `true`, чтобы снова показать RU. */
-export const SHOW_RU_LANGUAGE_OPTION = false
+/** Запуск на русскоязычном рынке: RU — дефолт, EN временно скрыт в шапке приложения.
+ *  Вернуть `true`, чтобы снова показать переключатель EN. */
+export const SHOW_EN_LANGUAGE_OPTION = false
 
 function readInitialLang() {
-  if (!SHOW_RU_LANGUAGE_OPTION) {
-    if (localStorage.getItem('lang') === 'ru') localStorage.setItem('lang', 'en')
-    return 'en'
+  if (!SHOW_EN_LANGUAGE_OPTION) {
+    if (localStorage.getItem('lang') === 'en') localStorage.setItem('lang', 'ru')
+    return 'ru'
   }
   return localStorage.getItem('lang') || 'ru'
 }
@@ -25,22 +26,16 @@ export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(readInitialLang)
 
   const setLang = (newLang) => {
-    if (!SHOW_RU_LANGUAGE_OPTION) {
-      if (newLang === 'en') {
-        setLangState('en')
-        localStorage.setItem('lang', 'en')
+    if (!SHOW_EN_LANGUAGE_OPTION) {
+      if (newLang === 'ru') {
+        setLangState('ru')
+        localStorage.setItem('lang', 'ru')
       }
       return
     }
     setLangState(newLang)
     localStorage.setItem('lang', newLang)
   }
-
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.lang = lang === 'en' ? 'en' : 'ru'
-    }
-  }, [lang])
 
   const t = (key, params = {}) => {
     const keys = key.split('.')
@@ -56,6 +51,13 @@ export function LanguageProvider({ children }) {
     }
     return val ?? key
   }
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang === 'en' ? 'en' : 'ru'
+      document.title = t('nav.page_title')
+    }
+  }, [lang])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

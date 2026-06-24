@@ -9,6 +9,7 @@ import './AvatarChat.css'
 
 // Запись аудио для клона голоса
 function useVoiceRecorder() {
+  const { t } = useLanguage()
   const [isRecording, setIsRecording] = useState(false)
   const [audioBlob, setAudioBlob] = useState(null)
   const [audioUrl, setAudioUrl] = useState(null)
@@ -31,7 +32,7 @@ function useVoiceRecorder() {
       recorderRef.current = recorder
       setIsRecording(true)
     } catch {
-      alert('Microphone access denied.')
+      alert(t('chat.mic_denied'))
     }
   }
 
@@ -189,7 +190,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     const file = e.target.files[0]
     if (!file) return
     if (!file.type.startsWith('audio/')) {
-      alert('Пожалуйста, выберите аудио файл (MP3, WAV, M4A)')
+      alert(t('chat.voice_file_type_error'))
       return
     }
     await uploadVoiceFile(file)
@@ -207,13 +208,13 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     setUploadingVoice(true)
     try {
       const response = await aiAPI.uploadVoice(memorialId, file, voiceName || undefined)
-      alert(response.data.message || 'Голос успешно клонирован!')
+      alert(response.data.message || t('chat.voice_clone_success'))
       setHasCustomVoice(true)
       setVoiceName('')
       setShowVoicePanel(false)
     } catch (err) {
       const status = err.response?.status
-      const detail = err.response?.data?.detail || 'Ошибка при клонировании голоса'
+      const detail = err.response?.data?.detail || t('chat.voice_clone_error')
       if (status === 402) {
         alert(`⚠️ ${detail}`)
       } else {

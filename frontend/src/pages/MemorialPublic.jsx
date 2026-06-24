@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { memorialsAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import AvatarChat from '../components/AvatarChat'
 import DemoTutorial from '../components/DemoTutorial'
 import './MemorialPublic.css'
@@ -43,6 +44,7 @@ function MemorialPublic() {
   const [memError, setMemError] = useState(null)
 
   const { user } = useAuth()
+  const { t, lang } = useLanguage()
 
   // Demo tutorial state — picks up from step 3 when coming from /demo
   const [tutorialStep, setTutorialStep] = useState(() => {
@@ -88,7 +90,7 @@ function MemorialPublic() {
         setMemories(Array.isArray(memoriesRes.data) ? memoriesRes.data : [])
         setPhotos(Array.isArray(mediaRes.data) ? mediaRes.data.filter((m) => m.media_type === 'photo') : [])
       } catch (err) {
-        setError(err.response?.data?.detail || 'Memorial not found')
+        setError(err.response?.data?.detail || t('public.not_found'))
       } finally {
         setLoading(false)
       }
@@ -113,7 +115,7 @@ function MemorialPublic() {
       const response = await memorialsAPI.getQR(id)
       setQrBlobUrl(URL.createObjectURL(response.data))
     } catch {
-      alert('Error generating QR code')
+      alert(t('public.qr_error'))
       setShowQR(false)
     } finally {
       setQrLoading(false)
@@ -128,10 +130,10 @@ function MemorialPublic() {
       setRequestSent(true)
     } catch (err) {
       const detail = err.response?.data?.detail
-      if (detail?.includes('already have access')) {
+      if (detail?.includes('already have access') || detail?.includes('уже есть доступ')) {
         setRequestSent(true)
       } else {
-        setRequestError(detail || 'Error sending request')
+        setRequestError(detail || t('public.request_error'))
       }
     } finally {
       setRequestLoading(false)
@@ -155,14 +157,14 @@ function MemorialPublic() {
       setMemSubmitted(true)
       setMemForm({ contributor_name: '', title: '', content: '' })
     } catch (err) {
-      setMemError(err.response?.data?.detail || 'Failed to submit memory')
+      setMemError(err.response?.data?.detail || t('public.memory_submit_error'))
     } finally {
       setMemSubmitting(false)
     }
   }
 
-  if (loading) return <div className="loading">Loading...</div>
-  if (error || !memorial) return <div className="error-message">{error || 'Memorial not found'}</div>
+  if (loading) return <div className="loading">{t('public.loading')}</div>
+  if (error || !memorial) return <div className="error-message">{error || t('public.not_found')}</div>
 
   const birthYear = memorial.birth_date ? new Date(memorial.birth_date).getFullYear() : null
   const deathYear = memorial.death_date ? new Date(memorial.death_date).getFullYear() : null
@@ -175,10 +177,10 @@ function MemorialPublic() {
       {/* ── Demo banner ── */}
       {memorial.is_demo && (
         <div className="demo-banner">
-          <span>📖 This is a demo memorial.</span>
+          <span>📖 {t('public.demo_banner')}</span>
           <span className="demo-banner-links">
-            <Link to="/demo">← All families</Link>
-            <Link to="/register" className="demo-banner-cta">Create your own →</Link>
+            <Link to="/demo">{t('public.demo_all_families')}</Link>
+            <Link to="/register" className="demo-banner-cta">{t('public.demo_create_own')}</Link>
           </span>
         </div>
       )}
@@ -223,7 +225,7 @@ function MemorialPublic() {
             className={activeSection === 'chat' ? 'active' : ''}
             onClick={() => setActiveSection('chat')}
           >
-            Chat with Avatar
+            {t('public.nav_chat')}
           </button>
           <button
             className={activeSection === 'memories' ? 'active' : ''}
@@ -232,14 +234,14 @@ function MemorialPublic() {
               if (tutorialStep === 3) advanceTutorial()
             }}
           >
-            Memories {memories.length > 0 && `(${memories.length})`}
+            {t('public.nav_memories')} {memories.length > 0 && `(${memories.length})`}
           </button>
           {photos.length > 0 && (
             <button
               className={activeSection === 'photos' ? 'active' : ''}
               onClick={() => setActiveSection('photos')}
             >
-              Photos ({photos.length})
+              {t('public.nav_photos')} ({photos.length})
             </button>
           )}
         </nav>
@@ -259,23 +261,23 @@ function MemorialPublic() {
                 </span>
                 <span className="anon-chat-hint-text">
                   {anonCount === 0
-                    ? `${ANON_CHAT_LIMIT} free questions · sign in for 15/month`
-                    : `${ANON_CHAT_LIMIT - anonCount} of ${ANON_CHAT_LIMIT} free questions left · `}
-                  {anonCount > 0 && <Link to="/register" className="anon-hint-link">sign up free for 15/month</Link>}
+                    ? t('public.anon_hint_full', { limit: ANON_CHAT_LIMIT })
+                    : t('public.anon_hint_left', { left: ANON_CHAT_LIMIT - anonCount, limit: ANON_CHAT_LIMIT })}
+                  {anonCount > 0 && <Link to="/register" className="anon-hint-link">{t('public.anon_hint_link')}</Link>}
                 </span>
               </div>
             )}
             {/* Limit reached: sign-up prompt */}
             {showAuthPrompt && (
               <div className="anon-limit-banner">
-                <p className="anon-limit-title">You've used all {ANON_CHAT_LIMIT} free questions</p>
+                <p className="anon-limit-title">{t('public.anon_limit_title', { limit: ANON_CHAT_LIMIT })}</p>
                 <p className="anon-limit-sub">
-                  Create a free account — <strong>15 messages/month</strong> included.<br />
-                  Upgrade to Plus for <strong>200 messages/month</strong> + voice & photo animation.
+                  {t('public.anon_limit_sub_1')} <strong>{t('public.anon_limit_sub_2')}</strong><br />
+                  {t('public.anon_limit_sub_3')} <strong>{t('public.anon_limit_sub_4')}</strong>
                 </p>
                 <div className="anon-limit-actions">
-                  <Link to="/register" className="btn-anon-signup">Sign up free</Link>
-                  <Link to="/login" className="btn-anon-login">Sign in</Link>
+                  <Link to="/register" className="btn-anon-signup">{t('public.signup_free')}</Link>
+                  <Link to="/login" className="btn-anon-login">{t('public.signin')}</Link>
                 </div>
               </div>
             )}
@@ -299,7 +301,7 @@ function MemorialPublic() {
               <DemoTutorial step={tutorialStep} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
             )}
             {memories.length === 0 ? (
-              <div className="public-empty"><p>No memories have been shared yet.</p></div>
+              <div className="public-empty"><p>{t('public.no_memories')}</p></div>
             ) : (
               memories.map((m) => (
                 <div key={m.id} className="public-memory-card">
@@ -310,7 +312,7 @@ function MemorialPublic() {
                   )}
                   {m.event_date && (
                     <span className="event-date">
-                      {new Date(m.event_date).toLocaleDateString('en-US', {
+                      {new Date(m.event_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
                         year: 'numeric',
                         month: 'long',
                       })}
@@ -325,19 +327,19 @@ function MemorialPublic() {
               <div className="public-submit-memory">
                 {memSubmitted ? (
                   <div className="mem-submitted-msg">
-                    <span>✓</span> Thank you! Your memory has been sent to the owner for review.
+                    <span>✓</span> {t('public.memory_thanks')}
                     <button className="btn-mem-another" onClick={() => setMemSubmitted(false)}>
-                      Share another
+                      {t('public.share_another')}
                     </button>
                   </div>
                 ) : showMemoryForm ? (
                   <form className="mem-submit-form" onSubmit={handleMemSubmit}>
-                    <h4 className="mem-form-title">Share a memory</h4>
-                    <p className="mem-form-hint">Your submission will be reviewed by the memorial owner before appearing here.</p>
+                    <h4 className="mem-form-title">{t('public.share_memory')}</h4>
+                    <p className="mem-form-hint">{t('public.memory_review_hint')}</p>
                     <input
                       className="mem-input"
                       type="text"
-                      placeholder="Your name *"
+                      placeholder={t('public.your_name')}
                       value={memForm.contributor_name}
                       onChange={(e) => setMemForm((f) => ({ ...f, contributor_name: e.target.value }))}
                       required
@@ -346,14 +348,14 @@ function MemorialPublic() {
                     <input
                       className="mem-input"
                       type="text"
-                      placeholder="Title (optional)"
+                      placeholder={t('public.title_optional')}
                       value={memForm.title}
                       onChange={(e) => setMemForm((f) => ({ ...f, title: e.target.value }))}
                       maxLength={255}
                     />
                     <textarea
                       className="mem-textarea"
-                      placeholder="Your memory *"
+                      placeholder={t('public.your_memory')}
                       value={memForm.content}
                       onChange={(e) => setMemForm((f) => ({ ...f, content: e.target.value }))}
                       required
@@ -364,16 +366,16 @@ function MemorialPublic() {
                     {memError && <p className="mem-error">{memError}</p>}
                     <div className="mem-form-actions">
                       <button type="submit" className="btn-mem-submit" disabled={memSubmitting}>
-                        {memSubmitting ? 'Sending…' : 'Send for review'}
+                        {memSubmitting ? t('public.sending') : t('public.send_for_review')}
                       </button>
                       <button type="button" className="btn-mem-cancel" onClick={() => setShowMemoryForm(false)}>
-                        Cancel
+                        {t('public.cancel')}
                       </button>
                     </div>
                   </form>
                 ) : (
                   <button className="btn-share-memory" onClick={() => setShowMemoryForm(true)}>
-                    + Share a memory
+                    + {t('public.share_memory')}
                   </button>
                 )}
               </div>
@@ -399,30 +401,30 @@ function MemorialPublic() {
       {/* ── Share / QR ── */}
       <div className="public-share-section">
         <button className="btn-share-qr" onClick={handleShowQR}>
-          ⊞ Share QR Code
+          ⊞ {t('public.share_qr')}
         </button>
         {showQR && (
           <div className="public-qr-panel">
             {qrLoading ? (
-              <p className="qr-panel-loading">Generating QR code...</p>
+              <p className="qr-panel-loading">{t('public.qr_generating')}</p>
             ) : qrBlobUrl ? (
               <>
                 <img src={qrBlobUrl} alt="QR Code" className="public-qr-image" />
                 <p className="public-qr-hint">
-                  Scan the QR code or share the link.<br />
-                  Print and place on the memorial stone.
+                  {t('public.qr_hint_1')}<br />
+                  {t('public.qr_hint_2')}
                 </p>
                 <div className="public-qr-url-row">
                   <code className="public-qr-url">{window.location.href}</code>
                   <button
                     className="btn-copy-small"
-                    onClick={() => navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))}
+                    onClick={() => navigator.clipboard.writeText(window.location.href).then(() => alert(t('public.link_copied')))}
                   >
-                    Copy
+                    {t('public.copy')}
                   </button>
                 </div>
                 <button className="btn-download-qr" onClick={handleDownloadQR}>
-                  Download PNG
+                  {t('public.download_png')}
                 </button>
               </>
             ) : null}
@@ -434,17 +436,17 @@ function MemorialPublic() {
       {user && !memorial.current_user_role && !memorial.is_public && (
         <div className="public-request-access">
           {requestSent ? (
-            <p className="request-access-sent">✓ Access request sent — waiting for owner approval</p>
+            <p className="request-access-sent">✓ {t('public.access_request_sent')}</p>
           ) : (
             <>
-              <p className="request-access-hint">You don't have management access to this memorial</p>
+              <p className="request-access-hint">{t('public.no_access_hint')}</p>
               {requestError && <p className="request-access-error">{requestError}</p>}
               <button
                 className="btn-request-access"
                 onClick={handleRequestAccess}
                 disabled={requestLoading}
               >
-                {requestLoading ? 'Sending...' : 'Request access'}
+                {requestLoading ? t('public.sending') : t('public.request_access')}
               </button>
             </>
           )}
@@ -453,9 +455,9 @@ function MemorialPublic() {
 
       {/* ── Footer ── */}
       <div className="public-footer">
-        <span className="public-footer-text">Memory page</span>
+        <span className="public-footer-text">{t('public.memory_page')}</span>
         <Link to={`/memorials/${id}`} className="manage-link">
-          Manage memorial →
+          {t('public.manage_memorial')}
         </Link>
       </div>
     </div>

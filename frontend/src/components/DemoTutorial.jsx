@@ -1,41 +1,11 @@
 import { useEffect, useRef } from 'react'
+import { useLanguage } from '../contexts/LanguageContext'
 import './DemoTutorial.css'
 
-const STEPS = {
-  1: {
-    emoji: '👨‍👩‍👧‍👦',
-    title: '4 families. 5 generations.',
-    text: 'Each family has its own memorials, memories, and AI avatars built from real stories. Click any family to explore.',
-    next: "Let's go →",
-  },
-  2: {
-    emoji: '🕯',
-    title: 'Meet the family',
-    text: 'Each person here has their own memories and an AI avatar. Click anyone to start a conversation.',
-    next: 'Got it →',
-  },
-  3: {
-    emoji: '💬',
-    title: 'Chat with the avatar',
-    text: 'Ask anything — the avatar responds based on real memories. The more memories are added, the richer the conversation becomes.',
-    next: 'Got it',
-  },
-  4: {
-    emoji: '📖',
-    title: 'Memories power the avatar',
-    text: 'Everything the avatar knows comes from these memories. Anyone you share the link with can contribute more.',
-    next: 'Got it',
-  },
-  5: {
-    emoji: '🌳',
-    title: 'One big family',
-    text: 'All these people are connected across generations. Avatars can reference shared memories across multiple memorials.',
-    next: 'Got it',
-  },
-}
-
 export default function DemoTutorial({ step, type, onNext, onSkip }) {
-  const content = STEPS[step]
+  const { t } = useLanguage()
+  const steps = t('demoTutorial.steps')
+  const content = steps && steps[step]
   const hintRef = useRef(null)
 
   // Scroll hint into view when it first appears (step 3 lands below the fold)
@@ -56,7 +26,7 @@ export default function DemoTutorial({ step, type, onNext, onSkip }) {
           <p className="dt-text">{content.text}</p>
           <div className="dt-actions">
             <button className="dt-btn-primary" onClick={onNext}>{content.next}</button>
-            <button className="dt-btn-skip" onClick={onSkip}>Skip tutorial</button>
+            <button className="dt-btn-skip" onClick={onSkip}>{t('demoTutorial.skip')}</button>
           </div>
         </div>
       </div>
@@ -70,7 +40,7 @@ export default function DemoTutorial({ step, type, onNext, onSkip }) {
         <strong className="dt-hint-title">{content.title}</strong>
         <span className="dt-hint-text"> {content.text}</span>
       </div>
-      <button className="dt-hint-close" onClick={onNext} title="Got it">✕</button>
+      <button className="dt-hint-close" onClick={onNext} title={t('demoTutorial.got_it')}>✕</button>
     </div>
   )
 }

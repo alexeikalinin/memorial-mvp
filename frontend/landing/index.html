@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Memorial — Talk to Them Again</title>
-  <meta name="description" content="A living memorial powered by AI. Chat with an avatar built from real memories. Voice cloning. Hidden family connections across generations." />
-  <meta property="og:title" content="Memorial — Talk to Them Again" />
-  <meta property="og:description" content="AI memorials grounded in real memories. Family tree, voice, and hidden connections." />
+  <title id="meta-title">vspomin.ai — Поговорите с ними снова</title>
+  <meta id="meta-description" name="description" content="Живой мемориал на основе AI. Общайтесь с аватаром, созданным из реальных воспоминаний. Клонирование голоса. Скрытые семейные связи через поколения." />
+  <meta id="meta-og-title" property="og:title" content="vspomin.ai — Поговорите с ними снова" />
+  <meta id="meta-og-description" property="og:description" content="AI-мемориалы на основе реальных воспоминаний. Семейное древо, голос и скрытые связи." />
   <meta property="og:image" content="/images/hero-portrait.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <script>window.__MEMORIAL_API_BASE__ = __INJECT_LANDING_API__;</script>
@@ -50,13 +50,18 @@
       transition: transform .4s ease;
     }
     .nav-logo {
+      display: flex; align-items: center; gap: 10px;
       font-family: 'Playfair Display', serif;
-      font-size: 22px; font-weight: 700; color: var(--accent);
-      letter-spacing: 0.03em;
+      font-size: 26px; font-weight: 700; color: var(--accent);
+      letter-spacing: 0.02em;
     }
+    .nav-logo img { height: 44px; width: 73px; display: block; }
     .nav-links { display: flex; gap: 36px; align-items: center; }
     .nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; transition: color .2s; }
     .nav-links a:hover { color: var(--text); }
+    #lang-toggle .btn { background: transparent; color: var(--text2); border-radius: 100px; }
+    #lang-toggle .btn:hover { color: var(--text); }
+    #lang-toggle .btn.is-active { background: var(--accent); color: #1a1408; }
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 10px 24px; border-radius: 100px;
@@ -98,6 +103,7 @@
       border-radius: 100px; padding: 6px 16px;
       font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
       color: var(--accent); margin-bottom: 28px;
+      white-space: nowrap; width: fit-content; max-width: 100%;
     }
     .hero-eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse-dot 2s infinite; }
     @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
@@ -704,7 +710,8 @@
     .footer-inner { max-width: 1440px; margin: 0 auto; }
     .footer-top { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 56px; }
     .footer-brand p { font-size: 14px; color: var(--text3); margin-top: 12px; line-height: 1.65; max-width: 220px; }
-    .footer-logo { font-family:'Playfair Display',serif; font-size:22px; color:var(--accent); }
+    .footer-logo { display: flex; align-items: center; gap: 10px; font-family:'Playfair Display',serif; font-size:24px; font-weight: 700; color:var(--accent); }
+    .footer-logo img { height: 38px; width: 63px; display: block; }
     .footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text3); margin-bottom: 16px; }
     .footer-col a { display: block; font-size: 14px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
     .footer-col a:hover { color: var(--accent); }
@@ -741,17 +748,21 @@
 
 <!-- NAV -->
 <nav id="main-nav">
-  <div class="nav-logo">Memorial</div>
+  <div class="nav-logo"><img src="images/logo-mark-dark-tight.png" alt="vspomin.ai" width="73" height="44" />vspomin.ai</div>
   <div class="nav-links">
-    <a href="#how">How it works</a>
-    <a href="#features">Features</a>
-    <a href="#hidden">Hidden Connections</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#faq">FAQ</a>
+    <a href="#how" data-i18n="nav.how">Как это работает</a>
+    <a href="#features" data-i18n="nav.features">Возможности</a>
+    <a href="#hidden" data-i18n="nav.hidden">Скрытые связи</a>
+    <a href="#pricing" data-i18n="nav.pricing">Тарифы</a>
+    <a href="#faq" data-i18n="nav.faq">Вопросы</a>
   </div>
-  <div style="display:flex;gap:12px">
-    <a href="/app/login" class="btn btn-outline">Sign in</a>
-    <a href="/app/register" class="btn btn-primary">Get started free</a>
+  <div style="display:flex;gap:12px;align-items:center">
+    <div id="lang-toggle" style="display:flex;gap:4px;align-items:center;border:1px solid var(--border2);border-radius:100px;padding:4px;">
+      <button type="button" id="lang-btn-ru" class="btn" data-lang="ru" style="padding:6px 14px;font-size:12px;">RU</button>
+      <button type="button" id="lang-btn-en" class="btn" data-lang="en" style="padding:6px 14px;font-size:12px;">EN</button>
+    </div>
+    <a href="/app/login" class="btn btn-outline" data-i18n="nav.signin">Войти</a>
+    <a href="/app/register" class="btn btn-primary" data-i18n="nav.getstarted">Начать бесплатно</a>
   </div>
 </nav>
 
@@ -760,44 +771,39 @@
   <div class="hero-glow"></div>
   <div class="hero-inner">
     <div>
-      <div class="hero-eyebrow"><span></span> AI-Powered Digital Memorials</div>
-      <h1 class="hero-headline">
-        Talk to them <em>again.</em><br>
-        In their own words.
-      </h1>
-      <p class="hero-sub">
-        A living memorial powered by real memories — not generic AI. Hear their voice, explore your family tree, and discover relatives you never knew existed.
-      </p>
+      <div class="hero-eyebrow"><span></span> <span data-i18n="hero.eyebrow">Цифровые мемориалы на основе AI</span></div>
+      <h1 class="hero-headline" data-i18n="hero.headline">Поговорите с ними <em>снова.</em><br>Их собственными словами.</h1>
+      <p class="hero-sub" data-i18n="hero.sub">Живой мемориал на основе настоящих воспоминаний — а не обезличенного AI. Услышьте голос, изучите семейное древо и найдите родственников, о которых даже не знали.</p>
       <div class="hero-cta">
-        <a href="/app/register" class="btn btn-primary btn-xl">Create a memorial — it's free</a>
-        <a href="/app/demo" class="btn btn-outline btn-lg">Explore demo families →</a>
+        <a href="/app/register" class="btn btn-primary btn-xl" data-i18n="hero.cta_primary">Создать мемориал — бесплатно</a>
+        <a href="/app/demo" class="btn btn-outline btn-lg" data-i18n="hero.cta_secondary">Посмотреть демо-семьи →</a>
       </div>
       <div class="hero-note">
-        <div class="hero-note-item">Simple, transparent pricing</div>
-        <div class="hero-note-item">Start free</div>
-        <div class="hero-note-item">Ready in about 5 minutes</div>
+        <div class="hero-note-item" data-i18n="hero.note1">Простые и понятные тарифы</div>
+        <div class="hero-note-item" data-i18n="hero.note2">Начните бесплатно</div>
+        <div class="hero-note-item" data-i18n="hero.note3">Готово за 5 минут</div>
       </div>
     </div>
 
     <div class="hero-visual">
       <!-- Old portrait photo -->
       <div class="hero-photo-frame">
-        <img src="/images/hero-portrait.png" alt="Memorial portrait" loading="eager" width="600" height="750" />
+        <img src="/images/hero-portrait.png" alt="Портрет для мемориала" data-i18n="hero.photo_alt" data-i18n-attr="alt" loading="eager" width="600" height="750" />
         <div class="hero-photo-overlay"></div>
         <div class="hero-photo-caption">
-          <div class="hero-photo-name">George Thompson</div>
-          <div class="hero-photo-dates">1938 – 2015 · Sydney, Australia</div>
+          <div class="hero-photo-name" data-i18n="hero.photo_name">Георгий Томпсон</div>
+          <div class="hero-photo-dates" data-i18n="hero.photo_dates">1938 – 2015 · Сидней, Австралия</div>
         </div>
       </div>
       <!-- Floating chat -->
       <div class="chat-float">
         <div class="chat-float-header">
           <div class="cf-dot"></div>
-          <div class="cf-label">Avatar is ready to talk</div>
+          <div class="cf-label" data-i18n="hero.chat_ready">Аватар готов к разговору</div>
         </div>
         <div class="chat-float-body">
           <div class="cf-msg cf-user">
-            <div class="cf-bubble">What made you happiest in life?</div>
+            <div class="cf-bubble" data-i18n="hero.chat_question">Что делало тебя по-настоящему счастливым?</div>
           </div>
           <div class="cf-msg cf-bot">
             <div class="cf-bubble" id="hero-chat-text"><span class="cf-cursor"></span></div>
@@ -811,42 +817,39 @@
 <!-- TRUST STRIP (no vendor stack — privacy-first) -->
 <div id="logos">
   <div class="logos-inner logos-inner--trust">
-    <span class="logos-trust-text">Private by design. Your memories are not used to train public models — they stay in your family’s space.</span>
+    <span class="logos-trust-text" data-i18n="trust.text">Приватность по умолчанию. Ваши воспоминания никогда не используются для обучения публичных моделей — они остаются только в пространстве вашей семьи.</span>
   </div>
 </div>
 
 <!-- ═══ PROBLEM ═══ -->
 <section id="problem">
   <div class="section-inner">
-    <div class="section-label reveal">The Problem</div>
-    <p class="problem-headline reveal reveal-delay-1">
-      The average person is <strong>fully forgotten</strong> within two generations.<br>
-      Not because no one cared — because there was <strong>nowhere to put the memories.</strong>
-    </p>
+    <div class="section-label reveal" data-i18n="problem.label">Проблема</div>
+    <p class="problem-headline reveal reveal-delay-1" data-i18n="problem.headline">Большинство людей <strong>полностью забывают</strong> уже через два поколения.<br>Не потому, что их не любили — а потому, что <strong>не было места, куда сохранить воспоминания.</strong></p>
     <div class="problem-cards">
       <div class="problem-card reveal">
         <span class="problem-icon">📷</span>
-        <div class="problem-label">Photos & Videos</div>
-        <div class="problem-before">Locked in boxes and hard drives, unseen</div>
-        <div class="problem-after">→ Alive in an interactive gallery, forever accessible</div>
+        <div class="problem-label" data-i18n="problem.card1_label">Фото и видео</div>
+        <div class="problem-before" data-i18n="problem.card1_before">Лежат забытыми в коробках и на старых дисках</div>
+        <div class="problem-after" data-i18n="problem.card1_after">→ Живут в интерактивной галерее, доступной всегда</div>
       </div>
       <div class="problem-card reveal reveal-delay-1">
         <span class="problem-icon">🎙️</span>
-        <div class="problem-label">Their Voice</div>
-        <div class="problem-before">Lost the moment they're gone</div>
+        <div class="problem-label" data-i18n="problem.card2_label">Их голос</div>
+        <div class="problem-before" data-i18n="problem.card2_before">Исчезает в тот момент, когда человека не стало</div>
         <div class="problem-after-stack">
-          <div class="problem-after">→ Cloned from your recordings — the avatar speaks in their voice</div>
+          <div class="problem-after" data-i18n="problem.card2_after">→ Клонируется из ваших записей — аватар говорит их голосом</div>
           <div class="problem-after-note">
-            🎬 Video — bring their portrait to life from a clip
-            <span class="badge-soon">Coming soon</span>
+            <span data-i18n="problem.card2_note">🎬 Видео — оживляем портрет по короткому ролику</span>
+            <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span>
           </div>
         </div>
       </div>
       <div class="problem-card reveal reveal-delay-2">
         <span class="problem-icon">🌳</span>
-        <div class="problem-label">Family Stories</div>
-        <div class="problem-before">Scattered across relatives who never connect</div>
-        <div class="problem-after">→ Woven into one living family tree with hidden links</div>
+        <div class="problem-label" data-i18n="problem.card3_label">Семейные истории</div>
+        <div class="problem-before" data-i18n="problem.card3_before">Разбросаны среди родственников, которые никогда не пересекаются</div>
+        <div class="problem-after" data-i18n="problem.card3_after">→ Сплетены в одно живое семейное древо со скрытыми связями</div>
       </div>
     </div>
   </div>
@@ -855,26 +858,26 @@
 <!-- ═══ HOW IT WORKS ═══ -->
 <section id="how">
   <div class="section-inner">
-    <div class="section-label reveal">How It Works</div>
-    <h2 class="section-title reveal reveal-delay-1">Simple to start.<br>Profound to experience.</h2>
+    <div class="section-label reveal" data-i18n="how.label">Как это работает</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="how.title">Просто начать.<br>Глубоко прожить.</h2>
     <div class="steps-grid">
       <div class="step-card reveal">
         <div class="step-num">1</div>
         <div class="step-icon">📁</div>
-        <div class="step-title">Create the memorial</div>
-        <p class="step-desc">Upload photos, write memories, add videos and voice recordings. Each story becomes a building block for the AI avatar.</p>
+        <div class="step-title" data-i18n="how.step1_title">Создайте мемориал</div>
+        <p class="step-desc" data-i18n="how.step1_desc">Загрузите фото, опишите воспоминания, добавьте видео и аудиозаписи голоса. Каждая история становится частью AI-аватара.</p>
       </div>
       <div class="step-card reveal reveal-delay-1">
         <div class="step-num">2</div>
         <div class="step-icon">👨‍👩‍👧‍👦</div>
-        <div class="step-title">Invite your family</div>
-        <p class="step-desc">Share a link — no account needed. Family members, friends, even funeral attendees can add their own memories instantly.</p>
+        <div class="step-title" data-i18n="how.step2_title">Пригласите семью</div>
+        <p class="step-desc" data-i18n="how.step2_desc">Поделитесь ссылкой — без регистрации. Родственники, друзья и даже гости похорон могут мгновенно добавить свои воспоминания.</p>
       </div>
       <div class="step-card reveal reveal-delay-2">
         <div class="step-num">3</div>
         <div class="step-icon">💬</div>
-        <div class="step-title">Start the conversation</div>
-        <p class="step-desc">The AI avatar answers in their personality, grounded only in what was uploaded. No hallucinations. Just them.</p>
+        <div class="step-title" data-i18n="how.step3_title">Начните разговор</div>
+        <p class="step-desc" data-i18n="how.step3_desc">AI-аватар отвечает в их характере, опираясь только на загруженные воспоминания. Без вымысла. Только они.</p>
       </div>
     </div>
   </div>
@@ -883,8 +886,8 @@
 <!-- ═══ VIDEO DEMO ═══ -->
 <section id="demo">
   <div class="section-inner">
-    <div class="section-label reveal">See It Live</div>
-    <h2 class="section-title reveal reveal-delay-1">Watch the avatar<br>in action.</h2>
+    <div class="section-label reveal" data-i18n="demo.label">Смотрите вживую</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="demo.title">Посмотрите аватар<br>в действии.</h2>
     <div class="demo-container reveal reveal-delay-2">
       <video
         class="demo-video"
@@ -900,10 +903,10 @@
       </video>
     </div>
     <div class="demo-chips">
-      <div class="demo-chip"><span>💬</span> AI Avatar responds in their voice</div>
-      <div class="demo-chip"><span>🌳</span> Family tree with 4 generations</div>
-      <div class="demo-chip"><span>🔗</span> Hidden Connections discovery</div>
-      <div class="demo-chip"><span>🎙️</span> Voice from your recordings</div>
+      <div class="demo-chip"><span>💬</span> <span data-i18n="demo.chip1">AI-аватар отвечает их голосом</span></div>
+      <div class="demo-chip"><span>🌳</span> <span data-i18n="demo.chip2">Семейное древо на 4 поколения</span></div>
+      <div class="demo-chip"><span>🔗</span> <span data-i18n="demo.chip3">Поиск скрытых связей</span></div>
+      <div class="demo-chip"><span>🎙️</span> <span data-i18n="demo.chip4">Голос из ваших записей</span></div>
     </div>
   </div>
 </section>
@@ -911,50 +914,50 @@
 <!-- ═══ FEATURES ═══ -->
 <section id="features">
   <div class="section-inner">
-    <div class="section-label reveal">Features</div>
-    <h2 class="section-title reveal reveal-delay-1">More than a memorial.<br>A living presence.</h2>
+    <div class="section-label reveal" data-i18n="features.label">Возможности</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="features.title">Больше, чем мемориал.<br>Живое присутствие.</h2>
     <div class="features-list">
 
       <!-- Row 1 -->
       <div class="feature-row">
         <div class="feat-block reveal">
           <div class="feat-photo">
-            <img src="/images/feat-chat.png" alt="AI avatar chat grounded in memories" width="800" height="500" />
+            <img src="/images/feat-chat.png" alt="AI-аватар отвечает на основе воспоминаний" data-i18n="features.chat_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag">AI Avatar Chat</div>
-            <h3 class="feat-title">They answer.<br>In their own words.</h3>
-            <p class="feat-desc">Not generic AI. The avatar is built entirely from what your family uploaded — memories, stories, personality. It learns as you add more.</p>
+            <div class="feat-tag" data-i18n="features.chat_tag">AI-чат с аватаром</div>
+            <h3 class="feat-title" data-i18n="features.chat_title">Они отвечают.<br>Своими словами.</h3>
+            <p class="feat-desc" data-i18n="features.chat_desc">Не обезличенный AI. Аватар полностью построен на том, что загрузила ваша семья — воспоминания, истории, характер. Он становится точнее с каждым новым воспоминанием.</p>
             <div class="compare">
               <div class="compare-col">
-                <div class="compare-col-label bad">Generic AI</div>
-                <div class="compare-q">"What made you happiest in life?"</div>
-                <div class="compare-a">"Happiness is influenced by many factors including relationships, personal achievements, and a sense of purpose..."</div>
+                <div class="compare-col-label bad" data-i18n="features.compare_generic_label">Обычный AI</div>
+                <div class="compare-q" data-i18n="features.compare_question">«Что делало тебя по-настоящему счастливым?»</div>
+                <div class="compare-a" data-i18n="features.compare_generic_answer">«Счастье зависит от множества факторов: отношений, личных достижений и чувства смысла жизни...»</div>
               </div>
               <div class="compare-col">
-                <div class="compare-col-label good">Memorial Avatar</div>
-                <div class="compare-q">"What made you happiest in life?"</div>
-                <div class="compare-a good">"Saturday mornings at Manly. Just me and your nan, coffee in old thermoses, before the world woke up. That was enough."</div>
+                <div class="compare-col-label good" data-i18n="features.compare_memorial_label">Аватар мемориала</div>
+                <div class="compare-q" data-i18n="features.compare_question">«Что делало тебя по-настоящему счастливым?»</div>
+                <div class="compare-a good" data-i18n="features.compare_memorial_answer">«Субботние утра на даче. Только я и твоя бабушка, кофе из старых термосов, пока весь мир еще спит. Большего и не нужно было».</div>
               </div>
             </div>
           </div>
         </div>
         <div class="feat-block dark reveal reveal-delay-1">
           <div class="feat-photo">
-            <img src="/images/feat-voice.png" alt="Voice cloning from recordings" width="800" height="500" />
+            <img src="/images/feat-voice.png" alt="Клонирование голоса по записям" data-i18n="features.voice_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag">Voice Cloning <span class="badge-soon">Coming soon</span></div>
-            <h3 class="feat-title">Hear them,<br>not a robot.</h3>
-            <p class="feat-desc">Upload recordings you already have — voicemail, a birthday clip, a message they left you. We build their voice so the avatar sounds like them, not a generic assistant.</p>
+            <div class="feat-tag"><span data-i18n="features.voice_tag">Клонирование голоса</span> <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span></div>
+            <h3 class="feat-title" data-i18n="features.voice_title">Услышьте их,<br>а не робота.</h3>
+            <p class="feat-desc" data-i18n="features.voice_desc">Загрузите уже имеющиеся записи — голосовое сообщение, видео с праздника, голос на автоответчике. Мы создадим их голос, чтобы аватар звучал как они, а не как обычный ассистент.</p>
             <ul class="feat-points">
-              <li>Works from as little as 60 seconds of audio</li>
-              <li>Old tapes, phone calls, home videos — if you can hear them, we can use it</li>
-              <li>Emotional range preserved — not flat, lifeless speech</li>
+              <li data-i18n="features.voice_point1">Достаточно всего 60 секунд аудио</li>
+              <li data-i18n="features.voice_point2">Старые кассеты, звонки, домашнее видео — если голос слышен, мы сможем его использовать</li>
+              <li data-i18n="features.voice_point3">Сохраняется эмоциональная окраска речи — без монотонности</li>
             </ul>
             <p class="feat-soon-row">
-              <strong>Video avatar</strong> — animate their portrait from video
-              <span class="badge-soon">Coming soon</span>
+              <strong data-i18n="features.video_avatar_strong">Видео-аватар</strong> <span data-i18n="features.video_avatar_text">— оживляем портрет по видеозаписи</span>
+              <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span>
             </p>
             <div class="voice-widget" style="opacity:0.5;cursor:default;pointer-events:none">
               <div class="voice-play-btn">▶</div>
@@ -963,7 +966,7 @@
                 <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
                 <div class="vbar"></div>
               </div>
-              <span class="voice-label">Voice cloning — we're working on it</span>
+              <span class="voice-label" data-i18n="features.voice_widget_label">Клонирование голоса — уже в разработке</span>
             </div>
           </div>
         </div>
@@ -973,45 +976,45 @@
       <div class="feature-row">
         <div class="feat-block dark reveal">
           <div class="feat-photo">
-            <img src="/images/feat-timeline.png" alt="Life timeline from dated memories" width="800" height="500" />
+            <img src="/images/feat-timeline.png" alt="Таймлайн жизни на основе дат из воспоминаний" data-i18n="features.timeline_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag">Life Timeline</div>
-            <h3 class="feat-title">Every life is a story.<br>Tell it in order.</h3>
-            <p class="feat-desc">Memories with dates arrange themselves into a chronological narrative — from first steps to final years. A life, beautifully told.</p>
+            <div class="feat-tag" data-i18n="features.timeline_tag">Таймлайн жизни</div>
+            <h3 class="feat-title" data-i18n="features.timeline_title">Каждая жизнь — история.<br>Расскажите её по порядку.</h3>
+            <p class="feat-desc" data-i18n="features.timeline_desc">Воспоминания с датами автоматически выстраиваются в хронологический рассказ — от первых шагов до последних лет. Жизнь, рассказанная красиво.</p>
             <div class="timeline-mini">
               <div class="tl-item">
                 <div class="tl-year">1938</div>
-                <div class="tl-text">Born in Melbourne, grew up near the bay</div>
+                <div class="tl-text" data-i18n="features.tl_text1">Родился в Мельбурне, рос недалеко от залива</div>
               </div>
               <div class="tl-item">
                 <div class="tl-year">1963</div>
-                <div class="tl-text">Met Margaret at a surf club dance in Manly</div>
+                <div class="tl-text" data-i18n="features.tl_text2">Познакомился с Маргарет на танцах в серф-клубе</div>
               </div>
               <div class="tl-item">
                 <div class="tl-year">1978</div>
-                <div class="tl-text">Built the family home in the Blue Mountains — took two years</div>
+                <div class="tl-text" data-i18n="features.tl_text3">Построил семейный дом в горах — это заняло два года</div>
               </div>
               <div class="tl-item">
                 <div class="tl-year">2002</div>
-                <div class="tl-text">Retired. Coached junior cricket every Saturday morning</div>
+                <div class="tl-text" data-i18n="features.tl_text4">Вышел на пенсию. Тренировал юношескую сборную по крикету каждую субботу</div>
               </div>
             </div>
           </div>
         </div>
         <div class="feat-block reveal reveal-delay-1">
           <div class="feat-photo">
-            <img src="/images/feat-tree.png" alt="Interactive family tree" width="800" height="500" />
+            <img src="/images/feat-tree.png" alt="Интерактивное семейное древо" data-i18n="features.tree_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag">Family Tree</div>
-            <h3 class="feat-title">Your whole family.<br>One living map.</h3>
-            <p class="feat-desc">An interactive family tree across 4+ generations. Click any person to open their memorial, read their stories, or chat with their avatar.</p>
+            <div class="feat-tag" data-i18n="features.tree_tag">Семейное древо</div>
+            <h3 class="feat-title" data-i18n="features.tree_title">Вся ваша семья.<br>Одна живая карта.</h3>
+            <p class="feat-desc" data-i18n="features.tree_desc">Интерактивное семейное древо на 4+ поколения. Нажмите на любого человека, чтобы открыть его мемориал, прочитать истории или поговорить с его аватаром.</p>
             <ul class="feat-points">
-              <li>Supports adoptive, step, partner, and ex relationships</li>
-              <li>Auto-labels relatives: great-aunt, second cousin, in-law</li>
-              <li>Zoom, pan, touch-friendly on mobile</li>
-              <li>Invite any family member — no account required</li>
+              <li data-i18n="features.tree_point1">Поддерживает приёмные, сводные, партнёрские и бывшие отношения</li>
+              <li data-i18n="features.tree_point2">Автоматически определяет степень родства: двоюродная бабушка, троюродный брат, родственник по браку</li>
+              <li data-i18n="features.tree_point3">Масштабирование, перемещение, удобно на мобильных устройствах</li>
+              <li data-i18n="features.tree_point4">Пригласите любого родственника — без регистрации</li>
             </ul>
           </div>
         </div>
@@ -1026,44 +1029,42 @@
   <div class="section-inner">
     <div class="hidden-inner">
       <div>
-        <div class="section-label reveal">Hidden Connections</div>
-        <h2 class="section-title reveal reveal-delay-1">Your family is bigger<br>than you think.</h2>
-        <p class="section-sub reveal reveal-delay-2" style="margin-bottom:32px">
-          Our graph algorithm finds indirect family links across 2–6 degrees of separation — across name changes, remarriages, and generations lost to history.
-        </p>
+        <div class="section-label reveal" data-i18n="hidden.label">Скрытые связи</div>
+        <h2 class="section-title reveal reveal-delay-1" data-i18n="hidden.title">Ваша семья больше,<br>чем вы думаете.</h2>
+        <p class="section-sub reveal reveal-delay-2" style="margin-bottom:32px" data-i18n="hidden.sub">Наш алгоритм находит непрямые семейные связи на расстоянии 2–6 степеней родства — через смену фамилий, повторные браки и поколения, потерявшие связь друг с другом.</p>
 
         <div class="chain-box reveal reveal-delay-3">
-          <div class="chain-box-label">Relationship discovered</div>
-          <span class="c-you">You</span>
-          <span class="c-arr"> → </span><span class="c-rel">(child of)</span>
-          <span class="c-arr"> → </span><span class="c-node">James</span>
-          <span class="c-arr"> → </span><span class="c-rel">(sibling of)</span>
-          <span class="c-arr"> → </span><span class="c-node">Catherine</span>
-          <span class="c-arr"> → </span><span class="c-rel">(parent of)</span>
-          <span class="c-arr"> → </span><span class="c-them">Emma K. — your second cousin</span>
+          <div class="chain-box-label" data-i18n="hidden.chain_label">Найдена связь</div>
+          <span class="c-you" data-i18n="hidden.chain_you">Вы</span>
+          <span class="c-arr"> → </span><span class="c-rel" data-i18n="hidden.chain_rel1">(ребёнок)</span>
+          <span class="c-arr"> → </span><span class="c-node" data-i18n="hidden.chain_node1">Иван</span>
+          <span class="c-arr"> → </span><span class="c-rel" data-i18n="hidden.chain_rel2">(брат/сестра)</span>
+          <span class="c-arr"> → </span><span class="c-node" data-i18n="hidden.chain_node2">Екатерина</span>
+          <span class="c-arr"> → </span><span class="c-rel" data-i18n="hidden.chain_rel3">(родитель)</span>
+          <span class="c-arr"> → </span><span class="c-them" data-i18n="hidden.chain_them">Эмма К. — ваша троюродная сестра</span>
         </div>
 
         <div class="hidden-stats reveal reveal-delay-4">
           <div>
             <div class="h-stat-num" data-count="6">0</div>
-            <div class="h-stat-label">degrees of separation<br>we trace automatically</div>
+            <div class="h-stat-label" data-i18n="hidden.stat1_label">степеней родства,<br>которые мы находим автоматически</div>
           </div>
           <div>
             <div class="h-stat-num">∞</div>
-            <div class="h-stat-label">memories shared<br>across found relatives</div>
+            <div class="h-stat-label" data-i18n="hidden.stat2_label">воспоминаний доступно<br>среди найденных родственников</div>
           </div>
         </div>
 
-        <a href="/app/register" class="btn btn-primary btn-lg reveal" style="margin-top:40px;display:inline-flex">Find your hidden connections →</a>
+        <a href="/app/register" class="btn btn-primary btn-lg reveal" style="margin-top:40px;display:inline-flex" data-i18n="hidden.cta">Найти своих скрытых родственников →</a>
       </div>
 
       <div class="hidden-visual">
         <svg id="graph-svg" viewBox="0 0 460 420" xmlns="http://www.w3.org/2000/svg"></svg>
         <div class="hidden-story reveal">
-          <div class="hidden-story-label">A real story</div>
-          <p><strong>Margaret never knew she had cousins in New Zealand.</strong> Her great-uncle moved to Christchurch in the 1950s, and that branch of the family quietly lost touch.</p>
-          <p>When she uploaded her grandfather's memorial, the algorithm traced <strong>11 relationships across three generations</strong> — and found a memorial created by his granddaughter in Wellington.</p>
-          <p>They shared memories of the same man. <strong>From two sides of the Tasman.</strong></p>
+          <div class="hidden-story-label" data-i18n="hidden.story_label">Реальная история</div>
+          <p data-i18n="hidden.story_p1"><strong>Маргарита не знала, что у неё есть кузены в Новой Зеландии.</strong> Её двоюродный дед переехал в Крайстчерч в 1950-х, и эта ветвь семьи постепенно потеряла связь.</p>
+          <p data-i18n="hidden.story_p2">Когда она загрузила мемориал своего дедушки, алгоритм нашёл <strong>11 связей через три поколения</strong> — и обнаружил мемориал, созданный его внучкой в Веллингтоне.</p>
+          <p data-i18n="hidden.story_p3">Они делились воспоминаниями об одном и том же человеке. <strong>С разных концов света.</strong></p>
         </div>
       </div>
     </div>
@@ -1076,57 +1077,53 @@
     <div class="qr-inner">
       <div class="qr-photo-wrap reveal">
         <div class="qr-photo">
-          <img src="/images/feat-headstone.png" alt="Headstone in a cemetery (illustrative scene)" width="600" height="400" />
+          <img src="/images/feat-headstone.png" alt="Надгробие на кладбище (иллюстративная сцена)" data-i18n="qr.photo_alt" data-i18n-attr="alt" width="600" height="400" />
           <div class="qr-overlay-gradient"></div>
         </div>
         <div class="qr-badge">
           <div class="qr-badge-icon">📱</div>
-          <div class="qr-badge-text">Visitors scan</div>
-          <div class="qr-badge-highlight">+ open memorial</div>
+          <div class="qr-badge-text" data-i18n="qr.badge_text">Посетители сканируют</div>
+          <div class="qr-badge-highlight" data-i18n="qr.badge_highlight">+ открывают мемориал</div>
         </div>
         <div class="qr-phone-float">
           <div class="qr-phone-notch"></div>
           <div class="qr-phone-content">
-            <div class="qr-phone-name">George Thompson</div>
-            <div class="qr-phone-bubble">"What do you miss most about the old days?"</div>
-            <div class="qr-phone-bubble" style="background:rgba(200,169,126,0.1);color:var(--accent2)">"Sunday roasts at your nan's place. Fourteen people around one table. The house smelled like everything good."</div>
+            <div class="qr-phone-name" data-i18n="hero.photo_name">Георгий Томпсон</div>
+            <div class="qr-phone-bubble" data-i18n="qr.phone_q">«Что ты больше всего вспоминаешь из прошлого?»</div>
+            <div class="qr-phone-bubble" style="background:rgba(200,169,126,0.1);color:var(--accent2)" data-i18n="qr.phone_a">«Воскресные обеды у бабушки. Четырнадцать человек за одним столом. В доме пахло всем самым вкусным».</div>
           </div>
         </div>
-        <p class="qr-visual-caption">
-          Illustrative scene — many families mount a small weatherproof QR plaque or sticker on the stone; scanning opens the full digital memorial (voice, stories, tributes).
-        </p>
+        <p class="qr-visual-caption" data-i18n="qr.caption">Иллюстративная сцена — многие семьи устанавливают небольшую защищённую от погоды QR-табличку или наклейку на памятник; сканирование открывает полный цифровой мемориал (голос, истории, посвящения).</p>
       </div>
 
       <div class="reveal reveal-delay-1">
-        <div class="section-label">Physical Memorial</div>
-        <h2 class="section-title">Let the headstone<br>speak.</h2>
-        <p class="section-sub" style="margin-bottom:36px">
-          Place a QR code on any monument. Visitors scan — and a person becomes a presence again. They hear a voice, read stories, and can leave a memory of their own.
-        </p>
+        <div class="section-label" data-i18n="qr.label">Физический мемориал</div>
+        <h2 class="section-title" data-i18n="qr.title">Пусть надгробие<br>говорит.</h2>
+        <p class="section-sub" style="margin-bottom:36px" data-i18n="qr.sub">Разместите QR-код на любом памятнике. Посетители сканируют — и человек снова становится присутствующим. Они слышат голос, читают истории и могут оставить своё воспоминание.</p>
         <div class="qr-usecases">
           <div class="uc">
             <div class="uc-icon">🪦</div>
             <div>
-              <div class="uc-title">Permanent monuments</div>
-              <div class="uc-desc">Add a QR plaque to any existing headstone. The <strong>Lifetime memorial</strong> tier is designed for this — one payment for one page, no subscription.</div>
+              <div class="uc-title" data-i18n="qr.uc1_title">Постоянные памятники</div>
+              <div class="uc-desc" data-i18n="qr.uc1_desc">Добавьте QR-табличку на любое существующее надгробие. Тариф <strong>«Вечный мемориал»</strong> создан именно для этого — один платёж за одну страницу, без подписки.</div>
             </div>
           </div>
           <div class="uc">
             <div class="uc-icon">💐</div>
             <div>
-              <div class="uc-title">Funeral service integration</div>
-              <div class="uc-desc">Funeral homes offer a living memorial alongside traditional services. Attendees contribute memories instantly, no account needed.</div>
+              <div class="uc-title" data-i18n="qr.uc2_title">Интеграция с похоронными услугами</div>
+              <div class="uc-desc" data-i18n="qr.uc2_desc">Похоронные бюро предлагают живой мемориал вместе с традиционными услугами. Присутствующие мгновенно добавляют воспоминания без регистрации.</div>
             </div>
           </div>
           <div class="uc">
             <div class="uc-icon">🗓️</div>
             <div>
-              <div class="uc-title">Annual remembrance</div>
-              <div class="uc-desc">The memorial grows richer every year. New voices, new stories — every anniversary brings something new.</div>
+              <div class="uc-title" data-i18n="qr.uc3_title">Ежегодное поминовение</div>
+              <div class="uc-desc" data-i18n="qr.uc3_desc">Мемориал становится богаче с каждым годом. Новые голоса, новые истории — каждая годовщина приносит что-то новое.</div>
             </div>
           </div>
         </div>
-        <a href="/app/register" class="btn btn-outline btn-lg" style="margin-top:32px;display:inline-flex">Explore memorial plaques →</a>
+        <a href="/app/register" class="btn btn-outline btn-lg" style="margin-top:32px;display:inline-flex" data-i18n="qr.cta">Узнать про QR-таблички →</a>
       </div>
     </div>
   </div>
@@ -1135,99 +1132,99 @@
 <!-- ═══ TESTIMONIALS ═══ -->
 <section id="testimonials">
   <div class="section-inner">
-    <div class="section-label reveal">Stories</div>
-    <h2 class="section-title reveal reveal-delay-1">What families experience.<br><span style="font-size:0.55em;color:var(--text3);font-weight:400">Illustrative stories — not verified customer records.</span></h2>
+    <div class="section-label reveal" data-i18n="testimonials.label">Истории</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="testimonials.title">Что переживают семьи.<br><span style="font-size:0.55em;color:var(--text3);font-weight:400">Иллюстративные истории — не проверенные отзывы клиентов.</span>Иллюстративные истории — не проверенные отзывы клиентов.</span></h2>
     <div class="testimonials-grid">
       <div class="testi reveal">
         <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"I asked grandpa's avatar what advice he'd give me. He answered exactly the way he used to talk — thoughtful, warm, with that little chuckle before the punchline. I cried for an hour."</p>
+        <p class="testi-text" data-i18n="testimonials.t1_text">«Я спросила аватар дедушки, какой совет он бы мне дал. Он ответил именно так, как говорил при жизни — задумчиво, тепло, с той самой смешинкой перед шуткой. Я плакала целый час».</p>
         <div class="testi-author">
           <div class="testi-avatar">
             <img src="/images/testi-1.png" alt="" width="100" height="100" />
           </div>
           <div>
-            <div class="testi-name">Sarah M.</div>
-            <div class="testi-location">Melbourne, Australia</div>
+            <div class="testi-name" data-i18n="testimonials.t1_name">Светлана М.</div>
+            <div class="testi-location" data-i18n="testimonials.t1_location">Москва, Россия</div>
           </div>
         </div>
       </div>
       <div class="testi reveal reveal-delay-1">
         <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"We found 23 relatives we didn't know existed. Three of them had overlapping memories of our great-grandparents. Hidden Connections is extraordinary — nothing else does this."</p>
+        <p class="testi-text" data-i18n="testimonials.t2_text">«Мы нашли 23 родственника, о которых даже не знали. У троих из них оказались общие воспоминания о наших прапрадедушке и прапрабабушке. Скрытые связи — это что-то невероятное, такого больше нет нигде».</p>
         <div class="testi-author">
           <div class="testi-avatar">
             <img src="/images/testi-2.png" alt="" width="100" height="100" />
           </div>
           <div>
-            <div class="testi-name">The Kowalski family</div>
-            <div class="testi-location">Chicago, USA</div>
+            <div class="testi-name" data-i18n="testimonials.t2_name">Семья Ковалёвых</div>
+            <div class="testi-location" data-i18n="testimonials.t2_location">Новосибирск, Россия</div>
           </div>
         </div>
       </div>
       <div class="testi reveal reveal-delay-2">
         <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"My kids ask grandma questions every Sunday morning. She's been gone for three years. They're growing up knowing her — not just knowing about her. That's everything."</p>
+        <p class="testi-text" data-i18n="testimonials.t3_text">«Мои дети каждое воскресенье утром задают вопросы бабушке. Её нет с нами уже три года. Они растут, по-настоящему зная её — а не просто зная о ней. Это бесценно».</p>
         <div class="testi-author">
           <div class="testi-avatar">
             <img src="/images/testi-3.png" alt="" width="100" height="100" />
           </div>
           <div>
-            <div class="testi-name">James R.</div>
-            <div class="testi-location">London, UK</div>
+            <div class="testi-name" data-i18n="testimonials.t3_name">Дмитрий Р.</div>
+            <div class="testi-location" data-i18n="testimonials.t3_location">Санкт-Петербург, Россия</div>
           </div>
         </div>
       </div>
     </div>
-    <p class="section-sub reveal" style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)">Portrait photos are generated placeholders.</p>
+    <p class="section-sub reveal" style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)" data-i18n="testimonials.placeholder_note">Портретные фото — сгенерированные изображения-заглушки.</p>
 
     <div class="stats-row reveal">
       <div class="stat-block">
         <span class="stat-num" data-count="12000">0</span>
-        <div class="stat-label">Memories preserved</div>
+        <div class="stat-label" data-i18n="testimonials.stat1_label">Воспоминаний сохранено</div>
       </div>
       <div class="stat-block">
         <span class="stat-num" data-count="340">0</span>
-        <div class="stat-label">Families connected</div>
+        <div class="stat-label" data-i18n="testimonials.stat2_label">Семей объединено</div>
       </div>
       <div class="stat-block">
         <span class="stat-num" data-count="4">0</span>
-        <div class="stat-label">Continents</div>
+        <div class="stat-label" data-i18n="testimonials.stat3_label">Континентов</div>
       </div>
       <div class="stat-block">
         <span class="stat-num" data-count="97">0</span>
-        <div class="stat-label">% would recommend</div>
+        <div class="stat-label" data-i18n="testimonials.stat4_label">% готовы рекомендовать</div>
       </div>
     </div>
-    <p class="section-sub reveal" style="text-align:center;margin-top:12px;font-size:12px;color:var(--text3)">Stats are illustrative placeholders until we publish real aggregates.</p>
+    <p class="section-sub reveal" style="text-align:center;margin-top:12px;font-size:12px;color:var(--text3)" data-i18n="testimonials.stats_note">Статистика — иллюстративные значения до публикации реальных агрегированных данных.</p>
   </div>
 </section>
 
 <!-- ═══ PRIVACY ═══ -->
 <section id="privacy">
   <div class="section-inner" style="text-align:center">
-    <div class="section-label reveal" style="justify-content:center">Privacy & Trust</div>
-    <h2 class="section-title reveal reveal-delay-1">Built on trust.<br>Not on data.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 0;text-align:center">Your loved one's memories are sacred. We treat them that way.</p>
+    <div class="section-label reveal" style="justify-content:center" data-i18n="privacy.label">Приватность и доверие</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="privacy.title">Основано на доверии.<br>Не на данных.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto 0;text-align:center" data-i18n="privacy.sub">Воспоминания о близком человеке священны. Мы относимся к ним именно так.</p>
     <div class="privacy-grid">
       <div class="privacy-card reveal">
         <div class="privacy-icon">🔒</div>
-        <div class="privacy-title">Never trains our models</div>
-        <div class="privacy-desc">Your memories are never used to train AI. They belong to your family only.</div>
+        <div class="privacy-title" data-i18n="privacy.card1_title">Никогда не обучает наши модели</div>
+        <div class="privacy-desc" data-i18n="privacy.card1_desc">Ваши воспоминания никогда не используются для обучения AI. Они принадлежат только вашей семье.</div>
       </div>
       <div class="privacy-card reveal reveal-delay-1">
         <div class="privacy-icon">🛡️</div>
-        <div class="privacy-title">Private by default</div>
-        <div class="privacy-desc">You control exactly who sees each memorial. Share only with who you choose.</div>
+        <div class="privacy-title" data-i18n="privacy.card2_title">Приватность по умолчанию</div>
+        <div class="privacy-desc" data-i18n="privacy.card2_desc">Вы полностью контролируете, кто видит каждый мемориал. Делитесь только с теми, с кем хотите.</div>
       </div>
       <div class="privacy-card reveal reveal-delay-2">
         <div class="privacy-icon">📎</div>
-        <div class="privacy-title">Grounded responses only</div>
-        <div class="privacy-desc">The avatar only speaks from what you've uploaded. No fabrication. Ever.</div>
+        <div class="privacy-title" data-i18n="privacy.card3_title">Только обоснованные ответы</div>
+        <div class="privacy-desc" data-i18n="privacy.card3_desc">Аватар говорит только на основе того, что вы загрузили. Никаких выдумок. Никогда.</div>
       </div>
       <div class="privacy-card reveal reveal-delay-3">
         <div class="privacy-icon">📦</div>
-        <div class="privacy-title">You own everything</div>
-        <div class="privacy-desc">Export all your data anytime. We never delete without 90 days notice.</div>
+        <div class="privacy-title" data-i18n="privacy.card4_title">Всё принадлежит вам</div>
+        <div class="privacy-desc" data-i18n="privacy.card4_desc">Экспортируйте все свои данные в любой момент. Мы никогда не удаляем их без предупреждения за 90 дней.</div>
       </div>
     </div>
   </div>
@@ -1237,163 +1234,157 @@
 <section id="pricing">
   <div class="section-inner">
     <div class="pricing-section-head">
-    <div class="section-label reveal">Pricing</div>
-    <h2 class="section-title reveal reveal-delay-1">Start free.<br>Grow with your family.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0 0 16px">Pick a plan when you’re ready. All plans start with a free trial — no card required.</p>
-    <p class="pricing-intro reveal reveal-delay-2">
-      <strong>Free</strong> — one memorial, text chat only; no voice, animation, or family-wide AI.<br>
-      <strong>Plus</strong> — up to 10 memorials, TTS, 5 animations/mo, Family RAG. Save 30% annual.<br>
-      <strong>Pro</strong> — everything in Plus, 15 animations/mo, 5 live avatar video sessions/mo.<br>
-      <strong>Lifetime</strong> — one payment for <strong>one</strong> page, forever (ideal for QR / headstones).<br>
-      <strong>Lifetime Pro</strong> — same as Lifetime + a pre-paid pool of <strong>100 live avatar sessions</strong>, never resets.
-    </p>
-    <p class="section-sub pricing-legend reveal reveal-delay-2" style="margin:8px 0 0;font-size:13px;color:var(--text3);max-width:640px">Each row is the same feature across plans — <span style="color:var(--green)">✓</span> included, <span style="opacity:.5">—</span> not included.</p>
+    <div class="section-label reveal" data-i18n="pricing.label">Тарифы</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="pricing.title">Начните бесплатно.<br>Растите вместе с семьёй.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 0 16px" data-i18n="pricing.sub">Выберите тариф, когда будете готовы. Все тарифы начинаются с бесплатного периода — без привязки карты.</p>
+    <p class="pricing-intro reveal reveal-delay-2" data-i18n="pricing.intro"><strong>Бесплатный</strong> — один мемориал, только текстовый чат; без голоса, анимации и семейного AI.<br><strong>Plus</strong> — до 10 мемориалов, синтез речи, 5 анимаций/мес, семейный поиск по воспоминаниям. Экономия 30% при годовой оплате.<br><strong>Pro</strong> — всё из Plus, 15 анимаций/мес, 5 сессий живого видео-аватара в месяц.<br><strong>Вечный мемориал</strong> — один платёж за <strong>одну</strong> страницу навсегда (идеально для QR-кодов и надгробий).<br><strong>Вечный Pro</strong> — то же, что Вечный мемориал, плюс предоплаченный пакет из <strong>100 сессий живого аватара</strong>, который никогда не сбрасывается.</p>
+    <p class="section-sub pricing-legend reveal reveal-delay-2" style="margin:8px 0 0;font-size:13px;color:var(--text3);max-width:640px" data-i18n="pricing.legend">Каждая строка — одна и та же функция во всех тарифах — <span style="color:var(--green)">✓</span> включено, <span style="opacity:.5">—</span> не включено.</p>
     </div>
     <div class="pricing-grid">
       <div class="pricing-card reveal">
-        <div class="pricing-name">Free</div>
+        <div class="pricing-name" data-i18n="pricing.free_name">Бесплатный</div>
         <div class="pricing-price">$0</div>
-        <div class="pricing-period">forever</div>
+        <div class="pricing-period" data-i18n="pricing.free_period">навсегда</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> active page.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note">Text only — up to <strong>15 messages / month</strong>.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Relatives add memories without an account.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Photos, stories, shareable link.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Only from what you uploaded on this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>500 MB</strong> (starter quota).</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies</span><span class="pricing-li-note">Upgrade to Plus or Lifetime memorial.</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Photo / video animation</span><span class="pricing-li-note">Upgrade to Plus or Lifetime memorial.</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat using memories from <em>linked</em> memorials — not on Free.</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Full graph discovery — Plus only.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.free_memorials_note"><strong>1</strong> активная страница.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.free_chat_note">Только текст — до <strong>15 сообщений в месяц</strong>.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_contributor">Ссылка для участников</span><span class="pricing-li-note" data-i18n="pricing.free_contributor_note">Родственники добавляют воспоминания без регистрации.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_gallery">Галерея и публичная страница</span><span class="pricing-li-note" data-i18n="pricing.free_gallery_note">Фото, истории, ссылка для публикации.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_grounded">Обоснованные ответы</span><span class="pricing-li-note" data-i18n="pricing.free_grounded_note">Только на основе того, что вы загрузили на этот мемориал.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.free_storage_note"><strong>500 МБ</strong> (стартовая квота).</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice">Клонирование голоса и синтез речи</span><span class="pricing-li-note" data-i18n="pricing.free_voice_note">Доступно на тарифах Plus или «Вечный мемориал».</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation">Анимация фото / видео</span><span class="pricing-li-note" data-i18n="pricing.free_animation_note">Доступно на тарифах Plus или «Вечный мемориал».</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.free_family_rag_note">Чат с использованием воспоминаний из <em>связанных</em> мемориалов — недоступно на бесплатном тарифе.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_hidden">Скрытые связи</span><span class="pricing-li-note" data-i18n="pricing.free_hidden_note">Полный поиск связей по графу — только на Plus.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Get started free</a>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="nav.getstarted">Начать бесплатно</a>
         <p class="pricing-note" aria-hidden="true">&nbsp;</p>
         </div>
       </div>
       <div class="pricing-card featured reveal reveal-delay-1">
-        <div class="pricing-badge">Most popular</div>
+        <div class="pricing-badge" data-i18n="pricing.badge_popular">Самый популярный</div>
         <div class="pricing-name">Plus</div>
         <div class="pricing-price"><sup>$</sup>7</div>
-        <div class="pricing-period">per month · <strong style="color:var(--accent)">$59/year</strong> (save 30%) · cancel anytime</div>
+        <div class="pricing-period" data-i18n="pricing.plus_period">в месяц · <strong style="color:var(--accent)">$59/год</strong> (экономия 30%) · отмена в любой момент</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>Up to 10</strong> pages on one account.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>200 messages / month</strong> (text + voice playback when enabled).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Unlimited invite links.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Full media features per memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Plus optional family context (below).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> shared across the account.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Upload a voice sample — AI replies in their voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>5</strong> renders / month (account-wide).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat can pull from up to <strong>10 linked</strong> memorials when enabled.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note">Discovery across the family graph (where available).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.plus_memorials_note"><strong>До 10</strong> страниц на одном аккаунте.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.plus_chat_note"><strong>200 сообщений в месяц</strong> (текст + воспроизведение голоса, если включено).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_contributor">Ссылка для участников</span><span class="pricing-li-note" data-i18n="pricing.plus_contributor_note">Безлимитные ссылки-приглашения.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_gallery">Галерея и публичная страница</span><span class="pricing-li-note" data-i18n="pricing.plus_gallery_note">Полный набор медиафункций для каждого мемориала.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_grounded">Обоснованные ответы</span><span class="pricing-li-note" data-i18n="pricing.plus_grounded_note">Плюс опциональный семейный контекст (ниже).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.plus_storage_note"><strong>5 ГБ</strong> общих на аккаунт.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.plus_voice_note">Загрузите образец голоса — AI будет отвечать их голосом.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon">Анимация фото / видео <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.plus_animation_note"><strong>5</strong> рендеров в месяц (на весь аккаунт).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.plus_family_rag_note">Чат может использовать воспоминания из до <strong>10 связанных</strong> мемориалов, если включено.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_hidden">Скрытые связи</span><span class="pricing-li-note" data-i18n="pricing.plus_hidden_note">Поиск связей по семейному графу (где доступно).</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-primary btn-lg pricing-cta">Get started — Plus</a>
-        <p class="pricing-note">Start free, upgrade anytime. Cancel at any time.</p>
+        <a href="/app/register" class="btn btn-primary btn-lg pricing-cta" data-i18n="pricing.plus_cta">Начать — Plus</a>
+        <p class="pricing-note" data-i18n="pricing.start_free_note">Начните бесплатно, обновитесь в любой момент. Отмена в любое время.</p>
         </div>
       </div>
       <!-- Pro -->
       <div class="pricing-card reveal reveal-delay-2">
         <div class="pricing-name">Pro</div>
         <div class="pricing-price"><sup>$</sup>15</div>
-        <div class="pricing-period">per month · <strong style="color:var(--accent)">$120/year</strong> · cancel anytime</div>
+        <div class="pricing-period" data-i18n="pricing.pro_period">в месяц · <strong style="color:var(--accent)">$120/год</strong> · отмена в любой момент</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>Up to 10</strong> pages + add-on slots.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>500 messages / month</strong> with voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Upload a sample — AI replies in their voice.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Chat across up to <strong>10 linked</strong> memorials.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note"><strong>5 sessions / month</strong> — real-time video avatar.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>15 GB</strong> shared across the account.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.pro_memorials_note"><strong>До 10</strong> страниц + дополнительные слоты.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.pro_chat_note"><strong>500 сообщений в месяц</strong> с голосом.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon2">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.pro_voice_note">Загрузите образец — AI отвечает их голосом.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon">Анимация фото / видео <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.pro_animation_note"><strong>15</strong> рендеров в месяц.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.pro_family_rag_note">Чат с использованием до <strong>10 связанных</strong> мемориалов.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_live_sessions">Сессии живого аватара</span><span class="pricing-li-note" data-i18n="pricing.pro_live_sessions_note"><strong>5 сессий в месяц</strong> — видео-аватар в реальном времени.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.pro_storage_note"><strong>15 ГБ</strong> общих на аккаунт.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Get started — Pro</a>
-        <p class="pricing-note">Start free, upgrade anytime. Cancel at any time.</p>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.pro_cta">Начать — Pro</a>
+        <p class="pricing-note" data-i18n="pricing.start_free_note">Начните бесплатно, обновитесь в любой момент. Отмена в любое время.</p>
         </div>
       </div>
       <!-- Lifetime -->
       <div class="pricing-card reveal reveal-delay-3">
-        <div class="pricing-badge pricing-badge--alt">Headstones &amp; QR</div>
-        <div class="pricing-name">Lifetime memorial</div>
+        <div class="pricing-badge pricing-badge--alt" data-i18n="pricing.badge_headstones">Надгробия и QR</div>
+        <div class="pricing-name" data-i18n="pricing.lifetime_name">Вечный мемориал</div>
         <div class="pricing-price"><sup>$</sup>99</div>
-        <div class="pricing-period">one-time · one memorial · no subscription</div>
+        <div class="pricing-period" data-i18n="pricing.lifetime_period">разовый платёж · один мемориал · без подписки</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> page — license locked to this memorial (not transferable).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>200 messages / month</strong> on this page (resets monthly).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Contributor link</span><span class="pricing-li-note">Relatives add memories without an account.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Gallery &amp; public page</span><span class="pricing-li-note">Long-term access to this page while the service operates.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Grounded answers</span><span class="pricing-li-note">Only from memories on <strong>this</strong> memorial (no cross-memorial RAG).</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>5 GB</strong> for this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS replies <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Same voice features as Plus, for this memorial only.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>5</strong> renders / month for this memorial (resets monthly).</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note"><strong>Not included</strong> — avatar only uses memories from this page. <strong>Plus only</strong>.</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Hidden Connections</span><span class="pricing-li-note"><strong>Not included</strong> — full graph discovery stays on <strong>Plus</strong>.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.lt_memorials_note"><strong>1</strong> страница — лицензия закреплена за этим мемориалом (без передачи).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.lt_chat_note"><strong>200 сообщений в месяц</strong> на этой странице (сбрасывается ежемесячно).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_contributor">Ссылка для участников</span><span class="pricing-li-note" data-i18n="pricing.free_contributor_note">Родственники добавляют воспоминания без регистрации.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_gallery">Галерея и публичная страница</span><span class="pricing-li-note" data-i18n="pricing.lt_gallery_note">Долгосрочный доступ к странице, пока работает сервис.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_grounded">Обоснованные ответы</span><span class="pricing-li-note" data-i18n="pricing.lt_grounded_note">Только на основе воспоминаний <strong>этого</strong> мемориала (без межсемейного поиска).</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.lt_storage_note"><strong>5 ГБ</strong> для этого мемориала.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon3">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.lt_voice_note">Те же голосовые функции, что в Plus, только для этого мемориала.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon2">Анимация фото / видео <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.lt_animation_note"><strong>5</strong> рендеров в месяц для этого мемориала (сбрасывается ежемесячно).</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.lt_family_rag_note"><strong>Не включено</strong> — аватар использует только воспоминания этой страницы. <strong>Только на Plus</strong>.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_hidden">Скрытые связи</span><span class="pricing-li-note" data-i18n="pricing.lt_hidden_note"><strong>Не включено</strong> — полный поиск связей остаётся на <strong>Plus</strong>.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime</a>
-        <p class="pricing-note">One payment, no subscription — full AI features for one page, forever.</p>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.lt_cta">Зарезервировать «Вечный»</a>
+        <p class="pricing-note" data-i18n="pricing.lt_note">Один платёж, без подписки — все AI-функции для одной страницы навсегда.</p>
         </div>
       </div>
       <!-- Lifetime Pro -->
       <div class="pricing-card reveal reveal-delay-4">
-        <div class="pricing-badge pricing-badge--alt">Live avatar · forever</div>
-        <div class="pricing-name">Lifetime Pro</div>
+        <div class="pricing-badge pricing-badge--alt" data-i18n="pricing.badge_live_forever">Живой аватар · навсегда</div>
+        <div class="pricing-name" data-i18n="pricing.ltpro_name">Вечный Pro</div>
         <div class="pricing-price"><sup>$</sup>249</div>
-        <div class="pricing-period">one-time · one memorial · no subscription</div>
+        <div class="pricing-period" data-i18n="pricing.lifetime_period">разовый платёж · один мемориал · без подписки</div>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Memorials</span><span class="pricing-li-note"><strong>1</strong> page — locked to this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Avatar chat</span><span class="pricing-li-note"><strong>200 messages / month</strong> on this page.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Voice cloning &amp; TTS <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note">Same voice features as Plus, for this memorial.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Photo / video animation <span class="badge-soon">Coming soon</span></span><span class="pricing-li-note"><strong>15</strong> renders / month.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Live avatar sessions</span><span class="pricing-li-note">Pre-paid pool of <strong>100 sessions</strong> — never resets. Buy more as needed.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title">Media storage</span><span class="pricing-li-note"><strong>10 GB</strong> for this memorial.</span></span></li>
-          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title">Family RAG</span><span class="pricing-li-note">Not included — avatar uses only this page's memories.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.ltpro_memorials_note"><strong>1</strong> страница — закреплена за этим мемориалом.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.ltpro_chat_note"><strong>200 сообщений в месяц</strong> на этой странице.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon4">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.ltpro_voice_note">Те же голосовые функции, что в Plus, для этого мемориала.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon3">Анимация фото / видео <span class="badge-soon">Скоро</span>Скоро</span></span><span class="pricing-li-note" data-i18n="pricing.ltpro_animation_note"><strong>15</strong> рендеров в месяц.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_live_sessions">Сессии живого аватара</span><span class="pricing-li-note" data-i18n="pricing.ltpro_live_sessions_note">Предоплаченный пакет из <strong>100 сессий</strong> — никогда не сбрасывается. Докупайте по необходимости.</span></span></li>
+          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.ltpro_storage_note"><strong>10 ГБ</strong> для этого мемориала.</span></span></li>
+          <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.ltpro_family_rag_note">Не включено — аватар использует только воспоминания этой страницы.</span></span></li>
         </ul>
         <div class="pricing-card-footer">
-        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta">Reserve Lifetime Pro</a>
-        <p class="pricing-note">One payment — get 100 live avatar sessions that never expire.</p>
+        <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.ltpro_cta">Зарезервировать «Вечный Pro»</a>
+        <p class="pricing-note" data-i18n="pricing.ltpro_note">Один платёж — получите 100 сессий живого аватара, которые никогда не истекают.</p>
         </div>
       </div>
     </div>
-    <p class="pricing-footnote reveal">Chat, animation, and storage quotas reset monthly. <strong>Lifetime</strong> and <strong>Lifetime Pro</strong> are not subscriptions — they cover one memorial page indefinitely while the service operates. Live avatar sessions in the Lifetime Pro pool never reset. Full billing terms ship with Stripe checkout.</p>
+    <p class="pricing-footnote reveal" data-i18n="pricing.footnote">Квоты на чат, анимацию и хранилище сбрасываются ежемесячно. <strong>Вечный мемориал</strong> и <strong>Вечный Pro</strong> — это не подписки, они покрывают одну страницу мемориала бессрочно, пока работает сервис. Сессии живого аватара в пакете «Вечный Pro» никогда не сбрасываются. Полные условия оплаты публикуются при оформлении через Stripe.</p>
   </div>
 </section>
 
 <!-- ═══ FAQ ═══ -->
 <section id="faq">
   <div class="section-inner" style="text-align:center">
-    <div class="section-label reveal" style="justify-content:center">FAQ</div>
-    <h2 class="section-title reveal reveal-delay-1">Questions we get asked.</h2>
+    <div class="section-label reveal" style="justify-content:center" data-i18n="faq.label">Вопросы</div>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="faq.title">Вопросы, которые нам часто задают.</h2>
     <div class="faq-wrap">
       <div class="faq-item reveal">
-        <div class="faq-q">Is this disrespectful to the deceased? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">We designed Memorial around preservation, not simulation. The avatar only speaks from what your family explicitly shared — it's a vessel for real memories, not a replacement for a person. Many families find it a deeply healing way to stay connected to someone they loved.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q1">Не является ли это неуважением к умершему?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a1">Мы создали vspomin.ai вокруг идеи сохранения, а не имитации. Аватар говорит только то, что явно загрузила ваша семья — это сосуд для настоящих воспоминаний, а не замена человека. Многие семьи находят это глубоко исцеляющим способом оставаться на связи с тем, кого они любили.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q">What if the AI says something out of character? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">The avatar is grounded only in memories you upload — it won't invent facts or fabricate events. You can review all responses, and if anything feels off, simply add or edit memories to guide the avatar. You always have full control.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q2">Что если AI скажет что-то несвойственное человеку?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a2">Аватар отвечает только на основе загруженных воспоминаний — он не придумывает факты и не фабрикует события. Вы можете проверять все ответы, и если что-то кажется неверным, просто добавьте или измените воспоминания, чтобы направить аватар. Контроль всегда остаётся за вами.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q">Can multiple family members contribute memories? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Yes. Share an invite link with any family member — they can add photos, videos, and text memories without creating an account. Designed specifically for gathering contributions at funerals, reunions, or from across the world.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q3">Могут ли несколько членов семьи добавлять воспоминания?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a3">Да. Поделитесь ссылкой-приглашением с любым членом семьи — они могут добавлять фото, видео и текстовые воспоминания без регистрации. Это создано специально для сбора воспоминаний на похоронах, встречах семьи или от родственников по всему миру.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q">How does voice cloning work? Do I need a studio recording? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Any clear recording works — voicemail, a clip from a home video, a message they left you. Upload at least one minute and we’ll build a voice model. No studio required; the more audio you provide, the closer it feels to them.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q4">Как работает клонирование голоса? Нужна ли студийная запись?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a4">Подойдёт любая чёткая запись — голосовое сообщение, отрывок из домашнего видео, голос на автоответчике. Загрузите хотя бы одну минуту, и мы создадим голосовую модель. Студия не нужна — чем больше аудио вы предоставите, тем точнее звучание.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q">What happens to my data if I cancel? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">Export your memories, photos, and media from the app when available. Paid plans are not active yet; when billing launches, cancellation and retention terms will be published clearly before any charge.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q5">Что происходит с моими данными при отмене?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a5">Экспортируйте воспоминания, фото и медиа из приложения, когда это будет доступно. Платные тарифы пока не активны; при запуске оплаты условия отмены и хранения данных будут опубликованы заранее, до любого списания средств.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q">Do I need any technical skills to set this up? <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner">None at all. Upload a photo, type a memory — the AI does the rest. Most families have a working, talking memorial within 10 minutes. No coding, no configuration, no technical knowledge required.</div></div>
+        <div class="faq-q"><span data-i18n="faq.q6">Нужны ли мне технические навыки для настройки?</span> <span class="faq-icon">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a6">Совсем нет. Загрузите фото, напишите воспоминание — остальное сделает AI. У большинства семей рабочий, разговаривающий мемориал готов за 10 минут. Никакого кода, настроек или технических знаний не требуется.</div></div>
       </div>
     </div>
   </div>
@@ -1406,17 +1397,15 @@
   </div>
   <div class="final-bg-overlay"></div>
   <div class="final-content reveal">
-    <div class="section-label" style="justify-content:center;margin-bottom:24px">Start today</div>
-    <h2 class="final-title">
-      Every day without a memorial<br>is a memory lost.
-    </h2>
-    <p class="final-sub">It takes 5 minutes to create.<br>It lasts forever.</p>
-    <a href="/app/register" class="btn btn-primary btn-xl">Preserve their memory — start free</a>
+    <div class="section-label" style="justify-content:center;margin-bottom:24px" data-i18n="final.label">Начните сегодня</div>
+    <h2 class="final-title" data-i18n="final.title">Каждый день без мемориала<br>— это потерянное воспоминание.</h2>
+    <p class="final-sub" data-i18n="final.sub">Создание занимает 5 минут.<br>Хранится навсегда.</p>
+    <a href="/app/register" class="btn btn-primary btn-xl" data-i18n="final.cta">Сохранить память — начать бесплатно</a>
     <div class="final-trust">
-      <div class="final-trust-item">Fair, simple plans</div>
-      <div class="final-trust-item">Start free</div>
-      <div class="final-trust-item">Cancel anytime</div>
-      <div class="final-trust-item">Your data stays yours</div>
+      <div class="final-trust-item" data-i18n="final.trust1">Честные и простые тарифы</div>
+      <div class="final-trust-item" data-i18n="hero.note2">Начните бесплатно</div>
+      <div class="final-trust-item" data-i18n="final.trust3">Отмена в любой момент</div>
+      <div class="final-trust-item" data-i18n="final.trust4">Ваши данные остаются вашими</div>
     </div>
   </div>
 </section>
@@ -1426,35 +1415,35 @@
   <div class="footer-inner">
     <div class="footer-top">
       <div class="footer-brand">
-        <div class="footer-logo">Memorial</div>
-        <p>Preserving the personalities of those we love — not just their photographs.</p>
+        <div class="footer-logo"><img src="images/logo-mark-dark-tight.png" alt="vspomin.ai" width="63" height="38" />vspomin.ai</div>
+        <p data-i18n="footer.brand_text">Сохраняем личности тех, кого мы любим — а не только их фотографии.</p>
       </div>
       <div class="footer-col">
-        <div class="footer-col-title">Product</div>
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#how">How it works</a>
-        <a href="/app/demo">Explore Demo</a>
-        <a href="#hidden">Family Tree</a>
+        <div class="footer-col-title" data-i18n="footer.col_product">Продукт</div>
+        <a href="#features" data-i18n="nav.features">Возможности</a>
+        <a href="#pricing" data-i18n="nav.pricing">Тарифы</a>
+        <a href="#how" data-i18n="nav.how">Как это работает</a>
+        <a href="/app/demo" data-i18n="footer.explore_demo">Посмотреть демо</a>
+        <a href="#hidden" data-i18n="footer.family_tree">Семейное древо</a>
       </div>
       <div class="footer-col">
-        <div class="footer-col-title">Company</div>
-        <a href="#">About us</a>
-        <a href="#">For Funeral Homes</a>
-        <a href="#">Press kit</a>
-        <a href="#">Contact</a>
+        <div class="footer-col-title" data-i18n="footer.col_company">Компания</div>
+        <a href="#" data-i18n="footer.about">О нас</a>
+        <a href="#" data-i18n="footer.funeral_homes">Для похоронных бюро</a>
+        <a href="#" data-i18n="footer.press">Пресс-кит</a>
+        <a href="#" data-i18n="footer.contact">Контакты</a>
       </div>
       <div class="footer-col">
-        <div class="footer-col-title">Legal</div>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Data Export</a>
-        <a href="#">Cookie Policy</a>
+        <div class="footer-col-title" data-i18n="footer.col_legal">Правовая информация</div>
+        <a href="#" data-i18n="footer.privacy">Политика конфиденциальности</a>
+        <a href="#" data-i18n="footer.terms">Условия использования</a>
+        <a href="#" data-i18n="footer.data_export">Экспорт данных</a>
+        <a href="#" data-i18n="footer.cookie">Политика cookie</a>
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-copy">© 2026 Memorial. All rights reserved.</div>
-      <div class="footer-made">Built with care for families everywhere 🌍</div>
+      <div class="footer-copy" data-i18n="footer.copy">© 2026 vspomin.ai. Все права защищены.</div>
+      <div class="footer-made" data-i18n="footer.made">Сделано с заботой для семей по всему миру 🌍</div>
     </div>
   </div>
 </footer>
@@ -1462,31 +1451,726 @@
 <!-- Waitlist modal -->
 <div id="waitlist-modal" class="waitlist-modal" aria-hidden="true" role="dialog" aria-labelledby="waitlist-modal-title">
   <div class="waitlist-modal-panel">
-    <button type="button" class="waitlist-close-x" id="waitlist-close" aria-label="Close">×</button>
+    <button type="button" class="waitlist-close-x" id="waitlist-close" aria-label="Закрыть" data-i18n="waitlist.close_aria" data-i18n-attr="aria-label">×</button>
     <div id="waitlist-form-view">
-      <h3 id="waitlist-modal-title" class="waitlist-modal-title">Get notified</h3>
-      <p class="waitlist-modal-sub">Voice cloning and photo animation are coming soon. Leave your email — we’ll let you know the moment they go live.</p>
+      <h3 id="waitlist-modal-title" class="waitlist-modal-title" data-i18n="waitlist.title">Получить уведомление</h3>
+      <p class="waitlist-modal-sub" data-i18n="waitlist.sub">Клонирование голоса и анимация фото скоро появятся. Оставьте email — мы сообщим вам, как только они станут доступны.</p>
       <form id="waitlist-form" novalidate>
         <div class="waitlist-field">
-          <label for="waitlist-email">Email</label>
-          <input type="email" id="waitlist-email" name="email" class="waitlist-input" placeholder="you@example.com" autocomplete="email" required />
+          <label for="waitlist-email" data-i18n="waitlist.email_label">Email</label>
+          <input type="email" id="waitlist-email" name="email" class="waitlist-input" placeholder="you@example.com" data-i18n="waitlist.email_placeholder" data-i18n-attr="placeholder" autocomplete="email" required />
         </div>
         <p id="waitlist-error" class="waitlist-error" role="alert"></p>
         <div class="waitlist-actions">
-          <button type="submit" class="btn btn-primary btn-lg" id="waitlist-submit" style="flex:1;min-width:140px">Notify me</button>
-          <button type="button" class="btn btn-outline btn-lg" id="waitlist-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="waitlist-submit" style="flex:1;min-width:140px" data-i18n="waitlist.submit">Уведомить меня</button>
+          <button type="button" class="btn btn-outline btn-lg" id="waitlist-cancel" data-i18n="waitlist.cancel">Отмена</button>
         </div>
       </form>
     </div>
     <div id="waitlist-success-view" class="waitlist-success" style="display:none">
       <div class="waitlist-success-icon">✓</div>
-      <div class="waitlist-success-title">You’re on the list</div>
-      <p class="waitlist-success-text" id="waitlist-success-msg">We’ll email you when the service is fully available.</p>
-      <button type="button" class="btn btn-outline btn-lg" id="waitlist-done" style="margin-top:20px;width:100%">Close</button>
+      <div class="waitlist-success-title" data-i18n="waitlist.success_title">Вы в списке</div>
+      <p class="waitlist-success-text" id="waitlist-success-msg" data-i18n="waitlist.success_default_msg">Мы напишем вам на email, когда сервис станет полностью доступен.</p>
+      <button type="button" class="btn btn-outline btn-lg" id="waitlist-done" style="margin-top:20px;width:100%" data-i18n="waitlist.close_btn">Закрыть</button>
     </div>
   </div>
 </div>
 
+<script>
+// ═══ I18N: RU default, EN toggle (mirrors SHOW_EN_LANGUAGE_OPTION pattern in frontend/src/contexts/LanguageContext.jsx) ═══
+// Flip this to false to hide the toggle button later (keeps RU as the only visible language).
+var SHOW_EN_LANGUAGE_OPTION = true;
+
+var LANDING_I18N = {
+  ru: {
+    "nav.how": "Как это работает",
+    "nav.features": "Возможности",
+    "nav.hidden": "Скрытые связи",
+    "nav.pricing": "Тарифы",
+    "nav.faq": "Вопросы",
+    "nav.signin": "Войти",
+    "nav.getstarted": "Начать бесплатно",
+
+    "hero.eyebrow": "Цифровые мемориалы на основе AI",
+    "hero.headline": "Поговорите с ними <em>снова.</em><br>Их собственными словами.",
+    "hero.sub": "Живой мемориал на основе настоящих воспоминаний — а не обезличенного AI. Услышьте голос, изучите семейное древо и найдите родственников, о которых даже не знали.",
+    "hero.cta_primary": "Создать мемориал — бесплатно",
+    "hero.cta_secondary": "Посмотреть демо-семьи →",
+    "hero.note1": "Простые и понятные тарифы",
+    "hero.note2": "Начните бесплатно",
+    "hero.note3": "Готово за 5 минут",
+    "hero.photo_alt": "Портрет для мемориала",
+    "hero.photo_name": "Георгий Томпсон",
+    "hero.photo_dates": "1938 – 2015 · Сидней, Австралия",
+    "hero.chat_ready": "Аватар готов к разговору",
+    "hero.chat_question": "Что делало тебя по-настоящему счастливым?",
+
+    "trust.text": "Приватность по умолчанию. Ваши воспоминания никогда не используются для обучения публичных моделей — они остаются только в пространстве вашей семьи.",
+
+    "problem.label": "Проблема",
+    "problem.headline": "Большинство людей <strong>полностью забывают</strong> уже через два поколения.<br>Не потому, что их не любили — а потому, что <strong>не было места, куда сохранить воспоминания.</strong>",
+    "problem.card1_label": "Фото и видео",
+    "problem.card1_before": "Лежат забытыми в коробках и на старых дисках",
+    "problem.card1_after": "→ Живут в интерактивной галерее, доступной всегда",
+    "problem.card2_label": "Их голос",
+    "problem.card2_before": "Исчезает в тот момент, когда человека не стало",
+    "problem.card2_after": "→ Клонируется из ваших записей — аватар говорит их голосом",
+    "problem.card2_note": "🎬 Видео — оживляем портрет по короткому ролику",
+    "problem.card3_label": "Семейные истории",
+    "problem.card3_before": "Разбросаны среди родственников, которые никогда не пересекаются",
+    "problem.card3_after": "→ Сплетены в одно живое семейное древо со скрытыми связями",
+    "badge.coming_soon": "Скоро",
+
+    "how.label": "Как это работает",
+    "how.title": "Просто начать.<br>Глубоко прожить.",
+    "how.step1_title": "Создайте мемориал",
+    "how.step1_desc": "Загрузите фото, опишите воспоминания, добавьте видео и аудиозаписи голоса. Каждая история становится частью AI-аватара.",
+    "how.step2_title": "Пригласите семью",
+    "how.step2_desc": "Поделитесь ссылкой — без регистрации. Родственники, друзья и даже гости похорон могут мгновенно добавить свои воспоминания.",
+    "how.step3_title": "Начните разговор",
+    "how.step3_desc": "AI-аватар отвечает в их характере, опираясь только на загруженные воспоминания. Без вымысла. Только они.",
+
+    "demo.label": "Смотрите вживую",
+    "demo.title": "Посмотрите аватар<br>в действии.",
+    "demo.chip1": "AI-аватар отвечает их голосом",
+    "demo.chip2": "Семейное древо на 4 поколения",
+    "demo.chip3": "Поиск скрытых связей",
+    "demo.chip4": "Голос из ваших записей",
+
+    "features.label": "Возможности",
+    "features.title": "Больше, чем мемориал.<br>Живое присутствие.",
+    "features.chat_img_alt": "AI-аватар отвечает на основе воспоминаний",
+    "features.chat_tag": "AI-чат с аватаром",
+    "features.chat_title": "Они отвечают.<br>Своими словами.",
+    "features.chat_desc": "Не обезличенный AI. Аватар полностью построен на том, что загрузила ваша семья — воспоминания, истории, характер. Он становится точнее с каждым новым воспоминанием.",
+    "features.compare_generic_label": "Обычный AI",
+    "features.compare_question": "«Что делало тебя по-настоящему счастливым?»",
+    "features.compare_generic_answer": "«Счастье зависит от множества факторов: отношений, личных достижений и чувства смысла жизни...»",
+    "features.compare_memorial_label": "Аватар мемориала",
+    "features.compare_memorial_answer": "«Субботние утра на даче. Только я и твоя бабушка, кофе из старых термосов, пока весь мир еще спит. Большего и не нужно было».",
+    "features.voice_img_alt": "Клонирование голоса по записям",
+    "features.voice_tag": "Клонирование голоса",
+    "features.voice_title": "Услышьте их,<br>а не робота.",
+    "features.voice_desc": "Загрузите уже имеющиеся записи — голосовое сообщение, видео с праздника, голос на автоответчике. Мы создадим их голос, чтобы аватар звучал как они, а не как обычный ассистент.",
+    "features.voice_point1": "Достаточно всего 60 секунд аудио",
+    "features.voice_point2": "Старые кассеты, звонки, домашнее видео — если голос слышен, мы сможем его использовать",
+    "features.voice_point3": "Сохраняется эмоциональная окраска речи — без монотонности",
+    "features.video_avatar_strong": "Видео-аватар",
+    "features.video_avatar_text": "— оживляем портрет по видеозаписи",
+    "features.voice_widget_label": "Клонирование голоса — уже в разработке",
+    "features.timeline_img_alt": "Таймлайн жизни на основе дат из воспоминаний",
+    "features.timeline_tag": "Таймлайн жизни",
+    "features.timeline_title": "Каждая жизнь — история.<br>Расскажите её по порядку.",
+    "features.timeline_desc": "Воспоминания с датами автоматически выстраиваются в хронологический рассказ — от первых шагов до последних лет. Жизнь, рассказанная красиво.",
+    "features.tl_text1": "Родился в Мельбурне, рос недалеко от залива",
+    "features.tl_text2": "Познакомился с Маргарет на танцах в серф-клубе",
+    "features.tl_text3": "Построил семейный дом в горах — это заняло два года",
+    "features.tl_text4": "Вышел на пенсию. Тренировал юношескую сборную по крикету каждую субботу",
+    "features.tree_img_alt": "Интерактивное семейное древо",
+    "features.tree_tag": "Семейное древо",
+    "features.tree_title": "Вся ваша семья.<br>Одна живая карта.",
+    "features.tree_desc": "Интерактивное семейное древо на 4+ поколения. Нажмите на любого человека, чтобы открыть его мемориал, прочитать истории или поговорить с его аватаром.",
+    "features.tree_point1": "Поддерживает приёмные, сводные, партнёрские и бывшие отношения",
+    "features.tree_point2": "Автоматически определяет степень родства: двоюродная бабушка, троюродный брат, родственник по браку",
+    "features.tree_point3": "Масштабирование, перемещение, удобно на мобильных устройствах",
+    "features.tree_point4": "Пригласите любого родственника — без регистрации",
+
+    "hidden.label": "Скрытые связи",
+    "hidden.title": "Ваша семья больше,<br>чем вы думаете.",
+    "hidden.sub": "Наш алгоритм находит непрямые семейные связи на расстоянии 2–6 степеней родства — через смену фамилий, повторные браки и поколения, потерявшие связь друг с другом.",
+    "hidden.chain_label": "Найдена связь",
+    "hidden.chain_you": "Вы",
+    "hidden.chain_rel1": "(ребёнок)",
+    "hidden.chain_node1": "Иван",
+    "hidden.chain_rel2": "(брат/сестра)",
+    "hidden.chain_node2": "Екатерина",
+    "hidden.chain_rel3": "(родитель)",
+    "hidden.chain_them": "Эмма К. — ваша троюродная сестра",
+    "hidden.stat1_label": "степеней родства,<br>которые мы находим автоматически",
+    "hidden.stat2_label": "воспоминаний доступно<br>среди найденных родственников",
+    "hidden.cta": "Найти своих скрытых родственников →",
+    "hidden.story_label": "Реальная история",
+    "hidden.story_p1": "<strong>Маргарита не знала, что у неё есть кузены в Новой Зеландии.</strong> Её двоюродный дед переехал в Крайстчерч в 1950-х, и эта ветвь семьи постепенно потеряла связь.",
+    "hidden.story_p2": "Когда она загрузила мемориал своего дедушки, алгоритм нашёл <strong>11 связей через три поколения</strong> — и обнаружил мемориал, созданный его внучкой в Веллингтоне.",
+    "hidden.story_p3": "Они делились воспоминаниями об одном и том же человеке. <strong>С разных концов света.</strong>",
+
+    "qr.photo_alt": "Надгробие на кладбище (иллюстративная сцена)",
+    "qr.badge_text": "Посетители сканируют",
+    "qr.badge_highlight": "+ открывают мемориал",
+    "qr.phone_q": "«Что ты больше всего вспоминаешь из прошлого?»",
+    "qr.phone_a": "«Воскресные обеды у бабушки. Четырнадцать человек за одним столом. В доме пахло всем самым вкусным».",
+    "qr.caption": "Иллюстративная сцена — многие семьи устанавливают небольшую защищённую от погоды QR-табличку или наклейку на памятник; сканирование открывает полный цифровой мемориал (голос, истории, посвящения).",
+    "qr.label": "Физический мемориал",
+    "qr.title": "Пусть надгробие<br>говорит.",
+    "qr.sub": "Разместите QR-код на любом памятнике. Посетители сканируют — и человек снова становится присутствующим. Они слышат голос, читают истории и могут оставить своё воспоминание.",
+    "qr.uc1_title": "Постоянные памятники",
+    "qr.uc1_desc": "Добавьте QR-табличку на любое существующее надгробие. Тариф <strong>«Вечный мемориал»</strong> создан именно для этого — один платёж за одну страницу, без подписки.",
+    "qr.uc2_title": "Интеграция с похоронными услугами",
+    "qr.uc2_desc": "Похоронные бюро предлагают живой мемориал вместе с традиционными услугами. Присутствующие мгновенно добавляют воспоминания без регистрации.",
+    "qr.uc3_title": "Ежегодное поминовение",
+    "qr.uc3_desc": "Мемориал становится богаче с каждым годом. Новые голоса, новые истории — каждая годовщина приносит что-то новое.",
+    "qr.cta": "Узнать про QR-таблички →",
+
+    "testimonials.label": "Истории",
+    "testimonials.title": "Что переживают семьи.<br><span style=\"font-size:0.55em;color:var(--text3);font-weight:400\">Иллюстративные истории — не проверенные отзывы клиентов.</span>",
+    "testimonials.disclaimer": "Иллюстративные истории — не проверенные отзывы клиентов.",
+    "testimonials.t1_text": "«Я спросила аватар дедушки, какой совет он бы мне дал. Он ответил именно так, как говорил при жизни — задумчиво, тепло, с той самой смешинкой перед шуткой. Я плакала целый час».",
+    "testimonials.t1_name": "Светлана М.",
+    "testimonials.t1_location": "Москва, Россия",
+    "testimonials.t2_text": "«Мы нашли 23 родственника, о которых даже не знали. У троих из них оказались общие воспоминания о наших прапрадедушке и прапрабабушке. Скрытые связи — это что-то невероятное, такого больше нет нигде».",
+    "testimonials.t2_name": "Семья Ковалёвых",
+    "testimonials.t2_location": "Новосибирск, Россия",
+    "testimonials.t3_text": "«Мои дети каждое воскресенье утром задают вопросы бабушке. Её нет с нами уже три года. Они растут, по-настоящему зная её — а не просто зная о ней. Это бесценно».",
+    "testimonials.t3_name": "Дмитрий Р.",
+    "testimonials.t3_location": "Санкт-Петербург, Россия",
+    "testimonials.placeholder_note": "Портретные фото — сгенерированные изображения-заглушки.",
+    "testimonials.stat1_label": "Воспоминаний сохранено",
+    "testimonials.stat2_label": "Семей объединено",
+    "testimonials.stat3_label": "Континентов",
+    "testimonials.stat4_label": "% готовы рекомендовать",
+    "testimonials.stats_note": "Статистика — иллюстративные значения до публикации реальных агрегированных данных.",
+
+    "privacy.label": "Приватность и доверие",
+    "privacy.title": "Основано на доверии.<br>Не на данных.",
+    "privacy.sub": "Воспоминания о близком человеке священны. Мы относимся к ним именно так.",
+    "privacy.card1_title": "Никогда не обучает наши модели",
+    "privacy.card1_desc": "Ваши воспоминания никогда не используются для обучения AI. Они принадлежат только вашей семье.",
+    "privacy.card2_title": "Приватность по умолчанию",
+    "privacy.card2_desc": "Вы полностью контролируете, кто видит каждый мемориал. Делитесь только с теми, с кем хотите.",
+    "privacy.card3_title": "Только обоснованные ответы",
+    "privacy.card3_desc": "Аватар говорит только на основе того, что вы загрузили. Никаких выдумок. Никогда.",
+    "privacy.card4_title": "Всё принадлежит вам",
+    "privacy.card4_desc": "Экспортируйте все свои данные в любой момент. Мы никогда не удаляем их без предупреждения за 90 дней.",
+
+    "pricing.label": "Тарифы",
+    "pricing.title": "Начните бесплатно.<br>Растите вместе с семьёй.",
+    "pricing.sub": "Выберите тариф, когда будете готовы. Все тарифы начинаются с бесплатного периода — без привязки карты.",
+    "pricing.intro": "<strong>Бесплатный</strong> — один мемориал, только текстовый чат; без голоса, анимации и семейного AI.<br><strong>Plus</strong> — до 10 мемориалов, синтез речи, 5 анимаций/мес, семейный поиск по воспоминаниям. Экономия 30% при годовой оплате.<br><strong>Pro</strong> — всё из Plus, 15 анимаций/мес, 5 сессий живого видео-аватара в месяц.<br><strong>Вечный мемориал</strong> — один платёж за <strong>одну</strong> страницу навсегда (идеально для QR-кодов и надгробий).<br><strong>Вечный Pro</strong> — то же, что Вечный мемориал, плюс предоплаченный пакет из <strong>100 сессий живого аватара</strong>, который никогда не сбрасывается.",
+    "pricing.legend": "Каждая строка — одна и та же функция во всех тарифах — <span style=\"color:var(--green)\">✓</span> включено, <span style=\"opacity:.5\">—</span> не включено.",
+    "pricing.badge_popular": "Самый популярный",
+    "pricing.badge_headstones": "Надгробия и QR",
+    "pricing.badge_live_forever": "Живой аватар · навсегда",
+    "pricing.feat_memorials": "Мемориалы",
+    "pricing.feat_chat": "Чат с аватаром",
+    "pricing.feat_contributor": "Ссылка для участников",
+    "pricing.feat_gallery": "Галерея и публичная страница",
+    "pricing.feat_grounded": "Обоснованные ответы",
+    "pricing.feat_storage": "Хранилище медиа",
+    "pricing.feat_voice": "Клонирование голоса и синтез речи",
+    "pricing.feat_voice_soon": "Клонирование голоса и синтез речи <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_voice_soon2": "Клонирование голоса и синтез речи <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_voice_soon3": "Клонирование голоса и синтез речи <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_voice_soon4": "Клонирование голоса и синтез речи <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_animation": "Анимация фото / видео",
+    "pricing.feat_animation_soon": "Анимация фото / видео <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_animation_soon2": "Анимация фото / видео <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_animation_soon3": "Анимация фото / видео <span class=\"badge-soon\">Скоро</span>",
+    "pricing.feat_family_rag": "Семейный поиск (Family RAG)",
+    "pricing.feat_hidden": "Скрытые связи",
+    "pricing.feat_live_sessions": "Сессии живого аватара",
+    "pricing.free_name": "Бесплатный",
+    "pricing.free_period": "навсегда",
+    "pricing.free_memorials_note": "<strong>1</strong> активная страница.",
+    "pricing.free_chat_note": "Только текст — до <strong>15 сообщений в месяц</strong>.",
+    "pricing.free_contributor_note": "Родственники добавляют воспоминания без регистрации.",
+    "pricing.free_gallery_note": "Фото, истории, ссылка для публикации.",
+    "pricing.free_grounded_note": "Только на основе того, что вы загрузили на этот мемориал.",
+    "pricing.free_storage_note": "<strong>500 МБ</strong> (стартовая квота).",
+    "pricing.free_voice_note": "Доступно на тарифах Plus или «Вечный мемориал».",
+    "pricing.free_animation_note": "Доступно на тарифах Plus или «Вечный мемориал».",
+    "pricing.free_family_rag_note": "Чат с использованием воспоминаний из <em>связанных</em> мемориалов — недоступно на бесплатном тарифе.",
+    "pricing.free_hidden_note": "Полный поиск связей по графу — только на Plus.",
+    "pricing.plus_period": "в месяц · <strong style=\"color:var(--accent)\">$59/год</strong> (экономия 30%) · отмена в любой момент",
+    "pricing.plus_memorials_note": "<strong>До 10</strong> страниц на одном аккаунте.",
+    "pricing.plus_chat_note": "<strong>200 сообщений в месяц</strong> (текст + воспроизведение голоса, если включено).",
+    "pricing.plus_contributor_note": "Безлимитные ссылки-приглашения.",
+    "pricing.plus_gallery_note": "Полный набор медиафункций для каждого мемориала.",
+    "pricing.plus_grounded_note": "Плюс опциональный семейный контекст (ниже).",
+    "pricing.plus_storage_note": "<strong>5 ГБ</strong> общих на аккаунт.",
+    "pricing.plus_voice_note": "Загрузите образец голоса — AI будет отвечать их голосом.",
+    "pricing.plus_animation_note": "<strong>5</strong> рендеров в месяц (на весь аккаунт).",
+    "pricing.plus_family_rag_note": "Чат может использовать воспоминания из до <strong>10 связанных</strong> мемориалов, если включено.",
+    "pricing.plus_hidden_note": "Поиск связей по семейному графу (где доступно).",
+    "pricing.plus_cta": "Начать — Plus",
+    "pricing.start_free_note": "Начните бесплатно, обновитесь в любой момент. Отмена в любое время.",
+    "pricing.pro_period": "в месяц · <strong style=\"color:var(--accent)\">$120/год</strong> · отмена в любой момент",
+    "pricing.pro_memorials_note": "<strong>До 10</strong> страниц + дополнительные слоты.",
+    "pricing.pro_chat_note": "<strong>500 сообщений в месяц</strong> с голосом.",
+    "pricing.pro_voice_note": "Загрузите образец — AI отвечает их голосом.",
+    "pricing.pro_animation_note": "<strong>15</strong> рендеров в месяц.",
+    "pricing.pro_family_rag_note": "Чат с использованием до <strong>10 связанных</strong> мемориалов.",
+    "pricing.pro_live_sessions_note": "<strong>5 сессий в месяц</strong> — видео-аватар в реальном времени.",
+    "pricing.pro_storage_note": "<strong>15 ГБ</strong> общих на аккаунт.",
+    "pricing.pro_cta": "Начать — Pro",
+    "pricing.lifetime_name": "Вечный мемориал",
+    "pricing.lifetime_period": "разовый платёж · один мемориал · без подписки",
+    "pricing.lt_memorials_note": "<strong>1</strong> страница — лицензия закреплена за этим мемориалом (без передачи).",
+    "pricing.lt_chat_note": "<strong>200 сообщений в месяц</strong> на этой странице (сбрасывается ежемесячно).",
+    "pricing.lt_gallery_note": "Долгосрочный доступ к странице, пока работает сервис.",
+    "pricing.lt_grounded_note": "Только на основе воспоминаний <strong>этого</strong> мемориала (без межсемейного поиска).",
+    "pricing.lt_storage_note": "<strong>5 ГБ</strong> для этого мемориала.",
+    "pricing.lt_voice_note": "Те же голосовые функции, что в Plus, только для этого мемориала.",
+    "pricing.lt_animation_note": "<strong>5</strong> рендеров в месяц для этого мемориала (сбрасывается ежемесячно).",
+    "pricing.lt_family_rag_note": "<strong>Не включено</strong> — аватар использует только воспоминания этой страницы. <strong>Только на Plus</strong>.",
+    "pricing.lt_hidden_note": "<strong>Не включено</strong> — полный поиск связей остаётся на <strong>Plus</strong>.",
+    "pricing.lt_cta": "Зарезервировать «Вечный»",
+    "pricing.lt_note": "Один платёж, без подписки — все AI-функции для одной страницы навсегда.",
+    "pricing.ltpro_name": "Вечный Pro",
+    "pricing.ltpro_memorials_note": "<strong>1</strong> страница — закреплена за этим мемориалом.",
+    "pricing.ltpro_chat_note": "<strong>200 сообщений в месяц</strong> на этой странице.",
+    "pricing.ltpro_voice_note": "Те же голосовые функции, что в Plus, для этого мемориала.",
+    "pricing.ltpro_animation_note": "<strong>15</strong> рендеров в месяц.",
+    "pricing.ltpro_live_sessions_note": "Предоплаченный пакет из <strong>100 сессий</strong> — никогда не сбрасывается. Докупайте по необходимости.",
+    "pricing.ltpro_storage_note": "<strong>10 ГБ</strong> для этого мемориала.",
+    "pricing.ltpro_family_rag_note": "Не включено — аватар использует только воспоминания этой страницы.",
+    "pricing.ltpro_cta": "Зарезервировать «Вечный Pro»",
+    "pricing.ltpro_note": "Один платёж — получите 100 сессий живого аватара, которые никогда не истекают.",
+    "pricing.footnote": "Квоты на чат, анимацию и хранилище сбрасываются ежемесячно. <strong>Вечный мемориал</strong> и <strong>Вечный Pro</strong> — это не подписки, они покрывают одну страницу мемориала бессрочно, пока работает сервис. Сессии живого аватара в пакете «Вечный Pro» никогда не сбрасываются. Полные условия оплаты публикуются при оформлении через Stripe.",
+
+    "faq.label": "Вопросы",
+    "faq.title": "Вопросы, которые нам часто задают.",
+    "faq.q1": "Не является ли это неуважением к умершему?",
+    "faq.a1": "Мы создали vspomin.ai вокруг идеи сохранения, а не имитации. Аватар говорит только то, что явно загрузила ваша семья — это сосуд для настоящих воспоминаний, а не замена человека. Многие семьи находят это глубоко исцеляющим способом оставаться на связи с тем, кого они любили.",
+    "faq.q2": "Что если AI скажет что-то несвойственное человеку?",
+    "faq.a2": "Аватар отвечает только на основе загруженных воспоминаний — он не придумывает факты и не фабрикует события. Вы можете проверять все ответы, и если что-то кажется неверным, просто добавьте или измените воспоминания, чтобы направить аватар. Контроль всегда остаётся за вами.",
+    "faq.q3": "Могут ли несколько членов семьи добавлять воспоминания?",
+    "faq.a3": "Да. Поделитесь ссылкой-приглашением с любым членом семьи — они могут добавлять фото, видео и текстовые воспоминания без регистрации. Это создано специально для сбора воспоминаний на похоронах, встречах семьи или от родственников по всему миру.",
+    "faq.q4": "Как работает клонирование голоса? Нужна ли студийная запись?",
+    "faq.a4": "Подойдёт любая чёткая запись — голосовое сообщение, отрывок из домашнего видео, голос на автоответчике. Загрузите хотя бы одну минуту, и мы создадим голосовую модель. Студия не нужна — чем больше аудио вы предоставите, тем точнее звучание.",
+    "faq.q5": "Что происходит с моими данными при отмене?",
+    "faq.a5": "Экспортируйте воспоминания, фото и медиа из приложения, когда это будет доступно. Платные тарифы пока не активны; при запуске оплаты условия отмены и хранения данных будут опубликованы заранее, до любого списания средств.",
+    "faq.q6": "Нужны ли мне технические навыки для настройки?",
+    "faq.a6": "Совсем нет. Загрузите фото, напишите воспоминание — остальное сделает AI. У большинства семей рабочий, разговаривающий мемориал готов за 10 минут. Никакого кода, настроек или технических знаний не требуется.",
+
+    "final.label": "Начните сегодня",
+    "final.title": "Каждый день без мемориала<br>— это потерянное воспоминание.",
+    "final.sub": "Создание занимает 5 минут.<br>Хранится навсегда.",
+    "final.cta": "Сохранить память — начать бесплатно",
+    "final.trust1": "Честные и простые тарифы",
+    "final.trust3": "Отмена в любой момент",
+    "final.trust4": "Ваши данные остаются вашими",
+
+    "footer.brand_text": "Сохраняем личности тех, кого мы любим — а не только их фотографии.",
+    "footer.col_product": "Продукт",
+    "footer.explore_demo": "Посмотреть демо",
+    "footer.family_tree": "Семейное древо",
+    "footer.col_company": "Компания",
+    "footer.about": "О нас",
+    "footer.funeral_homes": "Для похоронных бюро",
+    "footer.press": "Пресс-кит",
+    "footer.contact": "Контакты",
+    "footer.col_legal": "Правовая информация",
+    "footer.privacy": "Политика конфиденциальности",
+    "footer.terms": "Условия использования",
+    "footer.data_export": "Экспорт данных",
+    "footer.cookie": "Политика cookie",
+    "footer.copy": "© 2026 vspomin.ai. Все права защищены.",
+    "footer.made": "Сделано с заботой для семей по всему миру 🌍",
+
+    "waitlist.close_aria": "Закрыть",
+    "waitlist.title": "Получить уведомление",
+    "waitlist.sub": "Клонирование голоса и анимация фото скоро появятся. Оставьте email — мы сообщим вам, как только они станут доступны.",
+    "waitlist.email_label": "Email",
+    "waitlist.email_placeholder": "you@example.com",
+    "waitlist.submit": "Уведомить меня",
+    "waitlist.cancel": "Отмена",
+    "waitlist.success_title": "Вы в списке",
+    "waitlist.success_default_msg": "Мы напишем вам на email, когда сервис станет полностью доступен.",
+    "waitlist.close_btn": "Закрыть",
+    "waitlist.error_invalid_email": "Пожалуйста, введите корректный email.",
+    "waitlist.error_request_failed": "Запрос не выполнен",
+    "waitlist.error_generic": "Что-то пошло не так. Если проблема повторяется, попробуйте позже или напишите в поддержку.",
+
+    "hero.typewriter_quote": "Если честно? Субботние утра на даче с твоей бабушкой. Мы приезжали раньше всех, только мы двое, с кофе в тех старых термосах. Больше ничего и не нужно было. Это был весь мир."
+  },
+  en: {
+    "nav.how": "How it works",
+    "nav.features": "Features",
+    "nav.hidden": "Hidden Connections",
+    "nav.pricing": "Pricing",
+    "nav.faq": "FAQ",
+    "nav.signin": "Sign in",
+    "nav.getstarted": "Get started free",
+
+    "hero.eyebrow": "AI-Powered Digital Memorials",
+    "hero.headline": "Talk to them <em>again.</em><br>In their own words.",
+    "hero.sub": "A living memorial powered by real memories — not generic AI. Hear their voice, explore your family tree, and discover relatives you never knew existed.",
+    "hero.cta_primary": "Create a memorial — it's free",
+    "hero.cta_secondary": "Explore demo families →",
+    "hero.note1": "Simple, transparent pricing",
+    "hero.note2": "Start free",
+    "hero.note3": "Ready in about 5 minutes",
+    "hero.photo_alt": "Memorial portrait",
+    "hero.photo_name": "George Thompson",
+    "hero.photo_dates": "1938 – 2015 · Sydney, Australia",
+    "hero.chat_ready": "Avatar is ready to talk",
+    "hero.chat_question": "What made you happiest in life?",
+
+    "trust.text": "Private by design. Your memories are not used to train public models — they stay in your family’s space.",
+
+    "problem.label": "The Problem",
+    "problem.headline": "The average person is <strong>fully forgotten</strong> within two generations.<br>Not because no one cared — because there was <strong>nowhere to put the memories.</strong>",
+    "problem.card1_label": "Photos & Videos",
+    "problem.card1_before": "Locked in boxes and hard drives, unseen",
+    "problem.card1_after": "→ Alive in an interactive gallery, forever accessible",
+    "problem.card2_label": "Their Voice",
+    "problem.card2_before": "Lost the moment they're gone",
+    "problem.card2_after": "→ Cloned from your recordings — the avatar speaks in their voice",
+    "problem.card2_note": "🎬 Video — bring their portrait to life from a clip",
+    "problem.card3_label": "Family Stories",
+    "problem.card3_before": "Scattered across relatives who never connect",
+    "problem.card3_after": "→ Woven into one living family tree with hidden links",
+    "badge.coming_soon": "Coming soon",
+
+    "how.label": "How It Works",
+    "how.title": "Simple to start.<br>Profound to experience.",
+    "how.step1_title": "Create the memorial",
+    "how.step1_desc": "Upload photos, write memories, add videos and voice recordings. Each story becomes a building block for the AI avatar.",
+    "how.step2_title": "Invite your family",
+    "how.step2_desc": "Share a link — no account needed. Family members, friends, even funeral attendees can add their own memories instantly.",
+    "how.step3_title": "Start the conversation",
+    "how.step3_desc": "The AI avatar answers in their personality, grounded only in what was uploaded. No hallucinations. Just them.",
+
+    "demo.label": "See It Live",
+    "demo.title": "Watch the avatar<br>in action.",
+    "demo.chip1": "AI Avatar responds in their voice",
+    "demo.chip2": "Family tree with 4 generations",
+    "demo.chip3": "Hidden Connections discovery",
+    "demo.chip4": "Voice from your recordings",
+
+    "features.label": "Features",
+    "features.title": "More than a memorial.<br>A living presence.",
+    "features.chat_img_alt": "AI avatar chat grounded in memories",
+    "features.chat_tag": "AI Avatar Chat",
+    "features.chat_title": "They answer.<br>In their own words.",
+    "features.chat_desc": "Not generic AI. The avatar is built entirely from what your family uploaded — memories, stories, personality. It learns as you add more.",
+    "features.compare_generic_label": "Generic AI",
+    "features.compare_question": "\"What made you happiest in life?\"",
+    "features.compare_generic_answer": "\"Happiness is influenced by many factors including relationships, personal achievements, and a sense of purpose...\"",
+    "features.compare_memorial_label": "Memorial Avatar",
+    "features.compare_memorial_answer": "\"Saturday mornings at Manly. Just me and your nan, coffee in old thermoses, before the world woke up. That was enough.\"",
+    "features.voice_img_alt": "Voice cloning from recordings",
+    "features.voice_tag": "Voice Cloning",
+    "features.voice_title": "Hear them,<br>not a robot.",
+    "features.voice_desc": "Upload recordings you already have — voicemail, a birthday clip, a message they left you. We build their voice so the avatar sounds like them, not a generic assistant.",
+    "features.voice_point1": "Works from as little as 60 seconds of audio",
+    "features.voice_point2": "Old tapes, phone calls, home videos — if you can hear them, we can use it",
+    "features.voice_point3": "Emotional range preserved — not flat, lifeless speech",
+    "features.video_avatar_strong": "Video avatar",
+    "features.video_avatar_text": "— animate their portrait from video",
+    "features.voice_widget_label": "Voice cloning — we're working on it",
+    "features.timeline_img_alt": "Life timeline from dated memories",
+    "features.timeline_tag": "Life Timeline",
+    "features.timeline_title": "Every life is a story.<br>Tell it in order.",
+    "features.timeline_desc": "Memories with dates arrange themselves into a chronological narrative — from first steps to final years. A life, beautifully told.",
+    "features.tl_text1": "Born in Melbourne, grew up near the bay",
+    "features.tl_text2": "Met Margaret at a surf club dance in Manly",
+    "features.tl_text3": "Built the family home in the Blue Mountains — took two years",
+    "features.tl_text4": "Retired. Coached junior cricket every Saturday morning",
+    "features.tree_img_alt": "Interactive family tree",
+    "features.tree_tag": "Family Tree",
+    "features.tree_title": "Your whole family.<br>One living map.",
+    "features.tree_desc": "An interactive family tree across 4+ generations. Click any person to open their memorial, read their stories, or chat with their avatar.",
+    "features.tree_point1": "Supports adoptive, step, partner, and ex relationships",
+    "features.tree_point2": "Auto-labels relatives: great-aunt, second cousin, in-law",
+    "features.tree_point3": "Zoom, pan, touch-friendly on mobile",
+    "features.tree_point4": "Invite any family member — no account required",
+
+    "hidden.label": "Hidden Connections",
+    "hidden.title": "Your family is bigger<br>than you think.",
+    "hidden.sub": "Our graph algorithm finds indirect family links across 2–6 degrees of separation — across name changes, remarriages, and generations lost to history.",
+    "hidden.chain_label": "Relationship discovered",
+    "hidden.chain_you": "You",
+    "hidden.chain_rel1": "(child of)",
+    "hidden.chain_node1": "James",
+    "hidden.chain_rel2": "(sibling of)",
+    "hidden.chain_node2": "Catherine",
+    "hidden.chain_rel3": "(parent of)",
+    "hidden.chain_them": "Emma K. — your second cousin",
+    "hidden.stat1_label": "degrees of separation<br>we trace automatically",
+    "hidden.stat2_label": "memories shared<br>across found relatives",
+    "hidden.cta": "Find your hidden connections →",
+    "hidden.story_label": "A real story",
+    "hidden.story_p1": "<strong>Margaret never knew she had cousins in New Zealand.</strong> Her great-uncle moved to Christchurch in the 1950s, and that branch of the family quietly lost touch.",
+    "hidden.story_p2": "When she uploaded her grandfather's memorial, the algorithm traced <strong>11 relationships across three generations</strong> — and found a memorial created by his granddaughter in Wellington.",
+    "hidden.story_p3": "They shared memories of the same man. <strong>From two sides of the Tasman.</strong>",
+
+    "qr.photo_alt": "Headstone in a cemetery (illustrative scene)",
+    "qr.badge_text": "Visitors scan",
+    "qr.badge_highlight": "+ open memorial",
+    "qr.phone_q": "\"What do you miss most about the old days?\"",
+    "qr.phone_a": "\"Sunday roasts at your nan's place. Fourteen people around one table. The house smelled like everything good.\"",
+    "qr.caption": "Illustrative scene — many families mount a small weatherproof QR plaque or sticker on the stone; scanning opens the full digital memorial (voice, stories, tributes).",
+    "qr.label": "Physical Memorial",
+    "qr.title": "Let the headstone<br>speak.",
+    "qr.sub": "Place a QR code on any monument. Visitors scan — and a person becomes a presence again. They hear a voice, read stories, and can leave a memory of their own.",
+    "qr.uc1_title": "Permanent monuments",
+    "qr.uc1_desc": "Add a QR plaque to any existing headstone. The <strong>Lifetime memorial</strong> tier is designed for this — one payment for one page, no subscription.",
+    "qr.uc2_title": "Funeral service integration",
+    "qr.uc2_desc": "Funeral homes offer a living memorial alongside traditional services. Attendees contribute memories instantly, no account needed.",
+    "qr.uc3_title": "Annual remembrance",
+    "qr.uc3_desc": "The memorial grows richer every year. New voices, new stories — every anniversary brings something new.",
+    "qr.cta": "Explore memorial plaques →",
+
+    "testimonials.label": "Stories",
+    "testimonials.title": "What families experience.<br><span style=\"font-size:0.55em;color:var(--text3);font-weight:400\">Illustrative stories — not verified customer records.</span>",
+    "testimonials.disclaimer": "Illustrative stories — not verified customer records.",
+    "testimonials.t1_text": "\"I asked grandpa's avatar what advice he'd give me. He answered exactly the way he used to talk — thoughtful, warm, with that little chuckle before the punchline. I cried for an hour.\"",
+    "testimonials.t1_name": "Sarah M.",
+    "testimonials.t1_location": "Melbourne, Australia",
+    "testimonials.t2_text": "\"We found 23 relatives we didn't know existed. Three of them had overlapping memories of our great-grandparents. Hidden Connections is extraordinary — nothing else does this.\"",
+    "testimonials.t2_name": "The Kowalski family",
+    "testimonials.t2_location": "Chicago, USA",
+    "testimonials.t3_text": "\"My kids ask grandma questions every Sunday morning. She's been gone for three years. They're growing up knowing her — not just knowing about her. That's everything.\"",
+    "testimonials.t3_name": "James R.",
+    "testimonials.t3_location": "London, UK",
+    "testimonials.placeholder_note": "Portrait photos are generated placeholders.",
+    "testimonials.stat1_label": "Memories preserved",
+    "testimonials.stat2_label": "Families connected",
+    "testimonials.stat3_label": "Continents",
+    "testimonials.stat4_label": "% would recommend",
+    "testimonials.stats_note": "Stats are illustrative placeholders until we publish real aggregates.",
+
+    "privacy.label": "Privacy & Trust",
+    "privacy.title": "Built on trust.<br>Not on data.",
+    "privacy.sub": "Your loved one's memories are sacred. We treat them that way.",
+    "privacy.card1_title": "Never trains our models",
+    "privacy.card1_desc": "Your memories are never used to train AI. They belong to your family only.",
+    "privacy.card2_title": "Private by default",
+    "privacy.card2_desc": "You control exactly who sees each memorial. Share only with who you choose.",
+    "privacy.card3_title": "Grounded responses only",
+    "privacy.card3_desc": "The avatar only speaks from what you've uploaded. No fabrication. Ever.",
+    "privacy.card4_title": "You own everything",
+    "privacy.card4_desc": "Export all your data anytime. We never delete without 90 days notice.",
+
+    "pricing.label": "Pricing",
+    "pricing.title": "Start free.<br>Grow with your family.",
+    "pricing.sub": "Pick a plan when you’re ready. All plans start with a free trial — no card required.",
+    "pricing.intro": "<strong>Free</strong> — one memorial, text chat only; no voice, animation, or family-wide AI.<br><strong>Plus</strong> — up to 10 memorials, TTS, 5 animations/mo, Family RAG. Save 30% annual.<br><strong>Pro</strong> — everything in Plus, 15 animations/mo, 5 live avatar video sessions/mo.<br><strong>Lifetime</strong> — one payment for <strong>one</strong> page, forever (ideal for QR / headstones).<br><strong>Lifetime Pro</strong> — same as Lifetime + a pre-paid pool of <strong>100 live avatar sessions</strong>, never resets.",
+    "pricing.legend": "Each row is the same feature across plans — <span style=\"color:var(--green)\">✓</span> included, <span style=\"opacity:.5\">—</span> not included.",
+    "pricing.badge_popular": "Most popular",
+    "pricing.badge_headstones": "Headstones &amp; QR",
+    "pricing.badge_live_forever": "Live avatar · forever",
+    "pricing.feat_memorials": "Memorials",
+    "pricing.feat_chat": "Avatar chat",
+    "pricing.feat_contributor": "Contributor link",
+    "pricing.feat_gallery": "Gallery &amp; public page",
+    "pricing.feat_grounded": "Grounded answers",
+    "pricing.feat_storage": "Media storage",
+    "pricing.feat_voice": "Voice cloning &amp; TTS replies",
+    "pricing.feat_voice_soon": "Voice cloning &amp; TTS replies <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_voice_soon2": "Voice cloning &amp; TTS <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_voice_soon3": "Voice cloning &amp; TTS replies <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_voice_soon4": "Voice cloning &amp; TTS <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_animation": "Photo / video animation",
+    "pricing.feat_animation_soon": "Photo / video animation <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_animation_soon2": "Photo / video animation <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_animation_soon3": "Photo / video animation <span class=\"badge-soon\">Coming soon</span>",
+    "pricing.feat_family_rag": "Family RAG",
+    "pricing.feat_hidden": "Hidden Connections",
+    "pricing.feat_live_sessions": "Live avatar sessions",
+    "pricing.free_name": "Free",
+    "pricing.free_period": "forever",
+    "pricing.free_memorials_note": "<strong>1</strong> active page.",
+    "pricing.free_chat_note": "Text only — up to <strong>15 messages / month</strong>.",
+    "pricing.free_contributor_note": "Relatives add memories without an account.",
+    "pricing.free_gallery_note": "Photos, stories, shareable link.",
+    "pricing.free_grounded_note": "Only from what you uploaded on this memorial.",
+    "pricing.free_storage_note": "<strong>500 MB</strong> (starter quota).",
+    "pricing.free_voice_note": "Upgrade to Plus or Lifetime memorial.",
+    "pricing.free_animation_note": "Upgrade to Plus or Lifetime memorial.",
+    "pricing.free_family_rag_note": "Chat using memories from <em>linked</em> memorials — not on Free.",
+    "pricing.free_hidden_note": "Full graph discovery — Plus only.",
+    "pricing.plus_period": "per month · <strong style=\"color:var(--accent)\">$59/year</strong> (save 30%) · cancel anytime",
+    "pricing.plus_memorials_note": "<strong>Up to 10</strong> pages on one account.",
+    "pricing.plus_chat_note": "<strong>200 messages / month</strong> (text + voice playback when enabled).",
+    "pricing.plus_contributor_note": "Unlimited invite links.",
+    "pricing.plus_gallery_note": "Full media features per memorial.",
+    "pricing.plus_grounded_note": "Plus optional family context (below).",
+    "pricing.plus_storage_note": "<strong>5 GB</strong> shared across the account.",
+    "pricing.plus_voice_note": "Upload a voice sample — AI replies in their voice.",
+    "pricing.plus_animation_note": "<strong>5</strong> renders / month (account-wide).",
+    "pricing.plus_family_rag_note": "Chat can pull from up to <strong>10 linked</strong> memorials when enabled.",
+    "pricing.plus_hidden_note": "Discovery across the family graph (where available).",
+    "pricing.plus_cta": "Get started — Plus",
+    "pricing.start_free_note": "Start free, upgrade anytime. Cancel at any time.",
+    "pricing.pro_period": "per month · <strong style=\"color:var(--accent)\">$120/year</strong> · cancel anytime",
+    "pricing.pro_memorials_note": "<strong>Up to 10</strong> pages + add-on slots.",
+    "pricing.pro_chat_note": "<strong>500 messages / month</strong> with voice.",
+    "pricing.pro_voice_note": "Upload a sample — AI replies in their voice.",
+    "pricing.pro_animation_note": "<strong>15</strong> renders / month.",
+    "pricing.pro_family_rag_note": "Chat across up to <strong>10 linked</strong> memorials.",
+    "pricing.pro_live_sessions_note": "<strong>5 sessions / month</strong> — real-time video avatar.",
+    "pricing.pro_storage_note": "<strong>15 GB</strong> shared across the account.",
+    "pricing.pro_cta": "Get started — Pro",
+    "pricing.lifetime_name": "Lifetime memorial",
+    "pricing.lifetime_period": "one-time · one memorial · no subscription",
+    "pricing.lt_memorials_note": "<strong>1</strong> page — license locked to this memorial (not transferable).",
+    "pricing.lt_chat_note": "<strong>200 messages / month</strong> on this page (resets monthly).",
+    "pricing.lt_gallery_note": "Long-term access to this page while the service operates.",
+    "pricing.lt_grounded_note": "Only from memories on <strong>this</strong> memorial (no cross-memorial RAG).",
+    "pricing.lt_storage_note": "<strong>5 GB</strong> for this memorial.",
+    "pricing.lt_voice_note": "Same voice features as Plus, for this memorial only.",
+    "pricing.lt_animation_note": "<strong>5</strong> renders / month for this memorial (resets monthly).",
+    "pricing.lt_family_rag_note": "<strong>Not included</strong> — avatar only uses memories from this page. <strong>Plus only</strong>.",
+    "pricing.lt_hidden_note": "<strong>Not included</strong> — full graph discovery stays on <strong>Plus</strong>.",
+    "pricing.lt_cta": "Reserve Lifetime",
+    "pricing.lt_note": "One payment, no subscription — full AI features for one page, forever.",
+    "pricing.ltpro_name": "Lifetime Pro",
+    "pricing.ltpro_memorials_note": "<strong>1</strong> page — locked to this memorial.",
+    "pricing.ltpro_chat_note": "<strong>200 messages / month</strong> on this page.",
+    "pricing.ltpro_voice_note": "Same voice features as Plus, for this memorial.",
+    "pricing.ltpro_animation_note": "<strong>15</strong> renders / month.",
+    "pricing.ltpro_live_sessions_note": "Pre-paid pool of <strong>100 sessions</strong> — never resets. Buy more as needed.",
+    "pricing.ltpro_storage_note": "<strong>10 GB</strong> for this memorial.",
+    "pricing.ltpro_family_rag_note": "Not included — avatar uses only this page's memories.",
+    "pricing.ltpro_cta": "Reserve Lifetime Pro",
+    "pricing.ltpro_note": "One payment — get 100 live avatar sessions that never expire.",
+    "pricing.footnote": "Chat, animation, and storage quotas reset monthly. <strong>Lifetime</strong> and <strong>Lifetime Pro</strong> are not subscriptions — they cover one memorial page indefinitely while the service operates. Live avatar sessions in the Lifetime Pro pool never reset. Full billing terms ship with Stripe checkout.",
+
+    "faq.label": "FAQ",
+    "faq.title": "Questions we get asked.",
+    "faq.q1": "Is this disrespectful to the deceased?",
+    "faq.a1": "We designed vspomin.ai around preservation, not simulation. The avatar only speaks from what your family explicitly shared — it's a vessel for real memories, not a replacement for a person. Many families find it a deeply healing way to stay connected to someone they loved.",
+    "faq.q2": "What if the AI says something out of character?",
+    "faq.a2": "The avatar is grounded only in memories you upload — it won't invent facts or fabricate events. You can review all responses, and if anything feels off, simply add or edit memories to guide the avatar. You always have full control.",
+    "faq.q3": "Can multiple family members contribute memories?",
+    "faq.a3": "Yes. Share an invite link with any family member — they can add photos, videos, and text memories without creating an account. Designed specifically for gathering contributions at funerals, reunions, or from across the world.",
+    "faq.q4": "How does voice cloning work? Do I need a studio recording?",
+    "faq.a4": "Any clear recording works — voicemail, a clip from a home video, a message they left you. Upload at least one minute and we’ll build a voice model. No studio required; the more audio you provide, the closer it feels to them.",
+    "faq.q5": "What happens to my data if I cancel?",
+    "faq.a5": "Export your memories, photos, and media from the app when available. Paid plans are not active yet; when billing launches, cancellation and retention terms will be published clearly before any charge.",
+    "faq.q6": "Do I need any technical skills to set this up?",
+    "faq.a6": "None at all. Upload a photo, type a memory — the AI does the rest. Most families have a working, talking memorial within 10 minutes. No coding, no configuration, no technical knowledge required.",
+
+    "final.label": "Start today",
+    "final.title": "Every day without a memorial<br>is a memory lost.",
+    "final.sub": "It takes 5 minutes to create.<br>It lasts forever.",
+    "final.cta": "Preserve their memory — start free",
+    "final.trust1": "Fair, simple plans",
+    "final.trust3": "Cancel anytime",
+    "final.trust4": "Your data stays yours",
+
+    "footer.brand_text": "Preserving the personalities of those we love — not just their photographs.",
+    "footer.col_product": "Product",
+    "footer.explore_demo": "Explore Demo",
+    "footer.family_tree": "Family Tree",
+    "footer.col_company": "Company",
+    "footer.about": "About us",
+    "footer.funeral_homes": "For Funeral Homes",
+    "footer.press": "Press kit",
+    "footer.contact": "Contact",
+    "footer.col_legal": "Legal",
+    "footer.privacy": "Privacy Policy",
+    "footer.terms": "Terms of Service",
+    "footer.data_export": "Data Export",
+    "footer.cookie": "Cookie Policy",
+    "footer.copy": "© 2026 vspomin.ai. All rights reserved.",
+    "footer.made": "Built with care for families everywhere 🌍",
+
+    "waitlist.close_aria": "Close",
+    "waitlist.title": "Get notified",
+    "waitlist.sub": "Voice cloning and photo animation are coming soon. Leave your email — we’ll let you know the moment they go live.",
+    "waitlist.email_label": "Email",
+    "waitlist.email_placeholder": "you@example.com",
+    "waitlist.submit": "Notify me",
+    "waitlist.cancel": "Cancel",
+    "waitlist.success_title": "You’re on the list",
+    "waitlist.success_default_msg": "We’ll email you when the service is fully available.",
+    "waitlist.close_btn": "Close",
+    "waitlist.error_invalid_email": "Please enter a valid email address.",
+    "waitlist.error_request_failed": "Request failed",
+    "waitlist.error_generic": "Something went wrong. If this persists, try again later or email support.",
+
+    "hero.typewriter_quote": "Honestly? Saturday mornings at Manly Beach with your grandmother. We'd get there before anyone else, just the two of us with coffee in those old thermoses. Didn't need anything else. That was the whole world right there."
+  }
+};
+
+var LANDING_META = {
+  ru: {
+    title: "vspomin.ai — Поговорите с ними снова",
+    description: "Живой мемориал на основе AI. Общайтесь с аватаром, созданным из реальных воспоминаний. Клонирование голоса. Скрытые семейные связи через поколения.",
+    ogTitle: "vspomin.ai — Поговорите с ними снова",
+    ogDescription: "AI-мемориалы на основе реальных воспоминаний. Семейное древо, голос и скрытые связи."
+  },
+  en: {
+    title: "vspomin.ai — Talk to Them Again",
+    description: "A living memorial powered by AI. Chat with an avatar built from real memories. Voice cloning. Hidden family connections across generations.",
+    ogTitle: "vspomin.ai — Talk to Them Again",
+    ogDescription: "AI memorials grounded in real memories. Family tree, voice, and hidden connections."
+  }
+};
+
+var currentLandingLang = 'ru';
+
+function applyLandingLang(lang) {
+  if (lang !== 'ru' && lang !== 'en') lang = 'ru';
+  var dict = LANDING_I18N[lang];
+  currentLandingLang = lang;
+
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    var value = dict[key];
+    if (value === undefined) return;
+    var attr = el.getAttribute('data-i18n-attr');
+    if (attr) {
+      el.setAttribute(attr, value);
+    } else {
+      el.innerHTML = value;
+    }
+  });
+
+  document.documentElement.lang = lang;
+
+  var meta = LANDING_META[lang];
+  if (meta) {
+    var titleEl = document.getElementById('meta-title');
+    if (titleEl) titleEl.textContent = meta.title;
+    var descEl = document.getElementById('meta-description');
+    if (descEl) descEl.setAttribute('content', meta.description);
+    var ogTitleEl = document.getElementById('meta-og-title');
+    if (ogTitleEl) ogTitleEl.setAttribute('content', meta.ogTitle);
+    var ogDescEl = document.getElementById('meta-og-description');
+    if (ogDescEl) ogDescEl.setAttribute('content', meta.ogDescription);
+  }
+
+  try { localStorage.setItem('landing_lang', lang); } catch (e) {}
+
+  var btnRu = document.getElementById('lang-btn-ru');
+  var btnEn = document.getElementById('lang-btn-en');
+  if (btnRu) btnRu.classList.toggle('is-active', lang === 'ru');
+  if (btnEn) btnEn.classList.toggle('is-active', lang === 'en');
+
+  // Re-set the hero typewriter quote statically (no re-animation, see HERO TYPEWRITER below)
+  if (typeof window.__setHeroTypewriterLang === 'function') {
+    window.__setHeroTypewriterLang(lang);
+  }
+  // Update waitlist success message default if currently showing default text
+  if (typeof window.__updateWaitlistLang === 'function') {
+    window.__updateWaitlistLang(lang);
+  }
+}
+
+(function initLandingLang() {
+  var stored = null;
+  try { stored = localStorage.getItem('landing_lang'); } catch (e) {}
+  var initial = (stored === 'ru' || stored === 'en') ? stored : 'ru';
+  applyLandingLang(initial);
+
+  var toggle = document.getElementById('lang-toggle');
+  if (toggle) {
+    if (!SHOW_EN_LANGUAGE_OPTION) {
+      toggle.style.display = 'none';
+    } else {
+      toggle.querySelectorAll('button[data-lang]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          applyLandingLang(btn.getAttribute('data-lang'));
+        });
+      });
+    }
+  }
+})();
+</script>
 <script>
 // ═══ PARTICLES BACKGROUND ═══
 (function() {
@@ -1541,10 +2225,19 @@
 
 // ═══ HERO TYPEWRITER ═══
 (function() {
-  const text = "Honestly? Saturday mornings at Manly Beach with your grandmother. We'd get there before anyone else, just the two of us with coffee in those old thermoses. Didn't need anything else. That was the whole world right there.";
   const el = document.getElementById('hero-chat-text');
-  let i = 0;
-  setTimeout(() => {
+  let typed = false;
+  let finished = false;
+
+  function getQuote() {
+    var dict = (window.LANDING_I18N && window.LANDING_I18N[window.currentLandingLang || currentLandingLang]) || {};
+    return dict['hero.typewriter_quote'] || '';
+  }
+
+  function runTypewriter() {
+    typed = true;
+    const text = getQuote();
+    let i = 0;
     const t = setInterval(() => {
       if (i < text.length) {
         el.textContent = text.slice(0, ++i);
@@ -1552,9 +2245,20 @@
       } else {
         clearInterval(t);
         el.textContent = text;
+        finished = true;
       }
     }, 24);
-  }, 1400);
+  }
+
+  setTimeout(runTypewriter, 1400);
+
+  // If the language changes after the quote has already been typed/rendered,
+  // just swap the text statically rather than re-running the animation.
+  window.__setHeroTypewriterLang = function() {
+    if (!el) return;
+    if (!typed) return; // initial typewriter hasn't started yet — it will pick up the new lang on its own
+    el.textContent = getQuote();
+  };
 })();
 
 // ═══ SCROLL REVEAL ═══
@@ -1718,6 +2422,21 @@ document.querySelectorAll('.faq-q').forEach(q => {
   var emailInput = document.getElementById('waitlist-email');
   var errEl = document.getElementById('waitlist-error');
   var successMsg = document.getElementById('waitlist-success-msg');
+  var usingDefaultSuccessMsg = true;
+
+  function t(key) {
+    var lang = (typeof currentLandingLang !== 'undefined' && currentLandingLang) || 'ru';
+    var dict = (typeof LANDING_I18N !== 'undefined' && LANDING_I18N[lang]) || {};
+    return dict[key] || '';
+  }
+
+  // Called from applyLandingLang() when the user switches language, so the
+  // default (un-overridden) success message stays in sync with the new language.
+  window.__updateWaitlistLang = function() {
+    if (usingDefaultSuccessMsg && successMsg) {
+      successMsg.textContent = t('waitlist.success_default_msg');
+    }
+  };
 
   function endpoint() {
     var b = window.__MEMORIAL_API_BASE__;
@@ -1730,6 +2449,7 @@ document.querySelectorAll('.faq-q').forEach(q => {
     modal.setAttribute('aria-hidden', 'false');
     errEl.textContent = '';
     form.reset();
+    usingDefaultSuccessMsg = true;
     formView.style.display = '';
     successView.style.display = 'none';
     setTimeout(function() { emailInput.focus(); }, 200);
@@ -1760,7 +2480,7 @@ document.querySelectorAll('.faq-q').forEach(q => {
     errEl.textContent = '';
     var email = (emailInput.value || '').trim();
     if (!emailInput.checkValidity() || !email) {
-      errEl.textContent = 'Please enter a valid email address.';
+      errEl.textContent = t('waitlist.error_invalid_email');
       return;
     }
     var url = endpoint();
@@ -1774,7 +2494,7 @@ document.querySelectorAll('.faq-q').forEach(q => {
       .then(function(res) {
         return res.json().then(function(j) {
           if (!res.ok) {
-            var msg = 'Request failed';
+            var msg = t('waitlist.error_request_failed');
             if (j.detail) {
               msg = Array.isArray(j.detail)
                 ? j.detail.map(function(d) { return typeof d === 'object' && d.msg ? d.msg : String(d); }).join(' ')
@@ -1788,10 +2508,16 @@ document.querySelectorAll('.faq-q').forEach(q => {
       .then(function(data) {
         formView.style.display = 'none';
         successView.style.display = 'block';
-        successMsg.textContent = data.message || 'We’ll email you when the service is fully available.';
+        if (data.message) {
+          usingDefaultSuccessMsg = false;
+          successMsg.textContent = data.message;
+        } else {
+          usingDefaultSuccessMsg = true;
+          successMsg.textContent = t('waitlist.success_default_msg');
+        }
       })
       .catch(function(err) {
-        errEl.textContent = err.message || 'Something went wrong. If this persists, try again later or email support.';
+        errEl.textContent = err.message || t('waitlist.error_generic');
       })
       .finally(function() {
         submitBtn.disabled = false;

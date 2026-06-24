@@ -8,6 +8,7 @@ from typing import Optional
 import mimetypes
 
 from app.db import get_db
+from app.i18n import get_lang, tr
 from app.models import Media
 from app.config import settings
 from app.services.s3_service import get_public_url
@@ -30,7 +31,7 @@ def _resolve_local_path(stored: str | Path) -> Path:
 
 
 @router.get("/audio/{filename}")
-async def get_audio_file(filename: str):
+async def get_audio_file(filename: str, lang: str = Depends(get_lang)):
     """
     Получить аудио-файл по имени файла.
     Используется для обслуживания сгенерированных аудио из чата.
@@ -40,7 +41,7 @@ async def get_audio_file(filename: str):
     if not audio_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Audio file not found"
+            detail=tr(lang, "audio_file_not_found")
         )
 
     return FileResponse(
@@ -55,6 +56,7 @@ async def get_media_file(
     media_id_path: str,  # Может быть "10" или "10.jpg"
     thumbnail: Optional[str] = None,
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     # Извлекаем media_id из пути (убираем расширение если есть)
     media_id_str = media_id_path.split('.')[0]
@@ -63,11 +65,11 @@ async def get_media_file(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invalid media ID"
+            detail=tr(lang, "invalid_media_id")
         )
     """
     Получить медиа-файл по ID.
-    
+
     Query параметры:
     - thumbnail: размер миниатюры (small, medium, large) - только для изображений
     """
@@ -75,7 +77,7 @@ async def get_media_file(
     if not media:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media not found"
+            detail=tr(lang, "media_not_found")
         )
 
     file_path = _resolve_local_path(media.file_path)
@@ -123,7 +125,7 @@ async def get_media_file(
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="Media file not found on disk"
+        detail=tr(lang, "media_file_not_found_on_disk")
     )
 
 
@@ -131,6 +133,7 @@ async def get_media_file(
 async def get_media_info(
     media_id: int,
     db: Session = Depends(get_db),
+    lang: str = Depends(get_lang),
 ):
     """
     Получить информацию о медиа-файле (метаданные).
@@ -139,7 +142,7 @@ async def get_media_info(
     if not media:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Media not found"
+            detail=tr(lang, "media_not_found")
         )
     
     file_path = _resolve_local_path(media.file_path)
