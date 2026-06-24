@@ -142,10 +142,12 @@ def test_avatar_chat_family_rag(auth_client, memorial, db_session):
 
     with (
         patch("app.api.ai.get_embedding", new_callable=AsyncMock) as mock_embed,
+        patch("app.services.ai_tasks.upsert_memory_embedding", new_callable=AsyncMock) as mock_upsert,
         patch("app.api.ai.search_similar_memories", new_callable=AsyncMock) as mock_search,
         patch("app.api.ai.generate_rag_response", new_callable=AsyncMock) as mock_gen,
     ):
         mock_embed.return_value = [0.0] * 1536
+        mock_upsert.return_value = "test-vector-id"
         mock_search.return_value = [
             {
                 "memory_id": family_mem_id,
