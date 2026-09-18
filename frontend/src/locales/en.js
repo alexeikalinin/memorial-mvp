@@ -401,10 +401,12 @@ export default {
     subtitle: 'Preserve the memory of a loved one forever',
     name_placeholder: "Person's name",
     description_placeholder: 'Short description or biography',
-    voice_label: 'Gender for avatar voice-over',
-    voice_unspecified: 'Not specified (default voice)',
-    voice_hint:
-      'Select if you want responses to be voiced in a male or female voice',
+    gender_label: 'Gender *',
+    gender_placeholder: 'Select gender',
+    gender_hint: 'Used so the avatar replies in chat with a matching voice',
+    date_placeholder: 'dd.mm.yyyy',
+    public_memorial_hint:
+      'A public memorial is reachable by anyone with the direct link, no invite needed — e.g. for well-known people. Private (default) is visible only to the owner and invited people.',
     submit: 'Create Memorial',
     creating: 'Creating…',
     error_create: 'Failed to create memorial',

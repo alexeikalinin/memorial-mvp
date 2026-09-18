@@ -181,12 +181,17 @@
 
 /* ── New auth pages (forgot/reset/verify) ─────────── */
 .auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-primary, #fff);
   text-align: center;
   margin-bottom: 1.5rem;
 }
+.auth-logo img { height: 28px; width: auto; display: block; }
 .auth-logo span { color: var(--accent, #c8602a); }
 
 .auth-sub {

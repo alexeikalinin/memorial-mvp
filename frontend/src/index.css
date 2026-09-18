@@ -296,6 +296,7 @@ p { line-height: 1.7; }
 }
 
 .checkbox-label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -307,6 +308,9 @@ p { line-height: 1.7; }
 .checkbox-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
+  padding: 0;
+  margin: 0;
+  flex-shrink: 0;
   accent-color: var(--accent-dark);
 }
 

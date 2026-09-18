@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { authAPI } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
+import logoMark from '../assets/logo-mark.png'
 import './AuthPage.css'
 
 export default function ResetPasswordPage() {
@@ -19,7 +20,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <div className="auth-logo">vspomin<span>.ai</span></div>
+          <div className="auth-logo"><img src={logoMark} alt="" />vspomin<span>.ai</span></div>
           <h1 className="auth-title">{t('auth.invalid_link_title')}</h1>
           <p className="auth-sub">{t('auth.invalid_link_sub')}</p>
           <Link to="/forgot-password" className="auth-btn">{t('auth.request_reset')}</Link>
@@ -53,7 +54,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">vspomin<span>.ai</span></div>
+        <div className="auth-logo"><img src={logoMark} alt="" />vspomin<span>.ai</span></div>
         <h1 className="auth-title">{t('auth.set_new_password_title')}</h1>
         <p className="auth-sub">{t('auth.set_new_password_sub')}</p>
 

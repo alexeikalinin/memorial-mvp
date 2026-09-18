@@ -49,12 +49,11 @@
   color: var(--text);
 }
 
-.logo-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
+.logo-mark {
+  height: 32px;
+  width: auto;
   flex-shrink: 0;
+  display: block;
 }
 
 /* Nav */

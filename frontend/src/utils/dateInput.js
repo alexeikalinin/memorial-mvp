@@ -29,6 +29,25 @@ export function normalizeFlexibleDateInput(s) {
   return null
 }
 
+/**
+ * Форматирует ввод как ДД.ММ.ГГГГ, автоматически вставляя точки по мере ввода цифр.
+ * Игнорирует всё, кроме цифр, и обрезает до 8 цифр (ддммгггг).
+ */
+export function formatDateWithDots(raw) {
+  const digits = (raw || '').replace(/\D/g, '').slice(0, 8)
+  let out = digits.slice(0, 2)
+  if (digits.length > 2) out += '.' + digits.slice(2, 4)
+  if (digits.length > 4) out += '.' + digits.slice(4, 8)
+  return out
+}
+
+/** Сдвигает позицию курсора при автоформатировании даты по количеству введённых цифр. */
+export function dateCursorPosition(digitsBeforeCursor) {
+  if (digitsBeforeCursor <= 2) return digitsBeforeCursor
+  if (digitsBeforeCursor <= 4) return digitsBeforeCursor + 1
+  return digitsBeforeCursor + 2
+}
+
 /** Пустая строка → ok; непустое невалидное → error */
 export function parseDateFieldForSubmit(raw) {
   const v = (raw || '').trim()

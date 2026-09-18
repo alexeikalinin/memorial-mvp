@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { memorialsAPI } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
-import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
+import {
+  parseDateFieldForSubmit,
+  formatDateWithDots,
+  dateCursorPosition,
+} from '../utils/dateInput'
 import './MemorialCreate.css'
 
 function MemorialCreate() {
@@ -27,13 +31,15 @@ function MemorialCreate() {
     }))
   }
 
-  const handleDateBlur = (field) => (e) => {
-    const v = e.target.value.trim()
-    if (!v) return
-    const n = normalizeFlexibleDateInput(v)
-    if (n && n !== e.target.value) {
-      setFormData((prev) => ({ ...prev, [field]: n }))
-    }
+  const handleDateInput = (field) => (e) => {
+    const el = e.target
+    const cursorBefore = el.selectionStart ?? el.value.length
+    const digitsBeforeCursor = el.value.slice(0, cursorBefore).replace(/\D/g, '').length
+    const formatted = formatDateWithDots(el.value)
+    const newCursor = Math.min(dateCursorPosition(digitsBeforeCursor), formatted.length)
+    el.value = formatted
+    el.setSelectionRange(newCursor, newCursor)
+    setFormData((prev) => ({ ...prev, [field]: formatted }))
   }
 
   const handleSubmit = async (e) => {
@@ -117,6 +123,22 @@ function MemorialCreate() {
           </div>
 
           <div className="form-group">
+            <label htmlFor="voice_gender">{t('memorialCreate.gender_label')}</label>
+            <select
+              id="voice_gender"
+              name="voice_gender"
+              value={formData.voice_gender}
+              onChange={handleChange}
+              required
+            >
+              <option value="" disabled>{t('memorialCreate.gender_placeholder')}</option>
+              <option value="male">{t('detail.voice_male')}</option>
+              <option value="female">{t('detail.voice_female')}</option>
+            </select>
+            <span className="form-hint">{t('memorialCreate.gender_hint')}</span>
+          </div>
+
+          <div className="form-group">
             <label htmlFor="description">{t('detail.label_description')}</label>
             <textarea
               id="description"
@@ -136,11 +158,11 @@ function MemorialCreate() {
                 id="birth_date"
                 name="birth_date"
                 value={formData.birth_date}
-                onChange={handleChange}
-                onBlur={handleDateBlur('birth_date')}
-                placeholder={t('detail.date_placeholder')}
+                onChange={handleDateInput('birth_date')}
+                placeholder={t('memorialCreate.date_placeholder')}
                 autoComplete="off"
-                inputMode="text"
+                inputMode="numeric"
+                maxLength={10}
                 spellCheck={false}
               />
             </div>
@@ -152,29 +174,14 @@ function MemorialCreate() {
                 id="death_date"
                 name="death_date"
                 value={formData.death_date}
-                onChange={handleChange}
-                onBlur={handleDateBlur('death_date')}
-                placeholder={t('detail.date_placeholder')}
+                onChange={handleDateInput('death_date')}
+                placeholder={t('memorialCreate.date_placeholder')}
                 autoComplete="off"
-                inputMode="text"
+                inputMode="numeric"
+                maxLength={10}
                 spellCheck={false}
               />
             </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="voice_gender">{t('memorialCreate.voice_label')}</label>
-            <select
-              id="voice_gender"
-              name="voice_gender"
-              value={formData.voice_gender}
-              onChange={handleChange}
-            >
-              <option value="">{t('memorialCreate.voice_unspecified')}</option>
-              <option value="male">{t('detail.voice_male')}</option>
-              <option value="female">{t('detail.voice_female')}</option>
-            </select>
-            <span className="form-hint">{t('memorialCreate.voice_hint')}</span>
           </div>
 
           <div className="form-group">
@@ -185,7 +192,14 @@ function MemorialCreate() {
                 checked={formData.is_public}
                 onChange={handleChange}
               />
-              {t('detail.public_memorial')}
+              <span>{t('detail.public_memorial')}</span>
+              <span
+                className="info-trigger"
+                tabIndex={0}
+                title={t('memorialCreate.public_memorial_hint')}
+                onClick={(e) => e.preventDefault()}
+              >?</span>
+              <span className="info-tooltip">{t('memorialCreate.public_memorial_hint')}</span>
             </label>
           </div>
 

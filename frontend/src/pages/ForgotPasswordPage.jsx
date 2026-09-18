@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { authAPI } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
+import logoMark from '../assets/logo-mark.png'
 import './AuthPage.css'
 
 export default function ForgotPasswordPage() {
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <div className="auth-logo">vspomin<span>.ai</span></div>
+          <div className="auth-logo"><img src={logoMark} alt="" />vspomin<span>.ai</span></div>
           <div className="auth-icon auth-icon--success">✉</div>
           <h1 className="auth-title">{t('auth.check_email_title')}</h1>
           <p className="auth-sub">
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">vspomin<span>.ai</span></div>
+        <div className="auth-logo"><img src={logoMark} alt="" />vspomin<span>.ai</span></div>
         <h1 className="auth-title">{t('auth.forgot_password_title')}</h1>
         <p className="auth-sub">{t('auth.forgot_password_sub')}</p>
 

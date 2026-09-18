@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, SHOW_EN_LANGUAGE_OPTION } from '../contexts/LanguageContext'
 import VerificationBanner from './VerificationBanner'
+import logoMark from '../assets/logo-mark.png'
 import './Layout.css'
 
 function Layout({ children }) {
@@ -27,7 +28,7 @@ function Layout({ children }) {
       <header className={`header${scrolled ? ' scrolled' : ''}`}>
         <div className="container">
           <Link to="/" className="logo">
-            <span className="logo-dot" />
+            <img src={logoMark} alt="" className="logo-mark" />
             <h1>{t('nav.brand')}</h1>
           </Link>
           <nav className="nav">
