@@ -563,33 +563,6 @@ export default {
     },
     hop_label_fallback: 'Distant relative ({hops} steps)',
   },
-  onboarding: {
-    title: 'Get started',
-    progress: '{done} of {total} done',
-    dismiss: 'Dismiss',
-    steps: {
-      memorial: {
-        title: 'Create a memorial',
-        desc: 'Add the person you want to remember.',
-        cta: 'Create memorial',
-      },
-      photo: {
-        title: 'Upload a photo',
-        desc: 'A portrait brings the page to life.',
-        cta: 'Go to memorial',
-      },
-      memory: {
-        title: 'Add a memory',
-        desc: 'A story, a date, a moment — anything counts.',
-        cta: 'Add memory',
-      },
-      chat: {
-        title: 'Chat with the avatar',
-        desc: 'Ask the avatar a question and see it respond.',
-        cta: 'Open chat',
-      },
-    },
-  },
   tutorial: {
     step_label: 'Step {n} of {total}',
     skip: 'Skip',
@@ -604,11 +577,11 @@ export default {
       },
       {
         title: 'Upload a photo',
-        desc: "Add one or more portraits. Later, a photo can be animated into a talking digital avatar — bringing your loved one's face back to life.",
+        desc: "Add one or more portraits. Later, a photo can be animated into a talking digital avatar, and once you upload a voice sample, the avatar can speak in their own voice.",
       },
       {
         title: 'Add memories',
-        desc: "Write down stories, life moments, characteristic phrases and habits. The more memories you add, the fuller and more accurate the avatar's answers will be.",
+        desc: 'Write down stories, life moments, characteristic phrases and habits. The more memories you add, the more "memory" the avatar has — and the more alive and real it feels in conversation.',
       },
       {
         title: 'Talk to the avatar',
