@@ -590,6 +590,32 @@ export default {
       },
     },
   },
+  tutorial: {
+    step_label: 'Step {n} of {total}',
+    skip: 'Skip',
+    back: 'Back',
+    next: 'Next',
+    finish: 'Create Memorial →',
+    close: 'Close',
+    steps: [
+      {
+        title: 'Create the memorial',
+        desc: "Enter the person's full name, birth and death dates (if applicable), and gender — used to pick the avatar's voice. Add a short description or biography if you'd like. That's everything needed for the first step.",
+      },
+      {
+        title: 'Upload a photo',
+        desc: "Add one or more portraits. Later, a photo can be animated into a talking digital avatar — bringing your loved one's face back to life.",
+      },
+      {
+        title: 'Add memories',
+        desc: "Write down stories, life moments, characteristic phrases and habits. The more memories you add, the fuller and more accurate the avatar's answers will be.",
+      },
+      {
+        title: 'Talk to the avatar',
+        desc: "Ask the avatar a question — it will answer in this person's voice and style. Important: the avatar only answers based on the memories you've added and never makes facts up — if there isn't enough information, it will say so honestly.",
+      },
+    ],
+  },
   memoryList: {
     title: 'Memories',
     invite_friend: 'Invite a friend',

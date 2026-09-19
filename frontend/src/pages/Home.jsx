@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import ApiMediaImage from '../components/ApiMediaImage'
 import CreateMemorialHeroButton from '../components/CreateMemorialHeroButton'
 import OnboardingChecklist from '../components/OnboardingChecklist'
+import CreateMemorialTutorial from '../components/CreateMemorialTutorial'
 import { isDeceasedMemorial } from '../utils/memorialStatus'
 import logoMark from '../assets/logo-mark.png'
 import './Home.css'
@@ -41,6 +42,7 @@ function Home() {
   const [obDismissed, setObDismissed] = useState(
     () => { try { return localStorage.getItem(OB_DISMISSED_KEY) === '1' } catch { return false } }
   )
+  const [showTutorial, setShowTutorial] = useState(false)
   const { t, lang } = useLanguage()
   const { user } = useAuth()
   const homeContentRef = useRef(null)
@@ -68,6 +70,7 @@ function Home() {
   }, [lang])
 
   const nonDemoMemorials = memorials.filter((m) => !m.is_demo_seed)
+  const isFirstTimeUser = !loading && nonDemoMemorials.length === 0
 
   const showMemorialsContent = true
   const showDemoRevealStrip = false
@@ -173,12 +176,20 @@ function Home() {
             </h1>
             <p className="hero-subtitle">{t('home.subtitle')}</p>
             <div className="hero-cta">
-              <CreateMemorialHeroButton label={t('home.cta')} />
+              <CreateMemorialHeroButton
+                label={t('home.cta')}
+                onClick={(e) => {
+                  if (isFirstTimeUser) {
+                    e.preventDefault()
+                    setShowTutorial(true)
+                  }
+                }}
+              />
             </div>
           </div>
 
           <div className="hero-visual" aria-hidden="true">
-            <svg width="120" height="200" viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="160" height="266" viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <linearGradient id="candleGrad" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%"   stopColor="#c8a97e"/>
@@ -288,7 +299,16 @@ function Home() {
                   <div className="home-empty">
                     <div className="home-empty-icon">🕯</div>
                     <p>{t('home.empty')}</p>
-                    <Link to="/memorials/new" className="btn btn-primary">
+                    <Link
+                      to="/memorials/new"
+                      className="btn btn-primary"
+                      onClick={(e) => {
+                        if (isFirstTimeUser) {
+                          e.preventDefault()
+                          setShowTutorial(true)
+                        }
+                      }}
+                    >
                       {t('home.create_first')}
                     </Link>
                     <div className="home-demo-explore-link">
@@ -308,6 +328,10 @@ function Home() {
             </>
           )}
         </div>
+      )}
+
+      {showTutorial && (
+        <CreateMemorialTutorial onClose={() => setShowTutorial(false)} />
       )}
     </div>
   )

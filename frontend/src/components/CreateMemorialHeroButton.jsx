@@ -6,12 +6,13 @@ import './CreateMemorialHeroButton.css'
 
 const MotionLink = motion.create(Link)
 
-export default function CreateMemorialHeroButton({ to = '/memorials/new', label }) {
+export default function CreateMemorialHeroButton({ to = '/memorials/new', label, onClick }) {
   const [hovered, setHovered] = useState(false)
 
   return (
     <MotionLink
       to={to}
+      onClick={onClick}
       className="create-memorial-hero-btn"
       whileHover={{ scale: 1.03 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
