@@ -7,6 +7,7 @@ import ApiMediaImage from '../components/ApiMediaImage'
 import CreateMemorialHeroButton from '../components/CreateMemorialHeroButton'
 import OnboardingChecklist from '../components/OnboardingChecklist'
 import { isDeceasedMemorial } from '../utils/memorialStatus'
+import logoMark from '../assets/logo-mark.png'
 import './Home.css'
 
 const OB_DISMISSED_KEY = 'onboarding_dismissed_v1'
@@ -165,7 +166,7 @@ function Home() {
       <section className={`hero${showDemoRevealStrip ? ' hero--with-demo-reveal' : ''}`}>
         <div className="hero-inner">
           <div className={`hero-text${heroFontsReady ? ' hero-text--fonts-ready' : ''}`}>
-            <span className="hero-label">{t('home.label')}</span>
+            <img src={logoMark} alt="" className="hero-logo-mark" />
             <h1 className="hero-tagline">
               {t('home.tagline_plain')}<br />
               <em>{t('home.tagline_em')}</em>

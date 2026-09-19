@@ -92,15 +92,12 @@
   animation: fadeInFast 0.45s var(--ease) 0.12s both;
 }
 
-/* Label */
-.hero-label {
-  display: inline-block;
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 1.25rem;
-  opacity: 0.85;
+/* Logo mark above headline */
+.hero-logo-mark {
+  display: block;
+  height: 72px;
+  width: auto;
+  margin-bottom: 1.5rem;
 }
 
 /* Headline */
