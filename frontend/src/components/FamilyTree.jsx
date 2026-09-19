@@ -606,8 +606,9 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   /** generations = ряды поколений + две линии (демо); pedigree = relatives-tree */
   const [layoutMode, setLayoutMode] = useState('generations')
-  /** Какие семьи сейчас видны в дереве (по фамилии). Стартуем с Kelly. */
-  const [visibleFamilies, setVisibleFamilies] = useState(['Kelly'])
+  /** Какие семьи сейчас видны в дереве (по фамилии корневого мемориала). Задаётся после загрузки данных. */
+  const [visibleFamilies, setVisibleFamilies] = useState([])
+  const scopeInitializedForRef = useRef(null)
   const [treeFullscreen, setTreeFullscreen] = useState(false)
   const familyTreeRootRef = useRef(null)
   const dragRef  = useRef(null)
@@ -649,7 +650,13 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
         familyAPI.getRelationships(memorialId),
         memorialsAPI.get(memorialId).catch(() => null),
       ])
-      setGraphData(fullRes.data)
+      const graph = fullRes.data
+      setGraphData(graph)
+      if (scopeInitializedForRef.current !== memorialId) {
+        const rootNode = graph?.nodes?.find((n) => n.memorial_id === graph.root_id)
+        setVisibleFamilies(rootNode ? [getFamilyOfNode(rootNode)] : ['Kelly'])
+        scopeInitializedForRef.current = memorialId
+      }
       setRelationships(Array.isArray(relsRes.data) ? relsRes.data : [])
       // Загрузка сохранённых позиций узлов из БД
       const layout = memRes?.data?.tree_layout_json
