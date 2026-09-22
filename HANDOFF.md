@@ -1,9 +1,9 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-09-22 11:46
+> Автообновлено: 2026-09-22 12:05
 > Ветка: main
 
 ## Последний коммит
-ac20243 fix: hero button hover glitch, new-user onboarding redirect, landing demo updates
+34f2015 docs: refresh HANDOFF.md session state
 
 ## Изменённые файлы (uncommitted)
 - HANDOFF.md
@@ -16,9 +16,9 @@ ac20243 fix: hero button hover glitch, new-user onboarding redirect, landing dem
 - .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
+34f2015 docs: refresh HANDOFF.md session state
 ac20243 fix: hero button hover glitch, new-user onboarding redirect, landing demo updates
 71af212 fix: family tree hardcoded to demo family, hid real users' own memorial
-6cea34d refactor: remove redundant onboarding checklist, expand tutorial copy
 
 ## Запуск стека
 ```bash

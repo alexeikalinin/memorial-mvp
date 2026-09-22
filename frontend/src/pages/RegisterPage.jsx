@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -6,13 +6,23 @@ import { authAPI } from '../api/client'
 import './AuthPage.css'
 
 export default function RegisterPage() {
-  const { login } = useAuth()
+  const { user, isLoading: authLoading, login } = useAuth()
   const navigate = useNavigate()
   const { t } = useLanguage()
 
   const [form, setForm] = useState({ email: '', username: '', full_name: '', password: '' })
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/', { replace: true })
+    }
+  }, [authLoading, user, navigate])
+
+  if (!authLoading && user) {
+    return null
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()

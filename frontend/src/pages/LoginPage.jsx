@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import './AuthPage.css'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { user, isLoading: authLoading, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -16,6 +16,16 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(from, { replace: true })
+    }
+  }, [authLoading, user, from, navigate])
+
+  if (!authLoading && user) {
+    return null
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
