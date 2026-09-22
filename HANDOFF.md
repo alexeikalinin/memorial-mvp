@@ -1,21 +1,12 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-09-21 21:48
+> Автообновлено: 2026-09-22 11:46
 > Ветка: main
 
 ## Последний коммит
-71af212 fix: family tree hardcoded to demo family, hid real users' own memorial
+ac20243 fix: hero button hover glitch, new-user onboarding redirect, landing demo updates
 
 ## Изменённые файлы (uncommitted)
 - HANDOFF.md
-- backend/app/api/auth.py
-- frontend/landing/images/demo-poster.png
-- frontend/landing/index.html
-- frontend/landing/video/DEMO_VIDEO_SCRIPT.md
-- frontend/landing/video/GENERATIVE_DEMO_VIDEO_FULL_SCENARIO.md
-- frontend/landing/video/demo.mp4
-- frontend/landing/video/demo.vtt
-- frontend/landing/video/render_landing_demo.py
-- frontend/src/components/CreateMemorialHeroButton.css
 
 ## Новые файлы (untracked)
 - .claude/agents/vspomin-design-agent.md
@@ -25,9 +16,9 @@
 - .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
+ac20243 fix: hero button hover glitch, new-user onboarding redirect, landing demo updates
 71af212 fix: family tree hardcoded to demo family, hid real users' own memorial
 6cea34d refactor: remove redundant onboarding checklist, expand tutorial copy
-7ede7f1 feat: 4-step onboarding tutorial modal + bigger hero text/candle
 
 ## Запуск стека
 ```bash
