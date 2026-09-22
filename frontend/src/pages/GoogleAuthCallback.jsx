@@ -12,6 +12,7 @@ export default function GoogleAuthCallback() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const token = params.get('token')
+    const isNewUser = params.get('new_user') === '1'
     if (!token) {
       navigate('/login', { replace: true })
       return
@@ -21,7 +22,7 @@ export default function GoogleAuthCallback() {
     authAPI.me()
       .then(res => {
         if (setUserFromToken) setUserFromToken(res.data)
-        navigate('/', { replace: true })
+        navigate(isNewUser ? '/?tutorial=1' : '/', { replace: true })
       })
       .catch(() => {
         localStorage.removeItem('authToken')

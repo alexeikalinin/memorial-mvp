@@ -159,6 +159,7 @@ async def google_callback(code: str, db: Session = Depends(get_db), lang: str = 
         raise HTTPException(status_code=400, detail=tr(lang, "google_incomplete_profile"))
 
     # 3. Найти или создать пользователя
+    is_new_user = False
     user = db.query(User).filter(User.google_id == google_id).first()
     if not user:
         # Проверить, есть ли юзер с таким email (регистрировался ранее)
@@ -169,6 +170,7 @@ async def google_callback(code: str, db: Session = Depends(get_db), lang: str = 
             user.avatar_url = avatar_url
         else:
             # Создать нового пользователя
+            is_new_user = True
             username_base = email.split("@")[0]
             username = username_base
             counter = 1
@@ -195,10 +197,10 @@ async def google_callback(code: str, db: Session = Depends(get_db), lang: str = 
     if not user.email_verified:
         user.email_verified = True
         db.commit()
-    return RedirectResponse(
-        f"{frontend_url}/auth/callback?token={jwt_token}",
-        status_code=302,
-    )
+    redirect_url = f"{frontend_url}/auth/callback?token={jwt_token}"
+    if is_new_user:
+        redirect_url += "&new_user=1"
+    return RedirectResponse(redirect_url, status_code=302)
 
 
 # ── Email Verification ────────────────────────────────────────────────────────

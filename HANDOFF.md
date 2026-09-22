@@ -1,21 +1,21 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-06-24 13:58
+> Автообновлено: 2026-09-21 21:48
 > Ветка: main
 
 ## Последний коммит
-d81d159 feat: email verification, password reset, family RAG billing guard, viral share fix
+71af212 fix: family tree hardcoded to demo family, hid real users' own memorial
 
 ## Изменённые файлы (uncommitted)
 - HANDOFF.md
-- SESSION_LOG.md
-- backend/app/api/access.py
 - backend/app/api/auth.py
-- backend/app/api/media.py
-- backend/app/api/memorials.py
-- backend/app/auth.py
-- backend/app/config.py
-- backend/app/main.py
-- backend/app/models.py
+- frontend/landing/images/demo-poster.png
+- frontend/landing/index.html
+- frontend/landing/video/DEMO_VIDEO_SCRIPT.md
+- frontend/landing/video/GENERATIVE_DEMO_VIDEO_FULL_SCENARIO.md
+- frontend/landing/video/demo.mp4
+- frontend/landing/video/demo.vtt
+- frontend/landing/video/render_landing_demo.py
+- frontend/src/components/CreateMemorialHeroButton.css
 
 ## Новые файлы (untracked)
 - .claude/agents/vspomin-design-agent.md
@@ -25,9 +25,9 @@ d81d159 feat: email verification, password reset, family RAG billing guard, vira
 - .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
-d81d159 feat: email verification, password reset, family RAG billing guard, viral share fix
-de96dfa feat: remove demo panel from home — link only
-7da7bca feat: hide demo memorials once user has own memorials
+71af212 fix: family tree hardcoded to demo family, hid real users' own memorial
+6cea34d refactor: remove redundant onboarding checklist, expand tutorial copy
+7ede7f1 feat: 4-step onboarding tutorial modal + bigger hero text/candle
 
 ## Запуск стека
 ```bash

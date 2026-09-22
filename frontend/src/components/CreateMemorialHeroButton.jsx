@@ -43,19 +43,6 @@ export default function CreateMemorialHeroButton({ to = '/memorials/new', label,
         </motion.div>
 
         <motion.div
-          className="create-memorial-hero-btn__candle create-memorial-hero-btn__candle--2"
-          initial={false}
-          animate={
-            hovered
-              ? { opacity: [0, 0.85, 1], scale: [0.5, 1.1, 1] }
-              : { opacity: 0, scale: 0.5 }
-          }
-          transition={{ duration: 0.7, delay: hovered ? 0.25 : 0 }}
-        >
-          <CandleIcon className="create-memorial-hero-btn__candle-svg create-memorial-hero-btn__candle-svg--bright" />
-        </motion.div>
-
-        <motion.div
           className="create-memorial-hero-btn__candle create-memorial-hero-btn__candle--3"
           initial={false}
           animate={

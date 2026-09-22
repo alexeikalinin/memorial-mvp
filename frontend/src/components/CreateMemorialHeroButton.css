@@ -67,12 +67,6 @@
   bottom: 0.35rem;
 }
 
-.create-memorial-hero-btn__candle--2 {
-  left: 50%;
-  bottom: 0.5rem;
-  margin-left: -0.7rem;
-}
-
 .create-memorial-hero-btn__candle--3 {
   right: -2.35rem;
   bottom: 0.4rem;
@@ -86,12 +80,6 @@
   width: 1.15rem;
   height: 2.1rem;
   filter: drop-shadow(0 0 12px #fcd34d);
-}
-
-.create-memorial-hero-btn__candle-svg--bright {
-  width: 1.35rem;
-  height: 2.5rem;
-  filter: drop-shadow(0 0 18px #fde68c);
 }
 
 .create-memorial-hero-btn__candle-svg--orange {

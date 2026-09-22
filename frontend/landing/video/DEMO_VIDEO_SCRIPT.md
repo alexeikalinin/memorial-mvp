@@ -1,62 +1,99 @@
-# Memorial landing demo — locked script (EN)
+# vspomin.ai — сценарий демо-видео на лендинге (закреплённый, RU)
 
-**Target duration:** 85 seconds (within 75–90s). **Aspect:** 16:9, 1080p.  
-**Hero Q/A (same as [`landing/index.html`](../index.html) typewriter):**
+**Длительность:** 85 секунд. **Формат:** 16:9, 1080p.
+**Hero Q/A (тот же текст, что в typewriter-анимации на [`landing/index.html`](../index.html)):**
 
-- **User:** What made you happiest in life?
-- **Avatar:** Honestly? Saturday mornings at Manly Beach with your grandmother. We'd get there before anyone else, just the two of us with coffee in those old thermoses. Didn't need anything else. That was the whole world right there.
-
----
-
-## Voice-over (optional recording)
-
-Read calmly; ~130–140 words total. Pauses where noted.
-
-1. **Hook (0:00–0:10)**  
-   “A photograph is a moment frozen. / Without the story… the person fades.” *(pause)*
-
-2. **Promise (0:10–0:20)**  
-   “Memorial keeps their voice, their stories, and your family — in one place.”
-
-3. **Memories (0:20–0:38)**  
-   “You add what you already have. Photos. Voice notes. The small details only your family remembers.”
-
-4. **Chat (0:38–0:55)**  
-   “Ask anything. The answers come from what you shared — not from thin air. / You can see where each reply comes from.”
-
-5. **Family (0:55–1:12)**  
-   “And the people around them appear on one living map — generation after generation.”
-
-6. **CTA (1:12–1:25)**  
-   “Talk to them again. / Create a memorial — it’s free.”
+- **Пользователь:** Что делало тебя по-настоящему счастливым?
+- **Аватар:** Если честно? Субботние утра на даче с твоей бабушкой. Мы приезжали раньше всех, только мы двое, с кофе в тех старых термосах. Больше ничего и не нужно было. Это был весь мир.
 
 ---
 
-## On-screen titles (burned into generated asset)
+## Текущая реализация
 
-Matches segments in `build_landing_demo.sh`.
+Видео — **не отснятый материал**, а программная отрисовка: `render_landing_demo.py` рисует 6 кадров (Pillow) и склеивает их в `demo.mp4` через ffmpeg (libx264/aac, с перекодированием на финальной склейке — важно для корректной перемотки в браузере). Постер `../images/demo-poster.png` — кадр, вытащенный из видео на ~46-й секунде (сегмент с чатом).
 
-| Timecode | Title / body |
-|----------|----------------|
-| 0:00–0:10 | Line 1: *Photos remember the moment.* Line 2: *Stories remember them.* |
-| 0:10–0:20 | *Their voice. Their stories. Your family — one place.* |
-| 0:20–0:38 | *Add memories and media — building blocks for the avatar.* (over timeline still) |
-| 0:38–0:55 | *Ask in their name. Answers grounded in what you uploaded.* + hero Q/A over chat still |
-| 0:55–1:12 | *See the family — across generations.* (over tree still) |
-| 1:12–1:25 | *Talk to them again.* / *Create a memorial — it’s free* / `/app/register` |
+Пересборка: `cd frontend/landing/video && ./build_landing_demo.sh`
 
 ---
 
-## Ethics line (optional end bumper, 2s)
+## Раскадровка по сценам (6 сегментов, как в коде)
 
-*Illustrative product tour. AI responses use only memories your family adds.*
-
-(Add in a future edit if legal asks; not in default `build_landing_demo.sh`.)
+| # | Тайм-код | Длит. | Тип кадра | Текст на экране |
+|---|----------|-------|-----------|------------------|
+| 1 | 0:00–0:10 | 10с | Сплошной фон, центрированный текст | **Фото хранят момент.** / *Истории хранят их.* |
+| 2 | 0:10–0:20 | 10с | Сплошной фон | **Их голос. Их истории. Ваша семья —** / *в одном месте.* |
+| 3 | 0:20–0:38 | 18с | Скриншот `feat-timeline.png` + плашка сверху | *Таймлайн жизни — воспоминания по датам* |
+| 4 | 0:38–0:55 | 17с | Скриншот `feat-chat.png` + плашка сверху и подпись внизу | *Что делало тебя по-настоящему счастливым?* / *Ответы основаны на добавленных воспоминаниях — см. источники.* |
+| 5 | 0:55–1:12 | 17с | Скриншот `feat-tree.png` + плашка сверху | *Семейное древо — поколения на одной карте* |
+| 6 | 1:12–1:25 | 13с | Сплошной фон, CTA | **Поговорите с ними снова.** / *Создать мемориал — бесплатно* / `/app/register` |
 
 ---
 
-## Build & verify
+## Субтитры (`demo.vtt`, RU, `srclang="ru"`)
 
-- From repo: `cd frontend/landing/video && ./build_landing_demo.sh` — runs `render_landing_demo.py`, writes `demo.mp4` (~85s, ~1080p) and `../images/demo-poster.png`.
-- Landing `#demo` (`frontend/landing/index.html` and root `landing/index.html`): `<video>` has **`controls`**, **`preload="metadata"`**, **no `autoplay`**; optional captions **`/video/demo.vtt`**.
-- Dev server: `vite.config.js` serves `/video/*.mp4` and `/video/*.vtt` with correct `Content-Type`.
+```vtt
+WEBVTT
+
+00:00:00.000 --> 00:00:10.000
+Фото хранят момент.
+Истории хранят их.
+
+00:00:10.000 --> 00:00:20.000
+Их голос. Их истории. Ваша семья — в одном месте.
+
+00:00:20.000 --> 00:00:38.000
+Таймлайн жизни — воспоминания по датам.
+
+00:00:38.000 --> 00:00:55.000
+Что делало тебя по-настоящему счастливым?
+Ответы основаны на добавленных воспоминаниях — см. источники.
+
+00:00:55.000 --> 00:01:12.000
+Семейное древо — поколения на одной карте.
+
+00:01:12.000 --> 00:01:25.000
+Поговорите с ними снова.
+Создать мемориал — бесплатно.
+/app/register
+```
+
+---
+
+## Голос за кадром (опционально, если будет озвучка)
+
+Читать спокойно, ~110–120 слов всего. Паузы — где указано.
+
+1. **Крючок (0:00–0:10)**
+   «Фотография — застывший момент. / Без истории… человек растворяется.» *(пауза)*
+
+2. **Обещание (0:10–0:20)**
+   «vspomin.ai хранит их голос, их истории и вашу семью — в одном месте.»
+
+3. **Воспоминания (0:20–0:38)**
+   «Вы добавляете то, что уже есть. Фото. Голосовые заметки. Мелкие детали, которые помнит только ваша семья.»
+
+4. **Чат (0:38–0:55)**
+   «Спросите о чём угодно. Ответы — из того, что вы загрузили, а не из ничего. / Видно, на основе каких воспоминаний дан ответ.»
+
+5. **Семья (0:55–1:12)**
+   «А люди вокруг них появляются на одной живой карте — поколение за поколением.»
+
+6. **CTA (1:12–1:25)**
+   «Поговорите с ними снова. / Создайте мемориал — это бесплатно.»
+
+---
+
+## Этическая строка (опциональный финальный титр, 2с)
+
+*Иллюстративный пример работы продукта. Ответы AI используют только воспоминания, добавленные вашей семьёй.*
+
+(Добавить в будущей версии при согласовании с юристами; по умолчанию не входит в `build_landing_demo.sh`.)
+
+---
+
+## Сборка и проверка
+
+- Из корня репо: `cd frontend/landing/video && ./build_landing_demo.sh` — запускает `render_landing_demo.py`, пишет `demo.mp4` (~85с, 1080p) и `../images/demo-poster.png`.
+- Лендинг (`frontend/landing/index.html`): `<video>` с **`controls`**, **`preload="metadata"`**, **без `autoplay`**; субтитры **`/video/demo.vtt`** (`srclang="ru"`, default).
+- Dev-сервер: `vite.config.js` отдаёт `/video/*.mp4` и `/video/*.vtt` с верными Content-Type.
+- Если будущая правка текста сегментов меняет тайминги — обновить `demo.vtt` и таблицу выше синхронно.

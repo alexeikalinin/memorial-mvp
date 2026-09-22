@@ -125,7 +125,12 @@ def concat_segments(files: list[Path], out: Path, tmp_dir: Path, ffmpeg: str) ->
         for p in files:
             f.write(f"file '{p.as_posix()}'\n")
     subprocess.run(
-        [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(out)],
+        [
+            ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
+            "-c:v", "libx264", "-crf", "23", "-preset", "medium",
+            "-c:a", "aac", "-b:a", "96k", "-fflags", "+genpts",
+            str(out),
+        ],
         check=True,
     )
 
@@ -143,8 +148,8 @@ def main() -> int:
         # 1 Hook 10s
         fr = solid_frame(
             [
-                ("Photos remember the moment.", ACCENT2, 52),
-                ("Stories remember them.", ACCENT, 40),
+                ("Фото хранят момент.", ACCENT2, 52),
+                ("Истории хранят их.", ACCENT, 40),
             ]
         )
         p = tmp / "seg01.png"
@@ -156,8 +161,8 @@ def main() -> int:
         # 2 Promise 10s
         fr = solid_frame(
             [
-                ("Their voice. Their stories. Your family", ACCENT2, 42),
-                ("in one place.", TEXT2, 36),
+                ("Их голос. Их истории. Ваша семья —", ACCENT2, 42),
+                ("в одном месте.", TEXT2, 36),
             ]
         )
         p = tmp / "seg02.png"
@@ -169,7 +174,7 @@ def main() -> int:
         # 3 Timeline 18s
         fr = image_frame(
             img_dir / "feat-timeline.png",
-            "Life timeline — dated memories in order",
+            "Таймлайн жизни — воспоминания по датам",
         )
         p = tmp / "seg03.png"
         fr.save(p)
@@ -180,8 +185,8 @@ def main() -> int:
         # 4 Chat 17s
         fr = image_frame(
             img_dir / "feat-chat.png",
-            "What made you happiest in life?",
-            "Answers come from memories you add — see Sources.",
+            "Что делало тебя по-настоящему счастливым?",
+            "Ответы основаны на добавленных воспоминаниях — см. источники.",
         )
         p = tmp / "seg04.png"
         fr.save(p)
@@ -192,7 +197,7 @@ def main() -> int:
         # 5 Tree 17s
         fr = image_frame(
             img_dir / "feat-tree.png",
-            "Family tree — generations in one map",
+            "Семейное древо — поколения на одной карте",
         )
         p = tmp / "seg05.png"
         fr.save(p)
@@ -203,8 +208,8 @@ def main() -> int:
         # 6 CTA 13s
         fr = solid_frame(
             [
-                ("Talk to them again.", ACCENT2, 56),
-                ("Create a memorial — start free", TEXT, 38),
+                ("Поговорите с ними снова.", ACCENT2, 56),
+                ("Создать мемориал — бесплатно", TEXT, 38),
                 ("/app/register", PURPLE, 30),
             ]
         )

@@ -98,11 +98,6 @@ export default function LoginPage() {
         <p className="auth-switch">
           {t('auth.no_account')} <Link to="/register">{t('auth.signup_link')}</Link>
         </p>
-
-        <div className="auth-demo-divider"><span>{t('auth.or')}</span></div>
-        <Link to="/demo" className="btn-demo-explore">
-          {t('auth.explore_demo')}
-        </Link>
       </div>
     </div>
   )
