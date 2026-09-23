@@ -40,8 +40,8 @@ from app.services.ai_tasks import (
     get_embedding,
     generate_rag_response,
     search_similar_memories,
-    generate_speech_elevenlabs,
-    create_custom_voice_elevenlabs,
+    generate_speech,
+    create_custom_voice,
     animate_photo,
     get_animation_status,
     build_avatar_persona,
@@ -582,22 +582,30 @@ async def avatar_chat(
         if request.include_audio:
             try:
                 # Голос: клон аватара > мужской/женский pre-made > голос по умолчанию
-                # Pre-made голоса ElevenLabs доступны на бесплатном тарифе без ограничений
+                # Pre-made голоса ElevenLabs доступны на бесплатном тарифе без ограничений.
+                # Провайдер клонированного голоса фиксирован на memorial.voice_provider —
+                # id голоса ElevenLabs и Fish Audio несовместимы между собой.
                 if memorial.voice_id:
                     voice_id = memorial.voice_id
+                    voice_provider = memorial.voice_provider or "elevenlabs"
                 elif getattr(memorial, 'voice_gender', None) == 'male' and settings.ELEVENLABS_VOICE_ID_MALE:
                     voice_id = settings.ELEVENLABS_VOICE_ID_MALE
+                    voice_provider = "elevenlabs"
                 elif getattr(memorial, 'voice_gender', None) == 'female' and settings.ELEVENLABS_VOICE_ID_FEMALE:
                     voice_id = settings.ELEVENLABS_VOICE_ID_FEMALE
+                    voice_provider = "elevenlabs"
                 else:
                     voice_id = settings.ELEVENLABS_VOICE_ID
+                    voice_provider = "elevenlabs"
                 if not voice_id:
                     raise ValueError(
                         "Не задан голос для озвучки: укажите ELEVENLABS_VOICE_ID в backend/.env или загрузите клон голоса аватара."
                     )
-                if not settings.ELEVENLABS_API_KEY:
+                if voice_provider == "fish_audio" and not settings.FISH_AUDIO_API_KEY:
+                    raise ValueError("В backend/.env не задан FISH_AUDIO_API_KEY.")
+                if voice_provider == "elevenlabs" and not settings.ELEVENLABS_API_KEY:
                     raise ValueError("В backend/.env не задан ELEVENLABS_API_KEY.")
-                audio_bytes = await generate_speech_elevenlabs(answer, voice_id=voice_id)
+                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider)
 
                 # Сохранение аудио-файла
                 audio_dir = Path("uploads/audio")
@@ -807,12 +815,18 @@ async def upload_voice(
     memorial_id: int,
     audio_file: UploadFile = File(...),
     voice_name: Optional[str] = None,
+    provider: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Загрузить аудио-файл с голосом и создать кастомный голос в ElevenLabs.
+    Загрузить аудио-файл с голосом и создать кастомный клонированный голос.
     Доступно только на тарифах Plus и Lifetime memorial.
+
+    Args:
+        provider: "elevenlabs" | "fish_audio". По умолчанию — settings.TTS_PROVIDER.
+            Провайдер сохраняется вместе с voice_id и используется для всех
+            последующих TTS-запросов этого мемориала.
 
     Требования к аудио:
     - Формат: MP3, WAV, M4A
@@ -849,30 +863,34 @@ async def upload_voice(
             content = await audio_file.read()
             f.write(content)
         
-        # Создаем кастомный голос в ElevenLabs
+        # Создаем кастомный клонированный голос через выбранного провайдера
+        voice_provider_final = provider if provider in ("elevenlabs", "fish_audio") else settings.TTS_PROVIDER
         voice_name_final = voice_name or f"{memorial.name} Voice"
-        voice_id = await create_custom_voice_elevenlabs(
+        voice_id = await create_custom_voice(
             audio_file_path=str(temp_path),
             voice_name=voice_name_final,
-            description=f"Custom voice for {memorial.name}"
+            description=f"Custom voice for {memorial.name}",
+            provider=voice_provider_final,
         )
-        
-        # Сохраняем voice_id в мемориал
+
+        # Сохраняем voice_id и провайдера в мемориал (без провайдера voice_id непереносим между сервисами)
         memorial.voice_id = voice_id
+        memorial.voice_provider = voice_provider_final
         db.commit()
         db.refresh(memorial)
-        
+
         # Удаляем временный файл
         if temp_path.exists():
             temp_path.unlink()
-        
+
         return {
             "success": True,
             "voice_id": voice_id,
             "voice_name": voice_name_final,
+            "voice_provider": voice_provider_final,
             "message": f"Голос успешно создан и сохранен для мемориала '{memorial.name}'"
         }
-    
+
     except ValueError as e:
         # Удаляем временный файл при ошибке
         if temp_path.exists():
@@ -883,6 +901,11 @@ async def upload_voice(
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail="Клонирование голоса требует платного плана ElevenLabs. Обновите подписку на elevenlabs.io или используйте стандартный голос аватара."
+            )
+        if voice_provider_final == "fish_audio" and ("401" in error_str or "not configured" in error_str):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Клонирование голоса через Fish Audio недоступно: проверьте FISH_AUDIO_API_KEY и тариф на fish.audio."
             )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

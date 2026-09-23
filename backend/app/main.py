@@ -39,6 +39,9 @@ def _add_missing_columns():
         if "tree_layout_json" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN tree_layout_json JSON"))
+        if "voice_provider" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE memorials ADD COLUMN voice_provider VARCHAR(20)"))
     if insp.has_table("users"):
         ucols = {c["name"] for c in insp.get_columns("users")}
         user_alters = []

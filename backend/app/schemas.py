@@ -102,6 +102,7 @@ class MemorialUpdate(BaseModel):
     death_date: Optional[datetime] = None
     is_public: Optional[bool] = None
     voice_id: Optional[str] = None
+    voice_provider: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
     tree_layout_json: Optional[Dict[str, Any]] = None
@@ -111,6 +112,7 @@ class MemorialResponse(MemorialBase):
     id: int
     owner_id: int
     voice_id: Optional[str] = None
+    voice_provider: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
     tree_layout_json: Optional[Dict[str, Any]] = None

@@ -1029,6 +1029,180 @@ async def generate_speech_elevenlabs(text: str, voice_id: Optional[str] = None) 
         raise ValueError(f"ElevenLabs API request failed: {str(e)}")
 
 
+# ========== Fish Audio (TTS + Voice Cloning, альтернатива ElevenLabs) ==========
+# Дешевле по API ($15 / 1M символов против кредитной модели ElevenLabs) и без
+# ограничения тарифа на число слотов под клонированные голоса — подходит лучше
+# для сценария "у каждого мемориала свой уникальный клонированный голос".
+# Схема эндпоинтов взята из https://docs.fish.audio — перепроверить при первом
+# реальном вызове (нужен FISH_AUDIO_API_KEY), т.к. это внешний API вне нашего контроля.
+
+FISH_AUDIO_API_URL = "https://api.fish.audio"
+
+
+async def create_custom_voice_fish_audio(
+    audio_file_path: str,
+    voice_name: str,
+    description: Optional[str] = None,
+) -> str:
+    """
+    Создать кастомную модель голоса (клон) в Fish Audio на основе загруженного аудио.
+    Instant Voice Cloning в Fish Audio работает от ~10-15 секунд образца.
+
+    Returns:
+        id созданной модели голоса (используется как reference_id в TTS-запросах)
+    """
+    if not settings.FISH_AUDIO_API_KEY:
+        raise ValueError("FISH_AUDIO_API_KEY not configured")
+
+    url = f"{FISH_AUDIO_API_URL}/model"
+    headers = {"Authorization": f"Bearer {settings.FISH_AUDIO_API_KEY}"}
+
+    audio_path = Path(audio_file_path)
+    mime_type = "audio/mpeg"
+    if audio_path.suffix.lower() == ".wav":
+        mime_type = "audio/wav"
+    elif audio_path.suffix.lower() == ".m4a":
+        mime_type = "audio/m4a"
+
+    with open(audio_file_path, "rb") as audio_file:
+        audio_bytes = audio_file.read()
+
+    files = {
+        "voices": (audio_path.name, audio_bytes, mime_type),
+    }
+    data = {
+        "title": voice_name,
+        "type": "tts",
+        "visibility": "private",
+    }
+    if description:
+        data["description"] = description
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, files=files, data=data, timeout=120.0)
+
+            if response.status_code not in (200, 201):
+                error_detail = response.text if response.text else "No error details"
+                print(f"Fish Audio create voice error: {response.status_code} - {error_detail}")
+                raise ValueError(f"Fish Audio API error {response.status_code}: {error_detail}")
+
+            result = response.json()
+            voice_id = result.get("_id") or result.get("id")
+
+            if not voice_id:
+                raise ValueError(f"Fish Audio did not return model id. Response: {result}")
+
+            print(f"Successfully created Fish Audio voice: {voice_name} (ID: {voice_id})")
+            return voice_id
+
+    except httpx.HTTPStatusError as e:
+        error_detail = e.response.text if e.response else str(e)
+        raise ValueError(f"Fish Audio API HTTP error: {e.response.status_code} - {error_detail}")
+    except httpx.RequestError as e:
+        raise ValueError(f"Fish Audio API request failed: {str(e)}")
+
+
+async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None) -> bytes:
+    """
+    Сгенерировать аудио из текста через Fish Audio.
+
+    Args:
+        voice_id: reference_id клонированной модели. Если не задан — используется
+            голос по умолчанию модели FISH_AUDIO_MODEL (без клонирования).
+
+    Returns:
+        Байты аудио-файла (MP3)
+    """
+    if not settings.FISH_AUDIO_API_KEY:
+        raise ValueError("FISH_AUDIO_API_KEY not configured")
+
+    max_text_length = 4000
+    if len(text) > max_text_length:
+        text = text[:max_text_length] + "..."
+        print(f"Warning: Text truncated to {max_text_length} characters for Fish Audio")
+
+    url = f"{FISH_AUDIO_API_URL}/v1/tts"
+    headers = {
+        "Authorization": f"Bearer {settings.FISH_AUDIO_API_KEY}",
+        "Content-Type": "application/json",
+        "model": settings.FISH_AUDIO_MODEL,
+    }
+    payload = {"text": text}
+    if voice_id:
+        payload["reference_id"] = voice_id
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers, timeout=60.0)
+
+            if response.status_code != 200:
+                error_detail = response.text if response.text else "No error details"
+                print(f"Fish Audio API error: {response.status_code} - {error_detail}")
+                print(f"Voice ID (reference_id): {voice_id}")
+                print(f"Text length: {len(text)}")
+
+                if response.status_code == 401:
+                    raise ValueError(
+                        "Fish Audio API error 401: Неверный API ключ. Проверьте FISH_AUDIO_API_KEY."
+                    )
+                elif response.status_code == 404:
+                    raise ValueError(
+                        f"Fish Audio API error 404: голос/модель не найдены (reference_id={voice_id})."
+                    )
+                else:
+                    response.raise_for_status()
+
+            return response.content
+
+    except httpx.HTTPStatusError as e:
+        error_detail = e.response.text if e.response else str(e)
+        raise ValueError(f"Fish Audio API HTTP error: {e.response.status_code} - {error_detail}")
+    except httpx.RequestError as e:
+        raise ValueError(f"Fish Audio API request failed: {str(e)}")
+
+
+# ========== Унифицированный интерфейс TTS / Voice Cloning ==========
+
+def _normalize_tts_provider(provider: Optional[str]) -> str:
+    """Приводит значение провайдера к одному из поддерживаемых, с фоллбэком на ElevenLabs."""
+    if provider in ("elevenlabs", "fish_audio"):
+        return provider
+    return "elevenlabs"
+
+
+async def create_custom_voice(
+    audio_file_path: str,
+    voice_name: str,
+    description: Optional[str] = None,
+    provider: Optional[str] = None,
+) -> str:
+    """
+    Унифицированное создание кастомного голоса.
+    provider: "elevenlabs" | "fish_audio". По умолчанию — settings.TTS_PROVIDER.
+    """
+    provider = _normalize_tts_provider(provider or settings.TTS_PROVIDER)
+    if provider == "fish_audio":
+        return await create_custom_voice_fish_audio(audio_file_path, voice_name, description)
+    return await create_custom_voice_elevenlabs(audio_file_path, voice_name, description)
+
+
+async def generate_speech(
+    text: str,
+    voice_id: Optional[str] = None,
+    provider: Optional[str] = None,
+) -> bytes:
+    """
+    Унифицированная генерация речи. provider определяет, какой сервис использовать
+    для данного voice_id (должен совпадать с тем, кто этот voice_id создавал —
+    голос ElevenLabs нельзя подставить в Fish Audio и наоборот).
+    """
+    provider = _normalize_tts_provider(provider or settings.TTS_PROVIDER)
+    if provider == "fish_audio":
+        return await generate_speech_fish_audio(text, voice_id=voice_id)
+    return await generate_speech_elevenlabs(text, voice_id=voice_id)
+
+
 # ========== Vector Database (Pinecone / Qdrant) ==========
 
 def get_vector_db_client():

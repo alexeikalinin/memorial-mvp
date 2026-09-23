@@ -72,7 +72,14 @@ class Settings(BaseSettings):
         return v
     ELEVENLABS_VOICE_ID_MALE: str = ""   # Мужской голос для мемориалов с voice_gender=male
     ELEVENLABS_VOICE_ID_FEMALE: str = "" # Женский голос для мемориалов с voice_gender=female
-    
+
+    # Fish Audio (альтернатива ElevenLabs: клонирование голоса + TTS, дешевле по API)
+    FISH_AUDIO_API_KEY: str = ""
+    FISH_AUDIO_MODEL: str = "s1"  # TTS-модель Fish Audio (см. https://docs.fish.audio)
+    # Провайдер, который используется по умолчанию для НОВЫХ клонов голоса.
+    # Уже созданные голоса всегда используют провайдера, сохранённого в Memorial.voice_provider.
+    TTS_PROVIDER: str = "elevenlabs"  # "elevenlabs" | "fish_audio"
+
     # Vector Database - выбор между Pinecone и Qdrant
     VECTOR_DB_PROVIDER: str = "qdrant"  # "pinecone" или "qdrant"
     

@@ -80,7 +80,8 @@ class Memorial(Base):
     death_date = Column(DateTime(timezone=True), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     is_public = Column(Boolean, default=False)
-    voice_id = Column(String(255), nullable=True)  # ID кастомного голоса в ElevenLabs
+    voice_id = Column(String(255), nullable=True)  # ID кастомного голоса (формат зависит от voice_provider)
+    voice_provider = Column(String(20), nullable=True)  # 'elevenlabs' | 'fish_audio' — кто создал voice_id
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     language = Column(String(5), default="ru", nullable=False, server_default="ru")  # "ru" | "en"
