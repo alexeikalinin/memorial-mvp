@@ -1,9 +1,9 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-09-25 16:59
+> Автообновлено: 2026-09-25 17:06
 > Ветка: main
 
 ## Последний коммит
-450e540 fix: Fish Audio voice cloning (train_mode, formats) + multi-sample upload
+3862ace feat: delete old cloned voice when re-cloning avatar voice
 
 ## Изменённые файлы (uncommitted)
 - HANDOFF.md
@@ -16,9 +16,9 @@
 - .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
+3862ace feat: delete old cloned voice when re-cloning avatar voice
 450e540 fix: Fish Audio voice cloning (train_mode, formats) + multi-sample upload
 faa58a2 fix: mobile nav menu and focus-visible accessibility on landing page
-851fb82 feat: add Fish Audio as alternative TTS/voice-cloning provider
 
 ## Запуск стека
 ```bash

@@ -485,7 +485,15 @@
   background: var(--surface-warm);
   border-bottom: 1px solid var(--border);
   padding: 1rem 1.5rem;
-  flex-shrink: 0;
+  /* .avatar-chat has a fixed height + overflow:hidden. With several voice
+     samples this panel's content can exceed the space left after the header
+     and chat-messages — it must be allowed to SHRINK within the flex column
+     (not flex-shrink:0) and scroll internally, otherwise the bottom (the
+     submit button) gets clipped by the parent's overflow:hidden. */
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
 }
 
 .avatar-chat--fullscreen .voice-clone-panel {
