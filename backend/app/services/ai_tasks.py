@@ -885,6 +885,29 @@ async def create_custom_voice_elevenlabs(
         raise ValueError(f"ElevenLabs API request failed: {str(e)}")
 
 
+async def delete_custom_voice_elevenlabs(voice_id: str) -> bool:
+    """
+    Удалить кастомный голос в ElevenLabs (используется при переклонировании,
+    чтобы не копились неиспользуемые модели голоса в аккаунте).
+    Best-effort: возвращает False вместо исключения, если удалить не удалось.
+    """
+    if not settings.ELEVENLABS_API_KEY or not voice_id:
+        return False
+    url = f"https://api.elevenlabs.io/v1/voices/{voice_id}"
+    headers = {"xi-api-key": settings.ELEVENLABS_API_KEY}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(url, headers=headers, timeout=30.0)
+            if response.status_code in (200, 204):
+                print(f"Deleted old ElevenLabs voice: {voice_id}")
+                return True
+            print(f"ElevenLabs delete voice {voice_id} failed: {response.status_code} - {response.text}")
+            return False
+    except httpx.HTTPError as e:
+        print(f"ElevenLabs delete voice {voice_id} error: {e}")
+        return False
+
+
 async def generate_speech_elevenlabs(text: str, voice_id: Optional[str] = None) -> bytes:
     """
     Сгенерировать аудио из текста через ElevenLabs.
@@ -1130,6 +1153,29 @@ async def create_custom_voice_fish_audio(
         raise ValueError(f"Fish Audio API request failed: {str(e)}")
 
 
+async def delete_custom_voice_fish_audio(voice_id: str) -> bool:
+    """
+    Удалить модель голоса в Fish Audio (используется при переклонировании,
+    чтобы не копились неиспользуемые модели голоса в аккаунте).
+    Best-effort: возвращает False вместо исключения, если удалить не удалось.
+    """
+    if not settings.FISH_AUDIO_API_KEY or not voice_id:
+        return False
+    url = f"{FISH_AUDIO_API_URL}/model/{voice_id}"
+    headers = {"Authorization": f"Bearer {settings.FISH_AUDIO_API_KEY}"}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(url, headers=headers, timeout=30.0)
+            if response.status_code in (200, 204):
+                print(f"Deleted old Fish Audio voice: {voice_id}")
+                return True
+            print(f"Fish Audio delete voice {voice_id} failed: {response.status_code} - {response.text}")
+            return False
+    except httpx.HTTPError as e:
+        print(f"Fish Audio delete voice {voice_id} error: {e}")
+        return False
+
+
 async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None) -> bytes:
     """
     Сгенерировать аудио из текста через Fish Audio.
@@ -1214,6 +1260,21 @@ async def create_custom_voice(
     if provider == "fish_audio":
         return await create_custom_voice_fish_audio(audio_file_paths, voice_name, description)
     return await create_custom_voice_elevenlabs(audio_file_paths, voice_name, description)
+
+
+async def delete_custom_voice(voice_id: Optional[str], provider: Optional[str]) -> bool:
+    """
+    Унифицированное best-effort удаление кастомного голоса у провайдера, которым
+    он был создан. Используется при переклонировании, чтобы старая модель не
+    оставалась висеть в аккаунте после того, как мемориал перешёл на новый voice_id.
+    Никогда не бросает исключение — ошибка удаления не должна ломать сохранение нового голоса.
+    """
+    if not voice_id or not provider:
+        return False
+    provider = _normalize_tts_provider(provider)
+    if provider == "fish_audio":
+        return await delete_custom_voice_fish_audio(voice_id)
+    return await delete_custom_voice_elevenlabs(voice_id)
 
 
 async def generate_speech(

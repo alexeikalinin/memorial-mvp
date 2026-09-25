@@ -42,6 +42,7 @@ from app.services.ai_tasks import (
     search_similar_memories,
     generate_speech,
     create_custom_voice,
+    delete_custom_voice,
     animate_photo,
     get_animation_status,
     build_avatar_persona,
@@ -884,6 +885,11 @@ async def upload_voice(
             if p.exists():
                 p.unlink()
 
+    # Запоминаем старый голос до перезаписи — после успешного клонирования удалим его
+    # у провайдера, чтобы не копились неиспользуемые модели в аккаунте.
+    old_voice_id = memorial.voice_id
+    old_voice_provider = memorial.voice_provider
+
     try:
         # Создаем кастомный клонированный голос через выбранного провайдера
         voice_provider_final = provider if provider in ("elevenlabs", "fish_audio") else settings.TTS_PROVIDER
@@ -902,6 +908,14 @@ async def upload_voice(
         db.refresh(memorial)
 
         _cleanup()
+
+        # Удаляем старую модель голоса (best-effort — ошибка здесь не должна ломать ответ,
+        # новый голос уже сохранён и рабочий)
+        if old_voice_id and old_voice_id != voice_id:
+            try:
+                await delete_custom_voice(old_voice_id, old_voice_provider)
+            except Exception as cleanup_err:
+                print(f"Warning: failed to delete old voice {old_voice_id}: {cleanup_err}")
 
         return {
             "success": True,

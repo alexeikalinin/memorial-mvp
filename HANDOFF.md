@@ -1,20 +1,12 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-09-25 16:51
+> Автообновлено: 2026-09-25 16:59
 > Ветка: main
 
 ## Последний коммит
-faa58a2 fix: mobile nav menu and focus-visible accessibility on landing page
+450e540 fix: Fish Audio voice cloning (train_mode, formats) + multi-sample upload
 
 ## Изменённые файлы (uncommitted)
 - HANDOFF.md
-- backend/app/api/ai.py
-- backend/app/services/ai_tasks.py
-- frontend/src/api/client.js
-- frontend/src/components/AvatarChat.css
-- frontend/src/components/AvatarChat.jsx
-- frontend/src/locales/en.js
-- frontend/src/locales/ru.js
-- frontend/vite.config.js
 
 ## Новые файлы (untracked)
 - .claude/agents/vspomin-design-agent.md
@@ -24,9 +16,9 @@ faa58a2 fix: mobile nav menu and focus-visible accessibility on landing page
 - .claude/skills/testing-jwt-token-security/scripts/agent.py
 
 ## Последние 3 коммита
+450e540 fix: Fish Audio voice cloning (train_mode, formats) + multi-sample upload
 faa58a2 fix: mobile nav menu and focus-visible accessibility on landing page
 851fb82 feat: add Fish Audio as alternative TTS/voice-cloning provider
-5fc2459 fix: redirect already-authenticated users away from /login and /register
 
 ## Запуск стека
 ```bash
