@@ -23,7 +23,7 @@
       --border2: rgba(255,255,255,0.12);
       --text: #f0ede8;
       --text2: #9b97a8;
-      --text3: #5a566a;
+      --text3: #8c889b;
       --accent: #c8a97e;
       --accent2: #e8c99e;
       --purple: #8b7fd4;
@@ -59,6 +59,8 @@
     .nav-links { display: flex; gap: 36px; align-items: center; }
     .nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; transition: color .2s; }
     .nav-links a:hover { color: var(--text); }
+    .nav-toggle { display: none; }
+    .nav-backdrop { display: none; }
     #lang-toggle .btn { background: transparent; color: var(--text2); border-radius: 100px; }
     #lang-toggle .btn:hover { color: var(--text); }
     #lang-toggle .btn.is-active { background: var(--accent); color: #1a1408; }
@@ -72,6 +74,7 @@
     .btn-primary:hover { background: var(--accent2); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(200,169,126,0.3); }
     .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
     .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(200,169,126,0.06); }
+    .btn:focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
     .btn-lg { padding: 16px 36px; font-size: 16px; }
     .pricing-cta.btn-lg { padding: 15px 24px; font-size: 15px; white-space: nowrap; }
     .btn-xl { padding: 20px 48px; font-size: 17px; font-weight: 600; }
@@ -587,6 +590,18 @@
     .pricing-footnote {
       margin-top: 48px; font-size: 13px; color: var(--text3); line-height: 1.65; max-width: 920px; margin-left: 0; text-align: left;
     }
+    .pricing-soon-block {
+      margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border2);
+      font-size: 12.5px; color: var(--text2); line-height: 1.6; text-align: left;
+    }
+    .pricing-soon-block .badge-soon { margin-right: 6px; }
+    .pricing-soon-waitlist-btn {
+      display: block; margin-top: 8px; background: none; border: none; padding: 0;
+      color: var(--accent); font-size: 12.5px; font-weight: 600; cursor: pointer;
+      text-decoration: underline; font-family: inherit;
+    }
+    .pricing-soon-waitlist-btn:hover { color: var(--accent2); }
+    .pricing-soon-waitlist-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
     /* ─── WAITLIST MODAL ─── */
     .waitlist-modal {
@@ -666,11 +681,13 @@
     .faq-item { border-bottom: 1px solid var(--border); }
     .faq-q {
       padding: 26px 0; cursor: pointer;
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 17px; font-weight: 500; gap: 24px;
+      display: flex; justify-content: space-between; align-items: center; width: 100%;
+      font-size: 17px; font-weight: 500; gap: 24px; text-align: left;
+      background: none; border: none; color: var(--text); font-family: inherit;
       transition: color .2s;
     }
     .faq-q:hover { color: var(--accent); }
+    .faq-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
     .faq-icon { color: var(--text3); font-size: 22px; flex-shrink: 0; transition: transform .35s, color .2s; }
     .faq-item.open .faq-icon { transform: rotate(45deg); color: var(--accent); }
     .faq-a { max-height: 0; overflow: hidden; transition: max-height .45s cubic-bezier(.4,0,.2,1); }
@@ -722,7 +739,29 @@
     /* ─── RESPONSIVE ─── */
     @media (max-width: 960px) {
       nav { padding: 16px 24px; }
-      .nav-links { display: none; }
+      .nav-toggle {
+        display: flex; align-items: center; justify-content: center;
+        width: 44px; height: 44px; background: transparent; border: 1px solid var(--border2);
+        border-radius: 10px; cursor: pointer; flex-direction: column; gap: 4px; order: -1;
+      }
+      .nav-toggle span { display: block; width: 20px; height: 2px; background: var(--text); border-radius: 2px; transition: transform .25s, opacity .25s; }
+      .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+      .nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+      .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+      .nav-links {
+        position: fixed; top: 0; right: 0; height: 100vh; width: min(78vw, 320px);
+        background: var(--bg2); flex-direction: column; align-items: flex-start; gap: 0;
+        padding: 96px 28px 28px; box-shadow: -20px 0 60px rgba(0,0,0,0.45);
+        transform: translateX(100%); transition: transform .3s ease; z-index: 999;
+      }
+      .nav-links.open { transform: translateX(0); }
+      .nav-links a {
+        width: 100%; padding: 14px 4px; min-height: 44px; display: flex; align-items: center;
+        font-size: 16px; border-bottom: 1px solid var(--border);
+      }
+      .nav-backdrop.open {
+        display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998;
+      }
       section { padding: 72px 24px; }
       .hero-inner { grid-template-columns: minmax(0, 1fr); }
       .hero-visual { display: none; }
@@ -738,6 +777,8 @@
       .pricing-grid { grid-template-columns: minmax(0, 1fr); }
       .footer-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+      .footer-col a { min-height: 44px; display: flex; align-items: center; margin-bottom: 0; }
+      #lang-toggle .btn { padding: 12px 14px !important; min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
     }
     @media (max-width: 600px) {
       nav { padding: 14px 16px; gap: 8px; flex-wrap: wrap; row-gap: 10px; justify-content: center; }
@@ -745,8 +786,8 @@
       .nav-logo { font-size: 20px; gap: 6px; }
       .nav-logo img { height: 34px; width: 56px; }
       nav > div[style*="display:flex"] { gap: 6px !important; }
-      #lang-toggle { padding: 2px !important; }
-      #lang-toggle .btn { padding: 5px 9px !important; font-size: 11px; }
+      #lang-toggle { padding: 3px !important; }
+      #lang-toggle .btn { padding: 12px 10px !important; font-size: 11px; min-height: 44px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; }
       nav .btn-outline { display: none; } /* "Войти" hidden on very small screens — keep only primary CTA */
       nav .btn-primary { padding: 9px 14px; font-size: 12.5px; white-space: nowrap; }
       section { padding: 56px 16px; }
@@ -766,13 +807,17 @@
 <!-- NAV -->
 <nav id="main-nav">
   <div class="nav-logo"><img src="images/logo-mark-dark-tight.png" alt="vspomin.ai" width="73" height="44" />vspomin.ai</div>
-  <div class="nav-links">
+  <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="nav-links-menu" aria-label="Открыть меню">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-links" id="nav-links-menu">
     <a href="#how" data-i18n="nav.how">Как это работает</a>
     <a href="#features" data-i18n="nav.features">Возможности</a>
     <a href="#hidden" data-i18n="nav.hidden">Скрытые связи</a>
     <a href="#pricing" data-i18n="nav.pricing">Тарифы</a>
     <a href="#faq" data-i18n="nav.faq">Вопросы</a>
   </div>
+  <div class="nav-backdrop" id="nav-backdrop"></div>
   <div style="display:flex;gap:12px;align-items:center">
     <div id="lang-toggle" style="display:flex;gap:4px;align-items:center;border:1px solid var(--border2);border-radius:100px;padding:4px;">
       <button type="button" id="lang-btn-ru" class="btn" data-lang="ru" style="padding:6px 14px;font-size:12px;">RU</button>
@@ -1293,11 +1338,13 @@
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_gallery">Галерея и публичная страница</span><span class="pricing-li-note" data-i18n="pricing.plus_gallery_note">Полный набор медиафункций для каждого мемориала.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_grounded">Обоснованные ответы</span><span class="pricing-li-note" data-i18n="pricing.plus_grounded_note">Плюс опциональный семейный контекст (ниже).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.plus_storage_note"><strong>5 ГБ</strong> общих на аккаунт.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.plus_voice_note">Загрузите образец голоса — AI будет отвечать их голосом.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon">Анимация фото / видео <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.plus_animation_note"><strong>5</strong> рендеров в месяц (на весь аккаунт).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.plus_family_rag_note">Чат может использовать воспоминания из до <strong>10 связанных</strong> мемориалов, если включено.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_hidden">Скрытые связи</span><span class="pricing-li-note" data-i18n="pricing.plus_hidden_note">Поиск связей по семейному графу (где доступно).</span></span></li>
         </ul>
+        <div class="pricing-soon-block">
+          <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span><span data-i18n="pricing.plus_soon_summary">Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.</span>
+          <button type="button" class="pricing-soon-waitlist-btn js-waitlist-open" data-i18n="pricing.soon_waitlist_cta">Записаться в лист ожидания →</button>
+        </div>
         <div class="pricing-card-footer">
         <a href="/app/register" class="btn btn-primary btn-lg pricing-cta" data-i18n="pricing.plus_cta">Начать — Plus</a>
         <p class="pricing-note" data-i18n="pricing.start_free_note">Начните бесплатно, обновитесь в любой момент. Отмена в любое время.</p>
@@ -1312,12 +1359,14 @@
         <ul class="pricing-features">
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.pro_memorials_note"><strong>До 10</strong> страниц + дополнительные слоты.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.pro_chat_note"><strong>500 сообщений в месяц</strong> с голосом.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon2">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.pro_voice_note">Загрузите образец — AI отвечает их голосом.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon">Анимация фото / видео <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.pro_animation_note"><strong>15</strong> рендеров в месяц.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.pro_family_rag_note">Чат с использованием до <strong>10 связанных</strong> мемориалов.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_live_sessions">Сессии живого аватара</span><span class="pricing-li-note" data-i18n="pricing.pro_live_sessions_note"><strong>5 сессий в месяц</strong> — видео-аватар в реальном времени.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.pro_storage_note"><strong>15 ГБ</strong> общих на аккаунт.</span></span></li>
         </ul>
+        <div class="pricing-soon-block">
+          <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span><span data-i18n="pricing.pro_soon_summary">Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.</span>
+          <button type="button" class="pricing-soon-waitlist-btn js-waitlist-open" data-i18n="pricing.soon_waitlist_cta">Записаться в лист ожидания →</button>
+        </div>
         <div class="pricing-card-footer">
         <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.pro_cta">Начать — Pro</a>
         <p class="pricing-note" data-i18n="pricing.start_free_note">Начните бесплатно, обновитесь в любой момент. Отмена в любое время.</p>
@@ -1337,11 +1386,13 @@
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_gallery">Галерея и публичная страница</span><span class="pricing-li-note" data-i18n="pricing.lt_gallery_note">Долгосрочный доступ к странице, пока работает сервис.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_grounded">Обоснованные ответы</span><span class="pricing-li-note" data-i18n="pricing.lt_grounded_note">Только на основе воспоминаний <strong>этого</strong> мемориала (без межсемейного поиска).</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.lt_storage_note"><strong>5 ГБ</strong> для этого мемориала.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon3">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.lt_voice_note">Те же голосовые функции, что в Plus, только для этого мемориала.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon2">Анимация фото / видео <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.lt_animation_note"><strong>5</strong> рендеров в месяц для этого мемориала (сбрасывается ежемесячно).</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.lt_family_rag_note"><strong>Не включено</strong> — аватар использует только воспоминания этой страницы. <strong>Только на Plus</strong>.</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_hidden">Скрытые связи</span><span class="pricing-li-note" data-i18n="pricing.lt_hidden_note"><strong>Не включено</strong> — полный поиск связей остаётся на <strong>Plus</strong>.</span></span></li>
         </ul>
+        <div class="pricing-soon-block">
+          <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span><span data-i18n="pricing.lt_soon_summary">Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.</span>
+          <button type="button" class="pricing-soon-waitlist-btn js-waitlist-open" data-i18n="pricing.soon_waitlist_cta">Записаться в лист ожидания →</button>
+        </div>
         <div class="pricing-card-footer">
         <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.lt_cta">Зарезервировать «Вечный»</a>
         <p class="pricing-note" data-i18n="pricing.lt_note">Один платёж, без подписки — все AI-функции для одной страницы навсегда.</p>
@@ -1357,12 +1408,14 @@
         <ul class="pricing-features">
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_memorials">Мемориалы</span><span class="pricing-li-note" data-i18n="pricing.ltpro_memorials_note"><strong>1</strong> страница — закреплена за этим мемориалом.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_chat">Чат с аватаром</span><span class="pricing-li-note" data-i18n="pricing.ltpro_chat_note"><strong>200 сообщений в месяц</strong> на этой странице.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_voice_soon4">Клонирование голоса и синтез речи <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.ltpro_voice_note">Те же голосовые функции, что в Plus, для этого мемориала.</span></span></li>
-          <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_animation_soon3">Анимация фото / видео <span class="badge-soon">Скоро</span></span></span><span class="pricing-li-note" data-i18n="pricing.ltpro_animation_note"><strong>15</strong> рендеров в месяц.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_live_sessions">Сессии живого аватара</span><span class="pricing-li-note" data-i18n="pricing.ltpro_live_sessions_note">Предоплаченный пакет из <strong>100 сессий</strong> — никогда не сбрасывается. Докупайте по необходимости.</span></span></li>
           <li class="has-sub"><span class="check">✓</span><span><span class="pricing-li-title" data-i18n="pricing.feat_storage">Хранилище медиа</span><span class="pricing-li-note" data-i18n="pricing.ltpro_storage_note"><strong>10 ГБ</strong> для этого мемориала.</span></span></li>
           <li class="dim"><span class="check">—</span><span><span class="pricing-li-title" data-i18n="pricing.feat_family_rag">Семейный поиск (Family RAG)</span><span class="pricing-li-note" data-i18n="pricing.ltpro_family_rag_note">Не включено — аватар использует только воспоминания этой страницы.</span></span></li>
         </ul>
+        <div class="pricing-soon-block">
+          <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span><span data-i18n="pricing.ltpro_soon_summary">Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.</span>
+          <button type="button" class="pricing-soon-waitlist-btn js-waitlist-open" data-i18n="pricing.soon_waitlist_cta">Записаться в лист ожидания →</button>
+        </div>
         <div class="pricing-card-footer">
         <a href="/app/register" class="btn btn-outline btn-lg pricing-cta" data-i18n="pricing.ltpro_cta">Зарезервировать «Вечный Pro»</a>
         <p class="pricing-note" data-i18n="pricing.ltpro_note">Один платёж — получите 100 сессий живого аватара, которые никогда не истекают.</p>
@@ -1380,28 +1433,28 @@
     <h2 class="section-title reveal reveal-delay-1" data-i18n="faq.title">Вопросы, которые нам часто задают.</h2>
     <div class="faq-wrap">
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q1">Не является ли это неуважением к умершему?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a1">Мы создали vspomin.ai вокруг идеи сохранения, а не имитации. Аватар говорит только то, что явно загрузила ваша семья — это сосуд для настоящих воспоминаний, а не замена человека. Многие семьи находят это глубоко исцеляющим способом оставаться на связи с тем, кого они любили.</div></div>
+        <button type="button" class="faq-q" id="faq-q1-trigger" aria-expanded="false" aria-controls="faq-a1-panel"><span data-i18n="faq.q1">Не является ли это неуважением к умершему?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a1-panel" role="region" aria-labelledby="faq-q1-trigger"><div class="faq-a-inner" data-i18n="faq.a1">Мы создали vspomin.ai вокруг идеи сохранения, а не имитации. Аватар говорит только то, что явно загрузила ваша семья — это сосуд для настоящих воспоминаний, а не замена человека. Многие семьи находят это глубоко исцеляющим способом оставаться на связи с тем, кого они любили.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q2">Что если AI скажет что-то несвойственное человеку?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a2">Аватар отвечает только на основе загруженных воспоминаний — он не придумывает факты и не фабрикует события. Вы можете проверять все ответы, и если что-то кажется неверным, просто добавьте или измените воспоминания, чтобы направить аватар. Контроль всегда остаётся за вами.</div></div>
+        <button type="button" class="faq-q" id="faq-q2-trigger" aria-expanded="false" aria-controls="faq-a2-panel"><span data-i18n="faq.q2">Что если AI скажет что-то несвойственное человеку?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a2-panel" role="region" aria-labelledby="faq-q2-trigger"><div class="faq-a-inner" data-i18n="faq.a2">Аватар отвечает только на основе загруженных воспоминаний — он не придумывает факты и не фабрикует события. Вы можете проверять все ответы, и если что-то кажется неверным, просто добавьте или измените воспоминания, чтобы направить аватар. Контроль всегда остаётся за вами.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q3">Могут ли несколько членов семьи добавлять воспоминания?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a3">Да. Поделитесь ссылкой-приглашением с любым членом семьи — они могут добавлять фото, видео и текстовые воспоминания без регистрации. Это создано специально для сбора воспоминаний на похоронах, встречах семьи или от родственников по всему миру.</div></div>
+        <button type="button" class="faq-q" id="faq-q3-trigger" aria-expanded="false" aria-controls="faq-a3-panel"><span data-i18n="faq.q3">Могут ли несколько членов семьи добавлять воспоминания?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a3-panel" role="region" aria-labelledby="faq-q3-trigger"><div class="faq-a-inner" data-i18n="faq.a3">Да. Поделитесь ссылкой-приглашением с любым членом семьи — они могут добавлять фото, видео и текстовые воспоминания без регистрации. Это создано специально для сбора воспоминаний на похоронах, встречах семьи или от родственников по всему миру.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q4">Как работает клонирование голоса? Нужна ли студийная запись?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a4">Подойдёт любая чёткая запись — голосовое сообщение, отрывок из домашнего видео, голос на автоответчике. Загрузите хотя бы одну минуту, и мы создадим голосовую модель. Студия не нужна — чем больше аудио вы предоставите, тем точнее звучание.</div></div>
+        <button type="button" class="faq-q" id="faq-q4-trigger" aria-expanded="false" aria-controls="faq-a4-panel"><span data-i18n="faq.q4">Как работает клонирование голоса? Нужна ли студийная запись?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a4-panel" role="region" aria-labelledby="faq-q4-trigger"><div class="faq-a-inner" data-i18n="faq.a4">Подойдёт любая чёткая запись — голосовое сообщение, отрывок из домашнего видео, голос на автоответчике. Загрузите хотя бы одну минуту, и мы создадим голосовую модель. Студия не нужна — чем больше аудио вы предоставите, тем точнее звучание.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q5">Что происходит с моими данными при отмене?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a5">Экспортируйте воспоминания, фото и медиа из приложения, когда это будет доступно. Платные тарифы пока не активны; при запуске оплаты условия отмены и хранения данных будут опубликованы заранее, до любого списания средств.</div></div>
+        <button type="button" class="faq-q" id="faq-q5-trigger" aria-expanded="false" aria-controls="faq-a5-panel"><span data-i18n="faq.q5">Что происходит с моими данными при отмене?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a5-panel" role="region" aria-labelledby="faq-q5-trigger"><div class="faq-a-inner" data-i18n="faq.a5">Экспортируйте воспоминания, фото и медиа из приложения, когда это будет доступно. Платные тарифы пока не активны; при запуске оплаты условия отмены и хранения данных будут опубликованы заранее, до любого списания средств.</div></div>
       </div>
       <div class="faq-item reveal">
-        <div class="faq-q"><span data-i18n="faq.q6">Нужны ли мне технические навыки для настройки?</span> <span class="faq-icon">+</span></div>
-        <div class="faq-a"><div class="faq-a-inner" data-i18n="faq.a6">Совсем нет. Загрузите фото, напишите воспоминание — остальное сделает AI. У большинства семей рабочий, разговаривающий мемориал готов за 10 минут. Никакого кода, настроек или технических знаний не требуется.</div></div>
+        <button type="button" class="faq-q" id="faq-q6-trigger" aria-expanded="false" aria-controls="faq-a6-panel"><span data-i18n="faq.q6">Нужны ли мне технические навыки для настройки?</span> <span class="faq-icon" aria-hidden="true">+</span></button>
+        <div class="faq-a" id="faq-a6-panel" role="region" aria-labelledby="faq-q6-trigger"><div class="faq-a-inner" data-i18n="faq.a6">Совсем нет. Загрузите фото, напишите воспоминание — остальное сделает AI. У большинства семей рабочий, разговаривающий мемориал готов за 10 минут. Никакого кода, настроек или технических знаний не требуется.</div></div>
       </div>
     </div>
   </div>
@@ -1507,6 +1560,8 @@ var LANDING_I18N = {
     "nav.faq": "Вопросы",
     "nav.signin": "Войти",
     "nav.getstarted": "Начать бесплатно",
+    "nav.toggle_open": "Открыть меню",
+    "nav.toggle_close": "Закрыть меню",
 
     "hero.eyebrow": "Цифровые мемориалы на основе AI",
     "hero.headline": "Поговорите с ними <em>снова.</em><br>Их собственными словами.",
@@ -1742,6 +1797,11 @@ var LANDING_I18N = {
     "pricing.ltpro_family_rag_note": "Не включено — аватар использует только воспоминания этой страницы.",
     "pricing.ltpro_cta": "Зарезервировать «Вечный Pro»",
     "pricing.ltpro_note": "Один платёж — получите 100 сессий живого аватара, которые никогда не истекают.",
+    "pricing.plus_soon_summary": "Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.",
+    "pricing.pro_soon_summary": "Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.",
+    "pricing.lt_soon_summary": "Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.",
+    "pricing.ltpro_soon_summary": "Клонирование голоса и анимация фото/видео ещё не запущены — не входят в этот тариф.",
+    "pricing.soon_waitlist_cta": "Записаться в лист ожидания →",
     "pricing.footnote": "Квоты на чат, анимацию и хранилище сбрасываются ежемесячно. <strong>Вечный мемориал</strong> и <strong>Вечный Pro</strong> — это не подписки, они покрывают одну страницу мемориала бессрочно, пока работает сервис. Сессии живого аватара в пакете «Вечный Pro» никогда не сбрасываются. Полные условия оплаты публикуются при оформлении через Stripe.",
 
     "faq.label": "Вопросы",
@@ -1808,6 +1868,8 @@ var LANDING_I18N = {
     "nav.faq": "FAQ",
     "nav.signin": "Sign in",
     "nav.getstarted": "Get started free",
+    "nav.toggle_open": "Open menu",
+    "nav.toggle_close": "Close menu",
 
     "hero.eyebrow": "AI-Powered Digital Memorials",
     "hero.headline": "Talk to them <em>again.</em><br>In their own words.",
@@ -2043,6 +2105,11 @@ var LANDING_I18N = {
     "pricing.ltpro_family_rag_note": "Not included — avatar uses only this page's memories.",
     "pricing.ltpro_cta": "Reserve Lifetime Pro",
     "pricing.ltpro_note": "One payment — get 100 live avatar sessions that never expire.",
+    "pricing.plus_soon_summary": "Voice cloning and photo/video animation aren't live yet — not included in this plan.",
+    "pricing.pro_soon_summary": "Voice cloning and photo/video animation aren't live yet — not included in this plan.",
+    "pricing.lt_soon_summary": "Voice cloning and photo/video animation aren't live yet — not included in this plan.",
+    "pricing.ltpro_soon_summary": "Voice cloning and photo/video animation aren't live yet — not included in this plan.",
+    "pricing.soon_waitlist_cta": "Join the waitlist →",
     "pricing.footnote": "Chat, animation, and storage quotas reset monthly. <strong>Lifetime</strong> and <strong>Lifetime Pro</strong> are not subscriptions — they cover one memorial page indefinitely while the service operates. Live avatar sessions in the Lifetime Pro pool never reset. Full billing terms ship with Stripe checkout.",
 
     "faq.label": "FAQ",
@@ -2169,6 +2236,10 @@ function applyLandingLang(lang) {
   // Re-label the Hidden Connections graph nodes/edges in the new language
   if (typeof window.__updateHiddenGraphLang === 'function') {
     window.__updateHiddenGraphLang(lang);
+  }
+  // Keep the mobile menu toggle's aria-label in sync with the current open state + language
+  if (typeof window.__updateNavToggleLang === 'function') {
+    window.__updateNavToggleLang(lang);
   }
 }
 
@@ -2323,10 +2394,63 @@ document.querySelectorAll('.faq-q').forEach(q => {
   q.addEventListener('click', () => {
     const item = q.closest('.faq-item');
     const wasOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
-    if (!wasOpen) item.classList.add('open');
+    document.querySelectorAll('.faq-item').forEach(i => {
+      i.classList.remove('open');
+      i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+    });
+    if (!wasOpen) {
+      item.classList.add('open');
+      q.setAttribute('aria-expanded', 'true');
+    }
   });
 });
+
+// ═══ MOBILE NAV MENU ═══
+(function() {
+  const toggle = document.getElementById('nav-toggle');
+  const menu = document.getElementById('nav-links-menu');
+  const backdrop = document.getElementById('nav-backdrop');
+  if (!toggle || !menu || !backdrop) return;
+
+  const labels = { ru: { open: 'Открыть меню', close: 'Закрыть меню' }, en: { open: 'Open menu', close: 'Close menu' } };
+  function currentLang() {
+    return (typeof currentLandingLang !== 'undefined' && currentLandingLang === 'en') ? 'en' : 'ru';
+  }
+  function setToggleLabel() {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-label', labels[currentLang()][isOpen ? 'close' : 'open']);
+  }
+  window.__updateNavToggleLang = setToggleLabel;
+
+  function openMenu() {
+    menu.classList.add('open');
+    backdrop.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    setToggleLabel();
+    const firstLink = menu.querySelector('a');
+    if (firstLink) firstLink.focus();
+  }
+  function closeMenu(returnFocus) {
+    menu.classList.remove('open');
+    backdrop.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    setToggleLabel();
+    if (returnFocus) toggle.focus();
+  }
+
+  setToggleLabel();
+  toggle.addEventListener('click', () => {
+    if (toggle.getAttribute('aria-expanded') === 'true') closeMenu(false);
+    else openMenu();
+  });
+  backdrop.addEventListener('click', () => closeMenu(false));
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => closeMenu(false)));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') closeMenu(true);
+  });
+})();
 
 // ═══ NAV HIDE ON SCROLL DOWN ═══
 (function() {
