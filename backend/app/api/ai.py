@@ -3,9 +3,9 @@ API endpoints для AI-функций: анимация фото и чат с �
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
 import httpx
@@ -813,24 +813,28 @@ async def get_animation_status_endpoint(
 @router.post("/voice/upload")
 async def upload_voice(
     memorial_id: int,
-    audio_file: UploadFile = File(...),
-    voice_name: Optional[str] = None,
-    provider: Optional[str] = None,
+    audio_files: List[UploadFile] = File(...),
+    voice_name: Optional[str] = Form(None),
+    provider: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Загрузить аудио-файл с голосом и создать кастомный клонированный голос.
-    Доступно только на тарифах Plus и Lifetime memorial.
+    Загрузить один или несколько аудио-файлов с голосом и создать кастомный
+    клонированный голос. Доступно только на тарифах Plus и Lifetime memorial.
 
     Args:
+        audio_files: один или несколько образцов голоса (до 20). Несколько
+            разных по интонации чистых записей дают более стабильный и точный клон,
+            чем один файл — используйте это, если у пользователя есть несколько
+            голосовых сообщений (Telegram/WhatsApp/Viber и т.п.).
         provider: "elevenlabs" | "fish_audio". По умолчанию — settings.TTS_PROVIDER.
             Провайдер сохраняется вместе с voice_id и используется для всех
             последующих TTS-запросов этого мемориала.
 
     Требования к аудио:
-    - Формат: MP3, WAV, M4A
-    - Длительность: минимум 1 минута (рекомендуется)
+    - Формат: MP3, WAV, M4A, OGG/OGA (голосовые из мессенджеров) и т.п.
+    - Суммарная длительность: минимум 1 минута чистой речи (рекомендуется)
     - Качество: без посторонних шумов
     """
     check_tts_access(current_user)
@@ -841,33 +845,51 @@ async def upload_voice(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Memorial not found"
         )
-    
-    # Проверка формата файла
-    if not audio_file.content_type or not audio_file.content_type.startswith("audio/"):
+
+    if not audio_files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an audio file (MP3, WAV, M4A, etc.)"
+            detail="At least one audio file is required"
         )
-    
-    # Сохранение временного файла
+    if len(audio_files) > 20:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Максимум 20 аудио-образцов за раз"
+        )
+
+    # Проверка формата файлов
+    for f in audio_files:
+        if not f.content_type or not f.content_type.startswith("audio/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Все файлы должны быть аудио (MP3, WAV, M4A, OGG и т.п.)"
+            )
+
+    # Сохранение временных файлов
     voice_dir = Path("uploads/voices")
     voice_dir.mkdir(exist_ok=True)
-    
-    file_extension = Path(audio_file.filename).suffix or ".mp3"
-    temp_filename = f"voice_{memorial_id}_{uuid.uuid4().hex}{file_extension}"
-    temp_path = voice_dir / temp_filename
-    
+
+    temp_paths: List[Path] = []
+    for f in audio_files:
+        file_extension = Path(f.filename).suffix or ".mp3"
+        temp_filename = f"voice_{memorial_id}_{uuid.uuid4().hex}{file_extension}"
+        temp_path = voice_dir / temp_filename
+        with open(temp_path, "wb") as out:
+            content = await f.read()
+            out.write(content)
+        temp_paths.append(temp_path)
+
+    def _cleanup():
+        for p in temp_paths:
+            if p.exists():
+                p.unlink()
+
     try:
-        # Сохраняем файл
-        with open(temp_path, "wb") as f:
-            content = await audio_file.read()
-            f.write(content)
-        
         # Создаем кастомный клонированный голос через выбранного провайдера
         voice_provider_final = provider if provider in ("elevenlabs", "fish_audio") else settings.TTS_PROVIDER
         voice_name_final = voice_name or f"{memorial.name} Voice"
         voice_id = await create_custom_voice(
-            audio_file_path=str(temp_path),
+            audio_file_paths=[str(p) for p in temp_paths],
             voice_name=voice_name_final,
             description=f"Custom voice for {memorial.name}",
             provider=voice_provider_final,
@@ -879,22 +901,19 @@ async def upload_voice(
         db.commit()
         db.refresh(memorial)
 
-        # Удаляем временный файл
-        if temp_path.exists():
-            temp_path.unlink()
+        _cleanup()
 
         return {
             "success": True,
             "voice_id": voice_id,
             "voice_name": voice_name_final,
             "voice_provider": voice_provider_final,
+            "samples_used": len(temp_paths),
             "message": f"Голос успешно создан и сохранен для мемориала '{memorial.name}'"
         }
 
     except ValueError as e:
-        # Удаляем временный файл при ошибке
-        if temp_path.exists():
-            temp_path.unlink()
+        _cleanup()
         error_str = str(e)
         # Понятное сообщение для платного плана ElevenLabs
         if "paid_plan_required" in error_str or "payment_required" in error_str or "instant_voice_cloning" in error_str:
@@ -912,9 +931,7 @@ async def upload_voice(
             detail=error_str
         )
     except Exception as e:
-        # Удаляем временный файл при ошибке
-        if temp_path.exists():
-            temp_path.unlink()
+        _cleanup()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating custom voice: {str(e)}"

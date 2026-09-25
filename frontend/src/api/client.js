@@ -126,9 +126,10 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  uploadVoice: (memorialId, file, voiceName) => {
+  uploadVoice: (memorialId, files, voiceName) => {
     const formData = new FormData()
-    formData.append('audio_file', file)
+    const fileList = Array.isArray(files) ? files : [files]
+    fileList.forEach((file) => formData.append('audio_files', file))
     if (voiceName) {
       formData.append('voice_name', voiceName)
     }

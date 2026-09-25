@@ -76,6 +76,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
   const [voiceName, setVoiceName] = useState('')
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
   const [showVoicePanel, setShowVoicePanel] = useState(false)
+  const [voiceSamples, setVoiceSamples] = useState([]) // { id, file, label }[] — накопленные образцы перед отправкой
   const [elQuota, setElQuota] = useState(null)
   const [elQuotaErr, setElQuotaErr] = useState(null)
   const messagesEndRef = useRef(null)
@@ -186,31 +187,48 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     checkVoice()
   }, [memorialId])
 
-  const handleVoiceUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    if (!file.type.startsWith('audio/')) {
+  const handleVoiceUpload = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    const invalid = files.find((f) => !f.type.startsWith('audio/'))
+    if (invalid) {
       alert(t('chat.voice_file_type_error'))
       return
     }
-    await uploadVoiceFile(file)
+    setVoiceSamples((prev) => [
+      ...prev,
+      ...files.map((file) => ({ id: `${Date.now()}_${file.name}_${Math.random()}`, file, label: file.name })),
+    ])
     e.target.value = ''
   }
 
-  const handleVoiceRecordedUpload = async () => {
+  const handleAddRecording = () => {
     if (!voiceRecorder.audioBlob) return
-    const file = new File([voiceRecorder.audioBlob], 'voice_clone.webm', { type: 'audio/webm' })
-    await uploadVoiceFile(file)
+    const file = new File([voiceRecorder.audioBlob], `voice_clone_${voiceSamples.length + 1}.webm`, { type: 'audio/webm' })
+    setVoiceSamples((prev) => [
+      ...prev,
+      { id: `${Date.now()}_rec_${Math.random()}`, file, label: t('chat.voice_recording_label', { n: String(prev.length + 1) }) },
+    ])
     voiceRecorder.reset()
   }
 
-  const uploadVoiceFile = async (file) => {
+  const handleRemoveSample = (id) => {
+    setVoiceSamples((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  const handleCloneVoice = async () => {
+    if (voiceSamples.length === 0) return
     setUploadingVoice(true)
     try {
-      const response = await aiAPI.uploadVoice(memorialId, file, voiceName || undefined)
+      const response = await aiAPI.uploadVoice(
+        memorialId,
+        voiceSamples.map((s) => s.file),
+        voiceName || undefined
+      )
       alert(response.data.message || t('chat.voice_clone_success'))
       setHasCustomVoice(true)
       setVoiceName('')
+      setVoiceSamples([])
       setShowVoicePanel(false)
     } catch (err) {
       const status = err.response?.status
@@ -465,7 +483,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
         <div className="voice-clone-panel">
           <div className="voice-clone-panel-header">
             <h3>🎤 {t('chat.voice_panel_title')}</h3>
-            <button type="button" className="btn-close-panel" onClick={() => { setShowVoicePanel(false); voiceRecorder.reset() }} aria-label={t('chat.voice_panel_close')}>✕</button>
+            <button type="button" className="btn-close-panel" onClick={() => { setShowVoicePanel(false); voiceRecorder.reset(); setVoiceSamples([]) }} aria-label={t('chat.voice_panel_close')}>✕</button>
           </div>
           <p className="voice-clone-hint">
             {t('chat.voice_hint')}
@@ -502,10 +520,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
                     <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={handleVoiceRecordedUpload}
+                      onClick={handleAddRecording}
                       disabled={uploadingVoice}
                     >
-                      {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : `✅ ${t('chat.voice_use_recording')}`}
+                      ➕ {t('chat.voice_add_sample')}
                     </button>
                     <button type="button" className="btn btn-secondary" onClick={voiceRecorder.reset}>
                       {t('chat.voice_rerecord')}
@@ -517,12 +535,13 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
             <div className="voice-clone-divider">{t('chat.voice_or')}</div>
             <div className="voice-clone-option">
               <p className="option-label">{t('chat.voice_upload_label')} <span className="option-hint">{t('chat.voice_upload_hint')}</span>:</p>
-              <p className="option-sublabel">MP3, WAV, M4A</p>
+              <p className="option-sublabel">MP3, WAV, M4A, OGG…</p>
               <label className="btn-upload-voice">
                 {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : `📁 ${t('chat.voice_choose_file')}`}
                 <input
                   type="file"
                   accept="audio/*"
+                  multiple
                   onChange={handleVoiceUpload}
                   disabled={uploadingVoice}
                   style={{ display: 'none' }}
@@ -530,6 +549,36 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
               </label>
             </div>
           </div>
+
+          {voiceSamples.length > 0 && (
+            <div className="voice-clone-samples">
+              <p className="option-label">{t('chat.voice_samples_count', { n: String(voiceSamples.length) })}</p>
+              <ul className="voice-samples-list">
+                {voiceSamples.map((s) => (
+                  <li key={s.id} className="voice-samples-item">
+                    <span className="voice-samples-item-label">🎵 {s.label}</span>
+                    <button
+                      type="button"
+                      className="btn-remove-sample"
+                      onClick={() => handleRemoveSample(s.id)}
+                      disabled={uploadingVoice}
+                      aria-label={t('chat.voice_remove_sample')}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="btn btn-primary btn-clone-voice"
+                onClick={handleCloneVoice}
+                disabled={uploadingVoice}
+              >
+                {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : `✅ ${t('chat.voice_clone_submit', { n: String(voiceSamples.length) })}`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

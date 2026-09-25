@@ -656,6 +656,62 @@
   flex-wrap: wrap;
 }
 
+.voice-clone-samples {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.voice-samples-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.voice-samples-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.voice-samples-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-remove-sample {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.15rem 0.3rem;
+}
+
+.btn-remove-sample:hover { color: #f87171; }
+
+.btn-clone-voice { width: 100%; }
+
+.avatar-chat--fullscreen .voice-clone-samples { border-top-color: rgba(255,255,255,0.12); }
+.avatar-chat--fullscreen .voice-samples-item {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(250,248,245,0.7);
+}
+
 /* ─── Messages ──────────────────────────────────────────────────── */
 .chat-messages {
   flex: 1;
