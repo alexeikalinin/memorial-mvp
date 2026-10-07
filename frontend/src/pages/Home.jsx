@@ -7,6 +7,7 @@ import CreateMemorialHeroButton from '../components/CreateMemorialHeroButton'
 import CreateMemorialTutorial from '../components/CreateMemorialTutorial'
 import { isDeceasedMemorial } from '../utils/memorialStatus'
 import logoMark from '../assets/logo-mark.png'
+import logoWordmark from '../assets/wordmark-dark.png'
 import './Home.css'
 
 async function waitForHeroFonts() {
@@ -144,7 +145,10 @@ function Home() {
       <section className={`hero${showDemoRevealStrip ? ' hero--with-demo-reveal' : ''}`}>
         <div className="hero-inner">
           <div className={`hero-text${heroFontsReady ? ' hero-text--fonts-ready' : ''}`}>
-            <img src={logoMark} alt="" className="hero-logo-mark" />
+            <div className="hero-brand" aria-label="vspomin.ai">
+              <img src={logoMark} alt="" className="hero-logo-mark" />
+              <img src={logoWordmark} alt="vspomin.ai" className="hero-logo-wordmark" />
+            </div>
             <h1 className="hero-tagline">
               {t('home.tagline_plain')}<br />
               <em>{t('home.tagline_em')}</em>

@@ -50,10 +50,25 @@
 }
 
 .logo-mark {
-  height: 32px;
+  height: 42px;
   width: auto;
   flex-shrink: 0;
   display: block;
+}
+
+.logo-wordmark {
+  width: 156px;
+  height: auto;
+  display: block;
+  filter: brightness(0.65);
+}
+
+.logo-mark { filter: brightness(0.8); }
+
+@media (max-width: 640px) {
+  .logo-mark { height: 32px; }
+  .logo-wordmark { width: 120px; }
+  .logo { gap: 8px; }
 }
 
 /* Nav */

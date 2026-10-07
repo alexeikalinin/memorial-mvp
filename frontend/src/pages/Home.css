@@ -66,8 +66,8 @@
 .hero-inner {
   display: flex;
   align-items: center;
-  gap: 6rem;
-  max-width: 1200px;
+  gap: clamp(1.5rem, 3vw, 3rem);
+  max-width: 1040px;
   margin: 0 auto;
   padding: 5rem 1.5rem 5rem;
   width: 100%;
@@ -76,7 +76,8 @@
 }
 
 .hero-text {
-  flex: 1 1 55%;
+  flex: 0 1 740px;
+  min-width: 0;
   opacity: 0;
   transition: opacity 0.28s var(--ease);
   pointer-events: none;
@@ -93,11 +94,23 @@
 }
 
 /* Logo mark above headline */
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 1.75rem;
+}
+
+.hero-logo-wordmark {
+  width: clamp(180px, 25vw, 280px);
+  height: auto;
+}
+
 .hero-logo-mark {
   display: block;
-  height: 72px;
+  height: 64px;
   width: auto;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 /* Headline */
@@ -142,23 +155,26 @@
 /* Candle animations (keep existing) */
 @keyframes flicker {
   0%, 100% { transform: scaleX(1) scaleY(1) rotate(-1deg); }
-  25%       { transform: scaleX(0.95) scaleY(1.04) rotate(1deg); }
-  50%       { transform: scaleX(1.03) scaleY(0.97) rotate(0deg); }
-  75%       { transform: scaleX(0.97) scaleY(1.02) rotate(-2deg); }
+  17% { transform: scaleX(0.94) scaleY(1.05) rotate(1.5deg); }
+  43% { transform: scaleX(1.03) scaleY(0.98) rotate(-0.5deg); }
+  68% { transform: scaleX(0.97) scaleY(1.03) rotate(-2deg); }
+  83% { transform: scaleX(1.02) scaleY(1.01) rotate(0.8deg); }
 }
 
 @keyframes glowPulse {
-  0%, 100% { opacity: 0.08; fill: rgba(212, 160, 86, 0.4); }
-  50%       { opacity: 0.28; fill: rgba(232, 180, 100, 0.5); }
+  0%, 100% { opacity: 0.5; }
+  38% { opacity: 0.8; }
+  71% { opacity: 0.62; }
 }
 
 .candle-flame {
-  transform-origin: 60px 85px;
-  animation: flicker 2.4s ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 60px 88px;
+  animation: flicker 3.7s ease-in-out infinite;
 }
 
 .candle-glow {
-  animation: glowPulse 2.4s ease-in-out infinite;
+  animation: glowPulse 5.8s ease-in-out infinite;
 }
 
 @keyframes heroScrollCueIn {
@@ -189,6 +205,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .candle-flame, .candle-glow { animation: none; }
   .hero-text {
     transition: none;
   }
@@ -724,8 +741,9 @@
   }
 
   .hero-inner {
-    flex-direction: column-reverse;
-    gap: 2.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 70px;
+    gap: 1rem;
     padding: 3rem 1.5rem 4rem;
   }
 
@@ -741,6 +759,15 @@
     font-size: 2.2rem;
     padding-left: 1rem;
   }
+
+  .hero-text { display: contents; }
+  .hero-brand { grid-column: 1 / -1; grid-row: 1; }
+  .hero-tagline { grid-column: 1; grid-row: 2; }
+  .hero-visual { grid-column: 2; grid-row: 2; align-self: center; }
+  .hero-subtitle, .hero-cta { grid-column: 1 / -1; }
+  .hero-logo-mark { height: 44px; }
+  .hero-logo-wordmark { width: min(210px, 55vw); }
+  .hero-brand { gap: 12px; }
 
   .hero-visual svg {
     width: 70px;
