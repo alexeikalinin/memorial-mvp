@@ -190,6 +190,7 @@ function MemorialPublic() {
         {memorial.cover_photo_id ? (
           <ApiMediaImage
             mediaId={memorial.cover_photo_id}
+            portrait={{ memorialId: memorial.id, kind: 'cover', version: JSON.stringify(memorial.portrait_settings) }}
             thumbnail={null}
             alt={memorial.name}
             className="public-hero-img"
@@ -288,6 +289,7 @@ function MemorialPublic() {
               <AvatarChat
                 memorialId={id}
                 coverPhotoId={memorial.cover_photo_id}
+                portraitSettings={memorial.portrait_settings}
                 memorialName={memorial.name}
                 onMessageSent={handleAnonChatMessage}
               />

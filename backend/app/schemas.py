@@ -2,8 +2,8 @@
 Pydantic схемы для валидации и сериализации данных.
 """
 from __future__ import annotations
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 from app.models import MediaType, RelationshipType
 
@@ -115,6 +115,7 @@ class MemorialResponse(MemorialBase):
     voice_provider: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
+    portrait_settings: Optional[Dict[str, Any]] = None
     tree_layout_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -212,6 +213,7 @@ class MemorialListItem(BaseModel):
     media_count: int = 0
     language: str = "ru"
     created_at: datetime
+    updated_at: Optional[datetime] = None
     is_demo_seed: bool = False  # EN демо из en_memorials_manifest (скрыть на главной по умолчанию)
 
 
@@ -506,3 +508,22 @@ class WaitlistSignupResponse(BaseModel):
     message: str
     already_registered: bool = False
 
+
+
+class PortraitCrop(BaseModel):
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    width: float = Field(gt=0, le=1)
+    height: float = Field(gt=0, le=1)
+    rotation: Literal[0, 90, 180, 270] = 0
+
+    @model_validator(mode="after")
+    def within_image(self):
+        if self.x + self.width > 1.000001 or self.y + self.height > 1.000001:
+            raise ValueError("Crop must stay inside the image")
+        return self
+
+
+class SetPortraitRequest(BaseModel):
+    media_id: Optional[int] = None
+    crop: Optional[PortraitCrop] = None

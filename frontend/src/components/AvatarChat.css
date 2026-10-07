@@ -1268,3 +1268,5 @@
   display: flex;
   align-items: center;
 }
+
+.avatar-portrait-edit{position:absolute;left:50%;transform:translateX(-50%);bottom:70px;z-index:2;border:1px solid #bda788;background:rgba(36,28,20,.87);color:#fff2df;padding:10px 14px;font-size:12px;border-radius:20px;cursor:pointer;max-width:90%;white-space:nowrap}.avatar-portrait-edit:focus-visible{outline:2px solid #d6b77d;outline-offset:3px}

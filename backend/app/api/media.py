@@ -9,7 +9,7 @@ import mimetypes
 
 from app.db import get_db
 from app.i18n import get_lang, tr
-from app.models import Media, MediaType
+from app.models import Media, MediaType, Memorial
 from app.config import settings
 from app.services.s3_service import get_public_url, get_s3_client
 from app.services.media_service import prepare_avatar_reference
@@ -61,6 +61,10 @@ def get_avatar_reference(media_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Media not found")
     if media.media_type != MediaType.PHOTO:
         raise HTTPException(status_code=400, detail="Avatar reference must be a photo")
+    return _portrait_response(media)
+
+
+def _portrait_response(media, crop=None):
     source_path = _resolve_local_path(media.file_path)
     if source_path.is_file():
         source = source_path.read_bytes()
@@ -77,10 +81,27 @@ def get_avatar_reference(media_id: int, db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=404, detail="Original photo not found")
     try:
-        reference = prepare_avatar_reference(source)
+        reference = prepare_avatar_reference(source, crop)
     except Exception:
         raise HTTPException(status_code=422, detail="Could not prepare the avatar photo; choose another image")
     return Response(reference, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+
+@router.get("/portrait/{memorial_id}/{kind}.jpg")
+def get_memorial_portrait(memorial_id: int, kind: str, db: Session = Depends(get_db)):
+    if kind not in ("cover", "avatar"):
+        raise HTTPException(status_code=400, detail="Unknown portrait type")
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+    options = memorial.portrait_settings or {}
+    selected = options.get("avatar") if kind == "avatar" else None
+    media_id = selected.get("media_id") if selected else memorial.cover_photo_id
+    crop = selected.get("crop") if selected else options.get("cover", {}).get("crop")
+    media = db.query(Media).filter(Media.id == media_id, Media.memorial_id == memorial_id).first()
+    if not media or media.media_type != MediaType.PHOTO:
+        raise HTTPException(status_code=404, detail="Portrait photo not found")
+    return _portrait_response(media, crop)
 
 
 @router.get("/{media_id_path:path}")  # Используем path для поддержки расширений

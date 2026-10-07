@@ -693,3 +693,5 @@
   font-family: monospace;
 }
 
+
+.memorial-hero-media{position:relative}.memorial-photo-edit{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:2;width:max-content;max-width:95%;border:1px solid #bda788;background:rgba(36,28,20,.87);color:#fff2df;font-size:12px;padding:9px 12px;border-radius:20px;cursor:pointer}.memorial-photo-edit:focus-visible{outline:2px solid #d6b77d;outline-offset:3px}

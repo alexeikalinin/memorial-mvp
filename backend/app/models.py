@@ -85,6 +85,7 @@ class Memorial(Base):
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     language = Column(String(5), default="ru", nullable=False, server_default="ru")  # "ru" | "en"
+    portrait_settings = Column(JSON, nullable=True)  # cover crop + optional independent avatar source/crop
     tree_layout_json = Column(JSON, nullable=True)  # {"nodePositions": {"memId": {"x": 0, "y": 0}}, "version": 1}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

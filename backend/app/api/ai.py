@@ -615,11 +615,12 @@ async def avatar_chat(
         # Запуск анимации говорящей головы (async, опционально)
         animation_task_id = None
         animation_provider = None
-        if audio_url and memorial.cover_photo_id:
+        avatar_source_id = (memorial.portrait_settings or {}).get("avatar", {}).get("media_id") or memorial.cover_photo_id
+        if audio_url and avatar_source_id:
             try:
-                cover_media = db.query(Media).filter(Media.id == memorial.cover_photo_id).first()
+                cover_media = db.query(Media).filter(Media.id == avatar_source_id).first()
                 if cover_media:
-                    public_image_url = f"{(settings.PUBLIC_API_URL or 'http://localhost:8000').rstrip('/')}/api/v1/media/avatar/{cover_media.id}.jpg"
+                    public_image_url = f"{(settings.PUBLIC_API_URL or 'http://localhost:8000').rstrip('/')}/api/v1/media/portrait/{memorial.id}/avatar.jpg"
                     # Формируем публичный audio_url для D-ID (нужен абсолютный URL)
                     if audio_url.startswith("/"):
                         public_audio_url = f"{settings.PUBLIC_API_URL}{audio_url}"

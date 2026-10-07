@@ -2,6 +2,9 @@
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## [2026-10-07] Выбор портретов, кадрирование и личный альбом
+По запросу пользователя реализованы PhotoPortraitEditor (выбор из альбома, прямая загрузка, zoom/pan/rotation/reset, круглое preview для memorial), отдельные crop/source metadata в memorial.portrait_settings JSON, защищённый PATCH /memorials/{id}/portraits/{cover|avatar}, derived JPEG rendering. Header/cards/public cover используют crop; chat avatar следует за cover до отдельной настройки, independent avatar можно вернуть к cover. Добавлена additive startup миграция JSON; удаления media очищают ссылки. Оригиналы не перезаписываются. MediaGallery убирает UI оживления/polling, поддерживает multi upload, warm candle photo viewer с arrows/swipe/Escape/focus trap/reduced motion; видео/audio сохраняются. Backend HeyGen сохранён. Проверки: 15 tests passed + исправленный access/deletion test; отдельный portrait suite 3 passed, общая сборка passed, lint новых editor/gallery компонентов passed. Legacy lint ошибок в старых компонентах не исправляли. Production/browser verification далее; Fish видео generation всё ещё не интегрировано.
+
 ## [2026-10-07] Стандарт фото — production подтверждён
 Коммит 3bcb9b7 push main выполнен. Автоматический Railway deploy 976c2947-0d0b-44d8-bcf9-a60af4c9f35b SUCCESS, Vercel dpl_E8psGALHKA94z1kv7jMCVsNEvDjn Ready/Production. GET референса публичного demo media 37 вернул 200: JPEG RGB 600x600, ICC есть, EXIF нет (без апскейла). Chrome на /app/memorials/10?tab=chat показывает подготовленную картинку. Скриншот /private/tmp/avatar-photo-standard-web.png. Генерацию видео в этой проверке не запускали. Fish video transport остаётся отдельной незавершённой интеграцией.
 

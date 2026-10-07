@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams, useLocation } from 'react-rout
 import { memorialsAPI, invitesAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useLanguage } from '../contexts/LanguageContext'
+import PhotoPortraitEditor from '../components/PhotoPortraitEditor'
 import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
@@ -27,6 +28,7 @@ function MemorialDetail() {
   const [activeTab, setActiveTab] = useState('media')
   const [mountedTabs, setMountedTabs] = useState(new Set(['media']))
   const [showTour, setShowTour] = useState(false)
+  const [portraitEditor, setPortraitEditor] = useState(null)
   const [editing, setEditing] = useState(false)
   const [editFormData, setEditFormData] = useState({
     name: '',
@@ -108,7 +110,7 @@ function MemorialDetail() {
 
   const loadMemorial = async () => {
     try {
-      setLoading(true)
+      if (!memorial) setLoading(true)
       const response = await memorialsAPI.get(id)
       setMemorial(response.data)
       // Заполняем форму редактирования
@@ -166,13 +168,11 @@ function MemorialDetail() {
     a.click()
   }
 
-  const handleSetCover = async (mediaId) => {
-    try {
-      await memorialsAPI.setCover(id, mediaId)
-      await loadMemorial()
-    } catch (err) {
-      alert(err.response?.data?.detail || t('detail.cover_error'))
-    }
+  const handleSetCover = (mediaId) => setPortraitEditor({ kind: 'cover', mediaId })
+  const openAvatarEditor = () => setPortraitEditor({ kind: 'avatar' })
+  const handlePortraitSaved = async (saved) => {
+    setMemorial((previous) => ({ ...previous, ...saved }))
+    setPortraitEditor(null)
   }
 
   const handleEditDateBlur = (field) => (e) => {
@@ -388,9 +388,11 @@ function MemorialDetail() {
       {/* ── Hero Header (portrait left, name + actions right) ── */}
       <div className="memorial-hero">
         <div className="memorial-hero-media">
+          {canEdit && <button type="button" className="memorial-photo-edit" onClick={() => setPortraitEditor({ kind: 'cover' })}>{t(memorial.cover_photo_id ? 'portraits.change_cover' : 'portraits.add_cover')}</button>}
           {memorial.cover_photo_id ? (
             <ApiMediaImage
               mediaId={memorial.cover_photo_id}
+              portrait={{ memorialId: id, kind: 'cover', version: JSON.stringify(memorial.portrait_settings) }}
               thumbnail={null}
               alt={memorial.name}
               className="memorial-hero-img"
@@ -600,6 +602,7 @@ function MemorialDetail() {
               onReload={loadMemorial}
               coverPhotoId={memorial.cover_photo_id}
               onSetCover={canEdit ? handleSetCover : undefined}
+              refreshKey={memorial.updated_at}
               canEdit={canEdit}
             />
           </div>
@@ -615,6 +618,8 @@ function MemorialDetail() {
               memorialId={id}
               coverPhotoId={memorial.cover_photo_id}
               memorialName={memorial.name}
+              portraitSettings={memorial.portrait_settings}
+              onEditPortrait={canEdit ? openAvatarEditor : undefined}
             />
           </div>
         )}
@@ -629,6 +634,8 @@ function MemorialDetail() {
           </div>
         )}
       </div>
+
+      {portraitEditor && <PhotoPortraitEditor memorial={memorial} kind={portraitEditor.kind} initialMediaId={portraitEditor.mediaId} onClose={() => { setPortraitEditor(null); loadMemorial() }} onSaved={handlePortraitSaved} />}
 
       {showQRModal && (
         <div className="modal-overlay" onClick={() => setShowQRModal(false)}>

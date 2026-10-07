@@ -1,430 +1,187 @@
-import { useState, useEffect } from 'react'
-import { memorialsAPI, aiAPI, getMediaUrl as getApiMediaUrl } from '../api/client'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
+import { memorialsAPI, getMediaUrl as getApiMediaUrl } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
 import ApiMediaImage from './ApiMediaImage'
 import './MediaGallery.css'
 
-function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit = true }) {
+function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit = true, refreshKey }) {
   const { t } = useLanguage()
   const [media, setMedia] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
-  const [animating, setAnimating] = useState(null)
-  const [animationStatus, setAnimationStatus] = useState({}) // { mediaId: { status, taskId, provider } }
+  const [error, setError] = useState(null)
+  const [viewerId, setViewerId] = useState(null)
+  const uploadRef = useRef(null)
+  const dialogRef = useRef(null)
+  const closeRef = useRef(null)
+  const touchRef = useRef(null)
+  const photos = useMemo(() => media.filter(item => item.media_type === 'photo'), [media])
+  const viewerIndex = photos.findIndex(item => item.id === viewerId)
+  const viewerPhoto = photos[viewerIndex]
+  const viewerOpen = Boolean(viewerPhoto)
 
-  useEffect(() => {
-    loadMedia()
+  const loadMedia = useCallback(async () => {
+    const response = await memorialsAPI.getMedia(memorialId)
+    setMedia(Array.isArray(response.data) ? response.data : [])
   }, [memorialId])
 
-  const loadMedia = async () => {
-    try {
-      setLoading(true)
-      const response = await memorialsAPI.getMedia(memorialId)
-      setMedia(Array.isArray(response.data) ? response.data : [])
-    } catch (err) {
-      console.error('Error loading media:', err)
-      setMedia([])
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    setViewerId(null)
+    memorialsAPI.getMedia(memorialId).then(response => {
+      if (!cancelled) setMedia(Array.isArray(response.data) ? response.data : [])
+    }).catch(() => {
+      if (!cancelled) { setMedia([]); setError({ key: 'media.load_error' }) }
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [memorialId, refreshKey])
+
+  const movePhoto = useCallback((direction) => {
+    setViewerId(current => {
+      const index = photos.findIndex(item => item.id === current)
+      return photos.length ? photos[(index + direction + photos.length) % photos.length].id : null
+    })
+  }, [photos])
+
+  useEffect(() => {
+    if (!viewerOpen) return undefined
+    const previousFocus = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+    const handleKey = event => {
+      if (event.key === 'Escape') { event.preventDefault(); setViewerId(null) }
+      if (event.key === 'ArrowLeft') { event.preventDefault(); movePhoto(-1) }
+      if (event.key === 'ArrowRight') { event.preventDefault(); movePhoto(1) }
+      if (event.key === 'Tab') {
+        const controls = [...(dialogRef.current?.querySelectorAll('button:not([disabled]), [href], [tabindex="0"]') || [])]
+        const first = controls[0]
+        const last = controls[controls.length - 1]
+        if (!controls.includes(document.activeElement)) { event.preventDefault(); first?.focus() }
+        else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
     }
-  }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      document.body.style.overflow = previousOverflow
+      if (previousFocus?.isConnected) previousFocus.focus()
+    }
+  }, [viewerOpen, movePhoto])
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
+  const handleFileUpload = async event => {
+    const input = event.target
+    const files = Array.from(input.files || [])
+    if (!files.length) return
     setUploading(true)
-    try {
-      await memorialsAPI.uploadMedia(memorialId, file)
-      await loadMedia()
-      if (onReload) onReload()
-    } catch (err) {
-      alert(err.response?.data?.detail || t('media.upload_error'))
-    } finally {
-      setUploading(false)
-      e.target.value = '' // Сброс input
+    setError(null)
+    const failed = []
+    let uploaded = 0
+    for (const file of files) {
+      try { await memorialsAPI.uploadMedia(memorialId, file); uploaded += 1 }
+      catch { failed.push(file.name) }
     }
+    if (failed.length) {
+      setError({ key: 'media.upload_partial', params: { uploaded, total: files.length, files: failed.join(', ') } })
+    }
+    if (uploaded) {
+      try { await loadMedia(); onReload?.() }
+      catch { setError({ key: 'media.load_error' }) }
+    }
+    setUploading(false)
+    input.value = ''
   }
 
-  const handleDelete = async (mediaId) => {
-    if (!window.confirm(t('media.delete_confirm'))) {
-      return
-    }
-
+  const handleDelete = async mediaId => {
+    if (!window.confirm(t('media.delete_confirm'))) return
     try {
       await memorialsAPI.deleteMedia(memorialId, mediaId)
-      // Обновляем список медиа
-      loadMedia()
-      if (onReload) onReload()
-    } catch (err) {
-      const errorDetail = err.response?.data?.detail || t('media.delete_error')
-      alert(`${t('media.error_prefix')} ${errorDetail}`)
-      console.error('Error deleting media:', err)
+      await loadMedia()
+      onReload?.()
+    } catch {
+      setError({ key: 'media.delete_error' })
     }
   }
 
-  const handleAnimate = async (mediaId) => {
-    setAnimating(mediaId)
-    try {
-      const response = await aiAPI.animatePhoto({ media_id: mediaId })
-      const taskId = response.data.task_id
-      const provider = response.data.provider || 'heygen'
-      
-      // Сохраняем статус анимации
-      setAnimationStatus(prev => ({
-        ...prev,
-        [mediaId]: {
-          status: 'pending',
-          taskId: taskId,
-          provider: provider,
-          message: response.data.message || t('media.animation_started')
-        }
-      }))
+  const mediaUrl = item => item.file_url || getApiMediaUrl(item.id)
+  const uploadButton = label => (
+    <button type="button" className="upload-btn" disabled={uploading} onClick={() => uploadRef.current?.click()}>
+      {uploading ? t('media.uploading') : t(label)}
+    </button>
+  )
 
-      // Начинаем polling для проверки статуса
-      startAnimationPolling(mediaId, taskId, provider)
-
-    } catch (err) {
-      const errorDetail = err.response?.data?.detail || t('media.animation_error')
-      let errorMessage = errorDetail
-
-      // Понятное сообщение для ошибки Redis
-      if (errorDetail.includes('Redis') || errorDetail.includes('Celery') || errorDetail.includes('worker')) {
-        errorMessage = t('media.redis_setup_error')
-      }
-
-      alert(errorMessage)
-    } finally {
-      setAnimating(null)
-    }
-  }
-
-  const startAnimationPolling = (mediaId, taskId, provider) => {
-    let attempts = 0
-    const maxAttempts = 120 // 10 минут при проверке каждые 5 секунд
-    const pollInterval = 5000 // 5 секунд
-
-    const poll = async () => {
-      if (attempts >= maxAttempts) {
-        setAnimationStatus(prev => ({
-          ...prev,
-          [mediaId]: {
-            ...prev[mediaId],
-            status: 'timeout',
-            message: t('media.timeout')
-          }
-        }))
-        return
-      }
-
-      try {
-        const response = await aiAPI.getAnimationStatus({
-          provider: provider,
-          task_id: taskId,
-          media_id: mediaId  // Передаем media_id для поиска video_id в БД
-        })
-
-        const status = response.data.status
-        const videoUrl = response.data.video_url
-        const error = response.data.error
-
-        if (status === 'completed' || status === 'done' || status === 'success') {
-          if (videoUrl) {
-            // Анимация завершена
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'completed',
-                videoUrl: videoUrl
-              }
-            }))
-            
-            // Сбрасываем состояние анимации
-            setAnimating(null)
-            
-            // Обновляем медиа, чтобы показать новое видео
-            setTimeout(() => {
-              loadMedia()
-              if (onReload) onReload()
-              
-              // Очищаем статус анимации через 3 секунды (после показа плашки)
-              setTimeout(() => {
-                setAnimationStatus(prev => {
-                  const newStatus = { ...prev }
-                  delete newStatus[mediaId]
-                  return newStatus
-                })
-              }, 3000)
-            }, 1000)
-            
-            return
-          } else {
-            // Статус completed, но нет URL - продолжаем проверку
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'processing',
-                message: t('media.waiting_video')
-              }
-            }))
-            attempts++
-            if (attempts < maxAttempts) {
-              setTimeout(poll, pollInterval)
-            }
-            return
-          }
-        } else if (status === 'failed' || status === 'error') {
-          // Ошибка анимации (только если статус явно failed/error)
-          setAnimationStatus(prev => ({
-            ...prev,
-            [mediaId]: {
-              ...prev[mediaId],
-              status: 'failed',
-              message: error || t('media.animation_error')
-            }
-          }))
-          return
-        } else if (error && status !== 'processing' && status !== 'pending') {
-          // Ошибка, но не при обработке
-          setAnimationStatus(prev => ({
-            ...prev,
-            [mediaId]: {
-              ...prev[mediaId],
-              status: 'failed',
-              message: error
-            }
-          }))
-          return
-        } else if (status === 'processing' || status === 'pending' || status === 'not_found') {
-          // Продолжаем проверку
-          setAnimationStatus(prev => ({
-            ...prev,
-            [mediaId]: {
-              ...prev[mediaId],
-              status: 'processing',
-              message: t('media.processing')
-            }
-          }))
-          attempts++
-          if (attempts < maxAttempts) {
-            setTimeout(poll, pollInterval)
-          } else {
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'timeout',
-                message: t('media.timeout')
-              }
-            }))
-          }
-        } else {
-          // Неизвестный статус, продолжаем проверку
-          attempts++
-          if (attempts < maxAttempts) {
-            setTimeout(poll, pollInterval)
-          } else {
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'timeout',
-                message: t('media.timeout')
-              }
-            }))
-          }
-        }
-      } catch (err) {
-        // Ошибка при проверке статуса
-        const errorMsg = err.response?.data?.detail || err.message || t('media.status_check_error')
-        
-        // Если 404 или "not found", продолжаем проверку (возможно еще обрабатывается)
-        if (err.response?.status === 404 || errorMsg.toLowerCase().includes('not found') || errorMsg.toLowerCase().includes('404')) {
-          attempts++
-          if (attempts < maxAttempts) {
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'processing',
-                message: t('media.processing')
-              }
-            }))
-            setTimeout(poll, pollInterval)
-          } else {
-            setAnimationStatus(prev => ({
-              ...prev,
-              [mediaId]: {
-                ...prev[mediaId],
-                status: 'timeout',
-                message: t('media.timeout')
-              }
-            }))
-          }
-        } else {
-          // Другие ошибки - останавливаем polling
-          setAnimationStatus(prev => ({
-            ...prev,
-            [mediaId]: {
-              ...prev[mediaId],
-              status: 'error',
-              message: errorMsg.substring(0, 100)
-            }
-          }))
-        }
-      }
-    }
-
-    // Начинаем polling через 5 секунд
-    setTimeout(poll, pollInterval)
-  }
-
-  const getMediaUrl = (mediaItem) => {
-    if (mediaItem.file_url) return mediaItem.file_url
-    if (mediaItem.thumbnail_path) {
-      return getApiMediaUrl(mediaItem.id, 'medium')
-    }
-    return getApiMediaUrl(mediaItem.id)
-  }
-
-  if (loading) {
-    return <div className="loading">{t('media.loading')}</div>
-  }
+  if (loading) return <div className="loading">{t('media.loading')}</div>
 
   return (
     <div className="media-gallery">
       <div className="gallery-header">
         <h2>{t('media.title')}</h2>
-        {canEdit && (
-          <label className="upload-btn" data-tour="media-upload">
-            {uploading ? t('media.uploading') : t('media.upload')}
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              disabled={uploading}
-              accept="image/*,video/*,audio/*"
-              style={{ display: 'none' }}
-            />
-          </label>
-        )}
+        {canEdit && <div data-tour="media-upload">{uploadButton('media.upload')}</div>}
       </div>
-
+      {canEdit && <input ref={uploadRef} type="file" multiple onChange={handleFileUpload} disabled={uploading} accept="image/*,video/*,audio/*" hidden />}
+      {error && <p className="gallery-error" role="alert">{t(error.key, error.params)}</p>}
       {media.length === 0 ? (
         <div className="empty-state">
           <p>{t('media.empty')}</p>
-          {canEdit && (
-            <label className="upload-btn">
-              {t('media.upload_first')}
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                accept="image/*,video/*,audio/*"
-                style={{ display: 'none' }}
-              />
-            </label>
-          )}
+          {canEdit && uploadButton('media.upload_first')}
         </div>
       ) : (
         <div className="gallery-grid">
-          {media.map((item) => (
+          {media.map(item => (
             <div key={item.id} className="media-item">
               {item.media_type === 'photo' && (
-                item.file_url ? (
-                  <img src={item.file_url} alt={item.file_name} />
-                ) : (
-                  <ApiMediaImage
-                    mediaId={item.id}
-                    thumbnail="medium"
-                    alt={item.file_name}
-                    fallback={<div className="media-item-placeholder">{item.file_name}</div>}
-                  />
-                )
+                <button type="button" className="gallery-photo-open" onClick={() => setViewerId(item.id)} aria-label={t('media.viewer_open', { name: item.file_name || '' })}>
+                  <ApiMediaImage mediaId={item.id} directUrl={item.file_url} thumbnail="medium" alt={item.file_name || ''} fallback={<div className="media-item-placeholder">{t('media.viewer_unavailable')}</div>} />
+                </button>
               )}
-              {item.media_type === 'video' && (
-                <video src={getMediaUrl(item)} controls />
-              )}
+              {item.media_type === 'video' && <video src={mediaUrl(item)} controls preload="metadata" playsInline />}
               {item.media_type === 'audio' && (
                 <div className="audio-placeholder">
-                  <span>🎵</span>
+                  <span aria-hidden="true">♫</span>
                   <p>{item.file_name}</p>
+                  <audio src={mediaUrl(item)} controls preload="metadata" aria-label={item.file_name} />
                 </div>
               )}
-              {coverPhotoId === item.id && (
-                <div className="cover-badge">{t('media.cover_badge')}</div>
-              )}
-              <div className="media-actions">
-                <div className="media-actions-left">
-                  {canEdit && item.media_type === 'photo' && (
-                    <>
-                      {onSetCover && (
-                        coverPhotoId === item.id ? (
-                          <button
-                            className="btn-cover active"
-                            onClick={() => onSetCover(null)}
-                            title={t('media.remove_cover')}
-                          >
-                            {t('media.remove_cover')}
-                          </button>
-                        ) : (
-                          <button
-                            className="btn-cover"
-                            onClick={() => onSetCover(item.id)}
-                            title={t('media.set_cover')}
-                          >
-                            {t('media.set_cover')}
-                          </button>
-                        )
-                      )}
-                    </>
-                  )}
-                  {canEdit && item.media_type === 'photo' && !item.is_animated && (
-                    <>
-                      <button
-                        className="btn-animate"
-                        onClick={() => handleAnimate(item.id)}
-                        disabled={animating === item.id || animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending'}
-                      >
-                        {animating === item.id ? t('media.animating') :
-                         animationStatus[item.id]?.status === 'processing' || animationStatus[item.id]?.status === 'pending' ? t('media.processing') :
-                         t('media.animate')}
-                      </button>
-                      {animationStatus[item.id] && (
-                        <div className="animation-status">
-                          {animationStatus[item.id].status === 'processing' || animationStatus[item.id].status === 'pending' ? (
-                            <span className="status-processing">⏳ {animationStatus[item.id].message || t('media.processing')}</span>
-                          ) : animationStatus[item.id].status === 'completed' ? (
-                            <span className="status-completed">✅ {t('media.animation_ready')}</span>
-                          ) : animationStatus[item.id].status === 'failed' || animationStatus[item.id].status === 'error' ? (
-                            <span className="status-error">❌ {animationStatus[item.id].message || '—'}</span>
-                          ) : null}
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {item.is_animated && (
-                    <span className="animated-badge">✅ {t('media.animated_done')}</span>
-                  )}
+              {coverPhotoId === item.id && <div className="cover-badge">{t('portraits.cover_badge')}</div>}
+              {canEdit && (
+                <div className="media-actions">
+                  <div className="media-actions-left">
+                    {item.media_type === 'photo' && onSetCover && <button type="button" className={`btn-cover${coverPhotoId === item.id ? ' active' : ''}`} onClick={() => onSetCover(item.id)}>{t('portraits.use_cover')}</button>}
+                  </div>
+                  <button type="button" className="btn-delete" onClick={() => handleDelete(item.id)} aria-label={t('media.delete_file_title')} title={t('media.delete_file_title')}>×</button>
                 </div>
-                {canEdit && (
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(item.id)}
-                    title={t('media.delete_file_title')}
-                  >
-                    🗑️
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           ))}
         </div>
+      )}
+      {viewerPhoto && createPortal(
+        <div className="gallery-viewer-backdrop" onClick={event => { if (event.target === event.currentTarget) setViewerId(null) }}>
+          <div className="gallery-viewer" role="dialog" aria-modal="true" aria-label={t('media.viewer_title')} ref={dialogRef}>
+            <div className="gallery-viewer-toolbar">
+              <span className="gallery-viewer-count" aria-live="polite">{t('media.viewer_count', { current: viewerIndex + 1, total: photos.length })}</span>
+              <button type="button" className="gallery-viewer-close" ref={closeRef} aria-label={t('media.viewer_close')} onClick={() => setViewerId(null)}>×</button>
+            </div>
+            <div className="gallery-viewer-stage" onTouchStart={event => { const touch = event.touches[0]; touchRef.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null }} onTouchEnd={event => {
+              const start = touchRef.current
+              touchRef.current = null
+              const end = event.changedTouches[0]
+              if (start && end && Math.abs(end.clientX - start.x) > 60 && Math.abs(end.clientX - start.x) > Math.abs(end.clientY - start.y)) movePhoto(end.clientX < start.x ? 1 : -1)
+            }}>
+              {photos.length > 1 && <button type="button" className="gallery-viewer-arrow previous" aria-label={t('media.viewer_previous')} onClick={() => movePhoto(-1)}>‹</button>}
+              <ApiMediaImage key={viewerPhoto.id} mediaId={viewerPhoto.id} directUrl={viewerPhoto.file_url} alt={viewerPhoto.file_name || ''} eager loading="eager" fallback={<p className="gallery-viewer-unavailable">{t('media.viewer_unavailable')}</p>} />
+              {photos.length > 1 && <button type="button" className="gallery-viewer-arrow next" aria-label={t('media.viewer_next')} onClick={() => movePhoto(1)}>›</button>}
+            </div>
+            <div className="gallery-viewer-footer"><span className="gallery-viewer-candle" aria-hidden="true"><i /></span><span>{viewerPhoto.file_name}</span></div>
+          </div>
+        </div>, document.body
       )}
     </div>
   )
 }
 
 export default MediaGallery
-

@@ -69,7 +69,7 @@ def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_se
         "Я учился в МГУ.", voice_id="test-fish-voice" if cloned else None, provider="fish_audio",
     )
     video_service.assert_awaited_once_with(
-        image_url=f"https://api.example.test/api/v1/media/avatar/{portrait.id}.jpg",
+        image_url=f"https://api.example.test/api/v1/media/portrait/{person.id}/avatar.jpg",
         script=data["answer"],
         audio_url=f"https://api.example.test{data['audio_url']}",
     )

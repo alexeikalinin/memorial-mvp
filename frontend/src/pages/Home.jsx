@@ -81,8 +81,8 @@ function Home() {
             >
               {memorial.cover_photo_url || memorial.cover_photo_id ? (
                 <ApiMediaImage
-                  directUrl={memorial.cover_photo_url || null}
-                  mediaId={memorial.cover_photo_url ? null : memorial.cover_photo_id}
+                  portrait={{ memorialId: memorial.id, kind: 'cover', version: memorial.updated_at }}
+                  mediaId={memorial.cover_photo_id}
                   thumbnail={memorial.cover_photo_url ? null : 'large'}
                   alt={memorial.name}
                   className="card-cover-img"

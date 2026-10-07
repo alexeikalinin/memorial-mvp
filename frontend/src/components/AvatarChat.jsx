@@ -59,7 +59,9 @@ function getPlayableAudioUrl(url) {
   return `${base}/media/audio/${url}`
 }
 
-function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
+function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, portraitSettings, onEditPortrait }) {
+  const avatarPhotoId = portraitSettings?.avatar?.media_id || coverPhotoId
+  const portraitVersion = JSON.stringify(portraitSettings || {})
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -344,9 +346,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
     <div className={`avatar-chat${isFullscreen ? ' avatar-chat--fullscreen' : ''}`}>
       {/* ─── Left: Avatar panel ──────────────────────────────────── */}
       <div className="avatar-panel">
-        {coverPhotoId ? (
+        {avatarPhotoId ? (
           <ApiMediaImage
-            mediaId={coverPhotoId}
+            mediaId={avatarPhotoId}
+            portrait={{ memorialId, kind: 'avatar', version: portraitVersion }}
             thumbnail={null}
             avatarReference
             alt={memorialName || 'Avatar'}
@@ -368,6 +371,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
             <span></span><span></span><span></span>
           </div>
         )}
+        {onEditPortrait && <button type="button" className="avatar-portrait-edit" onClick={onEditPortrait}>{t('portraits.edit_avatar')}</button>}
         <div className="avatar-panel-footer">
           {memorialName && (
             <div className="avatar-panel-name">{memorialName}</div>
@@ -618,9 +622,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
           <div key={idx} className={`message ${msg.role}`}>
             {msg.role === 'assistant' && (
               <div className="message-avatar">
-                {coverPhotoId ? (
+                {avatarPhotoId ? (
                   <ApiMediaImage
-                    mediaId={coverPhotoId}
+                    mediaId={avatarPhotoId}
+            portrait={{ memorialId, kind: 'avatar', version: portraitVersion }}
                     thumbnail="medium"
                     alt={memorialName || 'Avatar'}
                     className="message-avatar-img"

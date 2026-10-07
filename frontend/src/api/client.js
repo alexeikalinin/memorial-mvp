@@ -106,6 +106,8 @@ export const memorialsAPI = {
     apiClient.post(`/memorials/${memorialId}/memories/${memoryId}/approve`),
   rejectMemory: (memorialId, memoryId) =>
     apiClient.post(`/memorials/${memorialId}/memories/${memoryId}/reject`),
+  setPortrait: (memorialId, kind, mediaId, crop) =>
+    apiClient.patch(`/memorials/${memorialId}/portraits/${kind}`, { media_id: mediaId, crop }),
   setCover: (memorialId, mediaId) =>
     apiClient.patch(`/memorials/${memorialId}/cover`, { media_id: mediaId }),
   getTimeline: (memorialId) =>

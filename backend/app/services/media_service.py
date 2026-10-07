@@ -169,7 +169,7 @@ def is_image_file(file_path: Path) -> bool:
 AVATAR_REFERENCE_MAX_SIZE = 1024
 
 
-def prepare_avatar_reference(source: bytes) -> bytes:
+def prepare_avatar_reference(source: bytes, crop: Optional[dict] = None) -> bytes:
     """Create a square sRGB JPEG without changing the source or inventing detail.
 
     Padding keeps the whole photograph visible until a person explicitly selects
@@ -192,6 +192,14 @@ def prepare_avatar_reference(source: bytes) -> bytes:
             background = Image.new("RGB", image.size, "white")
             background.paste(image, mask=alpha)
             image = background
+        if crop:
+            image = image.rotate(-crop.get("rotation", 0), expand=True)
+            w, h = image.size
+            left = min(w - 1, max(0, round(crop["x"] * w)))
+            top = min(h - 1, max(0, round(crop["y"] * h)))
+            right = min(w, max(left + 1, round((crop["x"] + crop["width"]) * w)))
+            bottom = min(h, max(top + 1, round((crop["y"] + crop["height"]) * h)))
+            image = image.crop((left, top, right, bottom))
         image.thumbnail((AVATAR_REFERENCE_MAX_SIZE, AVATAR_REFERENCE_MAX_SIZE), Image.Resampling.LANCZOS)
         side = max(image.size)
         square = Image.new("RGB", (side, side), "white")

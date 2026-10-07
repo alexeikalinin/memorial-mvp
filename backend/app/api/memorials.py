@@ -31,6 +31,7 @@ from app.schemas import (
     MemoryUpdate,
     PublicMemorySubmit,
     SetCoverRequest,
+    SetPortraitRequest,
     TimelineItem,
 )
 from app.config import settings
@@ -148,6 +149,7 @@ async def list_memorials(
             media_count=mc2,
             language=getattr(m, "language", "ru"),
             created_at=m.created_at,
+            updated_at=m.updated_at,
             is_demo_seed=(
                 getattr(m, "language", "ru") == "en" and m.name in EXPECTED_EN_NAMES
             ),
@@ -203,6 +205,7 @@ async def list_demo_memorials(db: Session = Depends(get_db)):
             media_count=mc2,
             language=getattr(m, "language", "en"),
             created_at=m.created_at,
+            updated_at=m.updated_at,
             is_demo_seed=True,
         )
         for m, mc, mc2 in rows
@@ -583,6 +586,15 @@ async def delete_media(
         print(f"⚠️  Warning: Error deleting files: {file_error}")
         # Продолжаем удаление записи из БД даже если файлы не удалились
     
+    # Clear both uses of a removed source before deleting its record.
+    portrait_options = dict(memorial.portrait_settings or {})
+    if memorial.cover_photo_id == media.id:
+        memorial.cover_photo_id = None
+        portrait_options.pop("cover", None)
+    if portrait_options.get("avatar", {}).get("media_id") == media.id:
+        portrait_options.pop("avatar", None)
+    memorial.portrait_settings = portrait_options
+    db.flush()
     # Удаление записи из БД
     db.delete(media)
     db.commit()
@@ -946,7 +958,45 @@ async def set_cover_photo(
                 detail=tr(lang, "media_not_found_in_memorial")
             )
 
+    if body.media_id is not None and media.media_type != MediaType.PHOTO:
+        raise HTTPException(status_code=400, detail="Choose a photo")
+    options = dict(memorial.portrait_settings or {})
+    options.pop("cover", None)
+    memorial.portrait_settings = options
     memorial.cover_photo_id = body.media_id
+    db.commit()
+    db.refresh(memorial)
+    return memorial
+
+
+@router.patch("/{memorial_id}/portraits/{kind}", response_model=MemorialResponse)
+async def set_portrait(
+    memorial_id: int,
+    kind: str,
+    body: SetPortraitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if kind not in ("cover", "avatar"):
+        raise HTTPException(status_code=400, detail="Unknown portrait type")
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    if body.media_id is not None:
+        source = db.query(Media).filter(Media.id == body.media_id, Media.memorial_id == memorial_id).first()
+        if not source:
+            raise HTTPException(status_code=404, detail="Photo not found in this memorial")
+        if source.media_type != MediaType.PHOTO:
+            raise HTTPException(status_code=400, detail="Choose a photo")
+    elif body.crop is not None:
+        raise HTTPException(status_code=422, detail="A crop requires a source photo")
+    options = dict(memorial.portrait_settings or {})
+    if kind == "cover":
+        memorial.cover_photo_id = body.media_id
+        options["cover"] = {"crop": body.crop.model_dump() if body.crop else None}
+    elif body.media_id is None:
+        options.pop("avatar", None)  # Resume following the memorial portrait.
+    else:
+        options["avatar"] = {"media_id": body.media_id, "crop": body.crop.model_dump() if body.crop else None}
+    memorial.portrait_settings = options
     db.commit()
     db.refresh(memorial)
     return memorial

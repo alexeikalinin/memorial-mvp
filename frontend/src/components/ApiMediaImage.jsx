@@ -10,6 +10,7 @@ export default function ApiMediaImage({
   mediaId,
   thumbnail = null,
   avatarReference = false,
+  portrait = null,
   directUrl = null,
   alt = '',
   className = '',
@@ -21,9 +22,10 @@ export default function ApiMediaImage({
   const [failed, setFailed] = useState(false)
   const [shouldLoad, setShouldLoad] = useState(Boolean(eager || directUrl))
   const hostRef = useRef(null)
+  const portraitUrl = portrait ? `/media/portrait/${portrait.memorialId}/${portrait.kind}.jpg` : null
 
   // Reuse fetched blobs between renders/pages during a session.
-  const cacheKey = directUrl ? null : `${mediaId || 'none'}|${avatarReference ? 'avatar-v1' : thumbnail || 'orig'}`
+  const cacheKey = directUrl ? null : `${portrait ? JSON.stringify(portrait) : mediaId || 'none'}|${avatarReference ? 'avatar-v1' : thumbnail || 'orig'}`
 
   useEffect(() => {
     if (eager || directUrl) {
@@ -51,7 +53,7 @@ export default function ApiMediaImage({
       setFailed(false)
       return undefined
     }
-    if (!mediaId) {
+    if (!mediaId && !portraitUrl) {
       setFailed(true)
       return undefined
     }
@@ -69,7 +71,7 @@ export default function ApiMediaImage({
 
     const load = async () => {
       try {
-        const res = await apiClient.get(avatarReference ? `/media/avatar/${mediaId}.jpg` : `/media/${mediaId}`, {
+        const res = await apiClient.get(portraitUrl || (avatarReference ? `/media/avatar/${mediaId}.jpg` : `/media/${mediaId}`), {
           params: thumbnail ? { thumbnail } : undefined,
           responseType: 'blob',
         })
@@ -94,7 +96,7 @@ export default function ApiMediaImage({
         URL.revokeObjectURL(objectUrl)
       }
     }
-  }, [mediaId, thumbnail, directUrl, shouldLoad, cacheKey, avatarReference])
+  }, [mediaId, thumbnail, directUrl, shouldLoad, cacheKey, avatarReference, portraitUrl])
 
   if (directUrl) {
     return (
