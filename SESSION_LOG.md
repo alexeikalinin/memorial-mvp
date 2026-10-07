@@ -1,3 +1,7 @@
+## 2026-10-08 — Три размера фонаря в hero
+
+Отдельное /app/lantern-size-preview.html: переключаемые full hero композиции с выбранным логотипом2 и фонарём3; размеры340/400/460px вместо текущих260 (+31/+54/+77%). Главная не меняется до выбора. Статичные SVG при reduced-motion. Пользователь выбирает размер.
+
 ## 2026-10-07 — Применены логотип 2 и фонарь 3
 
 Пользователь выбрал mark120% + flame i и бронзовый защитный фонарь. Применены в Layout/Home через BrandVisual и SVG assets, отдельные static SVG при reduced-motion. Главная сохраняет две строки слогана. Build passed. Проверен backend: OpenAI AsyncOpenAI(api_key=settings.OPENAI_API_KEY), Fish Bearer FISH_AUDIO_API_KEY; ChatGPT/Codex subscription в runtime не используется. AI balances не заменяют hosting/DB/storage availability. User vite config excluded.
