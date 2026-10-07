@@ -58,6 +58,31 @@ import tempfile
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 
+def _resolve_tts_voice(memorial):
+    if memorial.voice_id:
+        return memorial.voice_id, memorial.voice_provider or "elevenlabs"
+    if settings.TTS_PROVIDER == "fish_audio":
+        return None, "fish_audio"
+    if memorial.voice_gender == "male" and settings.ELEVENLABS_VOICE_ID_MALE:
+        return settings.ELEVENLABS_VOICE_ID_MALE, "elevenlabs"
+    if memorial.voice_gender == "female" and settings.ELEVENLABS_VOICE_ID_FEMALE:
+        return settings.ELEVENLABS_VOICE_ID_FEMALE, "elevenlabs"
+    return settings.ELEVENLABS_VOICE_ID, "elevenlabs"
+
+
+@router.get("/tts/status")
+async def get_tts_status(
+    memorial_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.auth import require_memorial_access
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.VIEWER, allow_public=True)
+    _, provider = _resolve_tts_voice(memorial)
+    key = settings.FISH_AUDIO_API_KEY if provider == "fish_audio" else settings.ELEVENLABS_API_KEY
+    return {"provider": provider, "configured": bool(key), "has_custom_voice": bool(memorial.voice_id)}
+
+
 @router.post("/photo/animate", response_model=PhotoAnimateResponse)
 async def animate_photo(
     request: PhotoAnimateRequest,
@@ -582,26 +607,10 @@ async def avatar_chat(
         audio_error = None
         if request.include_audio:
             try:
-                # Голос: клон аватара > мужской/женский pre-made > голос по умолчанию
-                # Pre-made голоса ElevenLabs доступны на бесплатном тарифе без ограничений.
-                # Провайдер клонированного голоса фиксирован на memorial.voice_provider —
-                # id голоса ElevenLabs и Fish Audio несовместимы между собой.
-                if memorial.voice_id:
-                    voice_id = memorial.voice_id
-                    voice_provider = memorial.voice_provider or "elevenlabs"
-                elif getattr(memorial, 'voice_gender', None) == 'male' and settings.ELEVENLABS_VOICE_ID_MALE:
-                    voice_id = settings.ELEVENLABS_VOICE_ID_MALE
-                    voice_provider = "elevenlabs"
-                elif getattr(memorial, 'voice_gender', None) == 'female' and settings.ELEVENLABS_VOICE_ID_FEMALE:
-                    voice_id = settings.ELEVENLABS_VOICE_ID_FEMALE
-                    voice_provider = "elevenlabs"
-                else:
-                    voice_id = settings.ELEVENLABS_VOICE_ID
-                    voice_provider = "elevenlabs"
-                if not voice_id:
-                    raise ValueError(
-                        "Не задан голос для озвучки: укажите ELEVENLABS_VOICE_ID в backend/.env или загрузите клон голоса аватара."
-                    )
+                voice_id, voice_provider = _resolve_tts_voice(memorial)
+                if voice_provider == "elevenlabs" and not voice_id:
+                    raise ValueError("Не задан голос ElevenLabs. Загрузите клон голоса аватара.")
+
                 if voice_provider == "fish_audio" and not settings.FISH_AUDIO_API_KEY:
                     raise ValueError("В backend/.env не задан FISH_AUDIO_API_KEY.")
                 if voice_provider == "elevenlabs" and not settings.ELEVENLABS_API_KEY:

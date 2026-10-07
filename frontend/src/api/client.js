@@ -137,6 +137,7 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  getTtsStatus: (memorialId) => apiClient.get('/ai/tts/status', { params: { memorial_id: memorialId } }),
   getElevenLabsQuota: () => apiClient.get('/ai/elevenlabs/quota'),
 }
 

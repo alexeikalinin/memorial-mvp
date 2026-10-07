@@ -77,6 +77,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
   const [showVoicePanel, setShowVoicePanel] = useState(false)
   const [voiceSamples, setVoiceSamples] = useState([]) // { id, file, label }[] — накопленные образцы перед отправкой
+  const [ttsStatus, setTtsStatus] = useState(null)
   const [elQuota, setElQuota] = useState(null)
   const [elQuotaErr, setElQuotaErr] = useState(null)
   const messagesEndRef = useRef(null)
@@ -94,17 +95,22 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
 
   useEffect(() => {
     let cancelled = false
+    setTtsStatus(null)
     setElQuota(null)
     setElQuotaErr(null)
     if (!user) return () => { cancelled = true }
-    aiAPI
-      .getElevenLabsQuota()
-      .then((res) => {
-        if (!cancelled) setElQuota(res.data)
-      })
-      .catch(() => {
-        if (!cancelled) setElQuotaErr(true)
-      })
+    aiAPI.getTtsStatus(memorialId).then(async (res) => {
+      if (cancelled) return
+      setTtsStatus(res.data)
+      if (res.data.provider === 'elevenlabs') {
+        try {
+          const quota = await aiAPI.getElevenLabsQuota()
+          if (!cancelled) setElQuota(quota.data)
+        } catch {
+          if (!cancelled) setElQuotaErr(true)
+        }
+      }
+    }).catch(() => {})
     return () => {
       cancelled = true
     }
@@ -227,6 +233,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
       )
       alert(response.data.message || t('chat.voice_clone_success'))
       setHasCustomVoice(true)
+      const status = await aiAPI.getTtsStatus(memorialId).catch(() => null)
+      if (status) setTtsStatus(status.data)
       setVoiceName('')
       setVoiceSamples([])
       setShowVoicePanel(false)
@@ -374,7 +382,9 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
 
       {/* ─── Right: Chat panel ───────────────────────────────────── */}
       <div className="chat-panel">
-      {elQuotaErr ? (
+      {ttsStatus?.provider === 'fish_audio' ? (
+        <p className="chat-tts-quota">{t(ttsStatus.configured ? 'chat.tts_fish_ready' : 'chat.tts_fish_off')}</p>
+      ) : elQuotaErr ? (
         <p className="chat-tts-quota chat-tts-quota--muted">{t('chat.tts_quota_err')}</p>
       ) : elQuota && !elQuota.configured ? (
         <p className="chat-tts-quota chat-tts-quota--muted">{t('chat.tts_quota_off')}</p>

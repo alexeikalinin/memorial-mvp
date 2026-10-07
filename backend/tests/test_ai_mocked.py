@@ -1,12 +1,15 @@
 """
 Тесты AI-эндпоинтов с мокированием внешних сервисов.
 """
+import pytest
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.models import Media, MediaType, Memorial, Memory
 
 
-def test_voice_reply_starts_video_animation(auth_client, memorial, db_session, monkeypatch, tmp_path):
+@pytest.mark.parametrize("cloned", [True, False])
+def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_session, monkeypatch, tmp_path):
     """A cloned voice reply must invoke the animation service, not the photo route."""
     import app.api.ai as ai_api
 
@@ -31,7 +34,8 @@ def test_voice_reply_starts_video_animation(auth_client, memorial, db_session, m
     db_session.add_all([portrait, memory])
     db_session.flush()
     person.cover_photo_id = portrait.id
-    person.voice_id = "test-fish-voice"
+    monkeypatch.setattr(ai_api.settings, "TTS_PROVIDER", "fish_audio")
+    person.voice_id = "test-fish-voice" if cloned else None
     person.voice_provider = "fish_audio"
     db_session.commit()
     video_service = AsyncMock(return_value={"task_id": "video-123", "provider": "d-id"})
@@ -46,6 +50,10 @@ def test_voice_reply_starts_video_animation(auth_client, memorial, db_session, m
         "Я учился в МГУ.", [memory.id],
     )))
 
+    voice_status = auth_client.get(f"/api/v1/ai/tts/status?memorial_id={person.id}")
+    assert voice_status.status_code == 200
+    assert voice_status.json() == {"provider": "fish_audio", "configured": True, "has_custom_voice": cloned}
+
     response = auth_client.post("/api/v1/ai/avatar/chat", json={
         "memorial_id": person.id,
         "question": "Где ты учился?",
@@ -58,7 +66,7 @@ def test_voice_reply_starts_video_animation(auth_client, memorial, db_session, m
     assert data["animation_task_id"] == "video-123"
     assert data["animation_provider"] == "d-id"
     speech_service.assert_awaited_once_with(
-        "Я учился в МГУ.", voice_id="test-fish-voice", provider="fish_audio",
+        "Я учился в МГУ.", voice_id="test-fish-voice" if cloned else None, provider="fish_audio",
     )
     video_service.assert_awaited_once_with(
         image_url=f"https://api.example.test/api/v1/media/{portrait.id}",

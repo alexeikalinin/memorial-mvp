@@ -245,6 +245,8 @@ export default {
     placeholder: 'Ask a question...',
     send: 'Send',
     suggested_label: 'Try asking:',
+    tts_fish_ready: 'Voice replies: Fish Audio',
+    tts_fish_off: 'Fish Audio is not configured.',
     audio_label: 'Answer with voice',
     family_label: 'Include family memories',
     no_info: "I don't have memories about that.",

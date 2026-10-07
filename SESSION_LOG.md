@@ -2,6 +2,9 @@
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## [2026-10-07] Fish Audio TTS — исправление fallback и индикатора
+После восстановления БД у memorial 318 отсутствовали voice_id/фото. Во время проверки пользователь создал новый Fish Audio клон, сохранение подтверждено БД и Railway. Старый интерфейс всегда запрашивал квоту ElevenLabs; исправлено отображение фактического провайдера через защищённый /ai/tts/status. Fallback без клона теперь использует TTS_PROVIDER=fish_audio; существующие клоны сохраняют своего провайдера. Production TTS_PROVIDER установлен fish_audio. 7 mocked AI tests passed, frontend build passed. Коммит 3acbb67 уже опубликован напрямую на Vercel и Railway; GitHub push заблокирован истёкшим gh токеном, начат повторный вход. Финальный deploy TTS изменений и live smoke test в процессе. Фото у memorial 318 нет, поэтому видео невозможно проверить на нём без загрузки портрета. Домены не изменялись.
+
 ## [2026-10-07] Подготовка публикации исправлений видеоответов
 Пользователь разрешил push и production deploy перед сменой доменов. Supabase восстановлен: публичный demo endpoint вернул HTTP 200. Исправлены конфликт имён обработчика/сервиса animate_photo и распознавание frontend статуса done. Добавлен regression test Fish voice → animation; 6 mocked AI tests passed, frontend build passed. В публикацию включены ранее подготовленные изменения онбординга и переводов; сторонние настройки агентов и скриншоты исключены. Fish Audio видео через MCP пока исследование, backend интеграции нет; существующий HeyGen/D-ID сохраняется. Домены/OAuth не менялись.
 

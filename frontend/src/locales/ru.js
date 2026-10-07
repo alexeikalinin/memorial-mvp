@@ -245,6 +245,8 @@ export default {
     placeholder: 'Задайте вопрос...',
     send: 'Отправить',
     suggested_label: 'Попробуйте спросить:',
+    tts_fish_ready: 'Озвучка: Fish Audio',
+    tts_fish_off: 'Fish Audio не настроен.',
     audio_label: 'Отвечать голосом',
     family_label: 'Воспоминания родственников',
     no_info: 'У меня нет информации на эту тему.',
