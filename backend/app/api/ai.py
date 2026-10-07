@@ -116,40 +116,9 @@ async def animate_photo(
             detail="Photo is already animated"
         )
     
-    # Получение публичного URL изображения
-    # В production это должен быть S3 URL
-    if settings.USE_S3 and media.file_url:
-        image_url = media.file_url
-    else:
-        # Для локальной разработки - используем API endpoint для получения медиа
-        # ВАЖНО: D-ID требует, чтобы URL заканчивался на .jpg, .jpeg или .png
-        # Поэтому добавляем расширение файла к URL
-        public_api_url = getattr(settings, 'PUBLIC_API_URL', None)
-        
-        # Определяем расширение файла из file_name
-        file_extension = ""
-        if media.file_name:
-            # Извлекаем расширение из имени файла
-            if '.' in media.file_name:
-                file_extension = "." + media.file_name.rsplit('.', 1)[1].lower()
-                # Проверяем, что это валидное расширение для изображения
-                if file_extension not in ['.jpg', '.jpeg', '.png']:
-                    file_extension = '.jpg'  # Fallback на .jpg
-            else:
-                file_extension = '.jpg'  # Fallback на .jpg
-        else:
-            file_extension = '.jpg'  # Fallback на .jpg
-        
-        if public_api_url:
-            # Используем PUBLIC_API_URL с расширением файла
-            image_url = f"{public_api_url}/api/v1/media/{media.id}{file_extension}"
-        else:
-            # Fallback на localhost (не будет работать с внешними сервисами, но для тестирования)
-            image_url = f"http://localhost:8000/api/v1/media/{media.id}{file_extension}"
-            print(f"⚠️ WARNING: Using localhost URL for image. External services require a public URL!")
-            print(f"   Set PUBLIC_API_URL in .env (e.g., https://your-ngrok-url.ngrok.io) or use S3")
-        print(f"Using API endpoint for image: {image_url}")
-    
+    # Providers receive the prepared JPEG, never the original gallery file.
+    image_url = f"{(settings.PUBLIC_API_URL or 'http://localhost:8000').rstrip('/')}/api/v1/media/avatar/{media.id}.jpg"
+
     # Запуск фоновой задачи
     try:
         task = animate_photo_task.delay(
@@ -650,7 +619,7 @@ async def avatar_chat(
             try:
                 cover_media = db.query(Media).filter(Media.id == memorial.cover_photo_id).first()
                 if cover_media:
-                    public_image_url = f"{settings.PUBLIC_API_URL}/api/v1/media/{cover_media.id}"
+                    public_image_url = f"{(settings.PUBLIC_API_URL or 'http://localhost:8000').rstrip('/')}/api/v1/media/avatar/{cover_media.id}.jpg"
                     # Формируем публичный audio_url для D-ID (нужен абсолютный URL)
                     if audio_url.startswith("/"):
                         public_audio_url = f"{settings.PUBLIC_API_URL}{audio_url}"

@@ -9,6 +9,7 @@ import apiClient from '../api/client'
 export default function ApiMediaImage({
   mediaId,
   thumbnail = null,
+  avatarReference = false,
   directUrl = null,
   alt = '',
   className = '',
@@ -22,7 +23,7 @@ export default function ApiMediaImage({
   const hostRef = useRef(null)
 
   // Reuse fetched blobs between renders/pages during a session.
-  const cacheKey = directUrl ? null : `${mediaId || 'none'}|${thumbnail || 'orig'}`
+  const cacheKey = directUrl ? null : `${mediaId || 'none'}|${avatarReference ? 'avatar-v1' : thumbnail || 'orig'}`
 
   useEffect(() => {
     if (eager || directUrl) {
@@ -68,7 +69,7 @@ export default function ApiMediaImage({
 
     const load = async () => {
       try {
-        const res = await apiClient.get(`/media/${mediaId}`, {
+        const res = await apiClient.get(avatarReference ? `/media/avatar/${mediaId}.jpg` : `/media/${mediaId}`, {
           params: thumbnail ? { thumbnail } : undefined,
           responseType: 'blob',
         })
@@ -93,7 +94,7 @@ export default function ApiMediaImage({
         URL.revokeObjectURL(objectUrl)
       }
     }
-  }, [mediaId, thumbnail, directUrl, shouldLoad, cacheKey])
+  }, [mediaId, thumbnail, directUrl, shouldLoad, cacheKey, avatarReference])
 
   if (directUrl) {
     return (

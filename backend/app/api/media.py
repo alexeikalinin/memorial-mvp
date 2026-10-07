@@ -9,9 +9,11 @@ import mimetypes
 
 from app.db import get_db
 from app.i18n import get_lang, tr
-from app.models import Media
+from app.models import Media, MediaType
 from app.config import settings
-from app.services.s3_service import get_public_url
+from app.services.s3_service import get_public_url, get_s3_client
+from app.services.media_service import prepare_avatar_reference
+import io
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
@@ -49,6 +51,36 @@ async def get_audio_file(filename: str, lang: str = Depends(get_lang)):
         media_type="audio/mpeg",
         filename=filename
     )
+
+
+@router.get("/avatar/{media_id}.jpg")
+def get_avatar_reference(media_id: int, db: Session = Depends(get_db)):
+    """A provider-neutral reference copy; originals and gallery previews stay intact."""
+    media = db.query(Media).filter(Media.id == media_id).first()
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    if media.media_type != MediaType.PHOTO:
+        raise HTTPException(status_code=400, detail="Avatar reference must be a photo")
+    source_path = _resolve_local_path(media.file_path)
+    if source_path.is_file():
+        source = source_path.read_bytes()
+    elif settings.USE_S3:
+        client = get_s3_client()
+        if client is None:
+            raise HTTPException(status_code=503, detail="Photo storage is unavailable")
+        output = io.BytesIO()
+        try:
+            client.download_fileobj(settings.S3_BUCKET_NAME, media.file_path, output)
+        except Exception:
+            raise HTTPException(status_code=502, detail="Could not load the original photo")
+        source = output.getvalue()
+    else:
+        raise HTTPException(status_code=404, detail="Original photo not found")
+    try:
+        reference = prepare_avatar_reference(source)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Could not prepare the avatar photo; choose another image")
+    return Response(reference, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
 @router.get("/{media_id_path:path}")  # Используем path для поддержки расширений

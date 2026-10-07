@@ -4,7 +4,7 @@
 import os
 from pathlib import Path
 from typing import Optional, Tuple
-from PIL import Image
+from PIL import Image, ImageCms, ImageOps
 import io
 from app.config import settings
 from app.models import MediaType
@@ -164,3 +164,39 @@ def is_image_file(file_path: Path) -> bool:
     except Exception:
         return False
 
+
+
+AVATAR_REFERENCE_MAX_SIZE = 1024
+
+
+def prepare_avatar_reference(source: bytes) -> bytes:
+    """Create a square sRGB JPEG without changing the source or inventing detail.
+
+    Padding keeps the whole photograph visible until a person explicitly selects
+    a crop. The long edge is capped at 1024; small inputs are never enlarged.
+    """
+    with Image.open(io.BytesIO(source)) as original:
+        image = ImageOps.exif_transpose(original)
+        image.load()
+        profile = image.info.get("icc_profile")
+        alpha = image.convert("RGBA").getchannel("A") if image.mode in ("RGBA", "LA", "P") or "transparency" in image.info else None
+        image = image if image.mode in ("RGB", "CMYK", "LAB") else image.convert("RGB")
+        srgb = ImageCms.createProfile("sRGB")
+        if profile:
+            image = ImageCms.profileToProfile(
+                image, ImageCms.ImageCmsProfile(io.BytesIO(profile)), srgb, outputMode="RGB",
+            )
+        else:
+            image = image.convert("RGB")
+        if alpha is not None:
+            background = Image.new("RGB", image.size, "white")
+            background.paste(image, mask=alpha)
+            image = background
+        image.thumbnail((AVATAR_REFERENCE_MAX_SIZE, AVATAR_REFERENCE_MAX_SIZE), Image.Resampling.LANCZOS)
+        side = max(image.size)
+        square = Image.new("RGB", (side, side), "white")
+        square.paste(image, ((side - image.width) // 2, (side - image.height) // 2))
+        result = io.BytesIO()
+        square.save(result, "JPEG", quality=92, optimize=True,
+                    icc_profile=ImageCms.ImageCmsProfile(srgb).tobytes())
+        return result.getvalue()

@@ -348,6 +348,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
           <ApiMediaImage
             mediaId={coverPhotoId}
             thumbnail={null}
+            avatarReference
             alt={memorialName || 'Avatar'}
             className="avatar-panel-photo"
             eager

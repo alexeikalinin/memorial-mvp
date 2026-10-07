@@ -427,12 +427,7 @@ async def upload_media(
                     detail=tr(lang, "invalid_image_file", error=error_msg)
                 )
             
-            # Оптимизация больших изображений (если больше 5MB)
-            if len(contents) > 5 * 1024 * 1024:  # 5MB
-                optimize_image(file_path, max_size=(1920, 1920), quality=85)
-                # Обновляем размер после оптимизации
-                contents = file_path.read_bytes()
-            
+            # Keep the uploaded original; resize only derived previews/references.
             # Генерация миниатюр
             thumbnails = generate_all_thumbnails(file_path, THUMBNAILS_DIR)
             if thumbnails.get("medium"):
