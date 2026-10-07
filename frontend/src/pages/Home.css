@@ -991,3 +991,10 @@
 
 .hero-tagline span, .hero-tagline em { white-space: nowrap; }
 @media (min-width: 769px) { .hero-visual svg { width: 220px; height: 366px; } }
+
+.hero-brand-lockup { width: 440px; max-width: 100%; }
+.hero-lantern { width: 260px; }
+@media (max-width: 768px) {
+  .hero-brand-lockup { width: 340px; }
+  .hero-lantern { width: 180px; }
+}

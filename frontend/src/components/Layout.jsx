@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, SHOW_EN_LANGUAGE_OPTION } from '../contexts/LanguageContext'
 import VerificationBanner from './VerificationBanner'
-import logoMark from '../assets/logo-mark.png'
-import logoWordmark from '../assets/wordmark-light.png'
+import BrandVisual from './BrandVisual'
 import './Layout.css'
 
 function Layout({ children }) {
@@ -29,8 +28,7 @@ function Layout({ children }) {
       <header className={`header${scrolled ? ' scrolled' : ''}`}>
         <div className="container">
           <Link to="/" className="logo" aria-label="vspomin.ai">
-            <img src={logoMark} alt="" className="logo-mark" />
-            <img src={logoWordmark} alt="vspomin.ai" className="logo-wordmark" />
+            <BrandVisual className="header-brand" />
           </Link>
           <nav className="nav">
             {/* AUTH_HIDDEN: блок входа/выхода скрыт до включения авторизации */}

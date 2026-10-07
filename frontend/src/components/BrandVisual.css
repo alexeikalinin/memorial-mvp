@@ -1,0 +1,7 @@
+.brand-visual { display: block; }
+.brand-visual img { width: 100%; height: auto; display: block; }
+.brand-visual .brand-still { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .brand-visual .brand-motion { display: none; }
+  .brand-visual .brand-still { display: block; }
+}

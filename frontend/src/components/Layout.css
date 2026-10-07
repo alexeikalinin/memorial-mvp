@@ -283,3 +283,6 @@
   font-size: 0.7rem;
   pointer-events: none;
 }
+
+.header-brand { width: 240px; filter: brightness(.72); }
+@media (max-width: 640px) { .header-brand { width: 175px; } }

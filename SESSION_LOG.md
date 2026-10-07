@@ -1,3 +1,7 @@
+## 2026-10-07 — Применены логотип 2 и фонарь 3
+
+Пользователь выбрал mark120% + flame i и бронзовый защитный фонарь. Применены в Layout/Home через BrandVisual и SVG assets, отдельные static SVG при reduced-motion. Главная сохраняет две строки слогана. Build passed. Проверен backend: OpenAI AsyncOpenAI(api_key=settings.OPENAI_API_KEY), Fish Bearer FISH_AUDIO_API_KEY; ChatGPT/Codex subscription в runtime не используется. AI balances не заменяют hosting/DB/storage availability. User vite config excluded.
+
 ## 2026-10-07 — Пропорции знака и мемориальные лампадки
 
 По запросу пользователя preview /app/candle-preview.html обновлён: три lockups с одинаковой надписью и размером mark 100/120/140% высоты PNG надписи, оптическое центрирование; flame i сохранены. Три огня заменены на красную кладбищенскую лампадку с колпаком, масляную лампаду и бронзовый защитный фонарь со свечой. Отдельный локальный выбор логотипа и огня. Главная не меняется до выбора. Build passed.
