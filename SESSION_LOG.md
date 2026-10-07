@@ -1,3 +1,9 @@
+## 2026-10-07 — Логотипы, две строки слогана и превью свечей
+
+Использованы wordmark assets из пользовательского PDF (alpha mask восстановлена), увеличен и усилен контраст логотипа шапки, добавлен wordmark рядом с hero mark (aa79aa6). Затем hero container приведён к 1200px и тем же отступам, что header; удалён левый padding слогана; две строки nowrap, русская вторая строка с точкой. Свеча увеличена до 220×366 desktop, 150×250 mobile, на mobile под слоганом (f397648).
+
+Отдельное публичное превью: https://memorial-mvp.vercel.app/app/candle-preview.html — три CSS/SVG анимации (quiet/living/breath), пауза и локальный выбор. Выбор не меняет homepage; ждать номер пользователя. reduced-motion static. npm build passed; Vercel production Ready. В браузере подтверждены одинаковые x header logo/hero brand/heading, две строки и увеличенная свеча, три разные animationName. Скриншоты /private/tmp/brand-hero-final.png и /private/tmp/candle-three-previews.png. Chrome viewport override не изменил innerWidth, поэтому mobile visual verification не подтверждена. Пользовательский vite proxy 8001 сохранён вне коммитов. LemonSlice отложен.
+
 # Session Log — Memorial MVP
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
