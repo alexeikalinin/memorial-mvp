@@ -2,6 +2,9 @@
 
 > **Где хранится:** этот файл в корне репозитории — рабочая копия для Cursor/IDE. Дублирующий экземпляр: `~/.claude/projects/-Users-alexei-kalinin-Documents-VibeCoding-memorial-mvp/memory/session_log.md`. Новые записи добавлять **в начало** (после этого блока).
 
+## [2026-10-07] Стандарт фото — production подтверждён
+Коммит 3bcb9b7 push main выполнен. Автоматический Railway deploy 976c2947-0d0b-44d8-bcf9-a60af4c9f35b SUCCESS, Vercel dpl_E8psGALHKA94z1kv7jMCVsNEvDjn Ready/Production. GET референса публичного demo media 37 вернул 200: JPEG RGB 600x600, ICC есть, EXIF нет (без апскейла). Chrome на /app/memorials/10?tab=chat показывает подготовленную картинку. Скриншот /private/tmp/avatar-photo-standard-web.png. Генерацию видео в этой проверке не запускали. Fish video transport остаётся отдельной незавершённой интеграцией.
+
 ## [2026-10-07] Автоматический стандарт фото для аватара
 По запросу пользователя добавлена provider-neutral подготовка референса: EXIF orientation, sRGB ICC, JPEG quality 92, квадрат до 1024 без увеличения, белые поля вместо автоматического обрезания лиц; EXIF удаляется только из копии. Endpoint /api/v1/media/avatar/{media_id}.jpg читает оригинал локально или из S3/Supabase. Чат показывает эту копию; photo animation и voice chat передают её URL в существующие HeyGen/D-ID. Убрана перезапись больших оригиналов при upload: оптимизация применяется только к производным изображениям. 13 tests passed (image contract + mocked AI); после уточнения ICC дополнительно image tests прошли; frontend build passed. Автоматическое распознавание/выбор лица, ручной crop и проверки резкости пока не реализованы; группы не обрезаются. Fish video backend пока отсутствует: подготовленные JPEG пригодны для будущей загрузки, но фактическую отправку в Fish video не утверждаем. Публикация разрешена ранее пользователем; локальная vite настройка исключается.
 
