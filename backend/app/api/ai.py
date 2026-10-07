@@ -43,7 +43,7 @@ from app.services.ai_tasks import (
     generate_speech,
     create_custom_voice,
     delete_custom_voice,
-    animate_photo,
+    animate_photo as animate_photo_service,
     get_animation_status,
     build_avatar_persona,
     sync_family_memories,
@@ -647,7 +647,7 @@ async def avatar_chat(
                         public_audio_url = f"{settings.PUBLIC_API_URL}{audio_url}"
                     else:
                         public_audio_url = audio_url
-                    anim_result = await animate_photo(
+                    anim_result = await animate_photo_service(
                         image_url=public_image_url,
                         script=answer,
                         audio_url=public_audio_url,

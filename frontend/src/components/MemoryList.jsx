@@ -217,6 +217,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
         <div className="memory-header-actions">
           <button
             className="btn btn-share"
+            data-tour="memories-invite"
             onClick={handleShareInvite}
             disabled={sharingLoading}
           >
@@ -225,6 +226,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
           {canEdit && (
             <button
               className="btn btn-primary"
+              data-tour="memories-add"
               onClick={() => setShowForm(!showForm)}
             >
               {showForm ? t('common.cancel') : t('memoryList.add_memory')}

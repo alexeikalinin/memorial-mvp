@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { memorialsAPI, invitesAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -8,6 +8,7 @@ import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
 import LifeTimeline from '../components/LifeTimeline'
+import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
 import './MemorialDetail.css'
@@ -17,6 +18,7 @@ const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'
 function MemorialDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const { t, lang } = useLanguage()
   const [memorial, setMemorial] = useState(null)
@@ -24,6 +26,7 @@ function MemorialDetail() {
   const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('media')
   const [mountedTabs, setMountedTabs] = useState(new Set(['media']))
+  const [showTour, setShowTour] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editFormData, setEditFormData] = useState({
     name: '',
@@ -85,6 +88,23 @@ function MemorialDetail() {
       try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
     }
   }, [id, searchParams])
+
+  useEffect(() => {
+    if (!location.state?.justCreated) return
+    let alreadyDone = false
+    try { alreadyDone = localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1' } catch {}
+    if (alreadyDone) return
+    const timer = setTimeout(() => setShowTour(true), 500)
+    return () => clearTimeout(timer)
+  }, [location.state])
+
+  const handleTabClick = (tab) => {
+    setActiveTab(tab)
+    setMountedTabs((prev) => new Set([...prev, tab]))
+    if (tab === 'chat') {
+      try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
+    }
+  }
 
   const loadMemorial = async () => {
     try {
@@ -439,6 +459,15 @@ function MemorialDetail() {
                 {deleting ? t('detail.deleting') : '✕'}
               </button>
             )}
+            <button
+              type="button"
+              className="onboarding-help-btn"
+              onClick={() => setShowTour(true)}
+              title={t('onboarding.help_button')}
+              aria-label={t('onboarding.help_button')}
+            >
+              ?
+            </button>
             </div>
           </div>
         </div>
@@ -555,13 +584,7 @@ function MemorialDetail() {
           <button
             key={key}
             className={activeTab === key ? 'active' : ''}
-            onClick={() => {
-              setActiveTab(key)
-              setMountedTabs(prev => new Set([...prev, key]))
-              if (key === 'chat') {
-                try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
-              }
-            }}
+            onClick={() => handleTabClick(key)}
           >
             {label}
           </button>
@@ -864,6 +887,13 @@ function MemorialDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {showTour && (
+        <OnboardingTour
+          onGoToTab={handleTabClick}
+          onClose={() => setShowTour(false)}
+        />
       )}
     </div>
   )

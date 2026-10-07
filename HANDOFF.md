@@ -1,30 +1,12 @@
 # Handoff — Memorial MVP
-> Автообновлено: 2026-09-25 17:06
+> Обновлено: 2026-10-07
 > Ветка: main
 
-## Последний коммит
-3862ace feat: delete old cloned voice when re-cloning avatar voice
+## Текущий фокус
+Публикация исправлений видеоответов и проверка аватара в production. Пользователь разрешил push/deploy; домены отложены.
 
-## Изменённые файлы (uncommitted)
-- HANDOFF.md
-
-## Новые файлы (untracked)
-- .claude/agents/vspomin-design-agent.md
-- .claude/skills/testing-jwt-token-security/LICENSE
-- .claude/skills/testing-jwt-token-security/SKILL.md
-- .claude/skills/testing-jwt-token-security/references/api-reference.md
-- .claude/skills/testing-jwt-token-security/scripts/agent.py
-
-## Последние 3 коммита
-3862ace feat: delete old cloned voice when re-cloning avatar voice
-450e540 fix: Fish Audio voice cloning (train_mode, formats) + multi-sample upload
-faa58a2 fix: mobile nav menu and focus-visible accessibility on landing page
-
-## Запуск стека
-```bash
-cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
-cd frontend && npm run dev
-```
+## Последняя проверка
+Supabase восстановлен, demo endpoint HTTP 200. Mocked AI tests: 6 passed; frontend build passed. Исправлены вызов сервиса анимации и статус done. Fish Audio MCP подключён, видеоинтеграция в backend ещё не реализована; HeyGen сохранён.
 
 ## Следующий шаг
-См. SESSION_LOG.md — последняя запись
+Проверить production deploy и голосовой видеоответ в вебе. Подробности: [SESSION_LOG.md](SESSION_LOG.md), [Fish Audio](docs/integrations/FISH_AUDIO_AVATARS.md), [окружения](ENVIRONMENT.md).

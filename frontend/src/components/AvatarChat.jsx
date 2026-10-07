@@ -149,7 +149,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
             provider: msg.animationProvider,
           })
           const { status, video_url } = res.data
-          if (status === 'completed' && video_url) {
+          if (['done', 'completed'].includes(status) && video_url) {
             setMessages((prev) =>
               prev.map((m) =>
                 m.animationTaskId === msg.animationTaskId
@@ -400,7 +400,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
           </h2>
         </div>
         <div className="header-controls">
-          <label className="audio-toggle">
+          <label className="audio-toggle" data-tour="chat-audio-toggle">
             <input
               type="checkbox"
               checked={includeAudio}
@@ -456,7 +456,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent }) {
               {t('chat.clear_history')}
             </button>
           )}
-          <div className="voice-clone-section">
+          <div className="voice-clone-section" data-tour="chat-voice">
             {hasCustomVoice ? (
               <div className="voice-status-row">
                 <span className="voice-status">✅ {t('chat.voice_uploaded')}</span>

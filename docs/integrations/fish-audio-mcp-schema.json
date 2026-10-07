@@ -1,0 +1,347 @@
+{
+  "retrieved_on": "2026-10-07",
+  "endpoint": "https://api.fish.audio/mcp",
+  "server_version": "1.0.0",
+  "tools": {
+    "get_credit_balance": {
+      "name": "get_credit_balance",
+      "description": "Get the authenticated user's Fish Audio plan, remaining package credits, and the per-call TTS text budget. Speech generation costs 1 credit per UTF-8 byte of text; transcription costs 500 credits per minute. Top up at https://fish.audio/go-premium/",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    "list_my_workspaces": {
+      "name": "list_my_workspaces",
+      "description": "List the workspaces of the team this connection is authorized for.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    "list_media_models": {
+      "name": "list_media_models",
+      "description": "List available Fish image and video models (video includes lip sync and talking avatars). Capabilities are named as in the Fish web app, e.g. t2i (text-to-image), edit (image edit), upscale, t2v (text-to-video), i2v (image-to-video), first_last, reference, reference_video, video_audio (lip sync), avatar_audio (talking avatar). default_credits is the price of one output with default parameters; capabilities billed by input length report credits_per_input_second instead, with input_seconds_rounding: ceil where every started second is billed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "media_type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    "get_media_model": {
+      "name": "get_media_model",
+      "description": "Get one media model's prompt policy and, per capability, its parameter schema, required_roles and accepted inputs (kind, mime_types, max_bytes, max_count, dimension limits). Call it once per model and keep the result for the whole conversation; call it again only after an invalid_arguments error. Accepted inputs can also be a finished generation result's media.object_key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "model_id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    "create_media_upload": {
+      "name": "create_media_upload",
+      "description": "Create a one-hour workspace-scoped upload slot for an image, video or audio input, only for a file that is not in Fish yet. To reuse a finished generation result as an input, pass its media.object_key to the estimate and generate tools instead; do not download a result and upload it again. When the user will upload through web_upload_url, ask which format the file is (for example png, jpg, webp, mp4, mov, mp3 or wav) before calling this tool and use that extension in file_name: the link only accepts files of that format. For web_upload_url file_size need not be exact (the page re-signs the slot for the real size); when you PUT to upload_url yourself, file_size must be the exact byte size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "file_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "file_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content_type": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "video/mp4",
+              "video/quicktime",
+              "video/webm",
+              "video/x-matroska",
+              "audio/mpeg",
+              "audio/mp3",
+              "audio/wav",
+              "audio/x-wav",
+              "audio/mp4",
+              "audio/x-m4a",
+              "audio/aac",
+              "audio/ogg",
+              "audio/flac",
+              "audio/x-flac"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "file_name",
+          "file_size",
+          "content_type"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    "estimate_video_generation": {
+      "name": "estimate_video_generation",
+      "description": "Estimate video generation cost (text/image/reference-to-video, lip sync, talking avatar) and validate the request. Pass operation, or inputs with roles and let the capability follow from them. This is read-only and creates no task or quote.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32000,
+            "description": "Required unless get_media_model reports prompt optional; ignored when it reports unsupported."
+          },
+          "parameters": {
+            "type": "object",
+            "default": {}
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "ref",
+                    "startFrame",
+                    "endFrame",
+                    "videoRef",
+                    "sourceVideo",
+                    "audioRef",
+                    "sourceAudio"
+                  ]
+                },
+                "object_key": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "role",
+                "object_key"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Input media, each with its role, in order. The capability follows from the roles given, as in the Fish web app (get_media_model lists each capability's required_roles and accepted inputs), e.g. startFrame → i2v, ref → reference, videoRef/audioRef → reference video/audio, sourceVideo + sourceAudio → lip sync, ref + sourceAudio → talking avatar. object_key is the media.object_key of a finished generation result in the same workspace (use it directly, no upload needed) or comes from create_media_upload for a file that is not in Fish yet."
+          },
+          "input_object_key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shorthand for a single input: requires operation and fills that capability's first required role (e.g. startFrame for i2v). object_key from create_media_upload, or the object_key of a finished generation result in the same workspace."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Capability name from get_media_model (t2v, i2v, reference, video_audio, ...). Required without inputs; with inputs it is optional and pins the capability."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "model_id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    "generate_video": {
+      "name": "generate_video",
+      "title": "Generate Video — Charges Credits",
+      "description": "Submit a video generation with the same parameters used for estimation. The API revalidates price before charging credits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32000,
+            "description": "Required unless get_media_model reports prompt optional; ignored when it reports unsupported."
+          },
+          "parameters": {
+            "type": "object",
+            "default": {}
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "ref",
+                    "startFrame",
+                    "endFrame",
+                    "videoRef",
+                    "sourceVideo",
+                    "audioRef",
+                    "sourceAudio"
+                  ]
+                },
+                "object_key": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "role",
+                "object_key"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Input media, each with its role, in order. The capability follows from the roles given, as in the Fish web app (get_media_model lists each capability's required_roles and accepted inputs), e.g. startFrame → i2v, ref → reference, videoRef/audioRef → reference video/audio, sourceVideo + sourceAudio → lip sync, ref + sourceAudio → talking avatar. object_key is the media.object_key of a finished generation result in the same workspace (use it directly, no upload needed) or comes from create_media_upload for a file that is not in Fish yet."
+          },
+          "input_object_key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Shorthand for a single input: requires operation and fills that capability's first required role (e.g. startFrame for i2v). object_key from create_media_upload, or the object_key of a finished generation result in the same workspace."
+          },
+          "operation": {
+            "type": "string",
+            "description": "Capability name from get_media_model (t2v, i2v, reference, video_audio, ...). Required without inputs; with inputs it is optional and pins the capability."
+          },
+          "expected_credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pricing_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 128
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "workspace_id",
+          "model_id",
+          "expected_credits",
+          "pricing_version",
+          "idempotency_key"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    "get_generation_status": {
+      "name": "get_generation_status",
+      "description": "Poll media status and billing; this may reconcile provider state and credits. While running it returns poll_after_seconds (about 20 for images, 60 for videos): wait that long before calling again. Once finished it also returns the results, so get_generation_result is not needed. Pass generation_id for one generation, or generation_ids (up to 20) to check several at once.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generation_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "Check several generations in one call instead of generation_id; list only the ones still running."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "get_generation_result": {
+      "name": "get_generation_result",
+      "description": "Get terminal media results and billing; this may reconcile provider state. A finished get_generation_status returns the same results. A result's media.object_key can be passed directly as an input to image edit or video generation in the same workspace.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation_id"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    }
+  }
+}

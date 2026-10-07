@@ -65,7 +65,7 @@ function MemorialCreate() {
       }
 
       const response = await memorialsAPI.create(submitData)
-      navigate(`/memorials/${response.data.id}`)
+      navigate(`/memorials/${response.data.id}`, { state: { justCreated: true } })
     } catch (err) {
       const errorData = err.response?.data
       if (errorData?.detail) {

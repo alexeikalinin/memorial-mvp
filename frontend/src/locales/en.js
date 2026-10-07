@@ -245,7 +245,7 @@ export default {
     placeholder: 'Ask a question...',
     send: 'Send',
     suggested_label: 'Try asking:',
-    audio_label: 'Generate audio',
+    audio_label: 'Answer with voice',
     family_label: 'Include family memories',
     no_info: "I don't have memories about that.",
     sources: 'Sources:',
@@ -821,5 +821,34 @@ export default {
       'The small italic line under a name shows how that person is related to {rootName}. "Distant relative via…" means the connection is more than two steps away.',
     gen_legend_root_fallback: 'the person on this memorial page',
     gen_row_label: (n) => `Gen ${n}`,
+  },
+  onboarding: {
+    help_button: 'How does this work?',
+    skip: 'Skip',
+    next: 'Next',
+    finish: 'Done',
+    step_of: '{current} of {total}',
+    steps: {
+      media_upload: {
+        title: 'Memory album',
+        text: 'Upload photos and videos here — they become the memory album on the memorial page.',
+      },
+      memories_add: {
+        title: 'Memories',
+        text: 'Add written memories. The more of them there are, the more "alive" the digital persona feels in chat.',
+      },
+      memories_invite: {
+        title: 'Invite loved ones',
+        text: 'Share this link so family and friends can add their own memories too — no account needed.',
+      },
+      chat_voice: {
+        title: "Avatar's voice",
+        text: "Upload or record a voice sample — we'll create a realistic copy of it so the avatar can answer out loud.",
+      },
+      chat_audio_toggle: {
+        title: 'Answer with voice',
+        text: 'Turn this on to get spoken replies. If it stays off, answers will be text only.',
+      },
+    },
   },
 }

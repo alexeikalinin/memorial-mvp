@@ -3,7 +3,68 @@
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.models import Media, MediaType
+from app.models import Media, MediaType, Memorial, Memory
+
+
+def test_voice_reply_starts_video_animation(auth_client, memorial, db_session, monkeypatch, tmp_path):
+    """A cloned voice reply must invoke the animation service, not the photo route."""
+    import app.api.ai as ai_api
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "uploads").mkdir()
+    monkeypatch.setattr(ai_api.settings, "USE_S3", False)
+    monkeypatch.setattr(ai_api.settings, "PUBLIC_API_URL", "https://api.example.test")
+    monkeypatch.setattr(ai_api.settings, "FISH_AUDIO_API_KEY", "test-key")
+    person = db_session.get(Memorial, memorial["id"])
+    portrait = Media(
+        memorial_id=person.id,
+        file_path="uploads/portrait.jpg",
+        file_name="portrait.jpg",
+        media_type=MediaType.PHOTO,
+    )
+    memory = Memory(
+        memorial_id=person.id,
+        title="Учёба",
+        content="Я учился в МГУ.",
+        embedding_id="test-vector",
+    )
+    db_session.add_all([portrait, memory])
+    db_session.flush()
+    person.cover_photo_id = portrait.id
+    person.voice_id = "test-fish-voice"
+    person.voice_provider = "fish_audio"
+    db_session.commit()
+    video_service = AsyncMock(return_value={"task_id": "video-123", "provider": "d-id"})
+    speech_service = AsyncMock(return_value=b"test-audio")
+    monkeypatch.setattr(ai_api, "animate_photo_service", video_service)
+    monkeypatch.setattr(ai_api, "generate_speech", speech_service)
+    monkeypatch.setattr(ai_api, "get_embedding", AsyncMock(return_value=[0.0] * 1536))
+    monkeypatch.setattr(ai_api, "search_similar_memories", AsyncMock(return_value=[
+        {"memory_id": memory.id, "score": 0.9},
+    ]))
+    monkeypatch.setattr(ai_api, "generate_rag_response", AsyncMock(return_value=(
+        "Я учился в МГУ.", [memory.id],
+    )))
+
+    response = auth_client.post("/api/v1/ai/avatar/chat", json={
+        "memorial_id": person.id,
+        "question": "Где ты учился?",
+        "include_audio": True,
+        "use_persona": False,
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["animation_task_id"] == "video-123"
+    assert data["animation_provider"] == "d-id"
+    speech_service.assert_awaited_once_with(
+        "Я учился в МГУ.", voice_id="test-fish-voice", provider="fish_audio",
+    )
+    video_service.assert_awaited_once_with(
+        image_url=f"https://api.example.test/api/v1/media/{portrait.id}",
+        script=data["answer"],
+        audio_url=f"https://api.example.test{data['audio_url']}",
+    )
 
 
 def test_avatar_chat_no_memories(client, memorial):

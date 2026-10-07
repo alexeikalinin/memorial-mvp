@@ -298,7 +298,7 @@ function MediaGallery({ memorialId, onReload, coverPhotoId, onSetCover, canEdit 
       <div className="gallery-header">
         <h2>{t('media.title')}</h2>
         {canEdit && (
-          <label className="upload-btn">
+          <label className="upload-btn" data-tour="media-upload">
             {uploading ? t('media.uploading') : t('media.upload')}
             <input
               type="file"
