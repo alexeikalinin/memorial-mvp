@@ -35,7 +35,7 @@
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 5rem 1.5rem 1.5rem;
   min-height: 0;
 }
@@ -67,7 +67,7 @@
   display: flex;
   align-items: center;
   gap: clamp(1.5rem, 3vw, 3rem);
-  max-width: 1040px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 5rem 1.5rem 5rem;
   width: 100%;
@@ -76,7 +76,7 @@
 }
 
 .hero-text {
-  flex: 0 1 740px;
+  flex: 1 1 auto;
   min-width: 0;
   opacity: 0;
   transition: opacity 0.28s var(--ease);
@@ -116,13 +116,13 @@
 /* Headline */
 .hero-tagline {
   font-family: var(--font-serif);
-  font-size: clamp(2.7rem, 6vw, 4.6rem);
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
   font-weight: 300;
   line-height: 1.2;
   color: #F5EFE6;
   margin-bottom: 1.5rem;
-  border-left: 2px solid rgba(196, 168, 130, 0.5);
-  padding-left: 1.5rem;
+  border-left: none;
+  padding-left: 0;
 }
 
 .hero-tagline em {
@@ -742,7 +742,7 @@
 
   .hero-inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 70px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     padding: 3rem 1.5rem 4rem;
   }
@@ -756,22 +756,22 @@
   }
 
   .hero-tagline {
-    font-size: 2.2rem;
-    padding-left: 1rem;
+    font-size: clamp(1.1rem, 5.4vw, 2.8rem);
+    padding-left: 0;
   }
 
   .hero-text { display: contents; }
   .hero-brand { grid-column: 1 / -1; grid-row: 1; }
   .hero-tagline { grid-column: 1; grid-row: 2; }
-  .hero-visual { grid-column: 2; grid-row: 2; align-self: center; }
+  .hero-visual { grid-column: 1; grid-row: 3; justify-self: center; }
   .hero-subtitle, .hero-cta { grid-column: 1 / -1; }
   .hero-logo-mark { height: 44px; }
   .hero-logo-wordmark { width: min(210px, 55vw); }
   .hero-brand { gap: 12px; }
 
   .hero-visual svg {
-    width: 70px;
-    height: 117px;
+    width: 150px;
+    height: 250px;
   }
 
   .hero-scroll-cue {
@@ -988,3 +988,6 @@
     margin: 0 auto;
   }
 }
+
+.hero-tagline span, .hero-tagline em { white-space: nowrap; }
+@media (min-width: 769px) { .hero-visual svg { width: 220px; height: 366px; } }

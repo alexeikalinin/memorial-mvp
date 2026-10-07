@@ -114,7 +114,7 @@ export default {
     memorial_candle_title: 'Мемориал',
     label: 'vspomin.ai',
     tagline_plain: 'Мы сохраняем личность,',
-    tagline_em: 'а не просто фотографии',
+    tagline_em: 'а не просто фотографии.',
     subtitle: 'Создайте цифровую память о близком человеке — с голосом, воспоминаниями и семейным деревом',
     cta: 'Создать мемориал',
     section_title: 'Мемориалы',

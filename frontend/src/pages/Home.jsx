@@ -150,7 +150,7 @@ function Home() {
               <img src={logoWordmark} alt="vspomin.ai" className="hero-logo-wordmark" />
             </div>
             <h1 className="hero-tagline">
-              {t('home.tagline_plain')}<br />
+              <span>{t('home.tagline_plain')}</span><br />
               <em>{t('home.tagline_em')}</em>
             </h1>
             <p className="hero-subtitle">{t('home.subtitle')}</p>

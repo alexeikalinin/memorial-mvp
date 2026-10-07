@@ -1,0 +1,75 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>vspomin.ai — варианты свечи</title><style>
+*{box-sizing:border-box}body{margin:0;background:#1c1917;color:#f5efe6;font-family:system-ui,sans-serif;padding:40px 24px}main{max-width:1200px;margin:auto}h1{font-size:28px;font-weight:400}header p{color:#c4a882}.variants{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:32px}section{border:1px solid #61513f;border-radius:18px;padding:24px;text-align:center}h2{font-size:20px;font-weight:400}.stage{height:380px;display:grid;place-items:center;background:radial-gradient(ellipse,#392c20,transparent 70%)}svg{width:220px;height:366px}.candle-flame{transform-origin:60px 88px;transform-box:view-box}.quiet .candle-flame{animation:quiet 6s ease-in-out infinite}.quiet .candle-glow{animation:light 8s ease-in-out infinite}.living .candle-flame{animation:living 3.7s ease-in-out infinite}.living .candle-glow{animation:light 5.8s ease-in-out infinite}.breath .candle-flame{animation:breath 4.6s ease-in-out infinite}.breath .candle-glow{transform-origin:center;animation:halo 4.6s ease-in-out infinite}p{line-height:1.6;color:#cfc2b1;min-height:52px}button{background:#c4a882;color:#201913;border:0;border-radius:8px;padding:12px 20px;cursor:pointer;font-size:15px}section.selected{border-color:#f0d6a6;background:#30271e}#choice{color:#efd4a4}@keyframes quiet{0%,100%{transform:rotate(-.4deg) scaleY(1)}45%{transform:rotate(.6deg) scaleY(1.025)}}@keyframes living{0%,100%{transform:scaleX(1) scaleY(1) rotate(-1deg)}17%{transform:scaleX(.94) scaleY(1.05) rotate(1.5deg)}43%{transform:scaleX(1.03) scaleY(.98) rotate(-.5deg)}68%{transform:scaleX(.97) scaleY(1.03) rotate(-2deg)}83%{transform:scaleX(1.02) scaleY(1.01) rotate(.8deg)}}@keyframes light{0%,100%{opacity:.5}38%{opacity:.8}71%{opacity:.62}}@keyframes breath{0%,100%{transform:rotate(-4deg) scaleY(.98)}50%{transform:rotate(4deg) scaleY(1.08)}}@keyframes halo{0%,100%{opacity:.45;transform:scale(.95)}50%{opacity:.85;transform:scale(1.08)}}@media(max-width:800px){.variants{grid-template-columns:1fr}}@media(prefers-reduced-motion:reduce){.candle-flame,.candle-glow{animation:none!important}}
+</style><main><header><h1>Три варианта свечи для vspomin.ai</h1><p>Сравните движения пламени. Выбор в этом превью не меняет главную страницу.</p><button id="pause" onclick="pause()">Приостановить анимации</button></header><div class="variants"><section class="quiet"><h2>1. Тихое пламя</h2><div class="stage"><svg width="160" height="266" viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="candleGrad1" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stop-color="#c8a97e"/>
+                  <stop offset="40%"  stop-color="#f0ddb8"/>
+                  <stop offset="100%" stop-color="#a07850"/>
+                </linearGradient>
+                <radialGradient id="glowGrad1" cx="50%" cy="60%" r="50%">
+                  <stop offset="0%"   stop-color="#fbbf24" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse class="candle-glow" cx="60" cy="95" rx="52" ry="68" fill="url(#glowGrad1)"/>
+              <g class="candle-flame">
+                <path d="M60 42 C54 55 50 65 52 75 C54 83 58 87 60 88 C62 87 66 83 68 75 C70 65 66 55 60 42Z" fill="#fde68a"/>
+                <path d="M60 52 C57 61 55 68 57 75 C58 80 60 83 60 84 C60 83 62 80 63 75 C65 68 63 61 60 52Z" fill="#fbbf24"/>
+                <path d="M60 62 C58 67 58 72 59 76 C59.5 79 60 81 60 82 C60 81 60.5 79 61 76 C62 72 62 67 60 62Z" fill="#f97316"/>
+              </g>
+              <rect x="42" y="88" width="36" height="90" rx="3" fill="url(#candleGrad1)"/>
+              <rect x="48" y="92" width="6" height="82" rx="3" fill="white" opacity="0.18"/>
+              <line x1="60" y1="88" x2="60" y2="94" stroke="#4b3a2a" stroke-width="1.5"/>
+              <ellipse cx="60" cy="88" rx="18" ry="4" fill="#e8d5b0"/>
+              <rect x="35" y="178" width="50" height="8" rx="4" fill="#8b6840"/>
+              <rect x="30" y="184" width="60" height="6" rx="3" fill="#6b4f30"/>
+            </svg></div><p>Едва заметное движение, спокойный свет.</p><button onclick="select(1)">Выбрать вариант 1</button></section><section class="living"><h2>2. Живое мерцание</h2><div class="stage"><svg width="160" height="266" viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="candleGrad2" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stop-color="#c8a97e"/>
+                  <stop offset="40%"  stop-color="#f0ddb8"/>
+                  <stop offset="100%" stop-color="#a07850"/>
+                </linearGradient>
+                <radialGradient id="glowGrad2" cx="50%" cy="60%" r="50%">
+                  <stop offset="0%"   stop-color="#fbbf24" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse class="candle-glow" cx="60" cy="95" rx="52" ry="68" fill="url(#glowGrad2)"/>
+              <g class="candle-flame">
+                <path d="M60 42 C54 55 50 65 52 75 C54 83 58 87 60 88 C62 87 66 83 68 75 C70 65 66 55 60 42Z" fill="#fde68a"/>
+                <path d="M60 52 C57 61 55 68 57 75 C58 80 60 83 60 84 C60 83 62 80 63 75 C65 68 63 61 60 52Z" fill="#fbbf24"/>
+                <path d="M60 62 C58 67 58 72 59 76 C59.5 79 60 81 60 82 C60 81 60.5 79 61 76 C62 72 62 67 60 62Z" fill="#f97316"/>
+              </g>
+              <rect x="42" y="88" width="36" height="90" rx="3" fill="url(#candleGrad2)"/>
+              <rect x="48" y="92" width="6" height="82" rx="3" fill="white" opacity="0.18"/>
+              <line x1="60" y1="88" x2="60" y2="94" stroke="#4b3a2a" stroke-width="1.5"/>
+              <ellipse cx="60" cy="88" rx="18" ry="4" fill="#e8d5b0"/>
+              <rect x="35" y="178" width="50" height="8" rx="4" fill="#8b6840"/>
+              <rect x="30" y="184" width="60" height="6" rx="3" fill="#6b4f30"/>
+            </svg></div><p>Нерегулярное пламя и мягкое изменение света.</p><button onclick="select(2)">Выбрать вариант 2</button></section><section class="breath"><h2>3. Лёгкое дыхание</h2><div class="stage"><svg width="160" height="266" viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="candleGrad3" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stop-color="#c8a97e"/>
+                  <stop offset="40%"  stop-color="#f0ddb8"/>
+                  <stop offset="100%" stop-color="#a07850"/>
+                </linearGradient>
+                <radialGradient id="glowGrad3" cx="50%" cy="60%" r="50%">
+                  <stop offset="0%"   stop-color="#fbbf24" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse class="candle-glow" cx="60" cy="95" rx="52" ry="68" fill="url(#glowGrad3)"/>
+              <g class="candle-flame">
+                <path d="M60 42 C54 55 50 65 52 75 C54 83 58 87 60 88 C62 87 66 83 68 75 C70 65 66 55 60 42Z" fill="#fde68a"/>
+                <path d="M60 52 C57 61 55 68 57 75 C58 80 60 83 60 84 C60 83 62 80 63 75 C65 68 63 61 60 52Z" fill="#fbbf24"/>
+                <path d="M60 62 C58 67 58 72 59 76 C59.5 79 60 81 60 82 C60 81 60.5 79 61 76 C62 72 62 67 60 62Z" fill="#f97316"/>
+              </g>
+              <rect x="42" y="88" width="36" height="90" rx="3" fill="url(#candleGrad3)"/>
+              <rect x="48" y="92" width="6" height="82" rx="3" fill="white" opacity="0.18"/>
+              <line x1="60" y1="88" x2="60" y2="94" stroke="#4b3a2a" stroke-width="1.5"/>
+              <ellipse cx="60" cy="88" rx="18" ry="4" fill="#e8d5b0"/>
+              <rect x="35" y="178" width="50" height="8" rx="4" fill="#8b6840"/>
+              <rect x="30" y="184" width="60" height="6" rx="3" fill="#6b4f30"/>
+            </svg></div><p>Плавное покачивание пламени и широкий тёплый ореол.</p><button onclick="select(3)">Выбрать вариант 3</button></section></div><p id="choice" aria-live="polite"></p></main><script>let paused=false;function pause(){paused=!paused;document.querySelectorAll('.candle-flame,.candle-glow').forEach(e=>e.style.animationPlayState=paused?'paused':'running');document.querySelector('#pause').textContent=paused?'Продолжить анимации':'Приостановить анимации'}function select(n){document.querySelectorAll('section').forEach((e,i)=>e.classList.toggle('selected',i===n-1));document.querySelector('#choice').textContent='Выбран вариант '+n+'. Сообщите номер в чате, и мы применим его на главной странице.'}</script></html>
