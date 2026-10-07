@@ -165,8 +165,14 @@ function Home() {
             </div>
           </div>
 
-          <div className="hero-visual" aria-hidden="true">
-            <BrandVisual kind="lantern" className="hero-lantern" />
+          <div className="hero-visual hero-album-scene">
+            <img className="hero-album-image" src={`${import.meta.env.BASE_URL}preview-albums/album-1.png`} alt={lang === 'ru' ? 'Семейный альбом памяти с вымышленными фотографиями' : 'Family memory album with fictional photographs'} />
+            <BrandVisual kind="lantern" className="hero-album-lantern" />
+            <div className="hero-album-caption">
+              <blockquote>{lang === 'ru' ? '«Я всегда буду рядом' : '“I will always be close'}<br />{lang === 'ru' ? 'в ваших воспоминаниях»' : 'in your memories”'}</blockquote>
+              <div className="hero-album-voice">{lang === 'ru' ? 'Его голос. Его история.' : 'His voice. His story.'}</div>
+              <div className="hero-album-wave" aria-hidden="true">{[7,14,23,12,29,18,34,22,13,25,17,30,20,11,24,16,9,5].map((height, i) => <i key={i} style={{ height }} />)}</div>
+            </div>
           </div>
         </div>
 
