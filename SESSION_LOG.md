@@ -1,3 +1,7 @@
+## 2026-10-08 — Ещё три композиции
+
+hero-composition-preview расширен до шести: сохранены album/archive/generations, добавлены book of life, voice thread, window of memory. Те же logo/slogan, демонстрационные материалы. Главная без изменений до выбора.
+
 ## 2026-10-08 — Три композиции hero
 
 Новое /app/hero-composition-preview.html с переключением Album / Personal archive / Generations. Существующие иллюстративные landing photos, письмо/цитата явно примеры, статичная waveform не играет fake audio. Выбранные logo2 и lantern3, одинаковый текст/CTA, ссылка demo. Главная не меняется до выбора. Build passed, чужие frontend изменения не включать.
