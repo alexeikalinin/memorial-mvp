@@ -1354,3 +1354,8 @@
   .voice-wizard .voice-clone-options { flex-direction: column; }
   .voice-wizard-footer { gap: 8px; }
 }
+
+.voice-wizard { position: fixed; inset: 0; margin: auto; }
+.voice-wizard .voice-clone-panel-header, .voice-wizard-steps { flex-shrink: 0; }
+.voice-wizard .btn-voice-change { color: #6e4d33; background: #eee4d6; border-color: #c9bba6; min-height: 40px; }
+.voice-wizard .btn-voice-change:disabled { opacity: .55; }
