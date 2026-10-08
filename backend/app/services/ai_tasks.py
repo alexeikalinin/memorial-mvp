@@ -1229,7 +1229,7 @@ async def delete_custom_voice_fish_audio(voice_id: str) -> bool:
         return False
 
 
-async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None, speed: float = 1.0) -> bytes:
+async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None, speed: float = 1.0, model: Optional[str] = None) -> bytes:
     """
     Сгенерировать аудио из текста через Fish Audio.
 
@@ -1252,7 +1252,7 @@ async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None, 
     headers = {
         "Authorization": f"Bearer {settings.FISH_AUDIO_API_KEY}",
         "Content-Type": "application/json",
-        "model": settings.FISH_AUDIO_MODEL,
+        "model": model or settings.FISH_AUDIO_MODEL,
     }
     payload = {"text": text, "prosody": {"speed": speed, "volume": 0}, "latency": "normal"}
     if voice_id:
@@ -1336,6 +1336,7 @@ async def generate_speech(
     provider: Optional[str] = None,
     speed: float = 1.0,
     pronunciations: Optional[dict] = None,
+    model: Optional[str] = None,
 ) -> bytes:
     """
     Унифицированная генерация речи. provider определяет, какой сервис использовать
@@ -1352,7 +1353,7 @@ async def generate_speech(
     text = re.sub(r"([.!?]) +(?=[А-ЯЁA-Z])", r"\1\n\n", text)
     provider = _normalize_tts_provider(provider or settings.TTS_PROVIDER)
     if provider == "fish_audio":
-        return await generate_speech_fish_audio(text, voice_id=voice_id, speed=speed)
+        return await generate_speech_fish_audio(text, voice_id=voice_id, speed=speed, **({"model": model} if model else {}))
     return await generate_speech_elevenlabs(text, voice_id=voice_id)
 
 

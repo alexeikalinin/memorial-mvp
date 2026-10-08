@@ -42,6 +42,9 @@ def _add_missing_columns():
         if "portrait_settings" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN portrait_settings JSON"))
+        if "voice_tts_model" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE memorials ADD COLUMN voice_tts_model VARCHAR(30)"))
         if "voice_provider" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN voice_provider VARCHAR(20)"))

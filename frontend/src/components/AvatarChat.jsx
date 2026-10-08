@@ -86,6 +86,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const [showVoicePanel, setShowVoicePanel] = useState(false)
   const [voiceSamples, setVoiceSamples] = useState([]) // { id, file, label }[] — накопленные образцы перед отправкой
   const [preparingSample, setPreparingSample] = useState(null)
+  const [modelPreviews, setModelPreviews] = useState({})
+  const [previewBusy, setPreviewBusy] = useState(null)
   const [speechSpeed, setSpeechSpeed] = useState(1)
   const [pronunciationText, setPronunciationText] = useState('')
   const sampleUrls = useRef(new Set())
@@ -98,8 +100,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   }
   useEffect(() => {
     setVoiceSamples([])
+    setModelPreviews({})
     sampleGeneration.current += 1
     setPreparingSample(null)
+    setPreviewBusy(null)
     return () => {
       sampleGeneration.current += 1
       sampleUrls.current.forEach((url) => URL.revokeObjectURL(url))
@@ -291,6 +295,38 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     } finally { if (generation === sampleGeneration.current) setPreparingSample(null) }
   }
 
+  const handleModelPreview = async (model) => {
+    setPreviewBusy(model)
+    const generation = sampleGeneration.current
+    try {
+      const response = await aiAPI.previewVoice(memorialId, model, lang)
+      if (generation !== sampleGeneration.current) return
+      const url = sampleUrl(response.data)
+      const previous = modelPreviews[model]
+      if (previous) { URL.revokeObjectURL(previous); sampleUrls.current.delete(previous) }
+      setModelPreviews((prev) => ({ ...prev, [model]: url }))
+    } catch (err) {
+      let detail
+      if (err.response?.data instanceof Blob) {
+        try { detail = JSON.parse(await err.response.data.text()).detail } catch { /* readable fallback */ }
+      }
+      alert(detail || localText('Не удалось создать тестовую озвучку.', 'Could not generate the voice preview.'))
+    } finally { if (generation === sampleGeneration.current) setPreviewBusy(null) }
+  }
+
+  const handleSelectModel = async (model) => {
+    const generation = sampleGeneration.current
+    setPreviewBusy(model)
+    try {
+      await aiAPI.selectVoiceModel(memorialId, model)
+      if (generation !== sampleGeneration.current) return
+      setTtsStatus((prev) => ({ ...prev, model }))
+      Object.values(modelPreviews).forEach((url) => { URL.revokeObjectURL(url); sampleUrls.current.delete(url) })
+      setModelPreviews({})
+    } catch (err) { alert(err.response?.data?.detail || localText('Не удалось сохранить модель.', 'Could not save the model.')) }
+    finally { if (generation === sampleGeneration.current) setPreviewBusy(null) }
+  }
+
   const handleCloneVoice = async () => {
     if (voiceSamples.length === 0) return
     setUploadingVoice(true)
@@ -301,6 +337,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         voiceName || undefined
       )
       alert(response.data.message || t('chat.voice_clone_success'))
+      Object.values(modelPreviews).forEach((url) => { URL.revokeObjectURL(url); sampleUrls.current.delete(url) })
+      setModelPreviews({})
       setHasCustomVoice(true)
       const status = await aiAPI.getTtsStatus(memorialId).catch(() => null)
       if (status) setTtsStatus(status.data)
@@ -589,7 +627,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         <div className="voice-clone-panel">
           <div className="voice-clone-panel-header">
             <h3>🎤 {t('chat.voice_panel_title')}</h3>
-            <button type="button" className="btn-close-panel" onClick={() => { setShowVoicePanel(false); voiceRecorder.reset(); setVoiceSamples([]) }} aria-label={t('chat.voice_panel_close')}>✕</button>
+            <button type="button" className="btn-close-panel" onClick={() => { setShowVoicePanel(false); voiceRecorder.reset() }} aria-label={t('chat.voice_panel_close')}>✕</button>
           </div>
           <p className="voice-clone-hint">
             {t('chat.voice_hint')}
@@ -600,7 +638,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               placeholder={t('chat.voice_name_placeholder')}
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
-              disabled={uploadingVoice || preparingSample !== null}
+              disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
             />
           </div>
           <div className="voice-clone-options">
@@ -609,7 +647,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               {!voiceRecorder.audioBlob ? (
                 <div className="record-controls">
                   {!voiceRecorder.isRecording ? (
-                    <button type="button" className="btn-record" onClick={voiceRecorder.start} disabled={uploadingVoice || preparingSample !== null}>
+                    <button type="button" className="btn-record" onClick={voiceRecorder.start} disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}>
                       🔴 {t('chat.voice_record_start')}
                     </button>
                   ) : (
@@ -627,7 +665,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                       type="button"
                       className="btn btn-primary"
                       onClick={handleAddRecording}
-                      disabled={uploadingVoice || preparingSample !== null}
+                      disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
                     >
                       ➕ {t('chat.voice_add_sample')}
                     </button>
@@ -649,12 +687,25 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                   accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm"
                   multiple
                   onChange={handleVoiceUpload}
-                  disabled={uploadingVoice || preparingSample !== null}
+                  disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
                   style={{ display: 'none' }}
                 />
               </label>
             </div>
           </div>
+
+          {hasCustomVoice && ttsStatus?.provider === 'fish_audio' && <section className="voice-clone-samples">
+            <h4>{localText('Сравнить звучание моделей', 'Compare model voices')}</h4>
+            <p className="voice-preparation-note">{localText('Один клон, одинаковый тестовый текст, темп 1×. Каждое прослушивание генерирует новую озвучку по тарифу Fish Audio. После выбора модели тестовые записи удалятся из этого окна; клон сохранится.', 'One clone, identical test text, speed 1×. Each preview generates speech billed by Fish Audio. Selecting a model clears the temporary previews; your clone stays unchanged.')}</p>
+            {['s1', 's2-pro', 's2.1-pro'].map((model) => <div key={model} className="voice-sample-preview" style={{ marginBottom: 12 }}>
+              <strong>{model} {ttsStatus.model === model ? localText('— используется', '— selected') : ''}</strong>
+              <button type="button" className="btn-voice-change" disabled={previewBusy !== null || uploadingVoice || preparingSample !== null} onClick={() => handleModelPreview(model)}>{previewBusy === model ? localText('Подготовка…', 'Preparing…') : localText('Создать тестовую озвучку', 'Generate voice preview')}</button>
+              {modelPreviews[model] && <>
+                <audio controls preload="metadata" src={modelPreviews[model]} />
+                <button type="button" className="btn-voice-change" disabled={previewBusy !== null || uploadingVoice} onClick={() => handleSelectModel(model)}>{localText('Использовать эту модель', 'Use this model')}</button>
+              </>}
+            </div>)}
+          </section>}
 
           {voiceSamples.length > 0 && (
             <div className="voice-clone-samples">
@@ -667,19 +718,19 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                     <div className="voice-sample-preview">
                       <span className="voice-samples-item-label">🎵 {s.label}</span>
                       <label>{localText('Исходная запись', 'Original recording')}<audio controls preload="metadata" src={s.originalUrl} /></label>
-                      <button type="button" className="btn-voice-change" disabled={uploadingVoice || preparingSample !== null} onClick={() => handlePrepareSample(s)}>
+                      <button type="button" className="btn-voice-change" disabled={uploadingVoice || preparingSample !== null || previewBusy !== null} onClick={() => handlePrepareSample(s)}>
                         {preparingSample === s.id ? localText('Очищаем…', 'Cleaning…') : localText('Очистить и прослушать', 'Clean and preview')}
                       </button>
                       {s.cleanedUrl && <>
                         <label>{localText('Очищенная запись', 'Cleaned recording')}<audio controls preload="metadata" src={s.cleanedUrl} /></label>
-                        <label><input type="checkbox" checked={s.useCleaned} onChange={(e) => setVoiceSamples((prev) => prev.map((item) => item.id === s.id ? { ...item, useCleaned: e.target.checked } : item))} disabled={uploadingVoice || preparingSample !== null} /> {localText('Клонировать из очищенной записи', 'Clone from cleaned recording')}</label>
+                        <label><input type="checkbox" checked={s.useCleaned} onChange={(e) => setVoiceSamples((prev) => prev.map((item) => item.id === s.id ? { ...item, useCleaned: e.target.checked } : item))} disabled={uploadingVoice || preparingSample !== null || previewBusy !== null} /> {localText('Клонировать из очищенной записи', 'Clone from cleaned recording')}</label>
                       </>}
                     </div>
                     <button
                       type="button"
                       className="btn-remove-sample"
                       onClick={() => handleRemoveSample(s.id)}
-                      disabled={uploadingVoice || preparingSample !== null}
+                      disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
                       aria-label={t('chat.voice_remove_sample')}
                     >
                       ✕
@@ -691,7 +742,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                 type="button"
                 className="btn btn-primary btn-clone-voice"
                 onClick={handleCloneVoice}
-                disabled={uploadingVoice || preparingSample !== null}
+                disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
               >
                 {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : hasCustomVoice ? localText('Создать клон повторно', 'Recreate voice clone') : `✅ ${t('chat.voice_clone_submit', { n: String(voiceSamples.length) })}`}
               </button>

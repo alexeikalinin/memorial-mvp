@@ -136,6 +136,8 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  previewVoice: (memorialId, model, language) => apiClient.post(`/ai/voice/preview`, null, { params: { memorial_id: memorialId, model, language }, responseType: 'blob' }),
+  selectVoiceModel: (memorialId, model) => apiClient.patch(`/ai/voice/model`, null, { params: { memorial_id: memorialId, model } }),
   prepareVoice: (memorialId, file) => {
     const formData = new FormData()
     formData.append('audio_file', file)
@@ -187,6 +189,8 @@ export const invitesAPI = {
 }
 
 export const accessAPI = {
+  listAdmins: () => apiClient.get(`/memorials/administration/site-admins`),
+  updateAdmin: (email, isAdmin) => apiClient.patch(`/memorials/administration/site-admins`, { email, is_admin: isAdmin }),
   list:           (memorialId) =>
     apiClient.get(`/memorials/${memorialId}/access`),
   grant:          (memorialId, data) =>

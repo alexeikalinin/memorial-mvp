@@ -1,7 +1,15 @@
+## 2026-10-08 — Permanent owner admin, delegation and voice-model comparison
+
+- Following explicit user clarification, set production user 1alexeikalinin1@gmail.com `is_admin=True` in DB. Service owner identity is separately configured through SERVICE_OWNER_EMAIL (default this account), requires verified email, retains global admin rights and cannot be demoted through admin API.
+- Only service owner may list/grant/revoke global administrators. Recipients must exist, be active and have verified email. Delegated admins cannot delegate; per-memorial access stays editor/viewer only. Added owner-only management section to Detail → Access, and broadened real-owner helper to allow authenticated global admins (not investor demo visitors).
+- One Fish clone can be previewed with same fixed test text and speed1 on s1/s2-pro/s2.1-pro. Preview returns no-store MP3 bytes, no stored response files, no model creation/deletion. User-triggered generation is billed by Fish. Selected model persisted per memorial as voice_tts_model, then honored by subsequent chat; choosing clears browser preview object URLs. Samples retained when closing panel to support retry within same page.
+- Indexed memories 1487–1491 remain pending consent: automatic review rejected broad “continue” as consent for sending family text to OpenAI. Exact payload/destination question presented again; no further retry until explicit answer.
+- Checks: billing/sample/admin suites passed (58 tests), visitor+preview/admin suites passed (14), model-header propagation check added; frontend build passed. Deployment follows.
+
 ## 2026-10-08 — Admin quota UI and five owner-provided memories
 
 - Added DB `users.is_admin` boolean (default false), startup additive migration, read-only auth response flag; server global-admin helper honors it. Account privilege assignment awaits explicit scope confirmation after automatic approval rejection; no account flag has been changed.
-- Billing usage now returns null limits for privileged/demo accounts, fixing front-end false 15-question lock despite server quota bypass. Family RAG toggle honors admin/demo flag. 45 billing tests and frontend build passed; ordinary-user 15-limit check added separately.
+- Billing usage now returns null limits for privileged/demo accounts, fixing front-end false 15-question lock despite server quota bypass. Family RAG toggle honors admin/demo flag. 45 billing tests and frontend build passed; ordinary-user 15-limit check passed separately (46 checks). Published 524d654; Vercel Ready and Railway SUCCESS. Read-only production check: existing email-based global admin is already effective for this account, DB admin flag remains false; chat_limit=None and all five memories present.
 - Saved exactly five owner-provided memories in memorial 318, IDs 1487–1491: Novogrudok, youth hockey, roadwork in Russia, daughter Katya born 1999-10-01, beloved wife Larisa/cooking. No extra factual embellishments. Search indexing blocked by automatic approval review pending explicit OpenAI text-transfer consent; local Qdrant verified.
 - Fish pricing verified: s1 / s2-pro / s2.1-pro $15 per million UTF-8 bytes; free developer model exists. Runtime remains s1; no model switch or new clone.
 

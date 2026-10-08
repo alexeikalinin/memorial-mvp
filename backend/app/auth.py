@@ -20,8 +20,15 @@ def _global_admin_emails_normalized() -> set[str]:
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
+def is_service_owner(user: Optional[User]) -> bool:
+    email = getattr(user, "email", None)
+    return isinstance(email, str) and getattr(user, "email_verified", False) is True and email.strip().lower() == settings.SERVICE_OWNER_EMAIL.strip().lower()
+
+
 def is_global_admin(user: Optional[User]) -> bool:
     """Site-wide admin: same effective rights as memorial owner on all memorials."""
+    if is_service_owner(user):
+        return True
     if user is not None and getattr(user, "is_admin", False) is True:
         return True
     if user is None or not user.email:
@@ -186,7 +193,7 @@ def require_actual_memorial_owner(memorial_id: int, user: Optional[User], db: Se
         raise HTTPException(status_code=404, detail="Memorial not found")
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
-    if memorial.owner_id != user.id:
+    if memorial.owner_id != user.id and not is_global_admin(user):
         raise HTTPException(status_code=403, detail="Only the memorial owner can perform this action")
     return memorial
 

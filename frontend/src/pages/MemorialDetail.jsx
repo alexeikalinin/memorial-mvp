@@ -63,6 +63,9 @@ function MemorialDetail() {
   const [accessListLoading, setAccessListLoading] = useState(false)
   const [accessGrantEmail, setAccessGrantEmail] = useState('')
   const [accessGrantRole, setAccessGrantRole] = useState('viewer')
+  const [siteAdmins, setSiteAdmins] = useState([])
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminBusy, setAdminBusy] = useState(false)
   const [grantingAccess, setGrantingAccess] = useState(false)
   const [accessError, setAccessError] = useState(null)
   const [pendingRequests, setPendingRequests] = useState([])
@@ -302,6 +305,7 @@ function MemorialDetail() {
 
   const openAccessPanel = async () => {
     setShowAccessPanel(true)
+    if (user?.is_service_owner) accessAPI.listAdmins().then((res) => setSiteAdmins(res.data)).catch(() => setAccessError(lang === 'ru' ? 'Не удалось загрузить администраторов.' : 'Could not load administrators.'))
     setAccessError(null)
     setAccessListLoading(true)
     setPendingRequestsLoading(true)
@@ -379,6 +383,19 @@ function MemorialDetail() {
     } finally {
       setGrantingAccess(false)
     }
+  }
+
+  const handleAdminChange = async (email, enabled) => {
+    setAdminBusy(true)
+    setAccessError(null)
+    try {
+      await accessAPI.updateAdmin(email.trim(), enabled)
+      const res = await accessAPI.listAdmins()
+      setSiteAdmins(res.data)
+      setAdminEmail('')
+    } catch (err) {
+      setAccessError(err.response?.data?.detail || (lang === 'ru' ? 'Не удалось изменить права администратора.' : 'Could not change administrator rights.'))
+    } finally { setAdminBusy(false) }
   }
 
   const handleUpdateAccessRole = async (userId, newRole) => {
@@ -719,6 +736,20 @@ function MemorialDetail() {
               <h3>{t('detail.access_title')}</h3>
               <button className="modal-close" onClick={() => setShowAccessPanel(false)}>✕</button>
             </div>
+
+            {user?.is_service_owner && <section className="invite-form">
+              <h4>{lang === 'ru' ? 'Администраторы сервиса' : 'Service administrators'}</h4>
+              <p>{lang === 'ru' ? 'Администратор получает доступ ко всем мемориалам и функциям без тарифных лимитов. Только вы можете назначать и снимать эти права. Получатель должен зарегистрироваться и подтвердить почту.' : 'Administrators can access all memorials and features without plan limits. Only you can grant or revoke these rights. Recipients must register and verify their email.'}</p>
+              <label htmlFor="site-admin-email">{lang === 'ru' ? 'Почта нового администратора' : 'New administrator email'}</label>
+              <input id="site-admin-email" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="family@example.com" disabled={adminBusy} />
+              <button className="btn btn-primary" type="button" disabled={adminBusy || !adminEmail.trim()} onClick={() => handleAdminChange(adminEmail, true)}>{lang === 'ru' ? 'Назначить администратора' : 'Grant administrator rights'}</button>
+              {siteAdmins.map((entry) => <div key={entry.email} style={{ marginTop: 10 }}>
+                <span>{entry.email} {entry.is_service_owner ? (lang === 'ru' ? '— владелец сервиса' : '— service owner') : ''}</span>
+                {!entry.is_service_owner && <button type="button" className="btn btn-secondary" disabled={adminBusy} onClick={() => handleAdminChange(entry.email, false)}>{lang === 'ru' ? 'Снять права администратора' : 'Revoke administrator rights'}</button>}
+              </div>)}
+              <hr />
+              <h4>{lang === 'ru' ? 'Доступ только к этому мемориалу' : 'Access to this memorial only'}</h4>
+            </section>}
 
             <div className="invite-form">
               <label>{t('detail.access_email')}</label>

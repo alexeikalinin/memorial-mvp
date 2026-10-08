@@ -150,6 +150,7 @@ class Settings(BaseSettings):
 
     # Global admins (comma-separated emails): full owner-level API access to every memorial
     # without a row in memorial_access. Use for prod operators; pair with grant_owner script for DB consistency.
+    SERVICE_OWNER_EMAIL: str = "1alexeikalinin1@gmail.com"
     GLOBAL_ADMIN_EMAILS: str = ""
 
     # Investor / walkthrough demo: any authenticated user is treated as owner on all memorials

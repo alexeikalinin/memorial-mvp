@@ -65,6 +65,11 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    @property
+    def is_service_owner(self):
+        from app.config import settings
+        return bool(self.email_verified and self.email and self.email.strip().lower() == settings.SERVICE_OWNER_EMAIL.strip().lower())
+
     # Связи
     memorials = relationship("Memorial", back_populates="owner", cascade="all, delete-orphan")
     memorial_access = relationship("MemorialAccess", foreign_keys="MemorialAccess.user_id", back_populates="user")
@@ -82,6 +87,7 @@ class Memorial(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     is_public = Column(Boolean, default=False)
     voice_id = Column(String(255), nullable=True)  # ID кастомного голоса (формат зависит от voice_provider)
+    voice_tts_model = Column(String(30), nullable=True)
     voice_provider = Column(String(20), nullable=True)  # 'elevenlabs' | 'fish_audio' — кто создал voice_id
     voice_gender = Column(String(20), nullable=True)  # 'male' | 'female' — для выбора голоса по полу, если нет клона
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки

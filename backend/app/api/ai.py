@@ -6,7 +6,7 @@ import asyncio
 
 from fastapi import Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pathlib import Path
 
 import httpx
@@ -83,7 +83,7 @@ async def get_tts_status(
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.VIEWER, allow_public=True)
     _, provider = _resolve_tts_voice(memorial)
     key = settings.FISH_AUDIO_API_KEY if provider == "fish_audio" else settings.ELEVENLABS_API_KEY
-    return {"provider": provider, "configured": bool(key), "has_custom_voice": bool(memorial.voice_id)}
+    return {"provider": provider, "configured": bool(key), "has_custom_voice": bool(memorial.voice_id), "model": (memorial.voice_tts_model or settings.FISH_AUDIO_MODEL) if provider == "fish_audio" else None}
 
 
 @router.post("/photo/animate", response_model=PhotoAnimateResponse)
@@ -607,7 +607,7 @@ async def _avatar_chat_response(
                     raise ValueError("В backend/.env не задан FISH_AUDIO_API_KEY.")
                 if voice_provider == "elevenlabs" and not settings.ELEVENLABS_API_KEY:
                     raise ValueError("В backend/.env не задан ELEVENLABS_API_KEY.")
-                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider, speed=request.speech_speed, pronunciations=request.pronunciations)
+                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider, speed=request.speech_speed, pronunciations=request.pronunciations, model=memorial.voice_tts_model)
 
                 # Сохранение аудио-файла
                 audio_dir = Path("uploads/audio")
@@ -807,6 +807,43 @@ async def get_animation_status_endpoint(
             error=f"Error checking animation status: {error_msg}",
             provider=provider
         )
+
+
+@router.post("/voice/preview")
+async def preview_voice_model(
+    memorial_id: int,
+    model: Literal["s1", "s2-pro", "s2.1-pro"],
+    language: Literal["ru", "en"] = "ru",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    check_tts_access(current_user)
+    voice_id, provider = _resolve_tts_voice(memorial)
+    if not voice_id or provider != "fish_audio":
+        raise HTTPException(status_code=400, detail="Create a Fish Audio voice clone first")
+    text = ("Привет. Это проверка звучания моего голоса. Послушайте, насколько естественно звучат слова и паузы между предложениями."
+            if language == "ru" else "Hello. This is a test of my voice. Listen to how naturally the words sound, and to the pauses between sentences.")
+    try:
+        audio = await generate_speech(text, voice_id=voice_id, provider=provider, speed=1, model=model)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+
+
+@router.patch("/voice/model")
+def select_voice_model(
+    memorial_id: int,
+    model: Literal["s1", "s2-pro", "s2.1-pro"],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    if not memorial.voice_id or memorial.voice_provider != "fish_audio":
+        raise HTTPException(status_code=400, detail="Create a Fish Audio voice clone first")
+    memorial.voice_tts_model = model
+    db.commit()
+    return {"model": model}
 
 
 @router.post("/voice/prepare")

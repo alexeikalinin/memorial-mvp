@@ -384,3 +384,40 @@ async def reject_access_request(
     req.reviewed_at = datetime.now(timezone.utc)
     db.commit()
     return None
+
+
+# Separate global administration from per-memorial editor/viewer sharing.
+from pydantic import BaseModel, EmailStr
+from sqlalchemy import func
+from app.auth import is_service_owner
+
+
+class SiteAdminUpdate(BaseModel):
+    email: EmailStr
+    is_admin: bool
+
+
+def _require_service_owner(user):
+    if not is_service_owner(user):
+        raise HTTPException(status_code=403, detail="Only the service owner can manage administrators")
+
+
+@router.get("/administration/site-admins")
+def list_site_admins(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_service_owner(current_user)
+    return [{"email": u.email, "is_service_owner": is_service_owner(u)} for u in db.query(User).filter(User.is_admin.is_(True)).order_by(User.id).all()]
+
+
+@router.patch("/administration/site-admins")
+def update_site_admin(data: SiteAdminUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    _require_service_owner(current_user)
+    target = db.query(User).filter(func.lower(User.email) == str(data.email).lower(), User.is_active.is_(True)).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="The recipient must register first")
+    if is_service_owner(target):
+        raise HTTPException(status_code=400, detail="The service owner's permanent administrator rights cannot be changed")
+    if data.is_admin and not target.email_verified:
+        raise HTTPException(status_code=400, detail="The recipient must verify their email first")
+    target.is_admin = data.is_admin
+    db.commit()
+    return {"email": target.email, "is_admin": target.is_admin}
