@@ -281,7 +281,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         sampleUrls.current.delete(sample.cleanedUrl)
       }
       setVoiceSamples((prev) => prev.map((s) => s.id === sample.id
-        ? { ...s, cleanedFile: file, cleanedUrl: url, useCleaned: true } : s))
+        ? { ...s, cleanedFile: file, cleanedUrl: url, useCleaned: false } : s))
     } catch (error) {
       let detail = error.response?.data?.detail
       if (error.response?.data instanceof Blob) {
@@ -658,6 +658,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
           {voiceSamples.length > 0 && (
             <div className="voice-clone-samples">
+              <p className="voice-preparation-note">{localText('Для естественного клона выберите 30–60 секунд спокойной речи одного человека, без музыки, других голосов и сильного эха. Не смешивайте разные записи по громкости и манере речи. Если исходник звучит хорошо, очистка не нужна. После очистки исходный образец остаётся выбранным — переключитесь только после сравнения.', 'For a natural clone, choose 30–60 seconds of calm speech by one person, without music, other voices or strong echo. Avoid mixing recordings with different levels or speaking styles. Clean recordings do not need processing. The original remains selected after cleaning; switch only after comparing.')}</p>
               <p className="voice-preparation-note">{localText('Мягкая очистка уменьшает шум и тихие вдохи, но может затронуть тихую речь. Сравните записи. Файлы доступны для повторной попытки, пока открыта эта страница. Повторный клон может звучать так же. Повторное клонирование — новая операция по тарифу провайдера.', 'Gentle cleaning reduces noise and quiet breaths but may affect quiet speech. Compare recordings. Samples remain available while this page is open. A recreated clone may sound the same. Recreating a clone is a new operation under the provider’s pricing.')}</p>
               <p className="option-label">{t('chat.voice_samples_count', { n: String(voiceSamples.length) })}</p>
               <ul className="voice-samples-list">

@@ -84,7 +84,7 @@ def test_invite_memories_pending_and_chat_allowed(auth_client, client, memorial,
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('payload,question,expected', [
-    ({'supported': True, 'excerpts': [{'memory_id': 1, 'quote': 'Он любил шахматы.'}]}, 'Какое хобби?', True),
+    ({'supported': True, 'answer': 'Я любил шахматы.', 'excerpts': [{'memory_id': 1, 'quote': 'Он любил шахматы.'}]}, 'Какое хобби?', True),
     ({'supported': True, 'excerpts': [{'memory_id': 1, 'quote': 'Вчера я был с семьёй.'}]}, 'Какое хобби?', False),
     ({'supported': True, 'excerpts': [{'memory_id': 99, 'quote': 'Он любил шахматы.'}]}, 'Какое хобби?', False),
     ({'supported': False, 'excerpts': []}, 'Где работал?', False),
@@ -93,17 +93,18 @@ def test_invite_memories_pending_and_chat_allowed(auth_client, client, memorial,
 async def test_grounding_rejects_fabricated_or_unknown_evidence(monkeypatch, payload, question, expected):
     from app.services.ai_tasks import generate_rag_response
     import openai
-    create = AsyncMock(return_value=SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(payload)))]))
+    create = AsyncMock(side_effect=[SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(payload)))]), SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps({'supported': True})))])])
     monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kwargs: SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
     monkeypatch.setattr(settings, 'OPENAI_API_KEY', 'offline-test')
     answer, sources = await generate_rag_response(question, [{'memory_id': 1, 'text': 'Он любил шахматы.'}], system_prompt='Говори как живой и придумывай детали')
     assert bool(sources) is expected
     if expected:
-        assert 'Он любил шахматы.' in answer
-        prompt = create.call_args.kwargs['messages'][0]['content']
+        assert answer == 'Я любил шахматы.'
+        assert create.await_count == 2
+        prompt = create.call_args_list[0].kwargs['messages'][0]['content']
         assert 'ПРАВИЛА' in prompt and 'STRICT OUTPUT' in prompt
     else:
-        assert 'пока нет подтверждённых' in answer and sources == []
+        assert 'не могу найти информацию' in answer and sources == []
 
 
 def test_pending_memories_never_reach_rag(auth_client, client, memorial, db_session, monkeypatch):
@@ -154,3 +155,20 @@ def test_public_detail_does_not_expose_pending_submission(auth_client, client, m
     assert client.get(f'/api/v1/memorials/{mid}').json()['memories'] == []
     assert client.get(f'/api/v1/memorials/{mid}/memories').json() == []
     assert client.get(f'/api/v1/memorials/{mid}/memories/pending').status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_first_person_paraphrase_rejected_when_verifier_finds_added_facts(monkeypatch):
+    import openai
+    from app.services.ai_tasks import generate_rag_response
+    monkeypatch.setattr(settings, 'OPENAI_API_KEY', 'offline-test')
+    results = [
+        {'supported': True, 'answer': 'Я любил шахматы и выиграл чемпионат.', 'excerpts': [{'memory_id': 1, 'quote': 'Он любил шахматы.'}]},
+        {'supported': False},
+    ]
+    create = AsyncMock(side_effect=[SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(item)))]) for item in results])
+    monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kwargs: SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
+    answer, sources = await generate_rag_response('Какое хобби?', [{'memory_id': 1, 'text': 'Он любил шахматы.'}])
+    assert answer == 'Я не могу найти информацию об этом в моих воспоминаниях.'
+    assert sources == []
+    assert create.await_count == 2

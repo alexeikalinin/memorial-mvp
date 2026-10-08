@@ -511,9 +511,9 @@ async def _avatar_chat_response(
         if not context_chunks:
             print(f"❌ No context chunks after RAG + DB fallback (similar_hits={len(similar_memories)})")
             no_info_msg = (
-                "I don't have memories about that."
+                "I can't find information about that in my memories."
                 if request.language == "en" else
-                "У меня нет информации на эту тему."
+                "Я не могу найти информацию об этом в моих воспоминаниях."
             )
             return AvatarChatResponse(answer=no_info_msg, sources=[])
         

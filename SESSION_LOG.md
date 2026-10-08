@@ -1,10 +1,17 @@
+## 2026-10-08 — First-person grounded answers and clone quality guidance
+
+- Removed deterministic archive quotation prefix from RAG output. Generation returns short first-person answer plus exact excerpts; excerpt IDs/text checked against retrieved approved memories before an independent LLM entailment/subject-attribution check. Unsupported answers return «Я не могу найти информацию об этом в моих воспоминаниях.» (English equivalent included), including empty-context path.
+- Additional verifier incurs one small OpenAI request per supported answer; no extra request for unsupported/excerpt-invalid answers. Validation reduces, but cannot guarantee elimination of, model errors.
+- Original recording stays selected after preview cleaning; processing must be explicitly selected after comparison. Added reference guidance (30–60 sec, one speaker, stable style/level, no music/echo). Do not assume processing improves identity; actual user's recording/clone has not been auditioned, so quality cause remains unconfirmed.
+- Validation: visitor-flow and audio tests 20 passed, additional reject-added-fact test run separately; frontend build passed. Publishing follows.
+
 ## 2026-10-08 — Preview cleaning and speech controls
 
 - Added owner-only `/ai/voice/prepare`: extract video audio, validate duration <=10 min/size <=100MB, mild FFmpeg denoise and gate, normalize level, return MP3 no-store; remove all temporary files on success/error/timeout. No Fish model or provider charge from preparation. Not a specialized breath classifier; loud breaths may remain, quiet speech may be affected.
 - Voice panel now plays original and cleaned audio and lets owner choose reference. Samples retained only in browser memory while page remains open for repeat cloning; object URLs revoked on removal/unmount/memorial change. Recreating model is a provider operation, no improvement guarantee; old model replacement behavior retained.
 - Chat speech settings: Fish speed .85/.95/1/1.1 and bounded 20-entry pronunciation substitutions in speech text only, paragraph separation between sentences. No guarantee Russian stress is honored. Written RAG answer unchanged.
 - Validation: 10 isolated SQLite server tests passed (actual MP4 decoding/clean preview, cleanup on errors, no provider/model creation during preparation, pronunciation boundaries/speed propagation/input bounds). Frontend production build passed.
-- Publishing through existing GitHub→Vercel/Railway integration; production check follows. Browser file-upload extension permission remains unavailable, so full browser upload interaction cannot be verified here without changing that permission.
+- Published commit 04bf12a through existing GitHub→Vercel/Railway integration: Vercel Ready and Railway SUCCESS. Production API responds; actual FFmpeg cleaning on production returned valid MP3 (33061 bytes) from synthetic 2-second tone, no paid provider calls. Web speech settings and selection 0.95× verified; screenshot `/private/tmp/voice-cleaning-settings.png`. Browser file-upload extension permission remains unavailable, so full browser upload interaction cannot be verified here without changing that permission.
 
 ## 2026-10-08 — Повторное удаление голоса перед новым клонированием
 
