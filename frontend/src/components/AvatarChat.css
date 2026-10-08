@@ -1303,3 +1303,54 @@
 .speech-settings summary { cursor: pointer; }
 .speech-settings label { display: block; margin-top: 10px; font-size: 13px; }
 .speech-settings textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 5px; padding: 8px; }
+
+/* Voice setup lives outside the fixed-height chat, with persistent navigation. */
+.voice-wizard {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-warm, #f6f1e9);
+  color: var(--text, #40382f);
+  box-shadow: 0 24px 90px #0005;
+}
+.voice-wizard::backdrop { background: #191510a8; backdrop-filter: blur(5px); }
+.voice-wizard .voice-clone-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  max-height: calc(100dvh - 42px);
+  overflow: hidden;
+  border: 0;
+}
+.voice-wizard .voice-clone-panel-header { padding: 22px 26px 14px; margin: 0; }
+.voice-wizard .voice-clone-panel-header h3 { font-size: 1.5rem; }
+.voice-wizard .btn-close-panel { min-width: 40px; min-height: 40px; }
+.voice-wizard-steps { display: flex; gap: 16px; list-style: none; padding: 0 26px 18px; margin: 0; border-bottom: 1px solid var(--border); }
+.voice-wizard-steps li { flex: 1; display: flex; align-items: center; gap: 8px; font-size: .83rem; color: var(--text-muted, #8b7e6d); }
+.voice-wizard-steps span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; }
+.voice-wizard-steps .active { color: var(--accent, #8e603e); font-weight: 600; }
+.voice-wizard-steps .active span { background: var(--accent, #8e603e); color: white; }
+.voice-wizard-steps .complete span { background: #e4ddcf; }
+.voice-wizard-body { padding: 22px 26px; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.voice-wizard-body h4 { margin: 0 0 12px; font-size: 1.2rem; }
+.voice-wizard .voice-clone-samples { margin: 0; padding: 0; border: 0; }
+.voice-wizard .voice-preparation-note { font-size: .88rem; line-height: 1.6; }
+.voice-wizard .voice-sample-preview { gap: 12px; }
+.voice-wizard .voice-clone-samples > .voice-sample-preview { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: #ffffff50; }
+.voice-wizard audio { width: 100%; }
+.voice-wizard-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 26px; border-top: 1px solid var(--border); background: var(--surface-warm, #f6f1e9); flex-shrink: 0; }
+.voice-wizard-footer .btn { min-height: 44px; white-space: normal; }
+.voice-wizard-success { text-align: center; padding: 24px 12px; line-height: 1.6; }
+.voice-wizard-success > span { display: grid; place-items: center; width: 60px; height: 60px; background: #e6ecdd; border-radius: 50%; color: #65764a; font-size: 32px; margin: 0 auto 18px; }
+@media (max-width: 540px) {
+  .voice-wizard { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 14px; }
+  .voice-wizard .voice-clone-panel { max-height: calc(100dvh - 18px); }
+  .voice-wizard .voice-clone-panel-header, .voice-wizard-body, .voice-wizard-footer { padding: 16px; }
+  .voice-wizard-steps { padding: 0 16px 16px; gap: 6px; }
+  .voice-wizard-steps li { flex-direction: column; gap: 5px; font-size: .7rem; }
+  .voice-wizard .voice-clone-options { flex-direction: column; }
+  .voice-wizard-footer { gap: 8px; }
+}
