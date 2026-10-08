@@ -2,7 +2,7 @@
 
 - Replaced red lantern with exposed wax candle at the marked lower-right portrait edge on owner/public pages, including mobile.
 - Landing header/footer reuse existing app flame wordmark; both i dots have candle flames, with static reduced-motion alternative.
-- Production build passed; isolated Chrome verified candle placement, hover caption (0px → 12px), and all four landing logo assets load. Publishing frontend update; no backend changes.
+- Production build passed; isolated Chrome verified candle placement, hover caption (0px → 12px), and all four landing logo assets load. Commit e7f5296 pushed to main; GitHub auto-deployment published frontend. Production landing returns updated flame assets and app CSS contains open-candle selector; no backend changes. Manual Vercel deploy returned Not authorized, but auto-deploy completed successfully.
 
 ## 2026-10-08 — Portrait lamp, family tree sync and publication
 
