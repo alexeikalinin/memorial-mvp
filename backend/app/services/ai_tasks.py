@@ -1212,7 +1212,7 @@ async def delete_custom_voice_fish_audio(voice_id: str) -> bool:
         return False
 
 
-async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None) -> bytes:
+async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None, speed: float = 1.0) -> bytes:
     """
     Сгенерировать аудио из текста через Fish Audio.
 
@@ -1237,7 +1237,7 @@ async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None) 
         "Content-Type": "application/json",
         "model": settings.FISH_AUDIO_MODEL,
     }
-    payload = {"text": text}
+    payload = {"text": text, "prosody": {"speed": speed, "volume": 0}, "latency": "normal"}
     if voice_id:
         payload["reference_id"] = voice_id
 
@@ -1317,15 +1317,25 @@ async def generate_speech(
     text: str,
     voice_id: Optional[str] = None,
     provider: Optional[str] = None,
+    speed: float = 1.0,
+    pronunciations: Optional[dict] = None,
 ) -> bytes:
     """
     Унифицированная генерация речи. provider определяет, какой сервис использовать
     для данного voice_id (должен совпадать с тем, кто этот voice_id создавал —
     голос ElevenLabs нельзя подставить в Fish Audio и наоборот).
     """
+    import re
+    if pronunciations:
+        # Substitute whole words for speech only; displayed memories stay intact.
+        pattern = re.compile(r"(?<!\w)(?:" + "|".join(re.escape(k) for k in sorted(pronunciations, key=len, reverse=True)) + r")(?!\w)", re.IGNORECASE)
+        replacements = {k.lower(): v for k, v in pronunciations.items()}
+        text = pattern.sub(lambda match: replacements[match.group().lower()], text)
+    # Paragraph boundaries give the synthesizer clearer sentence boundaries.
+    text = re.sub(r"([.!?]) +(?=[А-ЯЁA-Z])", r"\1\n\n", text)
     provider = _normalize_tts_provider(provider or settings.TTS_PROVIDER)
     if provider == "fish_audio":
-        return await generate_speech_fish_audio(text, voice_id=voice_id)
+        return await generate_speech_fish_audio(text, voice_id=voice_id, speed=speed)
     return await generate_speech_elevenlabs(text, voice_id=voice_id)
 
 

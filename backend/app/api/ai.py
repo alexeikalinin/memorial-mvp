@@ -2,15 +2,16 @@
 API endpoints для AI-функций: анимация фото и чат с аватаром.
 """
 import logging
+import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pathlib import Path
 
 import httpx
 
-from app.services.voice_samples import prepare_voice_samples
+from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
 
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner
@@ -606,7 +607,7 @@ async def _avatar_chat_response(
                     raise ValueError("В backend/.env не задан FISH_AUDIO_API_KEY.")
                 if voice_provider == "elevenlabs" and not settings.ELEVENLABS_API_KEY:
                     raise ValueError("В backend/.env не задан ELEVENLABS_API_KEY.")
-                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider)
+                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider, speed=request.speech_speed, pronunciations=request.pronunciations)
 
                 # Сохранение аудио-файла
                 audio_dir = Path("uploads/audio")
@@ -806,6 +807,33 @@ async def get_animation_status_endpoint(
             error=f"Error checking animation status: {error_msg}",
             provider=provider
         )
+
+
+@router.post("/voice/prepare")
+async def prepare_voice_preview(
+    memorial_id: int,
+    audio_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return an ephemeral cleaned sample. No provider call or model change."""
+    require_actual_memorial_owner(memorial_id, current_user, db)
+    paths = []
+    try:
+        paths = await prepare_voice_samples([audio_file], Path("uploads/voices"))
+        output = paths[0].with_name(paths[0].stem + "_clean.mp3")
+        paths.append(output)
+        await clean_voice_sample(paths[0], output)
+        return Response(output.read_bytes(), media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(status_code=400, detail='Обработка заняла слишком много времени. Выберите более короткую запись.') from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    finally:
+        for path in paths:
+            path.unlink(missing_ok=True)
 
 
 @router.post("/voice/upload")

@@ -92,3 +92,18 @@ async def prepare_voice_samples(uploads, directory: Path):
         for path in created:
             path.unlink(missing_ok=True)
         raise
+
+
+async def clean_voice_sample(source: Path, destination: Path):
+    """Mild noise/quiet-breath attenuation; this is not a breath classifier."""
+    metadata = json.loads(await _run('ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
+                                    '-show_format', '-show_streams', '-of', 'json', str(source)))
+    if not any(stream.get('codec_type') == 'audio' for stream in metadata.get('streams', [])):
+        raise ValueError('В записи нет аудиодорожки.')
+    duration = float(metadata.get('format', {}).get('duration', 0))
+    if not 0 < duration <= MAX_VIDEO_SECONDS:
+        raise ValueError('Для очистки выберите запись длительностью до 10 минут.')
+    await _run('ffmpeg', '-nostdin', '-v', 'error', '-y', '-protocol_whitelist', 'file,pipe',
+               '-i', str(source), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', '44100',
+               '-af', 'highpass=f=65,afftdn=nf=-28,agate=threshold=0.015:ratio=2:attack=10:release=180,loudnorm=I=-18:TP=-2:LRA=11',
+               '-c:a', 'libmp3lame', '-b:a', '128k', str(destination))

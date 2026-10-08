@@ -72,3 +72,49 @@ def test_upload_endpoint_sends_extracted_audio_to_provider(auth_client, memorial
     assert response.json()['voice_id'] == 'video-test-voice'
     assert response.json()['voice_provider'] == 'fish_audio'
     assert captured and not any(Path(p).exists() for p in captured)
+
+
+def test_preview_returns_audio_without_cloning_and_removes_temp_files(auth_client, monkeypatch, tmp_path, video):
+    from app.api import ai
+    monkeypatch.chdir(tmp_path)
+    async def forbidden(*args, **kwargs):
+        pytest.fail('Preview must not create a paid voice model')
+    monkeypatch.setattr(ai, 'create_custom_voice', forbidden)
+    memorial = auth_client.post('/api/v1/memorials/', json={'name': 'Preview test'}).json()
+    response = auth_client.post(f'/api/v1/ai/voice/prepare?memorial_id={memorial["id"]}', files={'audio_file': ('voice.mp4', video, 'video/mp4')})
+    assert response.status_code == 200, response.text
+    assert response.headers['content-type'].startswith('audio/mpeg')
+    assert response.headers['cache-control'] == 'no-store'
+    assert len(response.content) > 1000
+    assert not list((tmp_path / 'uploads/voices').iterdir())
+    assert not auth_client.get(f'/api/v1/memorials/{memorial["id"]}').json().get('voice_id')
+
+
+def test_corrupt_preview_returns_error_and_cleans(auth_client, monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    memorial = auth_client.post('/api/v1/memorials/', json={'name': 'Corrupt preview'}).json()
+    response = auth_client.post(f'/api/v1/ai/voice/prepare?memorial_id={memorial["id"]}', files={'audio_file': ('voice.wav', b'broken', 'audio/wav')})
+    assert response.status_code == 400
+    assert not list((tmp_path / 'uploads/voices').iterdir())
+
+
+def test_pronunciation_only_changes_spoken_text_and_passes_speed(monkeypatch):
+    from app.services import ai_tasks
+    captured = {}
+    async def speech(text, voice_id=None, speed=1):
+        captured.update(text=text, speed=speed, voice_id=voice_id)
+        return b'audio'
+    monkeypatch.setattr(ai_tasks, 'generate_speech_fish_audio', speech)
+    original = 'Сачко здесь. Сачков там.'
+    assert asyncio.run(ai_tasks.generate_speech(original, 'voice', 'fish_audio', .85, {'Сачко': 'Сачкó'})) == b'audio'
+    assert captured == {'text': 'Сачкó здесь.\n\nСачков там.', 'speed': .85, 'voice_id': 'voice'}
+    assert original == 'Сачко здесь. Сачков там.'
+
+
+def test_speech_controls_are_bounded():
+    from app.schemas import AvatarChatRequest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        AvatarChatRequest(memorial_id=1, question='Hi', speech_speed=4)
+    with pytest.raises(ValidationError):
+        AvatarChatRequest(memorial_id=1, question='Hi', pronunciations={str(i): 'word' for i in range(21)})

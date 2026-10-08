@@ -1,3 +1,23 @@
+## 2026-10-08 — Preview cleaning and speech controls
+
+- Added owner-only `/ai/voice/prepare`: extract video audio, validate duration <=10 min/size <=100MB, mild FFmpeg denoise and gate, normalize level, return MP3 no-store; remove all temporary files on success/error/timeout. No Fish model or provider charge from preparation. Not a specialized breath classifier; loud breaths may remain, quiet speech may be affected.
+- Voice panel now plays original and cleaned audio and lets owner choose reference. Samples retained only in browser memory while page remains open for repeat cloning; object URLs revoked on removal/unmount/memorial change. Recreating model is a provider operation, no improvement guarantee; old model replacement behavior retained.
+- Chat speech settings: Fish speed .85/.95/1/1.1 and bounded 20-entry pronunciation substitutions in speech text only, paragraph separation between sentences. No guarantee Russian stress is honored. Written RAG answer unchanged.
+- Validation: 10 isolated SQLite server tests passed (actual MP4 decoding/clean preview, cleanup on errors, no provider/model creation during preparation, pronunciation boundaries/speed propagation/input bounds). Frontend production build passed.
+- Publishing through existing GitHub→Vercel/Railway integration; production check follows. Browser file-upload extension permission remains unavailable, so full browser upload interaction cannot be verified here without changing that permission.
+
+## 2026-10-08 — Повторное удаление голоса перед новым клонированием
+
+По запросу пользователя удалён новый Fish Audio клон мемориала 318 (2e544394d5f7427d807e804c7451edec) и очищены voice_id/voice_provider. Пользователь спрашивает автоматическое удаление вдохов: текущая подготовка MP4 только извлекает звук, специализированный de-breath ещё не реализован; обычный gate/удаление тишины не обеспечивает распознавание вдохов и может повреждать тихую речь.
+
+## 2026-10-08 — Очистка исходников и аудиоответов
+
+По прямому запросу пользователя удалены все 21 сгенерированные chat_*.mp3 из облачного S3-совместимого хранилища (14709925 байт). Повторный список подтвердил 0 файлов. В uploads/voices и uploads/audio локальных файлов не было. Исходники клонирования уже очищаются автоматически после завершения/ошибки. Галерея медиа не удалялась. Пакетное DeleteObjects хранилище отклонило; использовано успешное индивидуальное delete_object.
+
+## 2026-10-08 — Удаление клона по запросу пользователя
+
+В production-БД был один клон (мемориал 318, Fish Audio). Модель удалена у Fish Audio через backend API-ключ, затем voice_id/voice_provider очищены в БД. Исходные записи и прошлые аудиоответы не удалялись. FFmpeg 7.1.5 подтверждён на Railway; реальный production smoke test искусственного MP4 успешно извлёк MP3 без обращения к Fish Audio. Проверка загрузки файла через Chrome extension ограничена настройкой Allow access to file URLs; обычная форма опубликована и содержит поддержку видео.
+
 ## 2026-10-08 — Клонирование голоса из видео
 
 В форме клонирования разрешены MP4/MOV/M4V/WEBM и аудиофайлы. Сервер локально извлекает первую аудиодорожку видео в mono MP3 и передаёт только звук текущему TTS-провайдеру (Fish/ElevenLabs). Добавлен FFmpeg в оба Dockerfile и railpack.json: фактический Railway builder — Railpack, а не Dockerfile. Ограничения: 100МБ/файл, 10мин видео, 120с обработки; пустые, повреждённые и беззвучные видео отклоняются до обращения к провайдеру. Временные видео/аудио удаляются на успехе и ошибках. UI RU/EN объясняет загрузку видео. Шесть тестов с настоящим FFmpeg и mocked-provider endpoint прошли; сборка frontend успешна. Платное клонирование в тестах не выполнялось.

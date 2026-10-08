@@ -85,6 +85,27 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
   const [showVoicePanel, setShowVoicePanel] = useState(false)
   const [voiceSamples, setVoiceSamples] = useState([]) // { id, file, label }[] — накопленные образцы перед отправкой
+  const [preparingSample, setPreparingSample] = useState(null)
+  const [speechSpeed, setSpeechSpeed] = useState(1)
+  const [pronunciationText, setPronunciationText] = useState('')
+  const sampleUrls = useRef(new Set())
+  const sampleGeneration = useRef(0)
+  const localText = (ru, en) => lang === 'ru' ? ru : en
+  const sampleUrl = (file) => {
+    const url = URL.createObjectURL(file)
+    sampleUrls.current.add(url)
+    return url
+  }
+  useEffect(() => {
+    setVoiceSamples([])
+    sampleGeneration.current += 1
+    setPreparingSample(null)
+    return () => {
+      sampleGeneration.current += 1
+      sampleUrls.current.forEach((url) => URL.revokeObjectURL(url))
+      sampleUrls.current.clear()
+    }
+  }, [memorialId])
   const [ttsStatus, setTtsStatus] = useState(null)
   const [elQuota, setElQuota] = useState(null)
   const [elQuotaErr, setElQuotaErr] = useState(null)
@@ -223,7 +244,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     }
     setVoiceSamples((prev) => [
       ...prev,
-      ...files.map((file) => ({ id: `${Date.now()}_${file.name}_${Math.random()}`, file, label: file.name })),
+      ...files.map((file) => ({ id: `${Date.now()}_${file.name}_${Math.random()}`, file, originalUrl: sampleUrl(file), label: file.name })),
     ])
     e.target.value = ''
   }
@@ -233,13 +254,41 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     const file = new File([voiceRecorder.audioBlob], `voice_clone_${voiceSamples.length + 1}.webm`, { type: 'audio/webm' })
     setVoiceSamples((prev) => [
       ...prev,
-      { id: `${Date.now()}_rec_${Math.random()}`, file, label: t('chat.voice_recording_label', { n: String(prev.length + 1) }) },
+      { id: `${Date.now()}_rec_${Math.random()}`, file, originalUrl: sampleUrl(file), label: t('chat.voice_recording_label', { n: String(prev.length + 1) }) },
     ])
     voiceRecorder.reset()
   }
 
   const handleRemoveSample = (id) => {
+    const sample = voiceSamples.find((s) => s.id === id)
+    ;[sample?.originalUrl, sample?.cleanedUrl].filter(Boolean).forEach((url) => {
+      URL.revokeObjectURL(url)
+      sampleUrls.current.delete(url)
+    })
     setVoiceSamples((prev) => prev.filter((s) => s.id !== id))
+  }
+
+  const handlePrepareSample = async (sample) => {
+    setPreparingSample(sample.id)
+    const generation = sampleGeneration.current
+    try {
+      const response = await aiAPI.prepareVoice(memorialId, sample.file)
+      if (generation !== sampleGeneration.current) return
+      const file = new File([response.data], 'cleaned.mp3', { type: 'audio/mpeg' })
+      const url = sampleUrl(file)
+      if (sample.cleanedUrl) {
+        URL.revokeObjectURL(sample.cleanedUrl)
+        sampleUrls.current.delete(sample.cleanedUrl)
+      }
+      setVoiceSamples((prev) => prev.map((s) => s.id === sample.id
+        ? { ...s, cleanedFile: file, cleanedUrl: url, useCleaned: true } : s))
+    } catch (error) {
+      let detail = error.response?.data?.detail
+      if (error.response?.data instanceof Blob) {
+        try { detail = JSON.parse(await error.response.data.text()).detail } catch { /* use fallback */ }
+      }
+      alert(detail || localText('Не удалось очистить запись.', 'Could not clean the recording.'))
+    } finally { if (generation === sampleGeneration.current) setPreparingSample(null) }
   }
 
   const handleCloneVoice = async () => {
@@ -248,16 +297,14 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     try {
       const response = await aiAPI.uploadVoice(
         memorialId,
-        voiceSamples.map((s) => s.file),
+        voiceSamples.map((s) => s.useCleaned && s.cleanedFile ? s.cleanedFile : s.file),
         voiceName || undefined
       )
       alert(response.data.message || t('chat.voice_clone_success'))
       setHasCustomVoice(true)
       const status = await aiAPI.getTtsStatus(memorialId).catch(() => null)
       if (status) setTtsStatus(status.data)
-      setVoiceName('')
-      setVoiceSamples([])
-      setShowVoicePanel(false)
+      setShowVoicePanel(true)
     } catch (err) {
       const status = err.response?.status
       const detail = err.response?.data?.detail || t('chat.voice_clone_error')
@@ -277,6 +324,17 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     e.preventDefault()
     if (!input.trim() || loading || disabled || chatBlocked) return
 
+    const pronunciations = {}
+    for (const line of pronunciationText.split('\n').filter((line) => line.trim())) {
+      const separator = line.indexOf('=')
+      const word = line.slice(0, separator).trim()
+      const spoken = line.slice(separator + 1).trim()
+      if (separator < 1 || !spoken || word.length > 80 || spoken.length > 80 || Object.keys(pronunciations).length >= 20) {
+        alert(localText('Укажите до 20 строк: слово = произношение (до 80 символов).', 'Use up to 20 lines: word = pronunciation (up to 80 characters).'))
+        return
+      }
+      pronunciations[word] = spoken
+    }
     const userMessage = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text: userMessage }])
@@ -286,6 +344,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       const response = await aiAPI.chat({
         memorial_id: parseInt(memorialId),
         question: userMessage,
+        speech_speed: speechSpeed,
+        pronunciations,
         include_audio: !textOnly && includeAudio,
         include_family_memories: !textOnly && includeFamilyMemories,
         invite_token: inviteToken || undefined,
@@ -508,7 +568,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                 <span className="voice-status">✅ {t('chat.voice_uploaded')}</span>
                 <button
                   className="btn-voice-change"
-                  onClick={() => { setHasCustomVoice(false); setShowVoicePanel(true) }}
+                  onClick={() => setShowVoicePanel(true)}
                 >
                   {t('chat.voice_change')}
                 </button>
@@ -540,7 +600,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               placeholder={t('chat.voice_name_placeholder')}
               value={voiceName}
               onChange={(e) => setVoiceName(e.target.value)}
-              disabled={uploadingVoice}
+              disabled={uploadingVoice || preparingSample !== null}
             />
           </div>
           <div className="voice-clone-options">
@@ -549,7 +609,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               {!voiceRecorder.audioBlob ? (
                 <div className="record-controls">
                   {!voiceRecorder.isRecording ? (
-                    <button type="button" className="btn-record" onClick={voiceRecorder.start} disabled={uploadingVoice}>
+                    <button type="button" className="btn-record" onClick={voiceRecorder.start} disabled={uploadingVoice || preparingSample !== null}>
                       🔴 {t('chat.voice_record_start')}
                     </button>
                   ) : (
@@ -567,7 +627,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                       type="button"
                       className="btn btn-primary"
                       onClick={handleAddRecording}
-                      disabled={uploadingVoice}
+                      disabled={uploadingVoice || preparingSample !== null}
                     >
                       ➕ {t('chat.voice_add_sample')}
                     </button>
@@ -589,7 +649,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                   accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm"
                   multiple
                   onChange={handleVoiceUpload}
-                  disabled={uploadingVoice}
+                  disabled={uploadingVoice || preparingSample !== null}
                   style={{ display: 'none' }}
                 />
               </label>
@@ -598,16 +658,27 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
           {voiceSamples.length > 0 && (
             <div className="voice-clone-samples">
+              <p className="voice-preparation-note">{localText('Мягкая очистка уменьшает шум и тихие вдохи, но может затронуть тихую речь. Сравните записи. Файлы доступны для повторной попытки, пока открыта эта страница. Повторный клон может звучать так же. Повторное клонирование — новая операция по тарифу провайдера.', 'Gentle cleaning reduces noise and quiet breaths but may affect quiet speech. Compare recordings. Samples remain available while this page is open. A recreated clone may sound the same. Recreating a clone is a new operation under the provider’s pricing.')}</p>
               <p className="option-label">{t('chat.voice_samples_count', { n: String(voiceSamples.length) })}</p>
               <ul className="voice-samples-list">
                 {voiceSamples.map((s) => (
                   <li key={s.id} className="voice-samples-item">
-                    <span className="voice-samples-item-label">🎵 {s.label}</span>
+                    <div className="voice-sample-preview">
+                      <span className="voice-samples-item-label">🎵 {s.label}</span>
+                      <label>{localText('Исходная запись', 'Original recording')}<audio controls preload="metadata" src={s.originalUrl} /></label>
+                      <button type="button" className="btn-voice-change" disabled={uploadingVoice || preparingSample !== null} onClick={() => handlePrepareSample(s)}>
+                        {preparingSample === s.id ? localText('Очищаем…', 'Cleaning…') : localText('Очистить и прослушать', 'Clean and preview')}
+                      </button>
+                      {s.cleanedUrl && <>
+                        <label>{localText('Очищенная запись', 'Cleaned recording')}<audio controls preload="metadata" src={s.cleanedUrl} /></label>
+                        <label><input type="checkbox" checked={s.useCleaned} onChange={(e) => setVoiceSamples((prev) => prev.map((item) => item.id === s.id ? { ...item, useCleaned: e.target.checked } : item))} disabled={uploadingVoice || preparingSample !== null} /> {localText('Клонировать из очищенной записи', 'Clone from cleaned recording')}</label>
+                      </>}
+                    </div>
                     <button
                       type="button"
                       className="btn-remove-sample"
                       onClick={() => handleRemoveSample(s.id)}
-                      disabled={uploadingVoice}
+                      disabled={uploadingVoice || preparingSample !== null}
                       aria-label={t('chat.voice_remove_sample')}
                     >
                       ✕
@@ -619,15 +690,25 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                 type="button"
                 className="btn btn-primary btn-clone-voice"
                 onClick={handleCloneVoice}
-                disabled={uploadingVoice}
+                disabled={uploadingVoice || preparingSample !== null}
               >
-                {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : `✅ ${t('chat.voice_clone_submit', { n: String(voiceSamples.length) })}`}
+                {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : hasCustomVoice ? localText('Создать клон повторно', 'Recreate voice clone') : `✅ ${t('chat.voice_clone_submit', { n: String(voiceSamples.length) })}`}
               </button>
             </div>
           )}
         </div>
       )}
 
+      {!textOnly && includeAudio && <details className="speech-settings">
+        <summary>{localText('Настройки озвучивания', 'Speech settings')}</summary>
+        {ttsStatus?.provider === 'fish_audio' && <label>{localText('Темп голоса', 'Speech speed')} <select value={speechSpeed} onChange={(e) => setSpeechSpeed(Number(e.target.value))}>
+          <option value="0.85">0.85×</option><option value="0.95">0.95×</option><option value="1">1×</option><option value="1.1">1.1×</option>
+        </select></label>}
+        <label>{localText('Произношение: слово = как произнести (до 20 строк)', 'Pronunciation: word = spoken spelling (up to 20 lines)')}
+          <textarea rows="3" maxLength={3300} value={pronunciationText} onChange={(e) => setPronunciationText(e.target.value)} placeholder={localText('Сачко = Сачкó', 'name = phonetic spelling')} />
+        </label>
+        <p>{localText('Меняется только озвучка, текст ответа сохраняется. Ударения зависят от модели: проверьте на коротком ответе. Для спокойной речи попробуйте 0.85× или 0.95×.', 'Only speech changes; the written answer stays unchanged. Stress depends on the model: test a short answer. Try 0.85× or 0.95× for a slower pace.')}</p>
+      </details>}
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="welcome-message">

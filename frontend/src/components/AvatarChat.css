@@ -1294,3 +1294,12 @@
 }
 .chat-usage-hint { padding: 10px 14px; margin: 0; background: var(--surface-warm); color: var(--text-muted); font-size: 13px; }
 .chat-usage-hint a { display: inline-block; margin-left: 10px; color: var(--accent); }
+
+.voice-sample-preview { display: grid; gap: 10px; width: 100%; min-width: 0; }
+.voice-sample-preview label { display: block; font-size: 13px; }
+.voice-sample-preview audio { display: block; width: 100%; margin-top: 5px; }
+.voice-preparation-note, .speech-settings p { font-size: 12px; line-height: 1.5; opacity: .8; }
+.speech-settings { padding: 12px 20px; border-bottom: 1px solid var(--border-color, #e4dacc); }
+.speech-settings summary { cursor: pointer; }
+.speech-settings label { display: block; margin-top: 10px; font-size: 13px; }
+.speech-settings textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 5px; padding: 8px; }

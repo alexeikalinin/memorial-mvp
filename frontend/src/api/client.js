@@ -136,6 +136,13 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
+  prepareVoice: (memorialId, file) => {
+    const formData = new FormData()
+    formData.append('audio_file', file)
+    return apiClient.post(`/ai/voice/prepare?memorial_id=${memorialId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }, responseType: 'blob',
+    })
+  },
   uploadVoice: (memorialId, files, voiceName) => {
     const formData = new FormData()
     const fileList = Array.isArray(files) ? files : [files]

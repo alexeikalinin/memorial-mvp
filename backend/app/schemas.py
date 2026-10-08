@@ -274,6 +274,15 @@ class AnimationStatusResponse(BaseModel):
 class AvatarChatRequest(BaseModel):
     memorial_id: int
     question: str = Field(..., min_length=1)
+    speech_speed: float = Field(1.0, ge=0.75, le=1.25)
+    pronunciations: Dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_pronunciations(self):
+        if len(self.pronunciations) > 20 or any(not k.strip() or not v.strip() or len(k) > 80 or len(v) > 80 for k, v in self.pronunciations.items()):
+            raise ValueError("Pronunciation dictionary supports up to 20 short entries")
+        return self
+
     include_audio: bool = False  # Генерировать ли аудио-ответ через ElevenLabs
     use_persona: bool = True  # Использовать Smart Avatar Persona Agent для системного промпта
     include_family_memories: bool = False  # Включить воспоминания родственников в RAG-поиск
