@@ -8,8 +8,10 @@ import './OnboardingTour.css'
 export const ONBOARDING_STORAGE_KEY = 'vspomin_onboarding_done_v1'
 export const ONBOARDING_STEPS = [
   { id: 'media_upload', tab: 'media', selector: '[data-tour="media-upload"] button' },
+  { id: 'memories_tab', tab: 'media', selector: '[data-tour="tab-memories"]', nextKey: 'open_memories' },
   { id: 'memories_add', tab: 'memories', selector: '[data-tour="memories-add"]' },
   { id: 'memories_invite', tab: 'memories', selector: '[data-tour="memories-invite"]' },
+  { id: 'chat_tab', tab: 'memories', selector: '[data-tour="tab-chat"]', nextKey: 'open_chat' },
   { id: 'chat_voice', tab: 'chat', selector: '[data-tour="chat-voice"] button' },
   { id: 'chat_audio_toggle', tab: 'chat', selector: '[data-tour="chat-audio-toggle"]', pointerSelector: 'input' },
 ]
@@ -144,7 +146,7 @@ function OnboardingTour({ onGoToTab, onClose }) {
         <span className="onboarding-cursor-pulse" />
         <svg width="26" height="32" viewBox="0 0 26 32" fill="none"><path d="M3 2v24l6-6 5 10 5-3-5-9h9L3 2Z" fill="#fbf8f1" stroke="#8e603e" strokeWidth="1.7" strokeLinejoin="round" /></svg>
       </motion.div>}
-      <motion.div ref={tooltipRef} className="onboarding-tooltip" initial={false} animate={position} transition={transition}>
+      <motion.div ref={tooltipRef} className={`onboarding-tooltip${step.nextKey ? ' onboarding-tooltip--navigation' : ''}`} initial={false} animate={position} transition={transition}>
         <div className="onboarding-tooltip-step">{t('onboarding.step_of', { current: String(stepIndex + 1), total: String(ONBOARDING_STEPS.length) })}</div>
         <div className="onboarding-progress" aria-hidden="true">{ONBOARDING_STEPS.map((item, index) => <span key={item.id} className={index <= stepIndex ? 'active' : ''} />)}</div>
         <div aria-live="polite" aria-atomic="true">
@@ -156,7 +158,7 @@ function OnboardingTour({ onGoToTab, onClose }) {
           <button type="button" className="onboarding-skip" onClick={() => finish(false)}>{t('onboarding.skip')}</button>
           <div className="onboarding-nav">
             {stepIndex > 0 && <button type="button" className="onboarding-back" onClick={() => setStepIndex(i => i - 1)}>{t('onboarding.back')}</button>}
-            <button ref={nextRef} type="button" className="onboarding-next" onClick={next} disabled={!ready && !missing}>{stepIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.finish') : t('onboarding.next')}</button>
+            <button ref={nextRef} type="button" className="onboarding-next" onClick={next} disabled={!ready && !missing}>{stepIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.finish') : t(`onboarding.${step.nextKey || 'next'}`)}</button>
           </div>
         </div>
       </motion.div>

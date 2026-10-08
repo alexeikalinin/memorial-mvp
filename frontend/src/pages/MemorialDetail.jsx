@@ -641,6 +641,7 @@ function MemorialDetail() {
           <button
             key={key}
             className={activeTab === key ? 'active' : ''}
+            data-tour={`tab-${key}`}
             onClick={() => handleTabClick(key)}
           >
             {label}

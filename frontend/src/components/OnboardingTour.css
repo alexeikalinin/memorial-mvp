@@ -146,3 +146,7 @@
 .onboarding-tooltip button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
 .onboarding-unavailable { font-size: 12px !important; color: var(--text-muted) !important; }
 @media (prefers-reduced-motion: reduce) { .onboarding-cursor-pulse { animation: none; } }
+
+.onboarding-tooltip--navigation .onboarding-tooltip-actions { flex-wrap: wrap; gap: 6px; }
+.onboarding-tooltip--navigation .onboarding-nav { width: 100%; justify-content: space-between; }
+.onboarding-tooltip--navigation .onboarding-next { margin-left: auto; }

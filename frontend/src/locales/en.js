@@ -880,7 +880,17 @@ export default {
     step_of: '{current} of {total}',
     back: 'Back',
     unavailable: 'This control is currently unavailable. You can continue to the next step.',
+    open_memories: 'Open memories',
+    open_chat: 'Open chat',
     steps: {
+      memories_tab: {
+        title: 'Go to memories',
+        text: 'Photos are stored in Media. Life stories are added in the separate Memories tab. Let’s open it, then we’ll show you where to add text.',
+      },
+      chat_tab: {
+        title: 'Now open the chat',
+        text: 'In Avatar chat you can ask questions based on memories and set up the voice. Let’s go there first, then explore voice setup.',
+      },
       media_upload: {
         title: 'Memory album',
         text: 'Upload photos and videos here — they become the memory album on the memorial page.',
