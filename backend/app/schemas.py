@@ -47,6 +47,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    is_admin: bool = False
     is_demo: bool = False
     email_verified: bool = False
     subscription_plan: str = "free"

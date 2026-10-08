@@ -447,3 +447,29 @@ def test_memorial_limit_via_api_free_plan(client, auth_headers):
     )
     assert r2.status_code == 402
     assert "402" in str(r2.status_code)
+
+
+def test_database_admin_has_no_billing_limits():
+    from app.auth import is_global_admin
+    from app.api.billing import get_usage
+    from app.services.billing import _current_period
+    u = _make_user(plan='free')
+    u.is_admin = True
+    assert is_global_admin(u)
+    db, usage = _make_db_with_usage(99, _current_period(), chat=1000)
+    check_chat_quota(u, 1, db)
+    check_tts_access(u)
+    check_family_rag_access(u)
+    result = get_usage(u, db)
+    assert result.chat_messages_limit is None
+    assert result.animations_limit is None
+    assert result.live_sessions_limit is None
+
+
+def test_regular_user_keeps_fifteen_question_limit():
+    from app.api.billing import get_usage
+    u = _make_user(plan='free')
+    u.is_admin = False
+    u.email = 'ordinary-user@example.test'
+    db, _ = _make_db_with_usage(99, '2026-10', chat=15)
+    assert get_usage(u, db).chat_messages_limit == 15

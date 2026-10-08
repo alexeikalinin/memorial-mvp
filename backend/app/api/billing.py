@@ -59,9 +59,9 @@ class UsageResponse(BaseModel):
     plan: str
     period: str
     chat_messages_used: int
-    chat_messages_limit: int
+    chat_messages_limit: Optional[int]
     animations_used: int
-    animations_limit: int
+    animations_limit: Optional[int]
     live_sessions_used: int
     live_sessions_limit: Optional[int]   # None = pool model
     live_sessions_remaining: Optional[int]  # pool (lifetime_pro)
@@ -191,6 +191,8 @@ def get_usage(
     db: Session = Depends(get_db),
 ):
     """Returns current billing period usage counters for the UI."""
+    from app.services.billing import is_demo_account
+    unlimited = is_demo_account(current_user)
     plan = _effective_plan(current_user)
     limits = get_limits(current_user)
     period = _current_period()
@@ -210,12 +212,12 @@ def get_usage(
         plan=plan,
         period=period,
         chat_messages_used=chat_used,
-        chat_messages_limit=limits["chat_messages_per_month"],
+        chat_messages_limit=None if unlimited else limits["chat_messages_per_month"],
         animations_used=anim_used,
-        animations_limit=limits["animations_per_month"],
+        animations_limit=None if unlimited else limits["animations_per_month"],
         live_sessions_used=live_used,
-        live_sessions_limit=None if uses_pool else limits.get("live_sessions_per_month", 0),
-        live_sessions_remaining=current_user.live_sessions_remaining if uses_pool else None,
+        live_sessions_limit=None if unlimited or uses_pool else limits.get("live_sessions_per_month", 0),
+        live_sessions_remaining=current_user.live_sessions_remaining if uses_pool and not unlimited else None,
         extra_memorials=current_user.extra_memorials or 0,
         plan_expires_at=current_user.plan_expires_at,
     )

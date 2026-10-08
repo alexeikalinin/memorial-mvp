@@ -58,6 +58,8 @@ def _add_missing_columns():
             user_alters.append("ALTER TABLE users ADD COLUMN plan_expires_at TIMESTAMP WITH TIME ZONE")
         if "lifetime_memorial_id" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN lifetime_memorial_id INTEGER")
+        if "is_admin" not in ucols:
+            user_alters.append("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT false")
         if "is_demo" not in ucols:
             user_alters.append("ALTER TABLE users ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT false")
         if "extra_memorials" not in ucols:

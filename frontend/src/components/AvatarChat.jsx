@@ -78,7 +78,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
 
   // Family RAG is a paid feature (Plus / Pro). Free users see a locked toggle.
-  const hasFamilyRag = user && ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan)
+  const hasFamilyRag = user && (user.is_admin || user.is_demo || ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan))
   const [syncing, setSyncing] = useState(false)
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [voiceName, setVoiceName] = useState('')

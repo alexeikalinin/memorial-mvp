@@ -1,9 +1,16 @@
+## 2026-10-08 — Admin quota UI and five owner-provided memories
+
+- Added DB `users.is_admin` boolean (default false), startup additive migration, read-only auth response flag; server global-admin helper honors it. Account privilege assignment awaits explicit scope confirmation after automatic approval rejection; no account flag has been changed.
+- Billing usage now returns null limits for privileged/demo accounts, fixing front-end false 15-question lock despite server quota bypass. Family RAG toggle honors admin/demo flag. 45 billing tests and frontend build passed; ordinary-user 15-limit check added separately.
+- Saved exactly five owner-provided memories in memorial 318, IDs 1487–1491: Novogrudok, youth hockey, roadwork in Russia, daughter Katya born 1999-10-01, beloved wife Larisa/cooking. No extra factual embellishments. Search indexing blocked by automatic approval review pending explicit OpenAI text-transfer consent; local Qdrant verified.
+- Fish pricing verified: s1 / s2-pro / s2.1-pro $15 per million UTF-8 bytes; free developer model exists. Runtime remains s1; no model switch or new clone.
+
 ## 2026-10-08 — First-person grounded answers and clone quality guidance
 
 - Removed deterministic archive quotation prefix from RAG output. Generation returns short first-person answer plus exact excerpts; excerpt IDs/text checked against retrieved approved memories before an independent LLM entailment/subject-attribution check. Unsupported answers return «Я не могу найти информацию об этом в моих воспоминаниях.» (English equivalent included), including empty-context path.
 - Additional verifier incurs one small OpenAI request per supported answer; no extra request for unsupported/excerpt-invalid answers. Validation reduces, but cannot guarantee elimination of, model errors.
 - Original recording stays selected after preview cleaning; processing must be explicitly selected after comparison. Added reference guidance (30–60 sec, one speaker, stable style/level, no music/echo). Do not assume processing improves identity; actual user's recording/clone has not been auditioned, so quality cause remains unconfirmed.
-- Validation: visitor-flow and audio tests 20 passed, additional reject-added-fact test run separately; frontend build passed. Publishing follows.
+- Validation: visitor-flow and audio tests 20 passed, additional reject-added-fact test run separately; frontend build passed. Final visitor suite 11 passed plus voice suite 10 passed (21 checks total). Published ae36a7d + 485d6e2; Railway SUCCESS. Live production LLM test on fictional records returned «Я любил шахматы и собирал старые виниловые пластинки.» with source memory_1 and exact first-person missing-information fallback with no sources. Fish runtime model confirmed s1; no model change or paid Fish clone performed.
 
 ## 2026-10-08 — Preview cleaning and speech controls
 

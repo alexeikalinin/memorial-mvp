@@ -22,6 +22,8 @@ def _global_admin_emails_normalized() -> set[str]:
 
 def is_global_admin(user: Optional[User]) -> bool:
     """Site-wide admin: same effective rights as memorial owner on all memorials."""
+    if user is not None and getattr(user, "is_admin", False) is True:
+        return True
     if user is None or not user.email:
         return False
     return user.email.strip().lower() in _global_admin_emails_normalized()

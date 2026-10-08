@@ -45,6 +45,7 @@ class User(Base):
     google_id = Column(String(255), unique=True, nullable=True, index=True)
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False, nullable=False, server_default="false")
     is_demo = Column(Boolean, default=False, nullable=False, server_default="false")  # Demo/seed accounts bypass all billing limits
     # Email verification
     email_verified = Column(Boolean, default=False, nullable=False, server_default="false")
