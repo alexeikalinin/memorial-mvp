@@ -41,7 +41,7 @@ function OnboardingTour({ onGoToTab, onClose }) {
   }, [stepIndex, missing])
 
   useEffect(() => {
-    let frame, poll, targetObserver
+    let frame, poll, targetObserver, observedElement
     let stopped = false
     let scrolled = false
     const started = performance.now()
@@ -55,7 +55,14 @@ function OnboardingTour({ onGoToTab, onClose }) {
       if (!box || !box.width || !box.height) return false
       const rect = { top: box.top, left: box.left, right: box.right, bottom: box.bottom, width: box.width, height: box.height }
       const point = tourPointerPosition(rect, el.querySelector(step.pointerSelector || ':scope')?.getBoundingClientRect() || box)
-      setTarget({ rect, point })
+      setTarget(previous => previous && Object.keys(rect).every(key => previous.rect[key] === rect[key]) && previous.point.x === point.x && previous.point.y === point.y ? previous : { rect, point })
+      if (observedElement !== el) {
+        targetObserver?.disconnect()
+        observedElement = el
+        targetObserver = new ResizeObserver(scheduleMeasure)
+        targetObserver.observe(el)
+        if (el.parentElement) targetObserver.observe(el.parentElement)
+      }
       setReady(box.bottom > 0 && box.top < window.innerHeight)
       setMissing(false)
       return true
@@ -72,8 +79,6 @@ function OnboardingTour({ onGoToTab, onClose }) {
           scrolled = true
           // One scroll per step. Scroll events update the target throughout the movement.
           el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducedMotion ? 'instant' : 'smooth' })
-          targetObserver = new ResizeObserver(scheduleMeasure)
-          targetObserver.observe(el)
         }
         measure()
       } else if (performance.now() - started < 5000) {
@@ -86,6 +91,10 @@ function OnboardingTour({ onGoToTab, onClose }) {
       setViewport({ width: window.innerWidth, height: window.innerHeight })
       scheduleMeasure()
     }
+    // Async data can replace the Clone button with Change without scrolling.
+    const domObserver = new MutationObserver(scheduleMeasure)
+    domObserver.observe(document.body, { childList: true, subtree: true })
+    document.fonts?.ready.then(() => { if (!stopped) scheduleMeasure() })
     window.addEventListener('scroll', scheduleMeasure, true)
     window.addEventListener('resize', resize)
     frame = requestAnimationFrame(find)
@@ -94,6 +103,7 @@ function OnboardingTour({ onGoToTab, onClose }) {
       cancelAnimationFrame(frame)
       clearTimeout(poll)
       targetObserver?.disconnect()
+      domObserver.disconnect()
       window.removeEventListener('scroll', scheduleMeasure, true)
       window.removeEventListener('resize', resize)
     }
