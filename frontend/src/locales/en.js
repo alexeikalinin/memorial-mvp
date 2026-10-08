@@ -641,6 +641,7 @@ export default {
     submit_error_add: 'Could not add memory',
     submit_error_update: 'Could not update memory',
     delete_error: 'Could not delete memory',
+    share_error: 'Could not share the invitation. Try copying the link.',
     invite_link_error: 'Could not create link. Please try again.',
     title_optional: 'Title (optional)',
     short_title_ph: 'Short title',

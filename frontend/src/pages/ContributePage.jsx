@@ -1,3 +1,4 @@
+import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { invitesAPI, memorialsAPI, aiAPI } from '../api/client'
@@ -86,7 +87,7 @@ function ContributePage() {
     setViralSharing(true)
     try {
       // Share the same invite link the contributor used — no auth needed
-      const url = `${window.location.origin}/contribute/${token}`
+      const url = buildContributeInviteUrl(token)
       const name = info.memorial_name || t('contribute.viral_name_fallback')
       const text = t('contribute.viral_text', { name, url })
       if (navigator.share) {

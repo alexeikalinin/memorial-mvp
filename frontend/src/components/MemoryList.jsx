@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
-import { aboutName } from '../utils/declension'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useLanguage } from '../contexts/LanguageContext'
 import './MemoryList.css'
@@ -123,16 +122,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
       const res = await invitesAPI.create(memorialId, {})
       const url = buildContributeInviteUrl(res.data.token) || res.data.invite_url
       const fallbackName = t('memoryList.anonymous_person')
-      const text =
-        lang === 'en'
-          ? t('memoryList.invite_sms', {
-              name: memorialName || fallbackName,
-              url,
-            })
-          : t('memoryList.invite_sms', {
-              name: aboutName(memorialName || fallbackName),
-              url,
-            })
+      const text = t('memoryList.invite_sms', { name: memorialName || fallbackName, url })
       setSharePanel({ url, text })
       setUrlCopied(false)
       setTextCopied(false)
@@ -156,22 +146,21 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     setTimeout(() => setTextCopied(false), 2000)
   }
 
-  const handleNativeShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title:
-          lang === 'en'
-            ? t('memoryList.native_share_title', {
-                name: memorialName || t('memoryList.anonymous_person'),
-              })
-            : t('memoryList.native_share_title', {
-                name: aboutName(memorialName || t('memoryList.anonymous_person')),
-              }),
-        text: sharePanel.text,
-        url: sharePanel.url,
-      })
-    } else {
-      handleCopyText()
+  const handleNativeShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: t('memoryList.native_share_title', {
+            name: memorialName || t('memoryList.anonymous_person'),
+          }),
+          text: sharePanel.text,
+          url: sharePanel.url,
+        })
+      } else {
+        await handleCopyText()
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') alert(t('memoryList.share_error'))
     }
   }
 
@@ -266,7 +255,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
               {memorialName
                 ? t('memoryList.share_heading', {
                     name:
-                      lang === 'en' ? memorialName : aboutName(memorialName),
+                      memorialName,
                   })
                 : t('memoryList.share_heading_no_name')}
             </span>
