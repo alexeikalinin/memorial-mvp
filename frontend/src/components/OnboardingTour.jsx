@@ -43,7 +43,7 @@ function OnboardingTour({ onGoToTab, onClose }) {
   }, [stepIndex, missing])
 
   useEffect(() => {
-    let frame, poll, targetObserver, observedElement
+    let frame, initialFrame, poll, targetObserver, observedElement
     let stopped = false
     let scrolled = false
     const started = performance.now()
@@ -99,9 +99,11 @@ function OnboardingTour({ onGoToTab, onClose }) {
     document.fonts?.ready.then(() => { if (!stopped) scheduleMeasure() })
     window.addEventListener('scroll', scheduleMeasure, true)
     window.addEventListener('resize', resize)
-    frame = requestAnimationFrame(find)
+    // DOM updates must not cancel the initial target lookup and scroll.
+    initialFrame = requestAnimationFrame(find)
     return () => {
       stopped = true
+      cancelAnimationFrame(initialFrame)
       cancelAnimationFrame(frame)
       clearTimeout(poll)
       targetObserver?.disconnect()
