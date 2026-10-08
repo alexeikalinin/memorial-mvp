@@ -1,146 +1,156 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useLanguage } from '../contexts/LanguageContext'
+import { tourPointerPosition, tourTooltipPosition } from '../utils/tourLayout'
 import './OnboardingTour.css'
 
 export const ONBOARDING_STORAGE_KEY = 'vspomin_onboarding_done_v1'
-
 export const ONBOARDING_STEPS = [
-  { id: 'media_upload', tab: 'media', selector: '[data-tour="media-upload"]' },
+  { id: 'media_upload', tab: 'media', selector: '[data-tour="media-upload"] button' },
   { id: 'memories_add', tab: 'memories', selector: '[data-tour="memories-add"]' },
   { id: 'memories_invite', tab: 'memories', selector: '[data-tour="memories-invite"]' },
-  { id: 'chat_voice', tab: 'chat', selector: '[data-tour="chat-voice"]' },
-  { id: 'chat_audio_toggle', tab: 'chat', selector: '[data-tour="chat-audio-toggle"]' },
+  { id: 'chat_voice', tab: 'chat', selector: '[data-tour="chat-voice"] button' },
+  { id: 'chat_audio_toggle', tab: 'chat', selector: '[data-tour="chat-audio-toggle"]', pointerSelector: 'input' },
 ]
-
 const PAD = 8
-const MAX_POLL_ATTEMPTS = 25
-const POLL_INTERVAL_MS = 150
 
-/** Анимированный тур-гайд: подсвечивает элемент интерфейса и показывает подсказку с "живым" курсором. */
 function OnboardingTour({ onGoToTab, onClose }) {
   const { t } = useLanguage()
+  const reducedMotion = useReducedMotion()
   const [stepIndex, setStepIndex] = useState(0)
-  const [rect, setRect] = useState(null)
-  const pollRef = useRef(null)
-
+  const [target, setTarget] = useState(null)
+  const [ready, setReady] = useState(false)
+  const [missing, setMissing] = useState(false)
+  const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight })
+  const [tooltipSize, setTooltipSize] = useState({ width: 340, height: 240 })
+  const tooltipRef = useRef(null)
+  const nextRef = useRef(null)
+  const goToTabRef = useRef(onGoToTab)
+  goToTabRef.current = onGoToTab
   const step = ONBOARDING_STEPS[stepIndex]
 
-  const measure = useCallback(() => {
-    const el = document.querySelector(step.selector)
-    if (el && el.offsetParent !== null) {
-      setRect(el.getBoundingClientRect())
+  useLayoutEffect(() => {
+    const tooltip = tooltipRef.current
+    if (!tooltip) return
+    const update = () => setTooltipSize({ width: tooltip.offsetWidth, height: tooltip.offsetHeight })
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(tooltip)
+    return () => observer.disconnect()
+  }, [stepIndex, missing])
+
+  useEffect(() => {
+    let frame, poll, targetObserver
+    let stopped = false
+    let scrolled = false
+    const started = performance.now()
+    setReady(false)
+    setMissing(false)
+    goToTabRef.current(step.tab)
+    const measure = () => {
+      if (stopped) return
+      const el = document.querySelector(step.selector)
+      const box = el?.getBoundingClientRect()
+      if (!box || !box.width || !box.height) return false
+      const rect = { top: box.top, left: box.left, right: box.right, bottom: box.bottom, width: box.width, height: box.height }
+      const point = tourPointerPosition(rect, el.querySelector(step.pointerSelector || ':scope')?.getBoundingClientRect() || box)
+      setTarget({ rect, point })
+      setReady(box.bottom > 0 && box.top < window.innerHeight)
+      setMissing(false)
       return true
     }
-    return false
-  }, [step.selector])
-
-  useEffect(() => {
-    onGoToTab(step.tab)
-    setRect(null)
-    let attempts = 0
-    if (pollRef.current) clearInterval(pollRef.current)
-    pollRef.current = setInterval(() => {
-      attempts += 1
-      const found = measure()
-      if (found || attempts >= MAX_POLL_ATTEMPTS) {
-        clearInterval(pollRef.current)
-      }
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(pollRef.current)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIndex])
-
-  useEffect(() => {
-    if (!rect) return
-    const el = document.querySelector(step.selector)
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, [rect, step.selector])
-
-  useEffect(() => {
-    const onResize = () => measure()
-    window.addEventListener('resize', onResize)
-    window.addEventListener('scroll', onResize, true)
-    return () => {
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('scroll', onResize, true)
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
     }
-  }, [measure])
+    const find = () => {
+      if (stopped) return
+      const el = document.querySelector(step.selector)
+      if (el?.getBoundingClientRect().width) {
+        if (!scrolled) {
+          scrolled = true
+          // One scroll per step. Scroll events update the target throughout the movement.
+          el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reducedMotion ? 'instant' : 'smooth' })
+          targetObserver = new ResizeObserver(scheduleMeasure)
+          targetObserver.observe(el)
+        }
+        measure()
+      } else if (performance.now() - started < 5000) {
+        poll = setTimeout(find, 100)
+      } else {
+        setMissing(true)
+      }
+    }
+    const resize = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight })
+      scheduleMeasure()
+    }
+    window.addEventListener('scroll', scheduleMeasure, true)
+    window.addEventListener('resize', resize)
+    frame = requestAnimationFrame(find)
+    return () => {
+      stopped = true
+      cancelAnimationFrame(frame)
+      clearTimeout(poll)
+      targetObserver?.disconnect()
+      window.removeEventListener('scroll', scheduleMeasure, true)
+      window.removeEventListener('resize', resize)
+    }
+  }, [step, reducedMotion])
 
-  const finish = (completed) => {
-    try { localStorage.setItem(ONBOARDING_STORAGE_KEY, '1') } catch {}
+  useEffect(() => {
+    const previousFocus = document.activeElement
+    nextRef.current?.focus({ preventScroll: true })
+    return () => { if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true }) }
+  }, [])
+
+  useEffect(() => {
+    if ((ready || missing) && !tooltipRef.current?.contains(document.activeElement)) nextRef.current?.focus({ preventScroll: true })
+  }, [ready, missing])
+
+  const finish = completed => {
+    try { localStorage.setItem(ONBOARDING_STORAGE_KEY, '1') } catch { /* Storage may be unavailable. */ }
     onClose(completed)
   }
-
-  const next = () => {
-    if (stepIndex >= ONBOARDING_STEPS.length - 1) {
-      finish(true)
-    } else {
-      setStepIndex((i) => i + 1)
+  const next = () => stepIndex === ONBOARDING_STEPS.length - 1 ? finish(true) : setStepIndex(i => i + 1)
+  const rect = ready ? target?.rect : null
+  const position = tourTooltipPosition(missing ? null : target?.rect, viewport, tooltipSize)
+  const transition = reducedMotion ? { duration: 0 } : { duration: .42, ease: [.22, 1, .36, 1] }
+  const onKeyDown = e => {
+    if (e.key === 'Escape') { e.preventDefault(); finish(false) }
+    if (e.key === 'Tab') {
+      const buttons = [...tooltipRef.current.querySelectorAll('button:not(:disabled)')]
+      const first = buttons[0], last = buttons[buttons.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
     }
   }
 
-  const highlightStyle = rect
-    ? {
-        top: rect.top - PAD,
-        left: rect.left - PAD,
-        width: rect.width + PAD * 2,
-        height: rect.height + PAD * 2,
-      }
-    : null
-
-  const tooltipStyle = (() => {
-    if (!rect) {
-      return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-    }
-    const spaceBelow = window.innerHeight - rect.bottom
-    const showBelow = spaceBelow > 220
-    const top = showBelow ? rect.bottom + PAD + 14 : rect.top - PAD - 14
-    const left = Math.min(Math.max(rect.left + rect.width / 2, 170), window.innerWidth - 170)
-    return { top, left, transform: `translate(-50%, ${showBelow ? '0' : '-100%'})` }
-  })()
-
-  return (
-    <div className="onboarding-overlay" role="dialog" aria-modal="true">
-      {highlightStyle && <div className="onboarding-spotlight" style={highlightStyle} />}
-      {rect && (
-        <motion.div
-          className="onboarding-cursor"
-          animate={{ left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 }}
-          transition={{ type: 'spring', stiffness: 120, damping: 16 }}
-        >
-          <motion.span
-            className="onboarding-cursor-pulse"
-            animate={{ scale: [1, 0.55, 1], opacity: [0.55, 0.9, 0.55] }}
-            transition={{ duration: 1.3, repeat: Infinity }}
-          />
-          <span className="onboarding-cursor-icon">👆</span>
-        </motion.div>
-      )}
-      <motion.div
-        key={step.id}
-        className="onboarding-tooltip"
-        style={tooltipStyle}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className="onboarding-tooltip-step">
-          {t('onboarding.step_of', { current: String(stepIndex + 1), total: String(ONBOARDING_STEPS.length) })}
+  return createPortal(
+    <div className={`onboarding-overlay${rect ? '' : ' onboarding-overlay--waiting'}`} role="dialog" aria-modal="true" aria-labelledby="onboarding-title" onKeyDown={onKeyDown}>
+      {target && <motion.div className="onboarding-spotlight" initial={false} animate={{ top: target.rect.top - PAD, left: target.rect.left - PAD, width: target.rect.width + PAD * 2, height: target.rect.height + PAD * 2, opacity: ready ? 1 : 0 }} transition={transition} />}
+      {target && <motion.div className="onboarding-cursor" aria-hidden="true" initial={false} animate={{ x: target.point.x, y: target.point.y, opacity: ready ? 1 : 0 }} transition={transition}>
+        <span className="onboarding-cursor-pulse" />
+        <svg width="26" height="32" viewBox="0 0 26 32" fill="none"><path d="M3 2v24l6-6 5 10 5-3-5-9h9L3 2Z" fill="#fbf8f1" stroke="#8e603e" strokeWidth="1.7" strokeLinejoin="round" /></svg>
+      </motion.div>}
+      <motion.div ref={tooltipRef} className="onboarding-tooltip" initial={false} animate={position} transition={transition}>
+        <div className="onboarding-tooltip-step">{t('onboarding.step_of', { current: String(stepIndex + 1), total: String(ONBOARDING_STEPS.length) })}</div>
+        <div className="onboarding-progress" aria-hidden="true">{ONBOARDING_STEPS.map((item, index) => <span key={item.id} className={index <= stepIndex ? 'active' : ''} />)}</div>
+        <div aria-live="polite" aria-atomic="true">
+          <h4 id="onboarding-title">{t(`onboarding.steps.${step.id}.title`)}</h4>
+          <p>{t(`onboarding.steps.${step.id}.text`)}</p>
+          {missing && <p className="onboarding-unavailable">{t('onboarding.unavailable')}</p>}
         </div>
-        <h4>{t(`onboarding.steps.${step.id}.title`)}</h4>
-        <p>{t(`onboarding.steps.${step.id}.text`)}</p>
         <div className="onboarding-tooltip-actions">
-          <button type="button" className="onboarding-skip" onClick={() => finish(false)}>
-            {t('onboarding.skip')}
-          </button>
-          <button type="button" className="onboarding-next" onClick={next}>
-            {stepIndex >= ONBOARDING_STEPS.length - 1 ? t('onboarding.finish') : t('onboarding.next')}
-          </button>
+          <button type="button" className="onboarding-skip" onClick={() => finish(false)}>{t('onboarding.skip')}</button>
+          <div className="onboarding-nav">
+            {stepIndex > 0 && <button type="button" className="onboarding-back" onClick={() => setStepIndex(i => i - 1)}>{t('onboarding.back')}</button>}
+            <button ref={nextRef} type="button" className="onboarding-next" onClick={next} disabled={!ready && !missing}>{stepIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.finish') : t('onboarding.next')}</button>
+          </div>
         </div>
       </motion.div>
-    </div>
+    </div>, document.body
   )
 }
-
 export default OnboardingTour

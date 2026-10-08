@@ -126,3 +126,23 @@
   color: var(--accent-dark);
   border-color: var(--accent-dark);
 }
+
+/* Portal geometry uses viewport coordinates; cursor persists across steps. */
+.onboarding-overlay { pointer-events: auto; }
+.onboarding-overlay--waiting { background: rgba(28, 25, 23, .6); }
+.onboarding-spotlight { transition: none; }
+.onboarding-cursor { top: 0; left: 0; transform: none; }
+.onboarding-cursor svg { display: block; transform: translate(-3px, -2px); filter: drop-shadow(0 2px 4px #1c19174d); }
+.onboarding-cursor-pulse { width: 22px; height: 22px; inset: -11px auto auto -11px; background: #c7a77755; animation: tour-pointer-breathe 2.4s ease-in-out infinite; }
+@keyframes tour-pointer-breathe { 0%, 100% { transform: scale(.8); opacity: .45; } 50% { transform: scale(1.2); opacity: .7; } }
+.onboarding-tooltip { width: min(340px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; }
+.onboarding-progress { display: flex; gap: 5px; margin: 0 0 16px; }
+.onboarding-progress span { height: 3px; flex: 1; border-radius: 3px; background: var(--border); }
+.onboarding-progress .active { background: var(--accent-dark); }
+.onboarding-nav { display: flex; align-items: center; gap: 8px; }
+.onboarding-back { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); min-height: 40px; padding: 8px 10px; cursor: pointer; }
+.onboarding-next, .onboarding-skip { min-height: 40px; }
+.onboarding-next:disabled { opacity: .5; cursor: wait; }
+.onboarding-tooltip button:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 3px; }
+.onboarding-unavailable { font-size: 12px !important; color: var(--text-muted) !important; }
+@media (prefers-reduced-motion: reduce) { .onboarding-cursor-pulse { animation: none; } }

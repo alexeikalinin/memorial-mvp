@@ -878,6 +878,8 @@ export default {
     next: 'Next',
     finish: 'Done',
     step_of: '{current} of {total}',
+    back: 'Back',
+    unavailable: 'This control is currently unavailable. You can continue to the next step.',
     steps: {
       media_upload: {
         title: 'Memory album',
@@ -893,7 +895,7 @@ export default {
       },
       chat_voice: {
         title: "Avatar's voice",
-        text: "Upload or record a voice sample — we'll create a realistic copy of it so the avatar can answer out loud.",
+        text: "Open voice setup to add a recording, review it, create a clone and choose its sound. If the voice is already ready, you can adjust its settings here.",
       },
       chat_audio_toggle: {
         title: 'Answer with voice',
