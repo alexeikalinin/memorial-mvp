@@ -3,7 +3,7 @@
 - Edit-photo caption appears on hover/focus; touch target remains accessible. Red cemetery lamp matches supplied reference, positioned at lower right of owner/public portrait with reduced-motion support.
 - All family-tree responses include selected avatar source and crop settings; tree loads saved avatar portrait and refreshes after selection. Covers remain fallback when no independent avatar is selected.
 - Validation: production build; 25 backend tests including portraits, QR visitor flow and grounded AI; isolated mobile Chrome verified 30×56 lamp and contained portrait.
-- Publishing visitor-flow changes from previous entry together with portrait improvements. Local tools/configuration and Vite proxy override excluded.
+- Published visitor-flow changes together with portraits: d7e2a3f pushed to main via SSH; Vercel production READY (dpl_ADGRoQYxgohkiS4gg4rQ93id67da), Railway backend SUCCESS (9933df9d-f424-4649-a4a1-ddd8d7ce780d) for exact commit. Public frontend /app/m route and backend health returned 200 without Authentication required. Additional family-tree tests: 53 passed. Local tools/configuration and Vite proxy override excluded. Real Stripe payment/webhook remains untested.
 
 ## 2026-10-08 — QR/приглашения, модерация, квоты и строгая память
 
