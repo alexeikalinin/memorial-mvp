@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { memorialsAPI, invitesAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
+import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import PhotoPortraitEditor from '../components/PhotoPortraitEditor'
 import MediaGallery from '../components/MediaGallery'
@@ -12,12 +13,14 @@ import LifeTimeline from '../components/LifeTimeline'
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
+import memorialRedLamp from '../assets/memorial-red-lamp.svg'
 import './MemorialDetail.css'
 
 const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'])
 
 function MemorialDetail() {
   const { id } = useParams()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -87,14 +90,14 @@ function MemorialDetail() {
     setActiveTab(tab)
     setMountedTabs((prev) => new Set([...prev, tab]))
     if (tab === 'chat') {
-      try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
+      try { localStorage.setItem('onboarding_chat_tried', '1') } catch { /* Storage unavailable. */ }
     }
   }, [id, searchParams])
 
   useEffect(() => {
     if (!location.state?.justCreated) return
     let alreadyDone = false
-    try { alreadyDone = localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1' } catch {}
+    try { alreadyDone = localStorage.getItem(ONBOARDING_STORAGE_KEY) === '1' } catch { /* Storage unavailable. */ }
     if (alreadyDone) return
     const timer = setTimeout(() => setShowTour(true), 500)
     return () => clearTimeout(timer)
@@ -104,15 +107,30 @@ function MemorialDetail() {
     setActiveTab(tab)
     setMountedTabs((prev) => new Set([...prev, tab]))
     if (tab === 'chat') {
-      try { localStorage.setItem('onboarding_chat_tried', '1') } catch {}
+      try { localStorage.setItem('onboarding_chat_tried', '1') } catch { /* Storage unavailable. */ }
     }
   }
+
+  useEffect(() => {
+    if (memorial?.owner_id !== user?.id) return
+    let cancelled = false
+    const refresh = () => memorialsAPI.getPendingMemories(id).then(res => {
+      if (!cancelled) setPendingMemories(res.data)
+    }).catch(() => { /* Keep the last known count if offline. */ })
+    const timer = setInterval(refresh, 30000)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [id, memorial?.owner_id, user?.id])
 
   const loadMemorial = async () => {
     try {
       if (!memorial) setLoading(true)
       const response = await memorialsAPI.get(id)
       setMemorial(response.data)
+      if (response.data.owner_id === user?.id) {
+        setPendingMemoriesLoading(true)
+        memorialsAPI.getPendingMemories(id).then(res => setPendingMemories(res.data))
+          .catch(() => setPendingMemories([])).finally(() => setPendingMemoriesLoading(false))
+      }
       // Заполняем форму редактирования
       setEditFormData({
         name: response.data.name || '',
@@ -147,7 +165,7 @@ function MemorialDetail() {
 
   const handleShowQR = async () => {
     setShowQRModal(true)
-    if (qrBlobUrl) return
+    if (!memorial.is_public || qrBlobUrl) return
     setQrLoading(true)
     try {
       const response = await memorialsAPI.getQR(id)
@@ -155,6 +173,23 @@ function MemorialDetail() {
     } catch (err) {
       alert(t('detail.qr_error'))
       setShowQRModal(false)
+    } finally {
+      setQrLoading(false)
+    }
+  }
+
+  const publicChatUrl = `${window.location.origin}${import.meta.env.BASE_URL}m/${id}#chat`
+
+  const handlePublishForQR = async () => {
+    setQrLoading(true)
+    try {
+      const response = await memorialsAPI.update(id, { is_public: true })
+      setMemorial((prev) => ({ ...prev, ...response.data }))
+      setEditFormData((prev) => ({ ...prev, is_public: true }))
+      const qr = await memorialsAPI.getQR(id)
+      setQrBlobUrl(URL.createObjectURL(qr.data))
+    } catch {
+      alert(t('detail.qr_error'))
     } finally {
       setQrLoading(false)
     }
@@ -200,6 +235,7 @@ function MemorialDetail() {
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: editFormData.voice_gender || null,
       }
+      if (!isActualOwner) delete submitData.voice_gender
       await memorialsAPI.update(id, submitData)
       setEditing(false)
       await loadMemorial()
@@ -380,6 +416,7 @@ function MemorialDetail() {
 
   const role = memorial.current_user_role  // 'owner' | 'editor' | 'viewer' | null
   const isOwner = role === 'owner'
+  const isActualOwner = memorial.owner_id === user?.id
   const canEdit = role === 'owner' || role === 'editor'
 
   return (
@@ -388,7 +425,7 @@ function MemorialDetail() {
       {/* ── Hero Header (portrait left, name + actions right) ── */}
       <div className="memorial-hero">
         <div className="memorial-hero-media">
-          {canEdit && <button type="button" className="memorial-photo-edit" onClick={() => setPortraitEditor({ kind: 'cover' })}>{t(memorial.cover_photo_id ? 'portraits.change_cover' : 'portraits.add_cover')}</button>}
+          {canEdit && <button type="button" className={`memorial-photo-edit${memorial.cover_photo_id ? ' memorial-photo-edit--has-photo' : ''}`} onClick={() => setPortraitEditor({ kind: 'cover' })}>{t(memorial.cover_photo_id ? 'portraits.change_cover' : 'portraits.add_cover')}</button>}
           {memorial.cover_photo_id ? (
             <ApiMediaImage
               mediaId={memorial.cover_photo_id}
@@ -402,6 +439,7 @@ function MemorialDetail() {
           ) : (
             <div className="memorial-hero-empty">🕯</div>
           )}
+          <img src={memorialRedLamp} className="memorial-portrait-lamp" alt="" aria-hidden="true" />
         </div>
         <div className="memorial-hero-main">
           <div className="memorial-hero-info">
@@ -539,7 +577,7 @@ function MemorialDetail() {
                 {t('detail.public_memorial')}
               </label>
             </div>
-            <div className="form-group">
+            {isActualOwner && (            <div className="form-group">
               <label htmlFor="edit-voice_gender">{t('detail.voice_avatar')}</label>
               <select
                 id="edit-voice_gender"
@@ -550,7 +588,7 @@ function MemorialDetail() {
                 <option value="male">{t('detail.voice_male')}</option>
                 <option value="female">{t('detail.voice_female')}</option>
               </select>
-            </div>
+            </div>)}
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={submitting}>
                 {submitting ? t('detail.saving') : t('detail.save')}
@@ -578,7 +616,7 @@ function MemorialDetail() {
       <div className="tabs">
         {[
           { key: 'media', label: t('tabs.media') },
-          { key: 'memories', label: t('tabs.memories') },
+          { key: 'memories', label: `${t('tabs.memories')}${isActualOwner && pendingMemories.length ? ` · ${pendingMemories.length} ${t('memoryList.pending_short')}` : ''}` },
           { key: 'chat', label: t('tabs.chat') },
           { key: 'family', label: t('tabs.family') },
           { key: 'timeline', label: t('tabs.timeline') },
@@ -609,7 +647,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('memories') && (
           <div style={{ display: activeTab === 'memories' ? 'block' : 'none' }}>
-            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} />
+            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} canModerate={isActualOwner} pendingMemories={pendingMemories} pendingLoading={pendingMemoriesLoading} onApprove={handleApproveMemory} onReject={handleRejectMemory} />
           </div>
         )}
         {mountedTabs.has('chat') && (
@@ -618,6 +656,8 @@ function MemorialDetail() {
               memorialId={id}
               coverPhotoId={memorial.cover_photo_id}
               memorialName={memorial.name}
+              canManageVoice={isActualOwner}
+              textOnly={!isActualOwner}
               portraitSettings={memorial.portrait_settings}
               onEditPortrait={canEdit ? openAvatarEditor : undefined}
             />
@@ -625,7 +665,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('family') && (
           <div style={{ display: activeTab === 'family' ? 'block' : 'none' }}>
-            <FamilyTree memorialId={id} canEdit={canEdit} />
+            <FamilyTree memorialId={id} canEdit={canEdit} refreshKey={JSON.stringify(memorial.portrait_settings)} />
           </div>
         )}
         {mountedTabs.has('timeline') && (
@@ -647,13 +687,18 @@ function MemorialDetail() {
             <div className="qr-modal-body">
               {qrLoading ? (
                 <div className="qr-loading">{t('detail.qr_generating')}</div>
+              ) : !memorial.is_public ? (
+                <>
+                  <p>{t('detail.qr_private')}</p>
+                  <button className="btn btn-primary" onClick={handlePublishForQR}>{t('detail.qr_publish')}</button>
+                </>
               ) : qrBlobUrl ? (
                 <>
                   <img src={qrBlobUrl} alt="QR" className="qr-image" />
                   <p className="qr-hint" dangerouslySetInnerHTML={{ __html: t('detail.qr_hint') }} />
                   <div className="qr-url-row">
-                    <code className="qr-url">{window.location.origin}/memorial/{id}</code>
-                    <button className="btn-copy" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/memorial/${id}`).then(() => alert(t('detail.link_copied')))}>
+                    <code className="qr-url">{publicChatUrl}</code>
+                    <button className="btn-copy" onClick={() => navigator.clipboard.writeText(publicChatUrl).then(() => alert(t('detail.link_copied')))}>
                       {t('detail.copy')}
                     </button>
                   </div>
@@ -700,50 +745,6 @@ function MemorialDetail() {
               </button>
               {accessError && <p className="error-message" style={{ marginTop: '8px' }}>{accessError}</p>}
             </div>
-
-            {/* Pending memories moderation */}
-            {(pendingMemoriesLoading || pendingMemories.length > 0) && (
-              <div className="invite-list-section">
-                <h4>
-                  Memories awaiting review
-                  {pendingMemories.length > 0 && ` (${pendingMemories.length})`}
-                </h4>
-                {pendingMemoriesLoading ? (
-                  <p className="invite-list-empty">Loading…</p>
-                ) : (
-                  <ul className="invite-list">
-                    {pendingMemories.map(mem => (
-                      <li key={mem.id} className="invite-item" style={{ alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1 }}>
-                          {mem.contributor_name && (
-                            <span className="invite-item-label">{mem.contributor_name}</span>
-                          )}
-                          {mem.title && (
-                            <span style={{ color: '#888', fontSize: '12px', marginLeft: '6px' }}>"{mem.title}"</span>
-                          )}
-                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#ccc', lineHeight: 1.4 }}>
-                            {mem.content.length > 160 ? mem.content.slice(0, 160) + '…' : mem.content}
-                          </p>
-                        </div>
-                        <button
-                          className="btn btn-primary"
-                          style={{ fontSize: '12px', padding: '4px 10px' }}
-                          onClick={() => handleApproveMemory(mem.id)}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn-revoke"
-                          onClick={() => handleRejectMemory(mem.id)}
-                        >
-                          Reject
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
 
             {(pendingRequestsLoading || pendingRequests.length > 0) && (
               <div className="invite-list-section">

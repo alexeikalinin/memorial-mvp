@@ -15,9 +15,11 @@ function formatApiDetail(err) {
   return String(d)
 }
 
-function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
+function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canModerate = false, pendingMemories = [], pendingLoading = false, onApprove, onReject }) {
   const { lang, t } = useLanguage()
   const locale = lang === 'en' ? 'en-US' : 'ru-RU'
+  const [showPending, setShowPending] = useState(false)
+  const [moderating, setModerating] = useState(null)
   const [memories, setMemories] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -215,6 +217,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
       <div className="memory-header">
         <h2>{t('memoryList.title')}</h2>
         <div className="memory-header-actions">
+          {canModerate && <button className="btn btn-secondary" onClick={() => setShowPending(!showPending)}>
+            {t('memoryList.pending_requests')} ({pendingMemories.length})
+          </button>}
           <button
             className="btn btn-share"
             data-tour="memories-invite"
@@ -234,6 +239,25 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true }) {
           )}
         </div>
       </div>
+
+      {canModerate && showPending && <section className="pending-memories" aria-label={t('memoryList.pending_requests')}>
+        <p>{t('memoryList.pending_help')}</p>
+        {pendingLoading ? <p>{t('common.loading')}</p> : pendingMemories.length === 0 ? <p>{t('memoryList.pending_empty')}</p> : pendingMemories.map(memory => <article className="memory-card" key={memory.id}>
+          <h3>{memory.title || t('memoryList.pending_short')}</h3>
+          {memory.contributor_name && <p>{memory.contributor_name}</p>}
+          <p style={{ whiteSpace: 'pre-wrap' }}>{memory.content}</p>
+          <div className="memory-header-actions">
+            <button className="btn btn-primary" disabled={moderating !== null} onClick={async () => {
+              setModerating(memory.id)
+              try { await onApprove(memory.id); await loadMemories(debouncedQuery); onReload?.() } finally { setModerating(null) }
+            }}>{t('detail.approve')}</button>
+            <button className="btn btn-secondary" disabled={moderating !== null} onClick={async () => {
+              setModerating(memory.id)
+              try { await onReject(memory.id) } finally { setModerating(null) }
+            }}>{t('detail.reject')}</button>
+          </div>
+        </article>)}
+      </section>}
 
       {sharePanel && (
         <div className="share-panel">

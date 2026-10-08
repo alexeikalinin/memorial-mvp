@@ -786,3 +786,21 @@
   padding: 0;
   font-family: var(--font-body);
 }
+
+.public-content { scroll-margin-top: 160px; }
+.public-name { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .public-hero { display: flex; flex-direction: column; padding: 24px 20px; gap: 20px; min-height: 0; }
+  .public-hero-img, .public-hero-empty { position: relative; top: auto; left: auto; transform: none; flex-shrink: 0; }
+  .public-hero-info { position: relative; padding: 0; text-align: center; width: 100%; }
+  .public-nav { min-width: 0; max-width: 100%; }
+  .public-content { scroll-margin-top: 180px; }
+}
+
+#chat { scroll-margin-top: 16px; }
+.anon-hint-link { display: inline-block; margin: 6px 12px 0 0; }
+
+.public-portrait-lamp { position: absolute; left: calc(50% + 87px); top: calc(50% + 64px); width: 34px; height: 64px; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 5px #0005); }
+@media (max-width: 640px) {
+  .public-portrait-lamp { left: calc(50% + 64px); top: calc(50% + 38px); width: 30px; height: 56px; }
+}

@@ -3,7 +3,7 @@ API endpoints для AI-функций: анимация фото и чат с �
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pathlib import Path
@@ -11,15 +11,16 @@ from pathlib import Path
 import httpx
 
 from app.db import get_db
-from app.auth import get_current_user, get_optional_user
-from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole
+from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner
+from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
 from app.services.billing import (
     check_chat_quota,
     check_animation_quota,
     check_tts_access,
     check_family_rag_access,
     check_live_session_quota,
-    increment_chat_usage,
+    _get_or_create_usage,
+    is_demo_account,
     increment_animation_usage,
     increment_live_session_usage,
     get_limits,
@@ -45,7 +46,6 @@ from app.services.ai_tasks import (
     delete_custom_voice,
     animate_photo as animate_photo_service,
     get_animation_status,
-    build_avatar_persona,
     sync_family_memories,
 )
 from app.workers.worker import animate_photo_task, create_memory_embedding_task
@@ -180,7 +180,55 @@ async def animate_photo(
 async def avatar_chat(
     request: AvatarChatRequest,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
+    invite_token: Optional[str] = Query(None),
+    guest_id: Optional[str] = Query(None, min_length=16, max_length=64, pattern=r"^[a-zA-Z0-9-]+$"),
+):
+    guest = None
+    if not current_user:
+        if not guest_id:
+            raise HTTPException(status_code=401, detail={"code": "guest_identity_required"})
+        guest = db.query(GuestChatUsage).filter_by(guest_id=guest_id, memorial_id=request.memorial_id).first()
+        if guest and guest.chat_messages >= 5:
+            raise HTTPException(status_code=401, detail={"code": "guest_chat_limit", "limit": 5, "registered_limit": 15})
+    result = await _avatar_chat_response(request, db, current_user, invite_token)
+    if current_user:
+        from app.models import UserUsage
+        usage = _get_or_create_usage(current_user.id, db)
+        query = db.query(UserUsage).filter(UserUsage.id == usage.id)
+        if not is_demo_account(current_user):
+            query = query.filter(UserUsage.chat_messages < get_limits(current_user)["chat_messages_per_month"])
+        if not query.update({UserUsage.chat_messages: UserUsage.chat_messages + 1}, synchronize_session=False):
+            db.rollback()
+            raise HTTPException(status_code=402, detail="Monthly question limit reached. Choose a plan to continue.")
+        db.commit()
+    else:
+        if guest is None:
+            guest = GuestChatUsage(guest_id=guest_id, memorial_id=request.memorial_id, chat_messages=0)
+            db.add(guest)
+            try:
+                db.flush()
+            except Exception:
+                db.rollback()
+                guest = db.query(GuestChatUsage).filter_by(guest_id=guest_id, memorial_id=request.memorial_id).first()
+                if guest is None:
+                    raise
+        changed = db.query(GuestChatUsage).filter(GuestChatUsage.id == guest.id, GuestChatUsage.chat_messages < 5).update(
+            {GuestChatUsage.chat_messages: GuestChatUsage.chat_messages + 1}, synchronize_session=False)
+        if not changed:
+            db.rollback()
+            raise HTTPException(status_code=401, detail={"code": "guest_chat_limit", "limit": 5, "registered_limit": 15})
+        db.commit()
+        db.refresh(guest)
+        result.guest_questions_remaining = max(0, 5 - guest.chat_messages)
+    return result
+
+
+async def _avatar_chat_response(
+    request: AvatarChatRequest,
+    db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
+    invite_token: Optional[str] = Query(None),
 ):
     """
     Чат с ИИ-аватаром на основе RAG (Retrieval-Augmented Generation).
@@ -200,15 +248,26 @@ async def avatar_chat(
             detail="Memorial not found"
         )
 
-    # Приватный мемориал — только авторизованные пользователи с доступом
-    if not memorial.is_public and not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This memorial is private. Please sign in to access it.",
-        )
-    if not memorial.is_public and current_user:
-        from app.auth import require_memorial_access
+    from app.auth import require_memorial_access
+    from datetime import datetime
+    if invite_token:
+        invite = db.query(MemorialInvite).filter(MemorialInvite.token == invite_token).first()
+        if (not invite or invite.memorial_id != memorial.id
+                or (invite.expires_at and invite.expires_at.replace(tzinfo=None) < datetime.utcnow())
+                or not (invite.permissions or {}).get("chat")):
+            raise HTTPException(status_code=403, detail="Invalid or expired chat invitation")
+    elif not memorial.is_public:
         require_memorial_access(memorial.id, current_user, db, min_role=UserRole.VIEWER)
+    # QR/invite visitors receive text chat only, even after registering.
+    owner = False
+    if current_user:
+        try:
+            require_actual_memorial_owner(memorial.id, current_user, db)
+            owner = True
+        except HTTPException:
+            pass
+    if not owner and (request.include_audio or request.include_family_memories):
+        raise HTTPException(status_code=403, detail="Visitors can ask text questions only")
 
     # ── Billing checks (authenticated users only) ──────────────────────────────
     if current_user:
@@ -252,7 +311,8 @@ async def avatar_chat(
 
     # Получаем все воспоминания (не только с embeddings)
     all_memories = db.query(Memory).filter(
-        Memory.memorial_id == request.memorial_id
+        Memory.memorial_id == request.memorial_id,
+        Memory.status == "approved",
     ).all()
     
     if not all_memories:
@@ -366,18 +426,6 @@ async def avatar_chat(
     # Используем только воспоминания с embeddings для поиска
     memories = memories_with_embeddings
     
-    if not memories:
-        # Если все еще нет воспоминаний с embeddings, возвращаем более информативное сообщение
-        total_count = len(all_memories)
-        without_embeddings = len(all_memories) - len(memories_with_embeddings)
-        error_msg = f"Воспоминания добавлены ({total_count}), но embeddings еще не созданы ({without_embeddings} без embeddings)."
-        if without_embeddings > 0:
-            error_msg += " Пожалуйста, подождите несколько секунд и попробуйте снова. Если проблема сохраняется, проверьте логи сервера."
-        return AvatarChatResponse(
-            answer=error_msg,
-            sources=[]
-        )
-    
     try:
         # Создание embedding вопроса
         question_embedding = await get_embedding(request.question)
@@ -404,7 +452,7 @@ async def avatar_chat(
             source_memorial_id = mem.get("source_memorial_id")
             if memory_id:
                 # Всегда получаем полный текст из БД для гарантии полноты контекста
-                memory = db.query(Memory).filter(Memory.id == memory_id).first()
+                memory = db.query(Memory).filter(Memory.id == memory_id, Memory.status == "approved", Memory.memorial_id.in_(search_memorial_ids)).first()
                 if memory:
                     text = memory.content
                     # Добавляем метку, если воспоминание от родственника
@@ -468,37 +516,9 @@ async def avatar_chat(
         
         print(f"📝 Created {len(context_chunks)} context chunks for RAG")
         
-        # Smart Avatar Persona Agent: строим системный промпт из всех воспоминаний.
-        # Результат кэшируется в Redis на 1 час, чтобы не вызывать GPT-4 каждый раз.
-        # Кэш инвалидируется при добавлении нового воспоминания.
+        # Strict archive mode does not synthesize a fictional personality.
+        # Confirmed visitor labels below may influence addressing only.
         persona_prompt = None
-        if request.use_persona and all_memories:
-            redis_key = f"persona:{request.memorial_id}"
-            try:
-                import redis.asyncio as aioredis
-                redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
-                persona_prompt = await redis_client.get(redis_key)
-                if persona_prompt:
-                    print(f"✅ Persona loaded from Redis cache for memorial {request.memorial_id}")
-                else:
-                    persona_prompt = await build_avatar_persona(
-                        memories=[{"title": m.title, "content": m.content} for m in all_memories],
-                        memorial_name=memorial.name,
-                        language=request.language,
-                    )
-                    await redis_client.setex(redis_key, 3600, persona_prompt)
-                    print(f"✅ Persona built and cached in Redis for memorial {request.memorial_id}")
-                await redis_client.aclose()
-            except Exception as e:
-                print(f"Warning: Redis unavailable, building persona without cache: {e}")
-                try:
-                    persona_prompt = await build_avatar_persona(
-                        memories=[{"title": m.title, "content": m.content} for m in all_memories],
-                        memorial_name=memorial.name,
-                        language=request.language,
-                    )
-                except Exception as e2:
-                    print(f"Warning: Could not build avatar persona: {e2}")
 
         # Nickname: если текущий пользователь связан с этим мемориалом и задал обращение
         if current_user:
@@ -565,7 +585,7 @@ async def avatar_chat(
         for chunk in context_chunks:
             memory_id = chunk.get("memory_id")
             title = chunk.get("title", "")
-            if memory_id:
+            if memory_id and f"memory_{memory_id}" in source_ids:
                 source_text = f"{mem_label} #{memory_id}"
                 if title:
                     source_text += f": {title}"
@@ -637,10 +657,6 @@ async def avatar_chat(
             except Exception as e:
                 # Анимация опциональна — не ломаем чат при ошибке
                 print(f"Warning: could not start animation: {e}")
-
-        # Increment quota counter for authenticated users
-        if current_user:
-            increment_chat_usage(current_user, db)
 
         return AvatarChatResponse(
             answer=answer,
@@ -817,6 +833,8 @@ async def upload_voice(
     - Суммарная длительность: минимум 1 минута чистой речи (рекомендуется)
     - Качество: без посторонних шумов
     """
+    from app.auth import require_memorial_access
+    require_actual_memorial_owner(memorial_id, current_user, db)
     check_tts_access(current_user)
     # Проверка существования мемориала
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()

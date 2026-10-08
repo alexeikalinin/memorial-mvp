@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-do
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import './AuthPage.css'
+import { safeReturn } from '../utils/authReturn'
 
 export default function LoginPage() {
   const { user, isLoading: authLoading, login } = useAuth()
@@ -10,7 +11,7 @@ export default function LoginPage() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const { t } = useLanguage()
-  const from = location.state?.from?.pathname || '/'
+  const from = safeReturn(searchParams.get('next') || location.state?.from?.pathname)
   const resetSuccess = searchParams.get('reset') === 'success'
 
   const [form, setForm] = useState({ email: '', password: '' })
@@ -53,6 +54,7 @@ export default function LoginPage() {
 
         <a
           href={`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google`}
+          onClick={() => sessionStorage.setItem("authReturn", from)}
           className="btn-google-auth"
         >
           <svg width="18" height="18" viewBox="0 0 48 48">
@@ -106,7 +108,7 @@ export default function LoginPage() {
         </p>
 
         <p className="auth-switch">
-          {t('auth.no_account')} <Link to="/register">{t('auth.signup_link')}</Link>
+          {t('auth.no_account')} <Link to={`/register?next=${encodeURIComponent(from)}`}>{t('auth.signup_link')}</Link>
         </p>
       </div>
     </div>

@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { authAPI } from '../api/client'
 import './AuthPage.css'
+import { safeReturn } from '../utils/authReturn'
 
 export default function RegisterPage() {
   const { user, isLoading: authLoading, login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const from = safeReturn(searchParams.get('next'))
   const { t } = useLanguage()
 
   const [form, setForm] = useState({ email: '', username: '', full_name: '', password: '' })
@@ -16,9 +19,9 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/', { replace: true })
+      navigate(from, { replace: true })
     }
-  }, [authLoading, user, navigate])
+  }, [authLoading, user, navigate, from])
 
   if (!authLoading && user) {
     return null
@@ -31,7 +34,7 @@ export default function RegisterPage() {
     try {
       await authAPI.register(form)
       await login(form.email, form.password)
-      navigate('/', { replace: true })
+      navigate(from, { replace: true })
     } catch (err) {
       setError(err.response?.data?.detail || t('auth.register_error'))
     } finally {
@@ -46,6 +49,7 @@ export default function RegisterPage() {
 
         <a
           href={`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google`}
+          onClick={() => sessionStorage.setItem("authReturn", from)}
           className="btn-google-auth"
         >
           <svg width="18" height="18" viewBox="0 0 48 48">
@@ -117,7 +121,7 @@ export default function RegisterPage() {
         </form>
 
         <p className="auth-switch">
-          {t('auth.have_account')} <Link to="/login">{t('auth.signin_link')}</Link>
+          {t('auth.have_account')} <Link to={`/login?next=${encodeURIComponent(from)}`}>{t('auth.signin_link')}</Link>
         </p>
       </div>
     </div>

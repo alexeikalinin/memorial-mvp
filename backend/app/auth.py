@@ -175,3 +175,22 @@ def require_memorial_access(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
 
     return memorial
+
+
+def require_actual_memorial_owner(memorial_id: int, user: Optional[User], db: Session) -> Memorial:
+    """Voice and moderation belong to the creator, even in investor demo mode."""
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if memorial.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the memorial owner can perform this action")
+    return memorial
+
+
+async def get_optional_authenticated_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
+    """Public chat must measure actual visitor identity, without the DEBUG owner shortcut."""
+    header = request.headers.get("Authorization", "")
+    token = header.split(" ", 1)[1] if header.startswith("Bearer ") else None
+    return _get_user_from_token(token, db)

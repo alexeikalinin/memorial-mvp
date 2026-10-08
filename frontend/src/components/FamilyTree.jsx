@@ -374,10 +374,11 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick })
           </span>
         )}
         <div className="ft-node-avatar">
-          {memorial.cover_photo_id ? (
+          {(memorial.avatar_photo_id || memorial.cover_photo_id) ? (
             <ApiMediaImage
-              mediaId={memorial.cover_photo_id}
+              mediaId={(memorial.avatar_photo_id || memorial.cover_photo_id)}
               thumbnail={null}
+              portrait={{ memorialId: memorial.memorial_id, kind: 'avatar', version: JSON.stringify(memorial.portrait_settings || {}) }}
               alt={memorial.name}
               className="ft-node-img ft-node-img--hidpi"
               onError={e => { e.target.style.display = 'none' }}
@@ -473,10 +474,11 @@ function GenTreeNodeCard({
           boxShadow,
         }}
       >
-        {memorial.cover_photo_id ? (
+        {(memorial.avatar_photo_id || memorial.cover_photo_id) ? (
           <ApiMediaImage
-            mediaId={memorial.cover_photo_id}
+            mediaId={(memorial.avatar_photo_id || memorial.cover_photo_id)}
             thumbnail={null}
+              portrait={{ memorialId: memorial.memorial_id, kind: 'avatar', version: JSON.stringify(memorial.portrait_settings || {}) }}
             alt={memorial.name}
             className="ft-circle-img"
           />
@@ -521,8 +523,8 @@ function ConnectedFamilyCard({ member, bridgeLabel, onClick }) {
       title={bridgeLabel}
     >
       <div className="ft-cf-avatar">
-        {member.cover_photo_id ? (
-          <ApiMediaImage mediaId={member.cover_photo_id} thumbnail={null} alt={member.name} className="ft-cf-img" />
+        {(member.avatar_photo_id || member.cover_photo_id) ? (
+          <ApiMediaImage mediaId={(member.avatar_photo_id || member.cover_photo_id)} thumbnail={null} portrait={{ memorialId: member.memorial_id, kind: 'avatar', version: JSON.stringify(member.portrait_settings || {}) }} alt={member.name} className="ft-cf-img" />
         ) : (
           <span className="ft-cf-initials">{member.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}</span>
         )}
@@ -588,7 +590,7 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────
-export default function FamilyTree({ memorialId, canEdit = false }) {
+export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) {
   const navigate  = useNavigate()
   const { t }     = useLanguage()
   const canvasRef = useRef(null)
@@ -670,7 +672,7 @@ export default function FamilyTree({ memorialId, canEdit = false }) {
     }
   }, [memorialId, setNodeOverrides])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => { loadData() }, [loadData, refreshKey])
 
   /** Граф, отфильтрованный по visibleFamilies. Чужие узлы на границе — stubs. */
   const displayGraph = useMemo(() => {

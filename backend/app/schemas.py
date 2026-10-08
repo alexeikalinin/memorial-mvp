@@ -282,6 +282,7 @@ class AvatarChatRequest(BaseModel):
 
 class AvatarChatResponse(BaseModel):
     answer: str
+    guest_questions_remaining: Optional[int] = None
     audio_url: Optional[str] = None
     audio_error: Optional[str] = None  # Причина сбоя генерации аудио (если include_audio=True, но аудио нет)
     animation_task_id: Optional[str] = None
@@ -341,6 +342,8 @@ class FamilyTreeNode(BaseModel):
     death_date: Optional[datetime] = None
     relationship_type: Optional[RelationshipType] = None  # Тип связи с родительским узлом
     cover_photo_id: Optional[int] = None  # ID фото обложки для построения URL на фронтенде
+    avatar_photo_id: Optional[int] = None
+    portrait_settings: Optional[dict] = None
     children: List["FamilyTreeNode"] = []
     spouses: List["FamilyTreeNode"] = []
     
@@ -383,6 +386,8 @@ class FullTreeNode(BaseModel):
     birth_year: Optional[int] = None
     death_year: Optional[int] = None
     cover_photo_id: Optional[int] = None
+    avatar_photo_id: Optional[int] = None
+    portrait_settings: Optional[dict] = None
     voice_gender: Optional[str] = None  # для UI (рамка «жена» между семьями)
     generation: int   # 0=root, negative=ancestors, positive=descendants
 
@@ -407,6 +412,8 @@ class NetworkClusterMember(BaseModel):
     birth_year: Optional[int] = None
     death_year: Optional[int] = None
     cover_photo_id: Optional[int] = None
+    avatar_photo_id: Optional[int] = None
+    portrait_settings: Optional[dict] = None
     is_alive: bool = False
 
 

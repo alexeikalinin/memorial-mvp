@@ -175,7 +175,7 @@ async def stripe_webhook(
 
     logger.info("Stripe webhook: %s", event["type"])
 
-    if event["type"] == "checkout.session.completed":
+    if event["type"] in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
         _handle_checkout_completed(event["data"]["object"], db)
     elif event["type"] in ("invoice.payment_succeeded", "invoice.paid"):
         _handle_invoice_paid(event["data"]["object"], db)
@@ -287,6 +287,8 @@ def admin_update_plan(
 # ─── Webhook helpers ──────────────────────────────────────────────────────────
 
 def _handle_checkout_completed(session: dict, db: Session) -> None:
+    if session.get("payment_status") != "paid":
+        return
     meta = session.get("metadata") or {}
     user_id   = _int(meta.get("user_id"))
     plan_key  = meta.get("plan_key", "")

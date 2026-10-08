@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { safeReturn } from '../utils/authReturn'
 import { authAPI } from '../api/client'
 
 export default function GoogleAuthCallback() {
@@ -22,7 +23,9 @@ export default function GoogleAuthCallback() {
     authAPI.me()
       .then(res => {
         if (setUserFromToken) setUserFromToken(res.data)
-        navigate(isNewUser ? '/?tutorial=1' : '/', { replace: true })
+        const target = safeReturn(sessionStorage.getItem('authReturn'), isNewUser ? '/?tutorial=1' : '/')
+        sessionStorage.removeItem('authReturn')
+        navigate(target, { replace: true })
       })
       .catch(() => {
         localStorage.removeItem('authToken')

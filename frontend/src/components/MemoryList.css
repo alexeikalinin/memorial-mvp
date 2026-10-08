@@ -474,3 +474,8 @@
   padding: 3rem;
   color: var(--text-faint);
 }
+
+.pending-memories .memory-card {
+  animation: none;
+  margin: 1rem 0;
+}

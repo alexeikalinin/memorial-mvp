@@ -180,6 +180,7 @@ function ContributePage() {
               <div className="save-success">
                 <div className="success-icon">✅</div>
                 <h3>{t('contribute.saved_title')}</h3>
+                <p>{t('memoryList.pending_sent')}</p>
                 <p className="save-success-hint">{t('contribute.saved_hint')}</p>
                 <div className="save-success-actions">
                   <button
@@ -297,6 +298,8 @@ function ContributePage() {
         {activeTab === 'chat' && info.permissions.chat && (
           <AvatarChat
             memorialId={info.memorial_id}
+            inviteToken={token}
+            textOnly
             coverPhotoId={info.cover_photo_id}
             memorialName={info.memorial_name}
           />

@@ -1270,3 +1270,27 @@
 }
 
 .avatar-portrait-edit{position:absolute;left:50%;transform:translateX(-50%);bottom:70px;z-index:2;border:1px solid #bda788;background:rgba(36,28,20,.87);color:#fff2df;padding:10px 14px;font-size:12px;border-radius:20px;cursor:pointer;max-width:90%;white-space:nowrap}.avatar-portrait-edit:focus-visible{outline:2px solid #d6b77d;outline-offset:3px}
+
+@media (max-width: 768px) {
+  .chat-panel { height: 520px; flex: none; }
+  .chat-header { padding: 12px; }
+  .chat-input-form { padding: 12px; }
+  .chat-controls { flex-wrap: wrap; }
+}
+
+.chat-limit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  .avatar-panel { height: auto; min-height: 220px; }
+  .avatar-panel-photo { height: auto; max-height: 440px; object-fit: contain; }
+  .avatar-panel-placeholder { min-height: 220px; }
+}
+.chat-usage-hint { padding: 10px 14px; margin: 0; background: var(--surface-warm); color: var(--text-muted); font-size: 13px; }
+.chat-usage-hint a { display: inline-block; margin-left: 10px; color: var(--accent); }

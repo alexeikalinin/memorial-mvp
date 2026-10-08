@@ -67,3 +67,20 @@ def test_portrait_edit_needs_access_and_delete_clears_references(auth_client, cl
     res=auth_client.get(f"/api/v1/memorials/{memorial['id']}").json()
     assert res['cover_photo_id'] is None
     assert not res['portrait_settings'].get('avatar')
+
+
+def test_family_tree_uses_selected_avatar_and_crop(auth_client, memorial, db_session, tmp_path):
+    first = photo(db_session, memorial['id'], tmp_path)
+    second = photo(db_session, memorial['id'], tmp_path, 'avatar.png')
+    endpoint = f"/api/v1/memorials/{memorial['id']}/portraits"
+    assert auth_client.patch(endpoint+'/cover', json={'media_id': first.id, 'crop': CROP}).status_code == 200
+    assert auth_client.patch(endpoint+'/avatar', json={'media_id': second.id, 'crop': CROP}).status_code == 200
+    response = auth_client.get(f"/api/v1/family/memorials/{memorial['id']}/full-tree")
+    assert response.status_code == 200
+    node = next(n for n in response.json()['nodes'] if n['memorial_id'] == memorial['id'])
+    assert node['cover_photo_id'] == first.id
+    assert node['avatar_photo_id'] == second.id
+    assert node['portrait_settings']['avatar']['crop'] == CROP
+    assert auth_client.patch(endpoint+'/avatar', json={'media_id': None}).status_code == 200
+    node = auth_client.get(f"/api/v1/family/memorials/{memorial['id']}/full-tree").json()['nodes'][0]
+    assert node['avatar_photo_id'] == first.id

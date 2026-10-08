@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
-import { aiAPI, memorialsAPI } from '../api/client'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import apiClient, { aiAPI, memorialsAPI } from '../api/client'
 import ApiMediaImage from './ApiMediaImage'
 import ChatAudioPlayer from './ChatAudioPlayer'
-import { instrumentalName } from '../utils/declension'
+import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import './AvatarChat.css'
@@ -59,7 +59,11 @@ function getPlayableAudioUrl(url) {
   return `${base}/media/audio/${url}`
 }
 
-function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, portraitSettings, onEditPortrait }) {
+function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, portraitSettings, onEditPortrait, canManageVoice = false, textOnly = false, disabled = false, inviteToken }) {
+  const location = useLocation()
+  const [quotaBlocked, setQuotaBlocked] = useState(false)
+  const [chatUsage, setChatUsage] = useState(null)
+  const authReturn = `${location.pathname}${location.search}${location.hash}`
   const avatarPhotoId = portraitSettings?.avatar?.media_id || coverPhotoId
   const portraitVersion = JSON.stringify(portraitSettings || {})
   const [messages, setMessages] = useState([])
@@ -68,6 +72,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const [includeAudio, setIncludeAudio] = useState(false)
   const { lang, t } = useLanguage()
   const { user } = useAuth()
+  const monthlyLimitReached = !!user && chatUsage?.chat_messages_limit != null && chatUsage.chat_messages_used >= chatUsage.chat_messages_limit
+  const chatBlocked = quotaBlocked || monthlyLimitReached
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
 
@@ -88,11 +94,12 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const storageKey = `chat_${memorialId}`
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesEndRef.current?.parentElement
+    container?.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
   }
 
   useEffect(() => {
-    scrollToBottom()
+    if (messages.length > 0) scrollToBottom()
   }, [messages])
 
   useEffect(() => {
@@ -100,7 +107,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     setTtsStatus(null)
     setElQuota(null)
     setElQuotaErr(null)
-    if (!user) return () => { cancelled = true }
+    if (!user || textOnly) return () => { cancelled = true }
     aiAPI.getTtsStatus(memorialId).then(async (res) => {
       if (cancelled) return
       setTtsStatus(res.data)
@@ -116,7 +123,17 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     return () => {
       cancelled = true
     }
-  }, [memorialId, user])
+  }, [memorialId, user, textOnly])
+
+  const refreshUsage = useCallback(async () => {
+    if (!user) return
+    try { setChatUsage((await apiClient.get('/billing/usage')).data) } catch { /* Usage hint is optional; server still enforces the quota. */ }
+  }, [user])
+  useEffect(() => {
+    setQuotaBlocked(false)
+    setChatUsage(null)
+    refreshUsage()
+  }, [user?.id, memorialId, refreshUsage])
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -129,7 +146,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     } catch (e) {
       // ignore corrupt data
     }
-  }, [memorialId])
+  }, [storageKey])
 
   // Save chat history to localStorage whenever messages change
   useEffect(() => {
@@ -184,6 +201,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   }, [messages])
 
   useEffect(() => {
+    if (!canManageVoice) return
     const checkVoice = async () => {
       try {
         const response = await memorialsAPI.get(memorialId)
@@ -193,7 +211,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       }
     }
     checkVoice()
-  }, [memorialId])
+  }, [memorialId, canManageVoice])
 
   const handleVoiceUpload = (e) => {
     const files = Array.from(e.target.files || [])
@@ -243,7 +261,9 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     } catch (err) {
       const status = err.response?.status
       const detail = err.response?.data?.detail || t('chat.voice_clone_error')
-      if (status === 402) {
+      const guestLimit = status === 401 && detail?.code === 'guest_chat_limit'
+      if (status === 402 || status === 429 || guestLimit) {
+        if (!includeFamilyMemories) setQuotaBlocked(true)
         alert(`⚠️ ${detail}`)
       } else {
         alert(detail)
@@ -255,20 +275,20 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!input.trim() || loading) return
+    if (!input.trim() || loading || disabled || chatBlocked) return
 
     const userMessage = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', text: userMessage }])
     setLoading(true)
-    onMessageSent?.()  // notify parent (e.g. for anonymous limit tracking)
 
     try {
       const response = await aiAPI.chat({
         memorial_id: parseInt(memorialId),
         question: userMessage,
-        include_audio: includeAudio,
-        include_family_memories: includeFamilyMemories,
+        include_audio: !textOnly && includeAudio,
+        include_family_memories: !textOnly && includeFamilyMemories,
+        invite_token: inviteToken || undefined,
         language: lang,
       })
 
@@ -295,22 +315,27 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       }
 
       setMessages((prev) => [...prev, assistantMessage])
+      if (!user && response.data.guest_questions_remaining === 0) setQuotaBlocked(true)
+      onMessageSent?.(response.data)
+      refreshUsage()
     } catch (err) {
       console.error('Chat error:', err)
       const status = err.response?.status
       const detail = err.response?.data?.detail || err.message || t('chat.chat_error')
       // 402 = paid feature — show upgrade prompt, not a generic error
-      if (status === 402) {
+      const guestLimit = status === 401 && detail?.code === 'guest_chat_limit'
+      if (status === 402 || status === 429 || guestLimit) {
+        if (!includeFamilyMemories) setQuotaBlocked(true)
         if (includeFamilyMemories) {
           setIncludeFamilyMemories(false)
         }
         const errorMessage = {
           role: 'error',
-          text: t('chat.family_upgrade_prompt'),
+          text: typeof detail === 'string' ? detail : detail?.message || (lang === 'en' ? 'Your free questions have been used. Sign in or choose a plan to continue.' : 'Бесплатные вопросы закончились. Войдите или выберите тариф, чтобы продолжить.'),
         }
         setMessages((prev) => [...prev, errorMessage])
       } else {
-        const errorMessage = { role: 'error', text: detail }
+        const errorMessage = { role: 'error', text: typeof detail === 'string' ? detail : detail?.message || t('chat.chat_error') }
         setMessages((prev) => [...prev, errorMessage])
       }
     } finally {
@@ -404,26 +429,32 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             : t('chat.tts_quota_unlimited')}
         </p>
       ) : null}
+      {user && chatUsage && <p className="chat-usage-hint">
+        {chatUsage.chat_messages_limit == null
+          ? (lang === 'en' ? 'Unlimited text questions' : 'Текстовые вопросы без ограничений')
+          : (lang === 'en' ? `Remaining: ${Math.max(0, chatUsage.chat_messages_limit - chatUsage.chat_messages_used)} of ${chatUsage.chat_messages_limit} questions this month` : `Осталось ${Math.max(0, chatUsage.chat_messages_limit - chatUsage.chat_messages_used)} из ${chatUsage.chat_messages_limit} вопросов в этом месяце`)}
+        {chatUsage.chat_messages_limit != null && chatUsage.chat_messages_used >= chatUsage.chat_messages_limit && <Link to={`/pricing?next=${encodeURIComponent(authReturn)}`}>{lang === 'en' ? 'Choose a plan' : 'Выбрать тариф'}</Link>}
+      </p>}
       <div className="chat-header">
         <div className="chat-header-title">
           <h2>
             {memorialName
               ? lang === 'en'
                 ? t('chat.title_with', { name: memorialName })
-                : `Чат с ${instrumentalName(memorialName)}`
+                : `Чат с ${memorialName}`
               : t('chat.title_default')}
           </h2>
         </div>
         <div className="header-controls">
-          <label className="audio-toggle" data-tour="chat-audio-toggle">
+          {!textOnly && <label className="audio-toggle" data-tour="chat-audio-toggle">
             <input
               type="checkbox"
               checked={includeAudio}
               onChange={(e) => setIncludeAudio(e.target.checked)}
             />
             {t('chat.audio_label')}
-          </label>
-          <label
+          </label>}
+          {!textOnly && <label
             className={`audio-toggle family-memories-toggle${!hasFamilyRag ? ' feature-locked' : ''}`}
             title={!hasFamilyRag ? t('chat.family_locked_tooltip') : undefined}
           >
@@ -449,15 +480,15 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             ) : (
               <span className="plan-badge">Plus</span>
             )}
-          </label>
-          <button
+          </label>}
+          {canManageVoice && <button
             className="btn-clear-history"
             onClick={handleSyncFamily}
             disabled={syncing}
             title={t('chat.sync_family')}
           >
             {syncing ? `⏳ ${t('chat.syncing')}` : `🔄 ${t('chat.sync_family')}`}
-          </button>
+          </button>}
           <button
             className="btn-fullscreen"
             onClick={() => setIsFullscreen((v) => !v)}
@@ -471,7 +502,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               {t('chat.clear_history')}
             </button>
           )}
-          <div className="voice-clone-section" data-tour="chat-voice">
+          {canManageVoice && <div className="voice-clone-section" data-tour="chat-voice">
             {hasCustomVoice ? (
               <div className="voice-status-row">
                 <span className="voice-status">✅ {t('chat.voice_uploaded')}</span>
@@ -490,11 +521,11 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                 🎤 {t('chat.voice_clone')}
               </button>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
-      {showVoicePanel && (
+      {canManageVoice && showVoicePanel && (
         <div className="voice-clone-panel">
           <div className="voice-clone-panel-header">
             <h3>🎤 {t('chat.voice_panel_title')}</h3>
@@ -702,18 +733,24 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         <div ref={messagesEndRef} />
       </div>
 
+      {chatBlocked && <div className="chat-limit-actions">
+        {!user ? <>
+          <Link className="btn btn-primary" to={`/register?next=${encodeURIComponent(authReturn)}`} state={{ from: { pathname: authReturn } }}>{lang === 'en' ? 'Register — 15 questions per month' : 'Зарегистрироваться — 15 вопросов в месяц'}</Link>
+          <Link to={`/login?next=${encodeURIComponent(authReturn)}`} state={{ from: { pathname: authReturn } }}>{lang === 'en' ? 'Sign in' : 'Войти'}</Link>
+        </> : <Link className="btn btn-primary" to={`/pricing?next=${encodeURIComponent(authReturn)}`}>{lang === 'en' ? 'Choose a plan' : 'Выбрать тариф'}</Link>}
+      </div>}
       <form onSubmit={handleSend} className="chat-input-form">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t('chat.placeholder')}
-          disabled={loading}
+          disabled={loading || disabled || chatBlocked}
           className="chat-input"
         />
         <button
           type="submit"
-          disabled={loading || !input.trim()}
+          disabled={loading || disabled || chatBlocked || !input.trim()}
           className="send-btn"
         >
           {t('chat.send')}

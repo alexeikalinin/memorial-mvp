@@ -65,6 +65,7 @@ export default {
     back: '← Go back',
   },
   public: {
+    private_memorial: 'This memorial is private. Ask the owner to enable public access or sign in with an account that has access.',
     not_found: 'Memorial not found',
     qr_error: 'Error generating QR code',
     request_error: 'Error sending request',
@@ -331,6 +332,8 @@ export default {
     no_memories: 'No memories added yet',
   },
   detail: {
+    qr_private: 'This memorial is private. Enable public access for QR visitors. Photos and memories will be visible to everyone.',
+    qr_publish: 'Enable public access and create QR code',
     error_load: 'Failed to load memorial',
     delete_confirm: 'Delete memorial "{name}"? This cannot be undone.',
     delete_error: 'Failed to delete memorial',
@@ -607,6 +610,11 @@ export default {
     ],
   },
   memoryList: {
+    pending_requests: 'Memory submissions',
+    pending_short: 'awaiting review',
+    pending_help: 'Only you can see these submissions. Approved memories appear in the shared list and become available to the avatar.',
+    pending_empty: 'No new submissions.',
+    pending_sent: 'Your memory was sent to the owner for review.',
     title: 'Memories',
     invite_friend: 'Invite a friend',
     invite_loading: '...',
@@ -672,7 +680,7 @@ export default {
     tab_record: '🎙 Record a memory',
     tab_chat: '💬 Chat',
     saved_title: 'Memory saved!',
-    saved_hint: 'Thank you! Your words are now part of this memory.',
+    saved_hint: 'Thank you! Your words will become part of this memory after the owner approves them.',
     record_again: 'Record another',
     viral_share: '💌 Share further — let others tell their story too',
     record_hint: 'Click the button and speak. We will record and save your words.',

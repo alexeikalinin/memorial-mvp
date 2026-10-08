@@ -569,6 +569,8 @@ async def get_family_tree(
                     death_date=sm.death_date,
                     relationship_type=RelationshipType.SPOUSE,
                     cover_photo_id=sm.cover_photo_id,
+                    avatar_photo_id=((sm.portrait_settings or {}).get("avatar") or {}).get("media_id") or sm.cover_photo_id,
+                    portrait_settings=sm.portrait_settings,
                     children=[],
                     spouses=[]
                 ))
@@ -579,6 +581,8 @@ async def get_family_tree(
             birth_date=m.birth_date,
             death_date=m.death_date,
             cover_photo_id=m.cover_photo_id,
+            avatar_photo_id=((m.portrait_settings or {}).get("avatar") or {}).get("media_id") or m.cover_photo_id,
+            portrait_settings=m.portrait_settings,
             children=children,
             spouses=spouses
         )
@@ -655,6 +659,8 @@ async def get_full_family_tree(
             birth_year=m.birth_date.year if m.birth_date else None,
             death_year=m.death_date.year if m.death_date else None,
             cover_photo_id=m.cover_photo_id,
+            avatar_photo_id=((m.portrait_settings or {}).get("avatar") or {}).get("media_id") or m.cover_photo_id,
+            portrait_settings=m.portrait_settings,
             voice_gender=m.voice_gender,
             generation=generation[mid],
         ))
@@ -869,6 +875,8 @@ async def get_network_clusters(
             birth_year=m.birth_date.year if m.birth_date else None,
             death_year=m.death_date.year if m.death_date else None,
             cover_photo_id=m.cover_photo_id,
+            avatar_photo_id=((m.portrait_settings or {}).get("avatar") or {}).get("media_id") or m.cover_photo_id,
+            portrait_settings=m.portrait_settings,
             is_alive=m.death_date is None,
         ))
 

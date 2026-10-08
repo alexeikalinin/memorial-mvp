@@ -117,7 +117,15 @@ export const memorialsAPI = {
 export const aiAPI = {
   animatePhoto: (data) => apiClient.post('/ai/photo/animate', data),
   getAnimationStatus: (data) => apiClient.post('/ai/animation/status', data),
-  chat: (data) => apiClient.post('/ai/avatar/chat', data),
+  chat: (data) => {
+    let guestId = localStorage.getItem('guestChatId')
+    if (!guestId) {
+      guestId = crypto.randomUUID()
+      localStorage.setItem('guestChatId', guestId)
+    }
+    const { invite_token, ...body } = data
+    return apiClient.post('/ai/avatar/chat', body, { params: { guest_id: guestId, invite_token } })
+  },
   syncFamilyMemories: (memorialId, dryRun = false) =>
     apiClient.post(`/ai/family/sync-memories/${memorialId}?dry_run=${dryRun}`),
   transcribe: (audioFile, language = 'ru') => {
@@ -211,3 +219,8 @@ export const familyAPI = {
     apiClient.get(`/family/memorials/${memorialId}/network-clusters`),
 }
 
+
+export const billingAPI = {
+  usage: () => apiClient.get('/billing/usage'),
+  checkout: (data) => apiClient.post('/billing/checkout', data),
+}

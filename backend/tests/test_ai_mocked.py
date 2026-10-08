@@ -8,6 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.models import Media, MediaType, Memorial, Memory
 
 
+@pytest.fixture(autouse=True)
+def _offline_embedding_queue(monkeypatch):
+    """Saving test memories must not invoke Redis or a real AI service."""
+    from app.workers.worker import create_memory_embedding_task
+    monkeypatch.setattr(create_memory_embedding_task, "delay", lambda **kwargs: None)
+
+
 @pytest.mark.parametrize("cloned", [True, False])
 def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_session, monkeypatch, tmp_path):
     """A cloned voice reply must invoke the animation service, not the photo route."""
@@ -47,7 +54,7 @@ def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_se
         {"memory_id": memory.id, "score": 0.9},
     ]))
     monkeypatch.setattr(ai_api, "generate_rag_response", AsyncMock(return_value=(
-        "Я учился в МГУ.", [memory.id],
+        "Я учился в МГУ.", [f"memory_{memory.id}"],
     )))
 
     voice_status = auth_client.get(f"/api/v1/ai/tts/status?memorial_id={person.id}")
@@ -120,7 +127,7 @@ def test_avatar_chat_with_memories(client, memorial, db_session):
                 "title": "Студенческие годы",
             }
         ]
-        mock_generate.return_value = ("Он учился в МГУ.", [memory_id])
+        mock_generate.return_value = ("Он учился в МГУ.", [f"memory_{memory_id}"])
 
         response = client.post(
             "/api/v1/ai/avatar/chat",
@@ -225,7 +232,7 @@ def test_avatar_chat_family_rag(auth_client, memorial, db_session):
                 "title": "Семейное",
             }
         ]
-        mock_gen.return_value = ("Его отец был врачом.", [family_mem_id])
+        mock_gen.return_value = ("Его отец был врачом.", [f"memory_{family_mem_id}"])
 
         response = auth_client.post(
             "/api/v1/ai/avatar/chat",

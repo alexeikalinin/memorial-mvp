@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom'
 import { memorialsAPI, accessAPI } from '../api/client'
 import ApiMediaImage from '../components/ApiMediaImage'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import AvatarChat from '../components/AvatarChat'
 import DemoTutorial from '../components/DemoTutorial'
+import memorialRedLamp from '../assets/memorial-red-lamp.svg'
 import './MemorialPublic.css'
 
 const TUTORIAL_KEY = 'demo_tutorial_v1'
@@ -14,7 +15,11 @@ const ANON_CHAT_LIMIT = 5
 
 function MemorialPublic() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const { hash } = useLocation()
+  const returnUrl = `/m/${id}#chat`
+  const authState = { from: { pathname: returnUrl } }
+  const authUrl = (route) => `${route}?next=${encodeURIComponent(returnUrl)}`
+  const chatRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [memorial, setMemorial] = useState(null)
   const [memories, setMemories] = useState([])
@@ -60,7 +65,7 @@ function MemorialPublic() {
 
   const advanceTutorial = () => {
     const next = (tutorialStep || 0) + 1
-    try { localStorage.setItem(TUTORIAL_KEY, next > 5 ? 'done' : String(next)) } catch {}
+    try { localStorage.setItem(TUTORIAL_KEY, next > 5 ? 'done' : String(next)) } catch { /* Storage may be unavailable. */ }
     setTutorialStep(next <= 5 ? next : null)
     // strip ?demo_step from URL without navigation
     if (searchParams.has('demo_step')) {
@@ -70,7 +75,7 @@ function MemorialPublic() {
   }
 
   const skipTutorial = () => {
-    try { localStorage.setItem(TUTORIAL_KEY, 'done') } catch {}
+    try { localStorage.setItem(TUTORIAL_KEY, 'done') } catch { /* Storage may be unavailable. */ }
     setTutorialStep(null)
     if (searchParams.has('demo_step')) {
       searchParams.delete('demo_step')
@@ -90,7 +95,7 @@ function MemorialPublic() {
         setMemories(Array.isArray(memoriesRes.data) ? memoriesRes.data : [])
         setPhotos(Array.isArray(mediaRes.data) ? mediaRes.data.filter((m) => m.media_type === 'photo') : [])
       } catch (err) {
-        setError(err.response?.data?.detail || t('public.not_found'))
+        setError([401, 403].includes(err.response?.status) ? t('public.private_memorial') : err.response?.data?.detail || t('public.not_found'))
       } finally {
         setLoading(false)
       }
@@ -98,12 +103,19 @@ function MemorialPublic() {
     loadData()
   }, [id])
 
+  useEffect(() => {
+    if (loading || error || hash !== '#chat') return
+    setActiveSection('chat')
+    const frame = requestAnimationFrame(() => chatRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' }))
+    return () => cancelAnimationFrame(frame)
+  }, [loading, error, hash])
+
   // Called by AvatarChat each time user sends a message (anonymous only)
   const handleAnonChatMessage = () => {
     if (user) return
     const next = anonCount + 1
     setAnonCount(next)
-    try { localStorage.setItem(anonKey, String(next)) } catch {}
+    try { localStorage.setItem(anonKey, String(next)) } catch { /* Storage may be unavailable. */ }
     if (next >= ANON_CHAT_LIMIT) setShowAuthPrompt(true)
   }
 
@@ -166,6 +178,8 @@ function MemorialPublic() {
   if (loading) return <div className="loading">{t('public.loading')}</div>
   if (error || !memorial) return <div className="error-message">{error || t('public.not_found')}</div>
 
+  const publicChatUrl = `${window.location.origin}${import.meta.env.BASE_URL}m/${id}#chat`
+
   const birthYear = memorial.birth_date ? new Date(memorial.birth_date).getFullYear() : null
   const deathYear = memorial.death_date ? new Date(memorial.death_date).getFullYear() : null
 
@@ -200,6 +214,7 @@ function MemorialPublic() {
           <div className="public-hero-empty">🕯</div>
         )}
         <div className="public-hero-overlay" />
+        <img src={memorialRedLamp} className="public-portrait-lamp" alt="" aria-hidden="true" />
         <div className="public-hero-info">
           <h1 className="public-name">{memorial.name}</h1>
           {(birthYear || deathYear) && (
@@ -249,7 +264,7 @@ function MemorialPublic() {
       </div>
 
       {/* ── Content ── */}
-      <div className="public-content">
+      <div className="public-content" id="chat" ref={chatRef}>
         {activeSection === 'chat' && (
           <>
             {/* Anonymous chat counter hint — shown before limit is reached */}
@@ -264,12 +279,13 @@ function MemorialPublic() {
                   {anonCount === 0
                     ? t('public.anon_hint_full', { limit: ANON_CHAT_LIMIT })
                     : t('public.anon_hint_left', { left: ANON_CHAT_LIMIT - anonCount, limit: ANON_CHAT_LIMIT })}
-                  {anonCount > 0 && <Link to="/register" className="anon-hint-link">{t('public.anon_hint_link')}</Link>}
+                  <Link to={authUrl('/register')} state={authState} className="anon-hint-link">{t('public.anon_hint_link')}</Link>
+                  <Link to={authUrl('/login')} state={authState} className="anon-hint-link">{t('public.signin')}</Link>
                 </span>
               </div>
             )}
             {/* Limit reached: sign-up prompt */}
-            {showAuthPrompt && (
+            {!user && (showAuthPrompt || chatLimitReached) && (
               <div className="anon-limit-banner">
                 <p className="anon-limit-title">{t('public.anon_limit_title', { limit: ANON_CHAT_LIMIT })}</p>
                 <p className="anon-limit-sub">
@@ -277,23 +293,23 @@ function MemorialPublic() {
                   {t('public.anon_limit_sub_3')} <strong>{t('public.anon_limit_sub_4')}</strong>
                 </p>
                 <div className="anon-limit-actions">
-                  <Link to="/register" className="btn-anon-signup">{t('public.signup_free')}</Link>
-                  <Link to="/login" className="btn-anon-login">{t('public.signin')}</Link>
+                  <Link to={authUrl('/register')} state={authState} className="btn-anon-signup">{t('public.signup_free')}</Link>
+                  <Link to={authUrl('/login')} state={authState} className="btn-anon-login">{t('public.signin')}</Link>
                 </div>
               </div>
             )}
             {tutorialStep === 3 && (
               <DemoTutorial step={3} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
             )}
-            {!chatLimitReached && (
-              <AvatarChat
+            <AvatarChat
+                textOnly
+                disabled={chatLimitReached}
                 memorialId={id}
                 coverPhotoId={memorial.cover_photo_id}
                 portraitSettings={memorial.portrait_settings}
                 memorialName={memorial.name}
                 onMessageSent={handleAnonChatMessage}
-              />
-            )}
+            />
           </>
         )}
 
@@ -417,10 +433,10 @@ function MemorialPublic() {
                   {t('public.qr_hint_2')}
                 </p>
                 <div className="public-qr-url-row">
-                  <code className="public-qr-url">{window.location.href}</code>
+                  <code className="public-qr-url">{publicChatUrl}</code>
                   <button
                     className="btn-copy-small"
-                    onClick={() => navigator.clipboard.writeText(window.location.href).then(() => alert(t('public.link_copied')))}
+                    onClick={() => navigator.clipboard.writeText(publicChatUrl).then(() => alert(t('public.link_copied')))}
                   >
                     {t('public.copy')}
                   </button>

@@ -70,10 +70,10 @@ def _build_public_memorial_url(memorial_id: int) -> str:
     base = (settings.PUBLIC_FRONTEND_URL or settings.FRONTEND_URL or "http://localhost:5173").rstrip("/")
     lower = base.lower()
     if "/app" in lower:
-        return f"{base}/m/{memorial_id}"
+        return f"{base}/m/{memorial_id}#chat"
     if "localhost" in lower or "127.0.0.1" in lower:
-        return f"{base}/m/{memorial_id}"
-    return f"{base}/app/m/{memorial_id}"
+        return f"{base}/m/{memorial_id}#chat"
+    return f"{base}/app/m/{memorial_id}#chat"
 
 
 def get_media_type_from_mime(mime_type: str) -> MediaType:
@@ -100,6 +100,7 @@ async def list_memorials(
     # Subquery counts — один запрос вместо N*2
     memories_count_sq = (
         db.query(Memory.memorial_id, func.count(Memory.id).label("cnt"))
+        .filter(Memory.status == "approved")
         .group_by(Memory.memorial_id)
         .subquery()
     )
@@ -166,6 +167,7 @@ async def list_demo_memorials(db: Session = Depends(get_db)):
     """
     memories_count_sq = (
         db.query(Memory.memorial_id, func.count(Memory.id).label("cnt"))
+        .filter(Memory.status == "approved")
         .group_by(Memory.memorial_id).subquery()
     )
     media_count_sq = (
@@ -269,6 +271,7 @@ async def get_memorial(
                 current_user_role = access.role.value
 
     response = MemorialDetailResponse.model_validate(memorial)
+    response.memories = [memory for memory in response.memories if memory.status == "approved"]
     response.current_user_role = current_user_role
     # Populate is_demo from owner
     owner = db.query(User).filter(User.id == memorial.owner_id).first()
@@ -338,6 +341,9 @@ async def get_qr_code(
 
     memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
 
+    if not memorial.is_public:
+        raise HTTPException(status_code=409, detail="Enable public access before sharing a QR code")
+
     url = _build_public_memorial_url(memorial_id)
 
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
@@ -369,6 +375,9 @@ async def update_memorial(
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
     
     update_data = memorial_update.dict(exclude_unset=True)
+    if {"voice_gender", "voice_id", "voice_provider"} & update_data.keys():
+        from app.auth import require_actual_memorial_owner
+        require_actual_memorial_owner(memorial_id, current_user, db)
     for field, value in update_data.items():
         setattr(memorial, field, value)
     
@@ -639,12 +648,17 @@ async def create_memory(
     db_memory = Memory(
         **memory.dict(),
         memorial_id=memorial_id,
-        source=memory_source
+        source=memory_source,
+        status="pending" if invite_token else "approved",
+        contributor_name=invite.label if invite_token else None,
     )
     db.add(db_memory)
     db.commit()
     db.refresh(db_memory)
     
+    if invite_token:
+        return db_memory
+
     # Создание embedding в фоновой задаче или синхронно
     try:
         from app.workers.worker import create_memory_embedding_task
@@ -852,7 +866,8 @@ async def get_pending_memories(
     current_user: User = Depends(get_current_user),
 ):
     """Return all pending (unmoderated) memories. Owner/editor only."""
-    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    from app.auth import require_actual_memorial_owner
+    require_actual_memorial_owner(memorial_id, current_user, db)
     return db.query(Memory).filter(
         Memory.memorial_id == memorial_id,
         Memory.status == "pending",
@@ -868,10 +883,13 @@ async def approve_memory(
     lang: str = Depends(get_lang),
 ):
     """Approve a pending memory — makes it publicly visible. Owner/editor only."""
-    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    from app.auth import require_actual_memorial_owner
+    require_actual_memorial_owner(memorial_id, current_user, db)
     mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
     if not mem:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memory_not_found"))
+    if mem.status == "approved":
+        return mem
     mem.status = "approved"
     db.commit()
     db.refresh(mem)
@@ -893,10 +911,13 @@ async def reject_memory(
     lang: str = Depends(get_lang),
 ):
     """Reject (delete) a pending memory. Owner/editor only."""
-    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    from app.auth import require_actual_memorial_owner
+    require_actual_memorial_owner(memorial_id, current_user, db)
     mem = db.query(Memory).filter(Memory.id == memory_id, Memory.memorial_id == memorial_id).first()
     if not mem:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memory_not_found"))
+    if mem.status != "pending":
+        raise HTTPException(status_code=409, detail="Only pending submissions can be rejected")
     db.delete(mem)
     db.commit()
     return None
@@ -920,7 +941,8 @@ async def get_memorial_memories(
     is_editor = False
     if current_user:
         try:
-            require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+            from app.auth import require_actual_memorial_owner
+            require_actual_memorial_owner(memorial_id, current_user, db)
             is_editor = True
         except HTTPException:
             pass

@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
+import PricingPage from './pages/PricingPage'
 import Home from './pages/Home'
 import MemorialCreate from './pages/MemorialCreate'
 import MemorialDetail from './pages/MemorialDetail'
@@ -47,6 +48,7 @@ function App() {
 
             {/* Защищённые маршруты */}
             <Route element={<ProtectedRoute />}>
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/" element={<Home />} />
               <Route path="/memorials/new" element={<MemorialCreate />} />
               <Route path="/memorials/:id" element={<MemorialDetail />} />

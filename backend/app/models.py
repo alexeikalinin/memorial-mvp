@@ -104,6 +104,7 @@ class Memorial(Base):
     invites = relationship("MemorialInvite", back_populates="memorial", cascade="all, delete-orphan")
     access_entries = relationship("MemorialAccess", back_populates="memorial", cascade="all, delete-orphan")
     access_requests = relationship("AccessRequest", back_populates="memorial", cascade="all, delete-orphan")
+    guest_chat_usage = relationship("GuestChatUsage", cascade="all, delete-orphan")
 
 
 class Media(Base):
@@ -316,3 +317,13 @@ class UserUsage(Base):
         Index("ix_user_usage_user_period", "user_id", "period"),
     )
 
+
+
+class GuestChatUsage(Base):
+    """Trial usage for a browser identity and memorial; shared by QR/invite."""
+    __tablename__ = "guest_chat_usage"
+    id = Column(Integer, primary_key=True)
+    guest_id = Column(String(64), nullable=False)
+    memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False)
+    chat_messages = Column(Integer, nullable=False, default=0)
+    __table_args__ = (UniqueConstraint("guest_id", "memorial_id"),)
