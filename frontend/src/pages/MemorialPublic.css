@@ -800,7 +800,7 @@
 #chat { scroll-margin-top: 16px; }
 .anon-hint-link { display: inline-block; margin: 6px 12px 0 0; }
 
-.public-portrait-lamp { position: absolute; left: calc(50% + 87px); top: calc(50% + 64px); width: 34px; height: 64px; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 5px #0005); }
+.public-portrait-candle { position: absolute; left: calc(50% + 50px); top: calc(50% + 47px); width: 24px; height: 66px; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 5px #0005); }
 @media (max-width: 640px) {
-  .public-portrait-lamp { left: calc(50% + 64px); top: calc(50% + 38px); width: 30px; height: 56px; }
+  .public-portrait-candle { left: calc(50% + 31px); top: 146px; width: 22px; height: 60px; }
 }

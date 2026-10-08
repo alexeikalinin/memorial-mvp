@@ -55,7 +55,9 @@
       font-size: 26px; font-weight: 700; color: var(--accent);
       letter-spacing: 0.02em;
     }
-    .nav-logo img { height: 44px; width: 73px; display: block; }
+    .nav-logo img { height: 44px; width: 247px; display: block; }
+    .nav-logo .brand-still, .footer-logo .brand-still { display: none; }
+    @media (prefers-reduced-motion: reduce) { .nav-logo .brand-motion, .footer-logo .brand-motion { display: none; } .nav-logo .brand-still, .footer-logo .brand-still { display: block; } }
     .nav-links { display: flex; gap: 36px; align-items: center; }
     .nav-links a { color: var(--text2); text-decoration: none; font-size: 14px; transition: color .2s; }
     .nav-links a:hover { color: var(--text); }
@@ -728,7 +730,7 @@
     .footer-top { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 48px; margin-bottom: 56px; }
     .footer-brand p { font-size: 14px; color: var(--text3); margin-top: 12px; line-height: 1.65; max-width: 220px; }
     .footer-logo { display: flex; align-items: center; gap: 10px; font-family:'Playfair Display',serif; font-size:24px; font-weight: 700; color:var(--accent); }
-    .footer-logo img { height: 38px; width: 63px; display: block; }
+    .footer-logo img { height: 38px; width: 213px; display: block; }
     .footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text3); margin-bottom: 16px; }
     .footer-col a { display: block; font-size: 14px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
     .footer-col a:hover { color: var(--accent); }
@@ -784,7 +786,7 @@
       nav { padding: 14px 16px; gap: 8px; flex-wrap: wrap; row-gap: 10px; justify-content: center; }
       nav > .nav-logo { flex: 1 0 100%; justify-content: center; }
       .nav-logo { font-size: 20px; gap: 6px; }
-      .nav-logo img { height: 34px; width: 56px; }
+      .nav-logo img { height: 34px; width: 191px; }
       nav > div[style*="display:flex"] { gap: 6px !important; }
       #lang-toggle { padding: 3px !important; }
       #lang-toggle .btn { padding: 12px 10px !important; font-size: 11px; min-height: 44px; min-width: 40px; display: inline-flex; align-items: center; justify-content: center; }
@@ -806,7 +808,7 @@
 
 <!-- NAV -->
 <nav id="main-nav">
-  <div class="nav-logo"><img src="images/logo-mark-dark-tight.png" alt="vspomin.ai" width="73" height="44" />vspomin.ai</div>
+  <div class="nav-logo"><img class="brand-motion" src="images/brand-flame.svg" alt="vspomin.ai" width="247" height="44" /><img class="brand-still" src="images/brand-flame-static.svg" alt="vspomin.ai" width="247" height="44" /></div>
   <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="nav-links-menu" aria-label="Открыть меню">
     <span></span><span></span><span></span>
   </button>
@@ -1485,7 +1487,7 @@
   <div class="footer-inner">
     <div class="footer-top">
       <div class="footer-brand">
-        <div class="footer-logo"><img src="images/logo-mark-dark-tight.png" alt="vspomin.ai" width="63" height="38" />vspomin.ai</div>
+        <div class="footer-logo"><img class="brand-motion" src="images/brand-flame.svg" alt="vspomin.ai" width="213" height="38" /><img class="brand-still" src="images/brand-flame-static.svg" alt="vspomin.ai" width="213" height="38" /></div>
         <p data-i18n="footer.brand_text">Сохраняем личности тех, кого мы любим — а не только их фотографии.</p>
       </div>
       <div class="footer-col">

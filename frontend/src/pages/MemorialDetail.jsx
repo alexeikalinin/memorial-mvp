@@ -13,7 +13,7 @@ import LifeTimeline from '../components/LifeTimeline'
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
-import memorialRedLamp from '../assets/memorial-red-lamp.svg'
+import memorialCandle from '../assets/memorial-candle.svg'
 import './MemorialDetail.css'
 
 const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'])
@@ -439,7 +439,7 @@ function MemorialDetail() {
           ) : (
             <div className="memorial-hero-empty">🕯</div>
           )}
-          <img src={memorialRedLamp} className="memorial-portrait-lamp" alt="" aria-hidden="true" />
+          <img src={memorialCandle} className="memorial-portrait-candle" alt="" aria-hidden="true" />
         </div>
         <div className="memorial-hero-main">
           <div className="memorial-hero-info">

@@ -1,3 +1,9 @@
+## 2026-10-08 — Open portrait candle and landing flame logos
+
+- Replaced red lantern with exposed wax candle at the marked lower-right portrait edge on owner/public pages, including mobile.
+- Landing header/footer reuse existing app flame wordmark; both i dots have candle flames, with static reduced-motion alternative.
+- Production build passed; isolated Chrome verified candle placement, hover caption (0px → 12px), and all four landing logo assets load. Publishing frontend update; no backend changes.
+
 ## 2026-10-08 — Portrait lamp, family tree sync and publication
 
 - Edit-photo caption appears on hover/focus; touch target remains accessible. Red cemetery lamp matches supplied reference, positioned at lower right of owner/public portrait with reduced-motion support.

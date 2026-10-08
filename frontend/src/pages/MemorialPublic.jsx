@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import AvatarChat from '../components/AvatarChat'
 import DemoTutorial from '../components/DemoTutorial'
-import memorialRedLamp from '../assets/memorial-red-lamp.svg'
+import memorialCandle from '../assets/memorial-candle.svg'
 import './MemorialPublic.css'
 
 const TUTORIAL_KEY = 'demo_tutorial_v1'
@@ -214,7 +214,7 @@ function MemorialPublic() {
           <div className="public-hero-empty">🕯</div>
         )}
         <div className="public-hero-overlay" />
-        <img src={memorialRedLamp} className="public-portrait-lamp" alt="" aria-hidden="true" />
+        <img src={memorialCandle} className="public-portrait-candle" alt="" aria-hidden="true" />
         <div className="public-hero-info">
           <h1 className="public-name">{memorial.name}</h1>
           {(birthYear || deathYear) && (

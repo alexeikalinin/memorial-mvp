@@ -710,4 +710,4 @@
 /* Keep the portrait clear; the edit target still works with touch and keyboard. */
 .memorial-photo-edit--has-photo { inset: 0; width: 100%; max-width: none; height: 100%; transform: none; border-radius: 50%; border: 0; padding: 0; background: transparent; color: transparent; font-size: 0; }
 .memorial-photo-edit--has-photo:hover, .memorial-hero-media:hover .memorial-photo-edit--has-photo, .memorial-photo-edit--has-photo:focus-visible { inset: auto; bottom: 12px; left: 50%; transform: translateX(-50%); width: max-content; max-width: 95%; height: auto; padding: 9px 12px; border-radius: 20px; border: 1px solid #bda788; background: rgba(36,28,20,.87); color: #fff2df; font-size: 12px; }
-.memorial-portrait-lamp { position: absolute; right: -14px; bottom: -3px; width: 34px; height: 64px; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 5px #0005); }
+.memorial-portrait-candle { position: absolute; right: 26px; bottom: -4px; width: 24px; height: 66px; object-fit: contain; pointer-events: none; z-index: 3; filter: drop-shadow(0 2px 5px #0005); }
