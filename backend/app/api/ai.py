@@ -10,6 +10,8 @@ from pathlib import Path
 
 import httpx
 
+from app.services.voice_samples import prepare_voice_samples
+
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner
 from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
@@ -816,7 +818,7 @@ async def upload_voice(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Загрузить один или несколько аудио-файлов с голосом и создать кастомный
+    Загрузить аудиозаписи или видео с голосом и создать кастомный
     клонированный голос. Доступно только на тарифах Plus и Lifetime memorial.
 
     Args:
@@ -829,7 +831,8 @@ async def upload_voice(
             последующих TTS-запросов этого мемориала.
 
     Требования к аудио:
-    - Формат: MP3, WAV, M4A, OGG/OGA (голосовые из мессенджеров) и т.п.
+    - Аудио: MP3, WAV, M4A, OGG/OGA; видео: MP4, MOV, M4V, WEBM.
+    - Видео до 10 минут; до 100 МБ на файл; аудиодорожка извлекается сервером.
     - Суммарная длительность: минимум 1 минута чистой речи (рекомендуется)
     - Качество: без посторонних шумов
     """
@@ -855,27 +858,13 @@ async def upload_voice(
             detail="Максимум 20 аудио-образцов за раз"
         )
 
-    # Проверка формата файлов
-    for f in audio_files:
-        if not f.content_type or not f.content_type.startswith("audio/"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Все файлы должны быть аудио (MP3, WAV, M4A, OGG и т.п.)"
-            )
-
-    # Сохранение временных файлов
-    voice_dir = Path("uploads/voices")
-    voice_dir.mkdir(exist_ok=True)
-
-    temp_paths: List[Path] = []
-    for f in audio_files:
-        file_extension = Path(f.filename).suffix or ".mp3"
-        temp_filename = f"voice_{memorial_id}_{uuid.uuid4().hex}{file_extension}"
-        temp_path = voice_dir / temp_filename
-        with open(temp_path, "wb") as out:
-            content = await f.read()
-            out.write(content)
-        temp_paths.append(temp_path)
+    # Video stays on our server; providers receive the extracted MP3 only.
+    try:
+        temp_paths = await prepare_voice_samples(audio_files, Path("uploads/voices"))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     def _cleanup():
         for p in temp_paths:

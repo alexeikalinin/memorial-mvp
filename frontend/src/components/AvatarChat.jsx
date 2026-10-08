@@ -216,7 +216,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const handleVoiceUpload = (e) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
-    const invalid = files.find((f) => !f.type.startsWith('audio/'))
+    const invalid = files.find((f) => !f.type.startsWith('audio/') && !/\.(mp3|wav|m4a|ogg|oga|opus|flac|aac|mpeg|mpga|mp4|mov|m4v|webm)$/i.test(f.name))
     if (invalid) {
       alert(t('chat.voice_file_type_error'))
       return
@@ -581,12 +581,12 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             <div className="voice-clone-divider">{t('chat.voice_or')}</div>
             <div className="voice-clone-option">
               <p className="option-label">{t('chat.voice_upload_label')} <span className="option-hint">{t('chat.voice_upload_hint')}</span>:</p>
-              <p className="option-sublabel">MP3, WAV, M4A, OGG…</p>
+              <p className="option-sublabel">{t('chat.voice_video_hint')}</p>
               <label className="btn-upload-voice">
                 {uploadingVoice ? `⏳ ${t('chat.voice_cloning')}` : `📁 ${t('chat.voice_choose_file')}`}
                 <input
                   type="file"
-                  accept="audio/*"
+                  accept="audio/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm"
                   multiple
                   onChange={handleVoiceUpload}
                   disabled={uploadingVoice}
