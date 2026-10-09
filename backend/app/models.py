@@ -93,6 +93,7 @@ class Memorial(Base):
     cover_photo_id = Column(Integer, ForeignKey("media.id"), nullable=True)  # ID фото обложки
     language = Column(String(5), default="ru", nullable=False, server_default="ru")  # "ru" | "en"
     portrait_settings = Column(JSON, nullable=True)  # cover crop + optional independent avatar source/crop
+    appearance_settings = Column(JSON, nullable=True)  # memorial quote, flowers and candle style
     tree_layout_json = Column(JSON, nullable=True)  # {"nodePositions": {"memId": {"x": 0, "y": 0}}, "version": 1}
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -389,3 +390,16 @@ class MemorialAccessEvent(Base):
     target_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action = Column(String(40), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MemorialSign(Base):
+    """A visitor's temporary gesture; history remains after its 24-hour expiry."""
+    __tablename__ = 'memorial_signs'
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey('memorials.id', ondelete='CASCADE'), nullable=False, index=True)
+    visitor_key = Column(String(64), nullable=False, index=True)
+    kind = Column(String(10), nullable=False)
+    variant = Column(String(30), nullable=False)
+    display_name = Column(String(80), nullable=False, default='')
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)

@@ -1,4 +1,32 @@
-Общий выпуск b9193cb отправлен и опубликован: Vercel READY/Railway SUCCESS. 284 backend/11 frontend-тестов,build/flake8/PG schema OK. Доправлены логотипы тёмных auth-карточек; build прошёл, финальная публикация в работе. Женская голова только preview. Детали SESSION_LOG.md.
+Контрольная точка по запросу владельца: checkpoint-2026-10-09-2305. 293backend/11frontendtests,build/flake8passed. Текущее состояние подготовлено кpush/deploy; инструкция отката docs/CHECKPOINT_2026-10-09_2305.md. Подробности SESSION_LOG.md.
+
+Локально готов inlineeditor композиции (стрелки/drag/resize/font/size, desktop/mobilelayout), подсказки и API знаков памяти24ч +ownerjournal «⋯ → Знаки памяти». 16backendtests/UIреальныхReactcomponents прошли. Durablepreview memorial-carnations-preview.html используетdemoadapter; app сохраняетнасервер. Production не опубликован. Документ docs/MEMORIAL_APPEARANCE_DESIGN.md; снимки artifacts/memorial-carnations/inline-editor-*.png/signs-journal.png. Подробности SESSION_LOG.md.
+
+Реализовано локально «⋯ → Оформление»: фраза, red/white/none цветы,5свечей/лампадка/фонарь и none; сохранениеpermemorial и public. Центрирование фото в preview/quote исправлены. 13backendtests +6повторно,build/3frontendtests/UIharness прошли. Production не опубликован. Документ docs/MEMORIAL_APPEARANCE_DESIGN.md, снимки artifacts/memorial-carnations/settings-ui*.png. Подробности SESSION_LOG.md.
+
+Первый вариант с гвоздиками выбран. Интерактивное превью свечи/цветов: memorial-carnations-preview.html?v=4; demo24ч, переключение времени, история и сброс. Срок пока предложение; API/production не менялись. Снимки artifacts/memorial-carnations/demo-*.png. Подробности SESSION_LOG.md.
+
+Новое превью с генерированными красными гвоздиками, внешней свечой и ⋯: frontend/public/memorial-carnations-preview.html (3варианта). PNG preview-carnations/red-carnations-v1.png; снимки artifacts/memorial-carnations/. Desktop/mobile проверены; production не менялся, ждём оценку. Подробности SESSION_LOG.md.
+
+Каталог20 разных шапок готов: frontend/public/memorial-compositions-preview.html?v=3 (фильтры/избранное/desktop-mobile/⋯). Mobile190–272px; menus и overflow проверены. Production не менялся; следующий шаг выбор номеров. Снимки artifacts/memorial-compositions/catalog-20-*.png. Подробности SESSION_LOG.md.
+
+Превью композиций шапки уплотнено по замечанию пользователя: крупнее свечи/цветы/альбом, широкие соединённые ветви. Новый снимок artifacts/memorial-compositions/first-hero.png; HTML прежний. Production не менялся. Подробности SESSION_LOG.md.
+
+Логотипы обновлены и опубликованы: e65fd8f, Vercel READY. Горизонтальные на сайте/в шапке/hero, квадратные на auth, light/dark, крупная подпись. Чистый build и11 frontend-тестов OK, live проверено. Основа design/brand; остальные локальные правки не публиковались. Подробнее SESSION_LOG.md.
+
+Логотипы утверждённого набора подключены: горизонтальные для шапки/hero/footer, квадратные для auth, light/dark. Выпуск только логотипов в проверке/публикации. Основа design/brand. Детали SESSION_LOG.md.
+
+Четыре превью композиций шапки: frontend/public/memorial-compositions-preview.html (desktop/mobile), снимки artifacts/memorial-compositions/. В ROADMAP добавлены MEMORY-1–3 (авторские композиции, памятные даты, альбомы с фото/голосом). Ожидается выбор оформления; production не менялся. Подробности SESSION_LOG.md.
+
+Актуальная основа логотипа утверждена и сохранена в design/brand/ (master-reference + листы01–12 + README). Брать за основу этот каталог. Старый PDF от Claude удалён по запросу. Старые генерации остаются архивом; сайт этим действием не менялся. Подробнее SESSION_LOG.md.
+
+Даты создания/редактирования мемориала унифицированы локально: дд.мм.гггг, автоточки, numeric keyboard; проверки дат и frontend build успешны. Для шапки предложен «Свет памяти» со свечами/цветами; без изменений шапки и публикации. Подробности SESSION_LOG.md.
+
+Логотип: текущий raised-wordmark/large-RU принят как основа. Показаны12 превью форматов/палитр по структуре PDF. Ожидается оценка перед сохранением production-набора; сайт без изменений. Пути и детали SESSION_LOG.md.
+
+Логотип: женский профиль отвергнут. Новый preview прежнего знака с поднятым wordmark/крупной кириллицей: design-previews/current-logo-raised-wordmark-large-ru-v1.png. Production без новых изменений; положение V требует оценки. Детали SESSION_LOG.md.
+
+Финальный выпуск 4a45a29 отправлен: Vercel READY/Railway SUCCESS. Везде широкая подпись ВСПОМИНАЙ, light бронза/dark золото; live проверено. 284 backend/11 frontend,build/flake8/PG schema OK. GitHub CI пока in_progress. Женский профиль только preview design-previews/current-logo-feminine-hair-v1.png. Детали SESSION_LOG.md.
 
 Золотой логотип выбран и опубликован на https://memorial-mvp.vercel.app (сайт + app), commit 5297844 локально. GitHub push требует восстановления авторизации. Старые активы/генерации сохранены в design-previews. Русская подпись ВСПОМИНАЙ пока в отдельном превью; последний запрос — на всю ширину vspomin.ai. Детали SESSION_LOG.md.
 
@@ -20,6 +48,8 @@
 Логотип 2 и фонарь 3 применены на главной. Для выбора новой композиции подготовлены три реалистичных семейных альбома с вымышленными AI-фотографиями: /app/album-composition-preview.html (ссылка есть в прежнем hero-composition-preview.html). Цитата/голос центрированы, иллюстративная подпись убрана. Пользователь выбрал первый льняной альбом: применён в Home, вся композиция сдвинута на 30px левее (mobile без сдвига). LemonSlice отложен до оплаты.
 
 ## Последнее действие
+
+Убрана подпись «Озвучка: Fish Audio» в чате локально; frontend build успешен. Пользователю объяснены family checkbox/sync и speech settings по коду. Подробнее SESSION_LOG.md.
 
 S1 убрана локально из Fish UI/API; default и legacy S1 → S2-pro, сохранённая S2.1-pro не меняется. Исправлены два CI ожидания голоса;24 теста и frontend build успешны. Production ещё не обновлён. Подробнее SESSION_LOG.md.
 

@@ -404,8 +404,8 @@ export default {
     uses_count: '{n} visits',
     no_name: 'No name',
     validation_field: 'field',
-    date_placeholder: 'yyyy-mm-dd',
-    date_invalid: 'Enter a valid date: yyyy-mm-dd or dd.mm.yyyy',
+    date_placeholder: 'dd.mm.yyyy',
+    date_invalid: 'Enter a valid date: dd.mm.yyyy',
   },
   memorialCreate: {
     title: 'Create Memorial',

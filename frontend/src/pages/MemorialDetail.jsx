@@ -13,8 +13,9 @@ import OwnershipTransferPanel from '../components/OwnershipTransferPanel'
 import LifeTimeline from '../components/LifeTimeline'
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
-import { normalizeFlexibleDateInput, parseDateFieldForSubmit } from '../utils/dateInput'
-import memorialCandle from '../assets/memorial-candle.svg'
+import { formatDateWithDots, dateCursorPosition, parseDateFieldForSubmit } from '../utils/dateInput'
+import { MemorialComposition, MemorialAppearanceEditor } from '../components/MemorialAppearance'
+import { MemorialSigns, MemorialSignsJournal } from '../components/MemorialSigns'
 import './MemorialDetail.css'
 
 const MEMORIAL_TABS = new Set(['media', 'memories', 'chat', 'family', 'timeline'])
@@ -34,6 +35,9 @@ function MemorialDetail() {
   const [showTour, setShowTour] = useState(false)
   const [portraitEditor, setPortraitEditor] = useState(null)
   const [editing, setEditing] = useState(false)
+  const [showAppearance, setShowAppearance] = useState(false)
+  const [signs, setSigns] = useState(null)
+  const [showSignsJournal, setShowSignsJournal] = useState(false)
   const [editFormData, setEditFormData] = useState({
     name: '',
     description: '',
@@ -140,10 +144,10 @@ function MemorialDetail() {
         name: response.data.name || '',
         description: response.data.description || '',
         birth_date: response.data.birth_date
-          ? new Date(response.data.birth_date).toISOString().split('T')[0]
+          ? response.data.birth_date.slice(0, 10).split('-').reverse().join('.')
           : '',
         death_date: response.data.death_date
-          ? new Date(response.data.death_date).toISOString().split('T')[0]
+          ? response.data.death_date.slice(0, 10).split('-').reverse().join('.')
           : '',
         is_public: response.data.is_public || false,
         voice_gender: response.data.voice_gender || '',
@@ -214,13 +218,15 @@ function MemorialDetail() {
     setPortraitEditor(null)
   }
 
-  const handleEditDateBlur = (field) => (e) => {
-    const v = e.target.value.trim()
-    if (!v) return
-    const n = normalizeFlexibleDateInput(v)
-    if (n && n !== e.target.value) {
-      setEditFormData((prev) => ({ ...prev, [field]: n }))
-    }
+  const handleEditDateInput = (field) => (e) => {
+    const el = e.target
+    const cursorBefore = el.selectionStart ?? el.value.length
+    const digitsBeforeCursor = el.value.slice(0, cursorBefore).replace(/\D/g, '').length
+    const formatted = formatDateWithDots(el.value)
+    const newCursor = Math.min(dateCursorPosition(digitsBeforeCursor), formatted.length)
+    el.value = formatted
+    el.setSelectionRange(newCursor, newCursor)
+    setEditFormData((prev) => ({ ...prev, [field]: formatted }))
   }
 
   const handleUpdate = async (e) => {
@@ -457,7 +463,7 @@ function MemorialDetail() {
           ) : (
             <div className="memorial-hero-empty">🕯</div>
           )}
-          <img src={memorialCandle} className="memorial-portrait-candle" alt="" aria-hidden="true" />
+
         </div>
         <div className="memorial-hero-main">
           <div className="memorial-hero-info">
@@ -472,7 +478,9 @@ function MemorialDetail() {
               )}
             </div>
 
-            <div className="memorial-hero-actions">
+            <details className="memorial-action-menu"><summary aria-label={lang === 'ru' ? 'Меню мемориала' : 'Memorial menu'}>⋯</summary><div className="memorial-hero-actions" onClick={e => { if (e.target.closest('button')) e.currentTarget.parentElement.open = false }}>
+            {canEdit && <button type="button" className="btn-icon" onClick={() => setShowAppearance(true)}>{lang === 'ru' ? 'Оформление' : 'Appearance'}</button>}
+            {isActualOwner && <button type="button" className="btn-icon" onClick={() => setShowSignsJournal(true)}>{lang === 'ru' ? 'Знаки памяти' : 'Signs of remembrance'}</button>}
             {canEdit && (
               <button
                 className="btn-edit-header"
@@ -526,11 +534,14 @@ function MemorialDetail() {
             >
               ?
             </button>
-            </div>
+            </div></details>
           </div>
         </div>
-      </div>
+        {!showAppearance && <MemorialComposition settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
+      {showAppearance && canEdit && <MemorialAppearanceEditor settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
 
+      <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />
+      {showSignsJournal && isActualOwner && <MemorialSignsJournal memorialId={id} lang={lang} onClose={() => setShowSignsJournal(false)} />}
       {/* ── Edit Form ── */}
       {editing && canEdit && (
         <div className="memorial-edit-wrap">
@@ -562,11 +573,11 @@ function MemorialDetail() {
                   type="text"
                   id="birth_date"
                   value={editFormData.birth_date}
-                  onChange={(e) => setEditFormData({ ...editFormData, birth_date: e.target.value })}
-                  onBlur={handleEditDateBlur('birth_date')}
+                  onChange={handleEditDateInput('birth_date')}
                   placeholder={t('detail.date_placeholder')}
                   autoComplete="off"
-                  inputMode="text"
+                  inputMode="numeric"
+                  maxLength={10}
                   spellCheck={false}
                 />
               </div>
@@ -576,11 +587,11 @@ function MemorialDetail() {
                   type="text"
                   id="death_date"
                   value={editFormData.death_date}
-                  onChange={(e) => setEditFormData({ ...editFormData, death_date: e.target.value })}
-                  onBlur={handleEditDateBlur('death_date')}
+                  onChange={handleEditDateInput('death_date')}
                   placeholder={t('detail.date_placeholder')}
                   autoComplete="off"
-                  inputMode="text"
+                  inputMode="numeric"
+                  maxLength={10}
                   spellCheck={false}
                 />
               </div>

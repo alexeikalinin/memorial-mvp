@@ -97,6 +97,37 @@ class MemorialCreate(MemorialBase):
     pass
 
 
+class AppearanceElement(BaseModel):
+    x: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    y: float = Field(..., ge=0, le=1, allow_inf_nan=False)
+    scale: float = Field(1, ge=0.5, le=2, allow_inf_nan=False)
+
+    class Config:
+        extra = 'forbid'
+
+
+class AppearanceLayout(BaseModel):
+    quote: Optional[AppearanceElement] = None
+    flowers: Optional[AppearanceElement] = None
+    candle: Optional[AppearanceElement] = None
+
+    class Config:
+        extra = 'forbid'
+
+
+class MemorialAppearance(BaseModel):
+    quote: str = Field('', max_length=160)
+    font: Literal['serif', 'sans', 'script'] = 'serif'
+    font_size: int = Field(28, ge=16, le=48)
+    layout: Optional[AppearanceLayout] = None
+    layout_mobile: Optional[AppearanceLayout] = None
+    flowers: Literal['red_carnations', 'white_carnations', 'none'] = 'red_carnations'
+    candle: Literal['classic', 'taper', 'votive', 'lantern', 'lampada', 'none'] = 'classic'
+
+    class Config:
+        extra = 'forbid'
+
+
 class MemorialUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
@@ -107,6 +138,7 @@ class MemorialUpdate(BaseModel):
     voice_provider: Optional[str] = None
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
+    appearance_settings: Optional[MemorialAppearance] = None
     tree_layout_json: Optional[Dict[str, Any]] = None
 
 
@@ -118,6 +150,7 @@ class MemorialResponse(MemorialBase):
     voice_gender: Optional[str] = None
     cover_photo_id: Optional[int] = None
     portrait_settings: Optional[Dict[str, Any]] = None
+    appearance_settings: Optional[MemorialAppearance] = None
     tree_layout_json: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None

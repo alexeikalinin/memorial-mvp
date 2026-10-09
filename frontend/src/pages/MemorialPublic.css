@@ -804,3 +804,7 @@
 @media (max-width: 640px) {
   .public-portrait-candle { left: calc(50% + 31px); top: 146px; width: 22px; height: 60px; }
 }
+
+.public-hero--appearance{display:flex;justify-content:flex-start;align-items:center;gap:28px;min-height:290px;padding:25px 32px;overflow:visible}.public-portrait-wrap{position:relative;flex:0 0 200px;width:200px;height:242px}.public-hero--appearance .public-hero-img,.public-hero--appearance .public-hero-empty{position:static;transform:none;left:auto;top:auto}.public-hero--appearance .public-hero-info{position:static;padding:0;flex:0 1 285px;min-width:0}.public-hero--appearance .public-name{overflow-wrap:anywhere}.public-hero--appearance .appearance-composition{flex:1}
+@media(max-width:768px){.public-hero--appearance{display:grid;grid-template-columns:100px minmax(0,1fr);gap:15px;padding:22px 18px;min-height:0}.public-portrait-wrap{width:100px;height:120px}.public-hero--appearance .public-hero-img,.public-hero--appearance .public-hero-empty{width:100px;height:120px}.public-hero--appearance .public-name{font-size:1.9rem}.public-hero--appearance .public-years{font-size:.8rem}.public-hero--appearance .public-hero-info{padding:0}.public-hero--appearance .appearance-composition{grid-column:1/-1}}
+.public-hero--appearance .public-hero-info,.public-hero--appearance .public-portrait-wrap{z-index:3}@media(max-width:768px){.public-hero--appearance{min-height:300px;align-content:start}.public-hero--appearance .public-hero-info{padding-top:14px}}

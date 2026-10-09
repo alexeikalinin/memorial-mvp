@@ -405,8 +405,8 @@ export default {
     uses_count: '{n} переходов',
     no_name: 'Без имени',
     validation_field: 'поле',
-    date_placeholder: 'дд.мм.гггг или гггг-мм-дд',
-    date_invalid: 'Укажите дату в формате гггг-мм-дд или дд.мм.гггг',
+    date_placeholder: 'дд.мм.гггг',
+    date_invalid: 'Укажите корректную дату в формате дд.мм.гггг',
   },
   memorialCreate: {
     title: 'Создать мемориал',

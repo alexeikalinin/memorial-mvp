@@ -13,6 +13,7 @@ from app.db import engine, Base
 from app.limiter import limiter
 from app.api import health, memorials, ai, media, s3, embeddings, family, invites, access as access_router, waitlist, billing as billing_router
 from app.api import auth as auth_router
+from app.api import signs
 
 # Создание таблиц в БД (для dev; в production используйте Alembic миграции)
 Base.metadata.create_all(bind=engine)
@@ -39,6 +40,9 @@ def _add_missing_columns():
         if "tree_layout_json" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN tree_layout_json JSON"))
+        if "appearance_settings" not in cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE memorials ADD COLUMN appearance_settings JSON"))
         if "portrait_settings" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN portrait_settings JSON"))
@@ -252,3 +256,5 @@ async def root():
         "docs": "/docs"
     }
 
+
+app.include_router(signs.router)

@@ -524,7 +524,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       {/* ─── Right: Chat panel ───────────────────────────────────── */}
       <div className="chat-panel">
       {ttsStatus?.provider === 'fish_audio' ? (
-        <p className="chat-tts-quota">{t(ttsStatus.configured ? 'chat.tts_fish_ready' : 'chat.tts_fish_off')}</p>
+        !ttsStatus.configured && <p className="chat-tts-quota">{t('chat.tts_fish_off')}</p>
       ) : elQuotaErr ? (
         <p className="chat-tts-quota chat-tts-quota--muted">{t('chat.tts_quota_err')}</p>
       ) : elQuota && !elQuota.configured ? (

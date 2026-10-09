@@ -6,7 +6,8 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import AvatarChat from '../components/AvatarChat'
 import DemoTutorial from '../components/DemoTutorial'
-import memorialCandle from '../assets/memorial-candle.svg'
+import { MemorialComposition } from '../components/MemorialAppearance'
+import { MemorialSigns } from '../components/MemorialSigns'
 import './MemorialPublic.css'
 
 const TUTORIAL_KEY = 'demo_tutorial_v1'
@@ -22,6 +23,7 @@ function MemorialPublic() {
   const chatRef = useRef(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const [memorial, setMemorial] = useState(null)
+  const [signs, setSigns] = useState(null)
   const [memories, setMemories] = useState([])
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -204,7 +206,7 @@ function MemorialPublic() {
       )}
 
       {/* ── Hero ── */}
-      <div className="public-hero">
+      <div className="public-hero public-hero--appearance"><div className="public-portrait-wrap">
         {memorial.cover_photo_id ? (
           <ApiMediaImage
             mediaId={memorial.cover_photo_id}
@@ -217,8 +219,7 @@ function MemorialPublic() {
         ) : (
           <div className="public-hero-empty">🕯</div>
         )}
-        <div className="public-hero-overlay" />
-        <img src={memorialCandle} className="public-portrait-candle" alt="" aria-hidden="true" />
+        </div>
         <div className="public-hero-info">
           <h1 className="public-name">{memorial.name}</h1>
           {(birthYear || deathYear) && (
@@ -229,8 +230,10 @@ function MemorialPublic() {
             </p>
           )}
         </div>
+        <MemorialComposition settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
       </div>
 
+      <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />
       {/* ── Description ── */}
       {memorial.description && (
         <div className="public-description-wrap">
