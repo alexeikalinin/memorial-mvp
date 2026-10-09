@@ -20,7 +20,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <BrandVisual className="auth-brand" />
+          <BrandVisual className="auth-brand" format="square" />
           <h1 className="auth-title">{t('auth.invalid_link_title')}</h1>
           <p className="auth-sub">{t('auth.invalid_link_sub')}</p>
           <Link to="/forgot-password" className="auth-btn">{t('auth.request_reset')}</Link>
@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <BrandVisual className="auth-brand" />
+        <BrandVisual className="auth-brand" format="square" />
         <h1 className="auth-title">{t('auth.set_new_password_title')}</h1>
         <p className="auth-sub">{t('auth.set_new_password_sub')}</p>
 

@@ -46,7 +46,7 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <BrandVisual className="auth-brand" />
+        <BrandVisual className="auth-brand" format="square" />
         <h1 className="auth-title">{t('auth.create_account_title')}</h1>
 
         <a
