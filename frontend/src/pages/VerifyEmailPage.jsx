@@ -32,7 +32,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <BrandVisual className="auth-brand" tone="light" />
+        <BrandVisual className="auth-brand" />
 
         {status === 'loading' && (
           <>

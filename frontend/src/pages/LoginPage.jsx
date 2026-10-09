@@ -46,7 +46,7 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <BrandVisual className="auth-brand" tone="light" />
+        <BrandVisual className="auth-brand" />
         <h1 className="auth-title">{t('auth.signin_title')}</h1>
         {resetSuccess && (
           <div className="auth-success-banner">

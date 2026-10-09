@@ -1,3 +1,7 @@
+## 2026-10-09 — Общий выпуск опубликован; корректировка тёмных auth-карточек
+
+Push main b9193cb успешен. Vercel production READY memorial-ekz3as4ol-1alexeikalinin1-3683s-projects.vercel.app; Railway SUCCESS f5ce1d88-fe70-4b97-883b-d69710371e88, оба на b9193cb. Live OpenAPI содержит family requests и ownership routes. В браузере light header подтверждён. Auth-карточки фактически dark: скорректирован BrandVisual пяти страниц на dark вместо light; build успешен, эта небольшая корректировка публикуется отдельным коммитом. Новый женский вариант остаётся preview. GitHub CI общего выпуска ещё идёт.
+
 ## 2026-10-09 — Проверки общего выпуска завершены
 
 Полный backend offline-прогон: 284 passed (534.64s); ключи AI/email/storage отключены, DATABASE_URL отдельная tmp SQLite, Qdrant отдельный tmp. Предыдущие ошибки S3 были настройками окружения и не воспроизвелись. Frontend build/11 node-тестов/критический flake8 успешны; локальная PostgreSQL15 проверила создание новых таблиц и повторный запуск schema. Выпуск включает 9365a53,795ee72,e82ff0c и прежний 5297844, всё на main. Старые генерации и новое feminine preview остаются локально. Начинается push/deploy.

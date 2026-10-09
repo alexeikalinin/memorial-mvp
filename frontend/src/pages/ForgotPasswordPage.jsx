@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <BrandVisual className="auth-brand" tone="light" />
+          <BrandVisual className="auth-brand" />
           <div className="auth-icon auth-icon--success">✉</div>
           <h1 className="auth-title">{t('auth.check_email_title')}</h1>
           <p className="auth-sub">
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <BrandVisual className="auth-brand" tone="light" />
+        <BrandVisual className="auth-brand" />
         <h1 className="auth-title">{t('auth.forgot_password_title')}</h1>
         <p className="auth-sub">{t('auth.forgot_password_sub')}</p>
 
