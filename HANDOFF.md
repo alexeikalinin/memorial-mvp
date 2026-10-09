@@ -1,4 +1,4 @@
-Выпуск 2026-10-09: везде логотип с ВСПОМИНАЙ, light бронзовое золото/dark тёплое золото. В общий push/deploy включаются готовые семейное дерево/передача владения и голос/RAG правки. GitHub вход восстановлен; build/11 frontend-тестов/flake8/локальная PostgreSQL schema OK; полный offline backend-прогон идёт. Детали SESSION_LOG.md.
+Общий выпуск: логотип с широкой подписью ВСПОМИНАЙ, бронзовая light-версия, семейное дерево/передача владения, голос/RAG. 284 backend/11 frontend-тестов, build/flake8/PostgreSQL schema OK. GitHub вход восстановлен; push/deploy в работе. Женский профиль только preview design-previews/current-logo-feminine-hair-v1.png. Детали SESSION_LOG.md.
 
 Золотой логотип выбран и опубликован на https://memorial-mvp.vercel.app (сайт + app), commit 5297844 локально. GitHub push требует восстановления авторизации. Старые активы/генерации сохранены в design-previews. Русская подпись ВСПОМИНАЙ пока в отдельном превью; последний запрос — на всю ширину vspomin.ai. Детали SESSION_LOG.md.
 
