@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { authAPI } from '../api/client'
 import { useLanguage } from '../contexts/LanguageContext'
-import logoMark from '../assets/logo-mark.png'
+import BrandVisual from '../components/BrandVisual'
 import './AuthPage.css'
 
 export default function VerifyEmailPage() {
@@ -32,7 +32,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo"><img src={logoMark} alt="" />vspomin<span>.ai</span></div>
+        <BrandVisual className="auth-brand" tone="light" />
 
         {status === 'loading' && (
           <>

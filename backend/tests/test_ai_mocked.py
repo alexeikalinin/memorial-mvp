@@ -59,7 +59,7 @@ def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_se
 
     voice_status = auth_client.get(f"/api/v1/ai/tts/status?memorial_id={person.id}")
     assert voice_status.status_code == 200
-    assert voice_status.json() == {"provider": "fish_audio", "configured": True, "has_custom_voice": cloned}
+    assert voice_status.json() == {"provider": "fish_audio", "configured": True, "has_custom_voice": cloned, "model": "s2-pro"}
 
     response = auth_client.post("/api/v1/ai/avatar/chat", json={
         "memorial_id": person.id,
@@ -74,6 +74,7 @@ def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_se
     assert data["animation_provider"] == "d-id"
     speech_service.assert_awaited_once_with(
         "Я учился в МГУ.", voice_id="test-fish-voice" if cloned else None, provider="fish_audio",
+        speed=1.0, pronunciations={}, model=None,
     )
     video_service.assert_awaited_once_with(
         image_url=f"https://api.example.test/api/v1/media/portrait/{person.id}/avatar.jpg",

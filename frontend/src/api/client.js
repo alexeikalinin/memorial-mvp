@@ -189,6 +189,9 @@ export const invitesAPI = {
 }
 
 export const accessAPI = {
+  transfers: () => apiClient.get(`/memorials/ownership/transfers`),
+  transfer: (id, data) => apiClient.post(`/memorials/${id}/ownership/transfer`, data),
+  respondTransfer: (id, data) => apiClient.post(`/memorials/ownership/transfers/${id}/respond`, data),
   listAdmins: () => apiClient.get(`/memorials/administration/site-admins`),
   updateAdmin: (email, isAdmin) => apiClient.patch(`/memorials/administration/site-admins`, { email, is_admin: isAdmin }),
   list:           (memorialId) =>
@@ -210,6 +213,10 @@ export const accessAPI = {
 }
 
 export const familyAPI = {
+  searchMemorials: (q) => apiClient.get(`/family/search`, { params: { q } }),
+  getRequests: () => apiClient.get(`/family/requests`),
+  respondRequest: (id, data) => apiClient.post(`/family/requests/${id}/respond`, data),
+  cancelRequest: (id) => apiClient.delete(`/family/requests/${id}`),
   createRelationship: (memorialId, data) =>
     apiClient.post(`/family/memorials/${memorialId}/relationships`, data),
   getRelationships: (memorialId, relationshipType = null) => {

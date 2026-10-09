@@ -284,7 +284,7 @@
   pointer-events: none;
 }
 
-.header-brand { width: 240px; filter: brightness(.72); }
+.header-brand { width: 240px; }
 @media (max-width: 640px) { .header-brand { width: 175px; } }
 
 @media (max-width: 640px) {

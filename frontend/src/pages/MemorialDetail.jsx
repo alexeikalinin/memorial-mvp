@@ -9,6 +9,7 @@ import MediaGallery from '../components/MediaGallery'
 import MemoryList from '../components/MemoryList'
 import AvatarChat from '../components/AvatarChat'
 import FamilyTree from '../components/FamilyTree'
+import OwnershipTransferPanel from '../components/OwnershipTransferPanel'
 import LifeTimeline from '../components/LifeTimeline'
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/OnboardingTour'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
@@ -816,6 +817,7 @@ function MemorialDetail() {
               </div>
             )}
 
+            <OwnershipTransferPanel memorialId={id} isOwner={memorial.owner_id === user?.id} />
             <div className="invite-list-section">
               <h4>{t('detail.users_with_access')}</h4>
               {accessListLoading ? (

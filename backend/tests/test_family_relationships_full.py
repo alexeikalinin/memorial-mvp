@@ -297,14 +297,14 @@ class TestValidation:
         resp = add_rel(auth_client, a["id"], b["id"], "spouse")
         assert resp.status_code == 400
 
-    def test_different_types_between_same_pair_allowed(self, auth_client):
-        """Два разных типа связи между одними мемориалами — допустимо."""
+    def test_conflicting_sibling_types_are_rejected(self, auth_client):
+        """Сохранённое sibling нельзя одновременно обозначить half_sibling."""
         a = mk_memorial(auth_client, "А2")
         b = mk_memorial(auth_client, "Б2")
         r1 = add_rel(auth_client, a["id"], b["id"], "sibling")
         r2 = add_rel(auth_client, a["id"], b["id"], "half_sibling")
         assert r1.status_code == 201
-        assert r2.status_code == 201
+        assert r2.status_code == 409
 
     def test_invalid_type_returns_422(self, auth_client):
         """Несуществующий тип связи → 422."""

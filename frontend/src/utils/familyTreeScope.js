@@ -51,6 +51,41 @@ export function getFamilyOfNode(node) {
 export function filterGraphToScope(graph, visibleFamilies) {
   if (!graph?.nodes?.length) return graph
 
+
+  // Real families need no demo surname registration. Reveal the root's immediate
+  // relatives first; a boundary card explicitly opens another relationship branch.
+  const root = graph.nodes.find(n => String(n.memorial_id) === String(graph.root_id))
+  if (root && getFamilyOfNode(root) === 'Other') {
+    const nodeIds = new Set(graph.nodes.map(n => String(n.memorial_id)))
+    const adjacent = new Map([...nodeIds].map(id => [id, new Set()]))
+    const familyEdges = graph.edges.filter(e => String(e.type).toLowerCase() !== 'custom')
+    for (const e of familyEdges) {
+      const source = String(e.source), target = String(e.target)
+      if (!nodeIds.has(source) || !nodeIds.has(target)) continue
+      adjacent.get(source).add(target); adjacent.get(target).add(source)
+    }
+    const opened = [String(graph.root_id), ...visibleFamilies.filter(v => v.startsWith('node:')).map(v => v.slice(5))]
+    const fullIds = new Set()
+    for (const id of opened) {
+      if (!nodeIds.has(id)) continue
+      fullIds.add(id)
+      for (const neighbor of adjacent.get(id)) fullIds.add(neighbor)
+    }
+    const boundary = new Set()
+    for (const id of fullIds) for (const neighbor of adjacent.get(id)) {
+      if (!fullIds.has(neighbor)) boundary.add(neighbor)
+    }
+    const displayed = new Set([...fullIds, ...boundary])
+    return {
+      ...graph,
+      nodes: graph.nodes.filter(n => displayed.has(String(n.memorial_id))).map(n => ({
+        ...n, _stub: boundary.has(String(n.memorial_id)), _family: `node:${n.memorial_id}`,
+      })),
+      edges: familyEdges.filter(e => displayed.has(String(e.source)) && displayed.has(String(e.target))),
+      _lockedFamilies: [], _visibleFamilies: [...visibleFamilies], _branchScope: true,
+    }
+  }
+
   const visible = new Set(visibleFamilies)
 
   // ── Classify all nodes ──────────────────────────────────────────────────────

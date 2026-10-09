@@ -16,6 +16,7 @@ import {
   getSpouseMarriageMarkers,
 } from '../utils/familyTreeOrthogonalConnectors.js'
 import { filterGraphToScope, getFamilyOfNode, FAMILY_CONFIG } from '../utils/familyTreeScope.js'
+import { getSelectedFamilyNode, getSelectedFamilyRelations } from '../utils/familyTreeSelection.js'
 import './FamilyTree.css'
 
 // ── Grid constants ─────────────────────────────────────────────────
@@ -323,7 +324,7 @@ function buildRelLabels(nodes, edges, rootId, t) {
 }
 
 // ── Node Card ──────────────────────────────────────────────────────
-function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick }) {
+function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick, isSelected }) {
   const { t } = useLanguage()
   const memorial = nodeMap[extNode.id]
 
@@ -359,12 +360,15 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick })
     <div
       className={[
         'ft-node',
+        isSelected ? 'ft-node--selected' : '',
         clusterStyle ? 'ft-node--pedigree-accent' : '',
         isRoot ? 'ft-node--root' : '',
         isDeceased ? 'ft-node--deceased' : 'ft-node--living',
       ].filter(Boolean).join(' ')}
       style={{ position: 'absolute', left: x, top: y, width: NODE_W, height: NODE_H, ...clusterBorder }}
       onClick={() => onClick(memorial.memorial_id)}
+      role="button" tabIndex={0} aria-pressed={!!isSelected}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(memorial.memorial_id) } }}
       title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
     >
       <div className="ft-node-avatar-wrap">
@@ -416,6 +420,7 @@ function GenTreeNodeCard({
   clusterStyle,
   relLabel,
   onClick,
+  isSelected,
   editMode,
   onNodeDragStart,
   onPortDragStart,
@@ -436,6 +441,7 @@ function GenTreeNodeCard({
     <div
       className={[
         'ft-node ft-node--circle',
+        isSelected ? 'ft-node--selected' : '',
         isRoot ? 'ft-node--root' : '',
         isBridge ? 'ft-node--bridge' : '',
         isDeceased ? 'ft-node--deceased' : 'ft-node--living',
@@ -447,7 +453,8 @@ function GenTreeNodeCard({
       onMouseDown={editMode ? (e) => { e.stopPropagation(); onNodeDragStart(memorial.memorial_id, e) } : undefined}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && !editMode && onClick(memorial.memorial_id)}
+      aria-pressed={!!isSelected}
+      onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !editMode) { e.preventDefault(); onClick(memorial.memorial_id) } }}
       title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
     >
       {/* Port handles for drawing connections in edit mode */}
@@ -539,7 +546,9 @@ function ConnectedFamilyCard({ member, bridgeLabel, onClick }) {
 
 // ── Stub Node Card (locked family member) — GOT-style circle ──────
 function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+  const isBranch = memorial._family?.startsWith('node:')
+  const branchLabel = lang === 'en' ? 'Show relatives' : 'Показать родных'
   const familyColor = FAMILY_CONFIG[memorial._family]?.color || 'rgba(200,169,126,0.6)'
   const avatarSize = nodeW - 10
   const avatarOffset = (nodeW - avatarSize) / 2
@@ -554,7 +563,7 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
         height: nodeH,
         '--stub-color': familyColor,
       }}
-      title={`${memorial.name} — ${memorial._family} Family`}
+      title={isBranch ? `${memorial.name} — ${branchLabel}` : `${memorial.name} — ${memorial._family} Family`}
       onClick={onUnlock}
       role="button"
       tabIndex={0}
@@ -570,19 +579,19 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
           boxShadow: `0 0 0 2px ${familyColor}`,
         }}
       >
-        <span className="ft-stub-lock" aria-hidden="true">🔒</span>
+        <span className="ft-stub-lock" aria-hidden="true">{isBranch ? '+' : '🔒'}</span>
       </div>
       <div className="ft-circle-info" style={{ top: avatarSize + 8 }}>
         <div className="ft-circle-name ft-circle-name--stub">
           {memorial.name.split(' ')[0]}
         </div>
-        <div className="ft-stub-family-tag">{memorial._family}</div>
+        <div className="ft-stub-family-tag">{isBranch ? (lang === 'en' ? 'Family branch' : 'Родственная ветвь') : memorial._family}</div>
         <button
           className="ft-stub-unlock-btn"
           onClick={(e) => { e.stopPropagation(); onUnlock() }}
-          title={t('family.stub_show_family_title') || `Show ${memorial._family} family`}
+          title={isBranch ? branchLabel : t('family.stub_show_family_title')}
         >
-          {t('family.stub_show') || 'Show'}
+          {isBranch ? branchLabel : t('family.stub_show')}
         </button>
       </div>
     </div>
@@ -592,7 +601,8 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
 // ── Main Component ─────────────────────────────────────────────────
 export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) {
   const navigate  = useNavigate()
-  const { t }     = useLanguage()
+  const { t, lang } = useLanguage()
+  const text = (ru, en) => lang === 'en' ? en : ru
   const canvasRef = useRef(null)
 
   const [graphData,    setGraphData]    = useState(null)
@@ -602,7 +612,109 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [showAddForm,        setShowAddForm]        = useState(false)
   const [formData,           setFormData]           = useState({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
   const [availableMemorials, setAvailableMemorials] = useState([])
-  const availableLoaded = useRef(false)
+  const [selectedId, setSelectedId] = useState(null)
+  const [selectedEditable, setSelectedEditable] = useState({ id: null, allowed: false })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [flowMode, setFlowMode] = useState('existing')
+  const [livingConsent, setLivingConsent] = useState(false)
+  const [newPerson, setNewPerson] = useState({ name: '', birth_date: '', death_date: '', living: false })
+  const [createdPerson, setCreatedPerson] = useState(null)
+  const [relationPublic, setRelationPublic] = useState(false)
+  const [newPersonMatches, setNewPersonMatches] = useState([])
+  const [sharedParentSiblingIds, setSharedParentSiblingIds] = useState([])
+  const [sharedParentTarget, setSharedParentTarget] = useState(null)
+  const linkFormRef = useRef(null)
+  const [flowError, setFlowError] = useState('')
+  const [flowNotice, setFlowNotice] = useState('')
+  const [requests, setRequests] = useState([])
+  const [requestBusy, setRequestBusy] = useState(null)
+  const selectedNode = getSelectedFamilyNode(graphData, selectedId, memorialId)
+  const sourceId = selectedNode?.memorial_id ?? memorialId
+  const sourceName = selectedNode?.name || graphData?.nodes?.find(n => sid(n.memorial_id) === sid(memorialId))?.name || ''
+  const sourceCanEdit = sid(sourceId) === sid(memorialId) ? canEdit : selectedEditable.id === sid(sourceId) && selectedEditable.allowed
+  const selectedRelations = useMemo(() => getSelectedFamilyRelations(graphData, sourceId), [graphData, sourceId])
+  const relationOptions = [
+    ['parent', 'родитель', 'parent'], ['child', 'ребёнок', 'child'], ['spouse', 'супруг / супруга', 'spouse'],
+    ['sibling', 'брат / сестра', 'sibling'], ['half_sibling', 'неполнородный брат / сестра', 'half-sibling'],
+    ['partner', 'партнёр', 'partner'], ['ex_spouse', 'бывший супруг / супруга', 'former spouse'],
+    ['adoptive_parent', 'приёмный родитель', 'adoptive parent'], ['adoptive_child', 'приёмный ребёнок', 'adoptive child'],
+    ['step_parent', 'отчим / мачеха', 'stepparent'], ['step_child', 'пасынок / падчерица', 'stepchild'], ['custom', 'другая связь', 'other relationship'],
+  ]
+  const relationName = (type, node) => {
+    const gender = node?.voice_gender
+    const gendered = {
+      parent: { male: ['отец', 'father'], female: ['мать', 'mother'] },
+      child: { male: ['сын', 'son'], female: ['дочь', 'daughter'] },
+      sibling: { male: ['брат', 'brother'], female: ['сестра', 'sister'] },
+      spouse: { male: ['супруг', 'husband'], female: ['супруга', 'wife'] },
+      ex_spouse: { male: ['бывший супруг', 'former husband'], female: ['бывшая супруга', 'former wife'] },
+      adoptive_parent: { male: ['приёмный отец', 'adoptive father'], female: ['приёмная мать', 'adoptive mother'] },
+      adoptive_child: { male: ['приёмный сын', 'adopted son'], female: ['приёмная дочь', 'adopted daughter'] },
+      step_parent: { male: ['отчим', 'stepfather'], female: ['мачеха', 'stepmother'] },
+      step_child: { male: ['пасынок', 'stepson'], female: ['падчерица', 'stepdaughter'] },
+    }[type]?.[gender]
+    if (gendered) return text(...gendered)
+    const option = relationOptions.find(o => o[0] === type)
+    return option ? text(option[1], option[2]) : type
+  }
+  const loadRequests = useCallback(async () => {
+    try { const res = await familyAPI.getRequests(); setRequests(Array.isArray(res.data) ? res.data : []) }
+    catch { setRequests([]) }
+  }, [])
+  useEffect(() => { loadRequests() }, [loadRequests, refreshKey])
+  useEffect(() => {
+    setSelectedId(null); setSelectedEditable({ id: null, allowed: false }); setShowAddForm(false); setCreatedPerson(null)
+  }, [memorialId])
+  useEffect(() => {
+    let active = true
+    setSelectedEditable({ id: null, allowed: false })
+    if (sid(sourceId) !== sid(memorialId)) memorialsAPI.get(sourceId).then(res => {
+      if (active) setSelectedEditable({ id: sid(sourceId), allowed: ['owner', 'editor'].includes(res.data?.current_user_role) })
+    }).catch(() => {})
+    return () => { active = false }
+  }, [sourceId, memorialId])
+  useEffect(() => {
+    if (!showAddForm || flowMode !== 'existing') return
+    let active = true
+    const timer = setTimeout(async () => {
+      setSearchLoading(true)
+      try {
+        const res = await familyAPI.searchMemorials(searchQuery.trim())
+        if (active) { setAvailableMemorials((Array.isArray(res.data) ? res.data : []).filter(m => sid(m.id) !== sid(sourceId))); setFlowError('') }
+      } catch { if (active) setFlowError(lang === 'en' ? 'Could not search memorials.' : 'Не удалось найти мемориалы.') }
+      finally { if (active) setSearchLoading(false) }
+    }, 250)
+    return () => { active = false; clearTimeout(timer) }
+  }, [searchQuery, showAddForm, flowMode, sourceId, lang])
+  useEffect(() => {
+    if (showAddForm) linkFormRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [showAddForm])
+  useEffect(() => {
+    let active = true
+    setNewPersonMatches([])
+    if (!showAddForm || flowMode !== 'new' || createdPerson || newPerson.name.trim().length < 3) return
+    const timer = setTimeout(() => familyAPI.searchMemorials(newPerson.name.trim()).then(res => {
+      if (active) setNewPersonMatches(res.data.filter(m => sid(m.id) !== sid(sourceId)))
+    }).catch(() => {}), 350)
+    return () => { active = false; clearTimeout(timer) }
+  }, [newPerson.name, showAddForm, flowMode, createdPerson, sourceId])
+  const selectPerson = id => {
+    setSelectedId(id); setSharedParentTarget(null); setShowAddForm(false); setFlowError(''); setFlowNotice('')
+  }
+  const beginLink = () => {
+    setShowAddForm(true); setSharedParentTarget(null); setSearchQuery(''); setAvailableMemorials([]); setCreatedPerson(null)
+    setFlowError(''); setFlowNotice(''); setFlowMode('existing'); setRelationPublic(false); setSharedParentSiblingIds([])
+    setNewPerson({ name: '', birth_date: '', death_date: '', living: false }); setLivingConsent(false)
+    setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
+  }
+  const respondToRequest = async (id, decision) => {
+    setRequestBusy(id); setFlowError('')
+    try { if (decision === 'cancel') await familyAPI.cancelRequest(id); else await familyAPI.respondRequest(id, { decision }); await Promise.all([loadRequests(), loadData()]) }
+    catch (err) { setFlowError(err.response?.data?.detail || text('Не удалось обработать запрос.', 'Could not respond to the request.')) }
+    finally { setRequestBusy(null) }
+  }
+
   const [submitting, setSubmitting] = useState(false)
 
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
@@ -667,10 +779,12 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       }
     } catch (err) {
       console.error('Error loading family tree:', err)
+      setGraphData(null); setRelationships([])
+      setFlowError(lang === 'en' ? 'Could not load the family tree. Reload the page to try again.' : 'Не удалось загрузить семейное дерево. Обновите страницу, чтобы повторить.')
     } finally {
       setLoading(false)
     }
-  }, [memorialId, setNodeOverrides])
+  }, [memorialId, setNodeOverrides, lang])
 
   useEffect(() => { loadData() }, [loadData, refreshKey])
 
@@ -904,6 +1018,19 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     if (next) setTransform(next)
   }, [layoutMode, effectivePositions, displayGraph?.root_id, treeData])
 
+  const focusSelectedPerson = () => {
+    const el = canvasRef.current
+    if (!el) return
+    if (layoutMode === 'generations') {
+      const position = effectivePositionsRef.current?.[sid(sourceId)]
+      if (position) setTransform({ x: el.offsetWidth / 2 - position.cx, y: el.offsetHeight / 2 - position.cy, scale: 1 })
+    } else {
+      const node = treeData?.nodes?.find(n => n.id === sid(sourceId))
+      const next = node && centerRootInViewport(el, node)
+      if (next) setTransform(next)
+    }
+  }
+
   // ── Edit mode: layout save + drag + draw ───────────────────────
   const saveLayout = useCallback((overrides) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -962,13 +1089,16 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     if (!pendingEdge) return
     setSubmitting(true)
     try {
-      await familyAPI.createRelationship(pendingEdge.fromId, {
+      const response = await familyAPI.createRelationship(pendingEdge.fromId, {
         related_memorial_id: parseInt(pendingEdge.toId),
         relationship_type: pendingEdgeForm.relationship_type,
         custom_label: pendingEdgeForm.custom_label || undefined,
         notes: pendingEdgeForm.notes || undefined,
         nickname_for_visitor: pendingEdgeForm.nickname_for_visitor || undefined,
+        is_public: false,
       })
+      if (response.data?.status === 'pending') setFlowNotice(text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.'))
+      await loadRequests()
       setPendingEdge(null)
       setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
       await loadData()
@@ -1142,29 +1272,62 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const onTouchEnd = useCallback(() => { dragRef.current = null; pinchRef.current = null }, [])
 
   // ── Form handlers ──────────────────────────────────────────────
-  const loadAvailableMemorials = async () => {
-    if (availableLoaded.current) return
-    try {
-      const res = await memorialsAPI.list()
-      setAvailableMemorials((Array.isArray(res.data) ? res.data : []).filter(m => m.id !== parseInt(memorialId)))
-      availableLoaded.current = true
-    } catch (err) { console.error(err) }
-  }
-
   const handleAdd = async (e) => {
     e.preventDefault()
-    setSubmitting(true)
+    if (!sourceCanEdit) return
+    if (flowMode === 'new' && newPerson.living && !livingConsent) { setFlowError(text('Подтвердите согласие живого человека на создание страницы.', 'Confirm the living person’s consent to creating this page.')); return }
+    setSubmitting(true); setFlowError(''); setFlowNotice('')
     try {
-      await familyAPI.createRelationship(memorialId, formData)
-      setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
-      setShowAddForm(false)
-      availableLoaded.current = false
-      await loadData()
+      let targetId = formData.related_memorial_id
+      if (flowMode === 'new') {
+        let person = createdPerson
+        if (!person) {
+          const res = await memorialsAPI.create({
+            name: newPerson.name.trim(), language: lang, is_public: false,
+            birth_date: newPerson.birth_date ? `${newPerson.birth_date}T00:00:00` : null,
+            death_date: !newPerson.living && newPerson.death_date ? `${newPerson.death_date}T00:00:00` : null,
+          })
+          person = res.data; setCreatedPerson(person)
+        }
+        targetId = person.id
+      }
+      const res = await familyAPI.createRelationship(sourceId, { ...formData, related_memorial_id: Number(targetId), is_public: relationPublic })
+      setFlowNotice(res.data?.status === 'pending'
+        ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
+        : text('Родственная связь сохранена в обе стороны.', 'Relationship saved in both directions.'))
+      if (formData.relationship_type === 'parent') {
+        const siblings = selectedRelations.filter(r => ['sibling', 'half_sibling'].includes(r.type))
+        if (siblings.length) setSharedParentTarget({
+          id: Number(targetId), is_public: relationPublic, siblings, pending: res.data?.status === 'pending',
+          name: flowMode === 'new' ? (createdPerson?.name || newPerson.name) : availableMemorials.find(m => sid(m.id) === sid(targetId))?.name,
+        })
+      }
+      setShowAddForm(false); setCreatedPerson(null)
+      await Promise.all([loadData(), loadRequests()])
     } catch (err) {
-      alert(err.response?.data?.detail || t('family.add_error'))
-    } finally {
-      setSubmitting(false)
+      setFlowError(typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
+    } finally { setSubmitting(false) }
+  }
+
+  const shareSavedParent = async () => {
+    if (!sharedParentTarget || !sharedParentSiblingIds.length) return
+    setSubmitting(true)
+    let saved = 0, pending = 0
+    const failedIds = []
+    for (const id of sharedParentSiblingIds) {
+      try {
+        const res = await familyAPI.createRelationship(id, {
+          related_memorial_id: sharedParentTarget.id, relationship_type: 'parent', is_public: sharedParentTarget.is_public,
+        })
+        if (res.data?.status === 'pending') pending += 1
+        else saved += 1
+      } catch { failedIds.push(id) }
     }
+    setFlowNotice(text(`Для выбранных братьев/сестёр: сохранено ${saved}, ждёт подтверждения ${pending}, не удалось связать ${failedIds.length}. Исходная связь сохранена.`, `For selected siblings: saved ${saved}, awaiting approval ${pending}, could not link ${failedIds.length}. The original relationship is saved.`))
+    setSharedParentSiblingIds(failedIds)
+    if (!failedIds.length) setSharedParentTarget(null)
+    await Promise.all([loadData(), loadRequests()])
+    setSubmitting(false)
   }
 
   const handleDelete = async (relId) => {
@@ -1256,94 +1419,41 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       )}
 
       {/* Add form (editor/owner only) */}
-      {canEdit && showAddForm && (
-        <form onSubmit={handleAdd} className="relationship-form">
-          <div className="form-group">
-            <label>{t('family.form_memorial')}</label>
-            {availableMemorials.length > 0 ? (
-              <select
-                value={formData.related_memorial_id}
-                onChange={e => setFormData({ ...formData, related_memorial_id: parseInt(e.target.value) })}
-                required
-              >
-                <option value="">{t('family.form_select_placeholder')}</option>
-                {availableMemorials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            ) : (
-              <input
-                type="number"
-                value={formData.related_memorial_id}
-                onChange={e => setFormData({ ...formData, related_memorial_id: parseInt(e.target.value) })}
-                required placeholder={t('family.form_id_placeholder')}
-              />
-            )}
+      {flowError && <div className="ft-flow-error" role="alert">{flowError}{createdPerson && <span> {text('Страница уже создана. Повторите сохранение связи или откройте её:', 'The page has been created. Retry saving the relationship or open it:')} <button type="button" onClick={() => navigate(`/memorials/${createdPerson.id}`)}>{createdPerson.name}</button></span>}</div>}
+      {flowNotice && <p className="ft-flow-notice" role="status">{flowNotice}</p>}
+      {sharedParentTarget && <section className="ft-request-inbox"><h3>{sharedParentTarget.pending ? text('Запрос отправлен. Уточните связь с братьями и сёстрами.', 'Request sent. Confirm relationships with siblings.') : text('Родитель добавлен. Уточните связь с братьями и сёстрами.', 'Parent added. Confirm relationships with siblings.')}</h3><p className="form-hint">{text('Отметьте только известные вам связи. Выбор не означает, что у этих людей оба родителя общие.', 'Select only relationships you know. This does not imply both parents are shared.')}</p>{sharedParentTarget.siblings.map(({ node }) => <label className="ft-checkbox" key={node.memorial_id}><input type="checkbox" disabled={submitting} checked={sharedParentSiblingIds.includes(node.memorial_id)} onChange={e => setSharedParentSiblingIds(ids => e.target.checked ? [...ids, node.memorial_id] : ids.filter(id => id !== node.memorial_id))} />{sharedParentTarget.name} — {text('также родитель', 'also a parent of')} {node.name}?</label>)}<div className="ft-flow-modes"><button type="button" disabled={submitting || !sharedParentSiblingIds.length} onClick={shareSavedParent}>{submitting ? t('common.saving') : text('Связать выбранных', 'Link selected people')}</button><button type="button" disabled={submitting} onClick={() => setSharedParentTarget(null)}>{text('Пропустить', 'Skip')}</button></div></section>}
+      {sourceCanEdit && showAddForm && (
+        <form ref={linkFormRef} onSubmit={handleAdd} className="relationship-form ft-link-form">
+          <h3>{text('Связать с', 'Link to')} {sourceName}</h3>
+          <div className="form-group"><label htmlFor="ft-relation">{text('Родственник приходится', 'The relative is related to')} {sourceName}</label><select id="ft-relation" disabled={submitting} value={formData.relationship_type} onChange={e => setFormData(f => ({ ...f, relationship_type: e.target.value }))}>{relationOptions.slice(0, 4).map(([value, ru, en]) => <option key={value} value={value}>{text(ru, en)}</option>)}<optgroup label={text('Другие связи', 'Other relationships')}>{relationOptions.slice(4).map(([value, ru, en]) => <option key={value} value={value}>{text(ru, en)}</option>)}</optgroup></select></div>
+          <div className="ft-flow-modes">
+            <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'existing'} onClick={() => { setFlowMode('existing'); setFlowError('') }}>{text('Найти существующий', 'Find an existing page')}</button>
+            <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'new'} onClick={() => { setFlowMode('new'); setFlowError('') }}>{text('Создать родственника', 'Create a relative')}</button>
           </div>
-          <div className="form-group">
-            <label>{t('family.form_type')}</label>
-            <select
-              value={formData.relationship_type}
-              onChange={e => setFormData({ ...formData, relationship_type: e.target.value, custom_label: '' })}
-              required
-            >
-              <optgroup label={t('family.group_parent_child')}>
-                <option value="parent">{t('family.type_parent_desc')}</option>
-                <option value="child">{t('family.type_child_desc')}</option>
-                <option value="adoptive_parent">{t('family.type_adoptive_parent_desc')}</option>
-                <option value="adoptive_child">{t('family.type_adoptive_child_desc')}</option>
-                <option value="step_parent">{t('family.type_step_parent_desc')}</option>
-                <option value="step_child">{t('family.type_step_child_desc')}</option>
-              </optgroup>
-              <optgroup label={t('family.group_partner')}>
-                <option value="spouse">{t('family.type_spouse_desc')}</option>
-                <option value="partner">{t('family.type_partner_desc')}</option>
-                <option value="ex_spouse">{t('family.type_ex_spouse_desc')}</option>
-              </optgroup>
-              <optgroup label={t('family.group_sibling')}>
-                <option value="sibling">{t('family.type_sibling_desc')}</option>
-                <option value="half_sibling">{t('family.type_half_sibling_desc')}</option>
-              </optgroup>
-              <optgroup label={t('family.group_other')}>
-                <option value="custom">{t('family.type_custom_desc')}</option>
-              </optgroup>
-            </select>
-          </div>
-          {formData.relationship_type === 'custom' && (
-            <div className="form-group">
-              <label>{t('family.form_custom_label')} *</label>
-              <input
-                type="text"
-                value={formData.custom_label}
-                onChange={e => setFormData({ ...formData, custom_label: e.target.value })}
-                required
-                maxLength={100}
-                placeholder={t('family.form_custom_label_placeholder')}
-              />
-            </div>
-          )}
-          <div className="form-group">
-            <label>{t('family.form_nickname') || 'How did they address you?'} <span className="form-optional">{t('common.optional') || 'optional'}</span></label>
-            <input
-              type="text"
-              value={formData.nickname_for_visitor}
-              onChange={e => setFormData({ ...formData, nickname_for_visitor: e.target.value })}
-              maxLength={100}
-              placeholder={t('family.form_nickname_placeholder') || 'e.g. Lyoshik, sunshine, grandson…'}
-            />
-            <span className="form-hint">{t('family.form_nickname_hint') || 'The avatar will use this name when chatting with you'}</span>
-          </div>
-          <div className="form-group">
-            <label>{t('family.form_notes')}</label>
-            <textarea
-              value={formData.notes}
-              onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              rows="2" placeholder={t('family.form_notes_placeholder')}
-            />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? t('common.saving') : t('family.add_submit')}
-          </button>
+          {flowMode === 'existing' ? <div className="form-group">
+            <label htmlFor="ft-memorial-search">{text('Имя или фамилия', 'Name or surname')}</label>
+            <input id="ft-memorial-search" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setAvailableMemorials([]); setSearchLoading(true); setFlowError(''); setFormData(f => ({ ...f, related_memorial_id: '' })) }} disabled={submitting} autoFocus />
+            {searchLoading && <span role="status">{text('Поиск…', 'Searching…')}</span>}
+            <div className="ft-search-results">{availableMemorials.map(m => <div key={m.id} className="ft-search-result"><button type="button" disabled={submitting} aria-pressed={sid(formData.related_memorial_id) === sid(m.id)} onClick={() => setFormData(f => ({ ...f, related_memorial_id: m.id }))}>{m.cover_photo_id ? <ApiMediaImage mediaId={m.cover_photo_id} alt="" thumbnail="small" className="ft-search-portrait" /> : <span className="ft-search-initials" aria-hidden="true">{getInitials(m.name)}</span>}<span className="ft-search-person"><strong>{m.name}</strong><small>{m.birth_date ? new Date(m.birth_date).getFullYear() : ''}{m.death_date ? ` — ${new Date(m.death_date).getFullYear()}` : ''}</small></span></button><a href={`${import.meta.env.BASE_URL}${m.is_public === false ? 'memorials' : 'm'}/${m.id}`} target="_blank" rel="noopener noreferrer">{text('Открыть страницу', 'Open page')} ↗</a></div>)}</div>
+            {!searchLoading && searchQuery && !availableMemorials.length && <span>{text('Не найдено. Можно создать новую страницу родственника.', 'No results. You can create a new relative page.')}</span>}
+          </div> : <>
+            <div className="form-group"><label htmlFor="ft-person-name">{text('Полное имя', 'Full name')}</label><input id="ft-person-name" required maxLength={255} value={createdPerson?.name || newPerson.name} disabled={submitting || !!createdPerson} onChange={e => setNewPerson(p => ({ ...p, name: e.target.value }))} /></div>
+            {newPersonMatches.length > 0 && <div className="ft-search-results"><p>{text('Похожие страницы уже существуют. Проверьте их перед созданием:', 'Similar pages already exist. Check them before creating a page:')}</p>{newPersonMatches.map(m => <button type="button" key={m.id} disabled={submitting} onClick={() => { setFlowMode('existing'); setSearchQuery(m.name); setAvailableMemorials([m]); setFormData(f => ({ ...f, related_memorial_id: m.id })) }}>{m.name} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''} — {text('выбрать существующий', 'use existing page')}</button>)}</div>}
+            <div className="ft-date-fields"><div className="form-group"><label htmlFor="ft-birth">{text('Дата рождения (необязательно)', 'Birth date (optional)')}</label><input id="ft-birth" type="date" disabled={submitting || !!createdPerson} value={newPerson.birth_date} onChange={e => setNewPerson(p => ({ ...p, birth_date: e.target.value }))} /></div><div className="form-group"><label htmlFor="ft-death">{text('Дата смерти (необязательно)', 'Death date (optional)')}</label><input id="ft-death" type="date" disabled={submitting || !!createdPerson || newPerson.living} min={newPerson.birth_date || undefined} value={newPerson.living ? '' : newPerson.death_date} onChange={e => setNewPerson(p => ({ ...p, death_date: e.target.value }))} /></div></div>
+            <label className="ft-checkbox"><input type="checkbox" checked={newPerson.living} disabled={submitting || !!createdPerson} onChange={e => setNewPerson(p => ({ ...p, living: e.target.checked }))} />{text('Человек жив', 'This person is living')}</label>
+            {newPerson.living && <label className="ft-checkbox"><input type="checkbox" required checked={livingConsent} disabled={submitting || !!createdPerson} onChange={e => setLivingConsent(e.target.checked)} />{text('У меня есть согласие этого человека на создание его страницы.', 'I have this person’s consent to create their page.')}</label>}
+            <p className="form-hint">{text('Новая страница будет приватной. Фото и воспоминания можно добавить позже.', 'The new page will be private. You can add photos and memories later.')}</p>
+          </>}
+
+          {formData.relationship_type === 'custom' && <div className="form-group"><label htmlFor="ft-custom">{t('family.form_custom_label')}</label><input id="ft-custom" required maxLength={100} value={formData.custom_label} onChange={e => setFormData(f => ({ ...f, custom_label: e.target.value }))} /></div>}
+          {['sibling', 'half_sibling'].includes(formData.relationship_type) && <p className="form-hint">{text('Эта связь не добавляет общих родителей. Свяжите каждого с известными родителями отдельно.', 'This relationship does not add shared parents. Link each person to their known parents separately.')}</p>}
+          <p className="ft-link-sentence">{flowMode === 'new' ? (createdPerson?.name || newPerson.name || text('Новый родственник', 'New relative')) : (availableMemorials.find(m => sid(m.id) === sid(formData.related_memorial_id))?.name || text('Выбранный человек', 'Selected person'))} — {formData.relationship_type === 'custom' ? formData.custom_label : relationName(formData.relationship_type)} {text('для', 'of')} {sourceName}.</p>
+          <label className="ft-checkbox"><input type="checkbox" checked={relationPublic} disabled={submitting} onChange={e => setRelationPublic(e.target.checked)} />{text('Показывать эту связь публично', 'Show this relationship publicly')}</label>
+          <p className="form-hint">{text('Если второй мемориал принадлежит другому владельцу, он получит запрос подтверждения.', 'If the other memorial belongs to another owner, they will receive an approval request.')}</p>
+          <div className="ft-flow-modes"><button type="submit" className="btn btn-primary" disabled={submitting || (flowMode === 'existing' ? !formData.related_memorial_id : !newPerson.name.trim() && !createdPerson)}>{submitting ? t('common.saving') : text('Подтвердить связь', 'Confirm relationship')}</button><button type="button" disabled={submitting} onClick={() => setShowAddForm(false)}>{t('common.cancel')}</button></div>
         </form>
       )}
+      {requests.filter(r => r.status === 'pending').length > 0 && <section className="ft-request-inbox"><h3>{text('Запросы родственных связей', 'Relationship requests')}</h3>{requests.filter(r => r.status === 'pending').map(r => <div key={r.id} className="ft-request-item"><span>{r.related_memorial_name} — {relationName(r.relationship_type)} {text('для', 'of')} {r.memorial_name}. <small>{r.can_respond ? text('Ожидает вашего решения', 'Awaiting your decision') : text('Ожидает подтверждения владельца', 'Awaiting owner approval')}</small></span><small>{r.is_public ? text('Связь будет публичной, если обе страницы публичны.', 'The link will be public if both pages are public.') : text('Связь доступна участникам с доступом к страницам.', 'The link is visible to page participants.')}</small>{r.can_respond ? <div><button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'accept')}>{text('Принять', 'Accept')}</button><button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'reject')}>{text('Отклонить', 'Reject')}</button></div> : <button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'cancel')}>{text('Отменить запрос', 'Cancel request')}</button>}</div>)}</section>}
 
       {/* Pending edge modal — создание связи через визуальное рисование */}
       {pendingEdge && (
@@ -1427,7 +1537,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
       {/* Tree canvas */}
       {hasTree && (
-        <div className="ft-canvas-wrap">
+        <div className="ft-tree-and-panel"><div className="ft-canvas-wrap">
         <div
           className="tree-canvas"
           ref={canvasRef}
@@ -1625,7 +1735,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                         genLayout.memorialClusterStyle?.[id]
                       }
                       relLabel={relLabels[id]}
-                      onClick={(mid) => navigate(`/memorials/${mid}`)}
+                      isSelected={sid(n.memorial_id) === sid(sourceId)}
+                      onClick={selectPerson}
                       editMode={editMode}
                       onNodeDragStart={handleNodeDragStart}
                       onPortDragStart={handlePortDragStart}
@@ -1689,7 +1800,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                       isRoot={extNode.id === sid(displayGraph.root_id)}
                       relLabel={relLabels[extNode.id]}
                       clusterStyle={csty}
-                      onClick={(id) => navigate(`/memorials/${id}`)}
+                      isSelected={sid(mid) === sid(sourceId)}
+                      onClick={selectPerson}
                     />
                   )
                 })}
@@ -1750,7 +1862,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
               <button
                 type="button"
                 className="ft-canvas-action-btn ft-canvas-action-btn--primary"
-                onClick={() => { setShowAddForm(!showAddForm); if (!showAddForm) loadAvailableMemorials() }}
+                onClick={() => { if (showAddForm) setShowAddForm(false); else { setSelectedId(null); beginLink() } }}
                 data-tooltip={showAddForm ? t('common.cancel') : 'Add a family member to the tree'}
               >
                 {showAddForm ? '✕' : '+'}
@@ -1786,6 +1898,23 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
           </button>
         </div>
         </div>
+        <aside className="ft-person-panel" aria-label={text('Выбранный человек', 'Selected person')}>
+          <span className="form-hint">{text('Выбранный человек', 'Selected person')}</span>
+          {(selectedNode?.avatar_photo_id || selectedNode?.cover_photo_id) ? <ApiMediaImage mediaId={selectedNode.avatar_photo_id || selectedNode.cover_photo_id} alt={sourceName} thumbnail={null} portrait={{ memorialId: sourceId, kind: 'avatar', version: JSON.stringify(selectedNode.portrait_settings || {}) }} className="ft-person-portrait" /> : <span className="ft-person-initials" aria-hidden="true">{getInitials(sourceName)}</span>}
+          <h3>{sourceName}</h3><p className="form-hint">{selectedNode?.birth_year || ''}{selectedNode?.death_year ? ` — ${selectedNode.death_year}` : ''}</p>
+          <button type="button" className="btn" onClick={focusSelectedPerson}>{text('Показать в дереве', 'Focus in tree')}</button>
+          <button type="button" className="btn" onClick={() => navigate(`/memorials/${sourceId}`)}>{text('Открыть мемориал', 'Open memorial')}</button>
+          <h4>{text('Родственные связи', 'Relationships')}</h4>
+          {selectedRelations.length ? [
+            { title: text('Родители', 'Parents'), types: ['parent', 'adoptive_parent', 'step_parent'] },
+            { title: text('Супруги и партнёры', 'Spouses and partners'), types: ['spouse', 'partner', 'ex_spouse'] },
+            { title: text('Дети', 'Children'), types: ['child', 'adoptive_child', 'step_child'] },
+            { title: text('Братья и сёстры', 'Siblings'), types: ['sibling', 'half_sibling'] },
+            { title: text('Другие связи', 'Other relationships'), types: ['custom'] },
+          ].map(group => { const members = selectedRelations.filter(r => group.types.includes(r.type)); return members.length ? <section className="ft-person-group" key={group.title}><h5>{group.title}</h5><ul>{members.map(({ node, type, label }) => <li key={`${node.memorial_id}:${type}`}><button type="button" onClick={() => selectPerson(node.memorial_id)}>{node.name}</button><span>{type === 'custom' && label ? label : relationName(type, node)} {text('для', 'of')} {sourceName}</span></li>)}</ul></section> : null }) : <p className="form-hint">{text('Связей пока нет.', 'No relationships yet.')}</p>}
+          {sourceCanEdit ? <button type="button" className="btn btn-primary" onClick={beginLink}>{text('Добавить родственника', 'Add a relative')}</button> : <p className="form-hint">{text('Добавлять связи может владелец или редактор выбранной страницы.', 'The selected page owner or editor can add relationships.')}</p>}
+          <p className="form-hint">{text('Подписи относятся к выбранному человеку, а не к посетителю.', 'Labels are relative to the selected person, not the visitor.')}</p>
+        </aside></div>
       )}
 
 

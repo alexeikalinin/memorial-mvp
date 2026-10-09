@@ -28,7 +28,7 @@ function Layout({ children }) {
       <header className={`header${scrolled ? ' scrolled' : ''}`}>
         <div className="container">
           <Link to="/" className="logo" aria-label="vspomin.ai">
-            <BrandVisual className="header-brand" />
+            <BrandVisual className="header-brand" tone="light" />
           </Link>
           <nav className="nav">
             {/* AUTH_HIDDEN: блок входа/выхода скрыт до включения авторизации */}

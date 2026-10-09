@@ -1,3 +1,4 @@
+import FamilyNotifications from '../components/FamilyNotifications'
 import BrandVisual from '../components/BrandVisual'
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
@@ -225,6 +226,8 @@ function Home() {
           </div>
         </div>
       </section>
+
+      <FamilyNotifications />
 
       {/* ── Memorials List (скрыт на первом экране, если в списке только демо-сиды) ── */}
       {showMemorialsContent && (

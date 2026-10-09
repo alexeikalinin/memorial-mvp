@@ -237,13 +237,14 @@ async def request_access(
     if not memorial:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=tr(lang, "memorial_not_found"))
 
+    # A direct private-page URL can request access without disclosing its contents.
     # Проверяем что у пользователя ещё нет доступа
     existing_access = (
         db.query(MemorialAccess)
         .filter(MemorialAccess.memorial_id == memorial_id, MemorialAccess.user_id == current_user.id)
         .first()
     )
-    if existing_access:
+    if existing_access and (existing_access.role != UserRole.VIEWER or data.requested_role != "editor"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=tr(lang, "already_have_access"),
@@ -335,6 +336,8 @@ async def approve_access_request(
     ).first()
 
     if existing:
+        if existing.role == UserRole.OWNER:
+            raise HTTPException(409, "The recipient already owns this memorial")
         existing.role = req.requested_role
         existing.granted_by = current_user.id
         entry = existing
@@ -347,6 +350,8 @@ async def approve_access_request(
         )
         db.add(entry)
 
+    db.add(MemorialAccessEvent(memorial_id=memorial_id, actor_id=current_user.id,
+                              target_user_id=req.user_id, action="access_" + req.requested_role.value))
     req.status = AccessRequestStatus.APPROVED
     req.reviewed_by = current_user.id
     req.reviewed_at = datetime.now(timezone.utc)
@@ -421,3 +426,103 @@ def update_site_admin(data: SiteAdminUpdate, current_user: User = Depends(get_cu
     target.is_admin = data.is_admin
     db.commit()
     return {"email": target.email, "is_admin": target.is_admin}
+
+
+# Kinship and investor demo mode never grant ownership. The recipient must accept.
+from typing import Literal
+from app.models import Memorial, OwnershipTransfer, MemorialAccessEvent, FamilyLinkRequest
+
+
+class OwnershipTransferCreate(BaseModel):
+    email: EmailStr
+    keep_editor: bool = True
+
+
+class OwnershipDecision(BaseModel):
+    decision: Literal["accept", "reject", "cancel"]
+
+
+def _transfer_response(req, db):
+    m = db.get(Memorial, req.memorial_id)
+    recipient = db.get(User, req.to_user_id)
+    return dict(id=req.id, memorial_id=req.memorial_id, memorial_name=m.name if m else None,
+                to_user_id=req.to_user_id, recipient_email=recipient.email if recipient else None,
+                from_user_id=req.from_user_id, status=req.status, keep_editor=req.keep_editor)
+
+
+@router.get("/ownership/transfers")
+def list_ownership_transfers(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from sqlalchemy import or_
+    rows = db.query(OwnershipTransfer).filter(or_(OwnershipTransfer.from_user_id == current_user.id,
+                                                 OwnershipTransfer.to_user_id == current_user.id)).order_by(OwnershipTransfer.id.desc()).limit(100).all()
+    return [_transfer_response(r, db) for r in rows]
+
+
+@router.post("/{memorial_id}/ownership/transfer", status_code=201)
+def propose_ownership_transfer(memorial_id: int, data: OwnershipTransferCreate,
+                               current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    m = db.query(Memorial).filter_by(id=memorial_id).with_for_update().first()
+    if not m:
+        raise HTTPException(404, "Memorial not found")
+    if m.owner_id != current_user.id:
+        raise HTTPException(403, "Only the actual owner can transfer this memorial")
+    recipient = db.query(User).filter(func.lower(User.email) == str(data.email).lower(), User.is_active.is_(True)).first()
+    if not recipient or not recipient.email_verified:
+        raise HTTPException(400, "The recipient must register and verify their email first")
+    if recipient.id == current_user.id:
+        raise HTTPException(400, "You already own this memorial")
+    if db.query(OwnershipTransfer).filter_by(memorial_id=memorial_id, status="pending").first():
+        raise HTTPException(409, "A transfer is already pending")
+    req = OwnershipTransfer(memorial_id=memorial_id, from_user_id=current_user.id,
+                            to_user_id=recipient.id, keep_editor=data.keep_editor)
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    return _transfer_response(req, db)
+
+
+@router.post("/ownership/transfers/{transfer_id}/respond")
+def respond_ownership_transfer(transfer_id: int, data: OwnershipDecision,
+                               current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    req = db.query(OwnershipTransfer).filter_by(id=transfer_id).with_for_update().first()
+    if not req:
+        raise HTTPException(404, "Transfer not found")
+    permitted_user = req.from_user_id if data.decision == "cancel" else req.to_user_id
+    if current_user.id != permitted_user:
+        raise HTTPException(403, "Only the invited recipient can accept or reject this transfer")
+    if req.status != "pending":
+        raise HTTPException(409, "Transfer already reviewed")
+    m = db.query(Memorial).filter_by(id=req.memorial_id).with_for_update().first()
+    if not m or m.owner_id != req.from_user_id:
+        raise HTTPException(409, "The owner has changed")
+    if data.decision == "accept":
+        if not current_user.email_verified or not current_user.is_active:
+            raise HTTPException(403, "Verify your email before accepting ownership")
+        entries = db.query(MemorialAccess).filter_by(memorial_id=m.id).all()
+        for e in entries:
+            if e.role == UserRole.OWNER:
+                e.role = UserRole.EDITOR
+        old = next((e for e in entries if e.user_id == req.from_user_id), None)
+        if old and not req.keep_editor:
+            db.delete(old)
+        elif old:
+            old.role = UserRole.EDITOR
+        elif req.keep_editor:
+            db.add(MemorialAccess(memorial_id=m.id, user_id=req.from_user_id,
+                                  role=UserRole.EDITOR, granted_by=current_user.id))
+        recipient = next((e for e in entries if e.user_id == req.to_user_id), None)
+        if recipient:
+            recipient.role = UserRole.OWNER
+            recipient.granted_by = req.from_user_id
+        else:
+            db.add(MemorialAccess(memorial_id=m.id, user_id=req.to_user_id,
+                                  role=UserRole.OWNER, granted_by=req.from_user_id))
+        m.owner_id = req.to_user_id
+        db.query(FamilyLinkRequest).filter(FamilyLinkRequest.status == "pending",
+            (FamilyLinkRequest.memorial_id == m.id) | (FamilyLinkRequest.related_memorial_id == m.id)).update({"status": "cancelled"}, synchronize_session=False)
+        db.add(MemorialAccessEvent(memorial_id=m.id, actor_id=current_user.id,
+                                  target_user_id=current_user.id, action="ownership_transferred"))
+    req.status = {"accept": "accepted", "reject": "rejected", "cancel": "cancelled"}[data.decision]
+    req.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    return _transfer_response(req, db)

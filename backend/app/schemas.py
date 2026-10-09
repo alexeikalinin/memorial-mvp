@@ -316,6 +316,7 @@ class PresignedUploadUrlResponse(BaseModel):
 
 # Family Tree Schemas
 class FamilyRelationshipCreate(BaseModel):
+    is_public: bool = False
     related_memorial_id: int
     relationship_type: RelationshipType
     custom_label: Optional[str] = Field(None, max_length=100)  # обязательно для CUSTOM типа

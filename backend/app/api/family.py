@@ -9,7 +9,12 @@ from sqlalchemy import and_, or_
 
 from app.auth import get_current_user, get_optional_user, require_memorial_access
 from app.db import get_db
-from app.models import Memorial, FamilyRelationship, RelationshipType, User, UserRole
+from app.models import Memorial, FamilyRelationship, RelationshipType, User, UserRole, FamilyLinkRequest, FamilyLinkPrivacy
+from app.services.family_graph import accessible_memorials, visible_relationships, validate_link, store_link, actual_owner
+from sqlalchemy.exc import IntegrityError
+from pydantic import BaseModel
+from typing import Literal
+from datetime import datetime, timezone
 from app.schemas import (
     FamilyRelationshipCreate,
     FamilyRelationshipUpdate,
@@ -236,122 +241,120 @@ def refine_generations_parent_child(
             break
 
 
-@router.post("/memorials/{memorial_id}/relationships", response_model=FamilyRelationshipResponse, status_code=status.HTTP_201_CREATED)
-async def create_relationship(
-    memorial_id: int,
-    relationship: FamilyRelationshipCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """
-    Создать семейную связь между мемориалами.
+@router.get("/search")
+def search_memorials(q: str = Query("", max_length=120), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    query = accessible_memorials(db, current_user)
+    for part in q.strip().split():
+        part = part.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        query = query.filter(Memorial.name.ilike(f"%{part}%", escape="\\"))
+    return [dict(id=m.id, name=m.name, birth_date=m.birth_date, death_date=m.death_date,
+                 cover_photo_id=m.cover_photo_id, is_public=m.is_public)
+            for m in query.order_by(Memorial.name, Memorial.id).limit(30).all()]
 
-    Например:
-    - memorial_id=1, related_memorial_id=2, relationship_type="parent"
-      означает: мемориал 2 является родителем мемориала 1
-    """
-    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
 
-    # Проверка существования мемориалов
-    memorial = db.query(Memorial).filter(Memorial.id == memorial_id).first()
-    if not memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Memorial not found"
-        )
-    
-    related_memorial = db.query(Memorial).filter(Memorial.id == relationship.related_memorial_id).first()
-    if not related_memorial:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Related memorial not found"
-        )
-    
-    # Проверка на самосвязь
-    if memorial_id == relationship.related_memorial_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot create relationship with itself"
-        )
-    
-    # Проверка на дубликат
-    existing = db.query(FamilyRelationship).filter(
-        FamilyRelationship.memorial_id == memorial_id,
-        FamilyRelationship.related_memorial_id == relationship.related_memorial_id,
-        FamilyRelationship.relationship_type == relationship.relationship_type
-    ).first()
-    
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Relationship already exists"
-        )
-    
-    # Валидация: для CUSTOM типа обязателен custom_label
-    if relationship.relationship_type == RelationshipType.CUSTOM and not relationship.custom_label:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="custom_label is required for relationship_type=custom"
-        )
+def _commit(db):
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "The relationship was already saved. Refresh the tree.")
 
-    # Создание связи
-    db_relationship = FamilyRelationship(
-        memorial_id=memorial_id,
-        related_memorial_id=relationship.related_memorial_id,
-        relationship_type=relationship.relationship_type,
-        custom_label=relationship.custom_label,
-        notes=relationship.notes,
-        nickname_for_visitor=relationship.nickname_for_visitor,
-    )
-    db.add(db_relationship)
 
-    # Таблица обратных связей: (тип → обратный тип, симметричная?)
-    REVERSE_MAP = {
-        RelationshipType.PARENT:          RelationshipType.CHILD,
-        RelationshipType.CHILD:           RelationshipType.PARENT,
-        RelationshipType.STEP_PARENT:     RelationshipType.STEP_CHILD,
-        RelationshipType.STEP_CHILD:      RelationshipType.STEP_PARENT,
-        RelationshipType.ADOPTIVE_PARENT: RelationshipType.ADOPTIVE_CHILD,
-        RelationshipType.ADOPTIVE_CHILD:  RelationshipType.ADOPTIVE_PARENT,
-        # Симметричные (обратный = тот же тип)
-        RelationshipType.SPOUSE:          RelationshipType.SPOUSE,
-        RelationshipType.EX_SPOUSE:       RelationshipType.EX_SPOUSE,
-        RelationshipType.PARTNER:         RelationshipType.PARTNER,
-        RelationshipType.SIBLING:         RelationshipType.SIBLING,
-        RelationshipType.HALF_SIBLING:    RelationshipType.HALF_SIBLING,
-        # CUSTOM — обратная не создаётся автоматически
-    }
+def _request_response(req, db, user):
+    source = db.get(Memorial, req.memorial_id)
+    target = db.get(Memorial, req.related_memorial_id)
+    # The exact pair is disclosed only to the sender and the explicitly invited
+    # target owner, never as a graph traversal or a general private-page search.
+    return dict(id=req.id, memorial_id=req.memorial_id, related_memorial_id=req.related_memorial_id,
+                memorial_name=source.name if source else None, related_memorial_name=target.name if target else None,
+                relationship_type=req.relationship_type.value, custom_label=req.custom_label,
+                status=req.status, is_public=req.is_public,
+                can_respond=bool(target and actual_owner(target, user) and target.owner_id == req.target_owner_id
+                                 and source and source.owner_id == req.source_owner_id and req.status == "pending"),
+                created_at=req.created_at)
 
-    reverse_type = REVERSE_MAP.get(relationship.relationship_type)
-    if reverse_type is not None:
-        # Проверяем, что обратная связь ещё не существует
-        reverse_exists = db.query(FamilyRelationship).filter(
-            FamilyRelationship.memorial_id == relationship.related_memorial_id,
-            FamilyRelationship.related_memorial_id == memorial_id,
-            FamilyRelationship.relationship_type == reverse_type
-        ).first()
-        if not reverse_exists:
-            db.add(FamilyRelationship(
-                memorial_id=relationship.related_memorial_id,
-                related_memorial_id=memorial_id,
-                relationship_type=reverse_type,
-                custom_label=relationship.custom_label,
-                notes=relationship.notes
-            ))
 
-    db.commit()
-    db.refresh(db_relationship)
+@router.get("/requests")
+def list_link_requests(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    owned = db.query(Memorial.id).filter(Memorial.owner_id == current_user.id)
+    requests = db.query(FamilyLinkRequest).filter(or_(FamilyLinkRequest.requester_id == current_user.id,
+                                                     FamilyLinkRequest.related_memorial_id.in_(owned))).order_by(FamilyLinkRequest.created_at.desc()).limit(100).all()
+    return [_request_response(r, db, current_user) for r in requests]
 
-    return FamilyRelationshipResponse(
-        id=db_relationship.id,
-        memorial_id=db_relationship.memorial_id,
-        related_memorial_id=db_relationship.related_memorial_id,
-        relationship_type=db_relationship.relationship_type,
-        custom_label=db_relationship.custom_label,
-        notes=db_relationship.notes,
-        related_memorial_name=related_memorial.name,
-        created_at=db_relationship.created_at
-    )
+
+class LinkDecision(BaseModel):
+    decision: Literal["accept", "reject"]
+
+
+@router.post("/requests/{request_id}/respond")
+def respond_link_request(request_id: int, data: LinkDecision, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    req = db.query(FamilyLinkRequest).filter_by(id=request_id).with_for_update().first()
+    if not req:
+        raise HTTPException(404, "Request not found")
+    pages = {m.id: m for m in db.query(Memorial).filter(Memorial.id.in_([req.memorial_id, req.related_memorial_id])).order_by(Memorial.id).with_for_update().all()}
+    target = pages.get(req.related_memorial_id)
+    source = pages.get(req.memorial_id)
+    if not target or not actual_owner(target, current_user):
+        raise HTTPException(403, "Only the memorial owner can review this request")
+    if req.status != "pending":
+        raise HTTPException(409, "Request already reviewed")
+    if not source or source.owner_id != req.source_owner_id or target.owner_id != req.target_owner_id:
+        raise HTTPException(409, "Ownership changed. Please send a new request.")
+    if data.decision == "accept":
+        validate_link(db, req.memorial_id, req.related_memorial_id, req.relationship_type, req.custom_label)
+        store_link(db, req.memorial_id, req.related_memorial_id, req)
+    req.status = "accepted" if data.decision == "accept" else "rejected"
+    req.reviewed_by = current_user.id
+    req.reviewed_at = datetime.now(timezone.utc)
+    _commit(db)
+    return _request_response(req, db, current_user)
+
+
+@router.delete("/requests/{request_id}", status_code=204)
+def cancel_link_request(request_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    req = db.query(FamilyLinkRequest).filter_by(id=request_id).with_for_update().first()
+    if not req:
+        raise HTTPException(404, "Request not found")
+    if req.requester_id != current_user.id:
+        raise HTTPException(403, "Only the sender can cancel this request")
+    if req.status != "pending":
+        raise HTTPException(409, "Request already reviewed")
+    req.status = "cancelled"
+    _commit(db)
+
+
+@router.post("/memorials/{memorial_id}/relationships", status_code=201)
+async def create_relationship(memorial_id: int, relationship: FamilyRelationshipCreate,
+                              current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    related = require_memorial_access(relationship.related_memorial_id, current_user, db, allow_public=True)
+    validate_link(db, memorial_id, related.id, relationship.relationship_type, relationship.custom_label)
+    # Publishing a relation needs actual owner consent, even in investor mode.
+    if relationship.is_public and not actual_owner(memorial, current_user):
+        raise HTTPException(403, "Only the owner can publish a family relationship")
+    if memorial.owner_id != related.owner_id and not (actual_owner(memorial, current_user) and actual_owner(related, current_user)):
+        if not actual_owner(memorial, current_user):
+            raise HTTPException(403, "Ask the owner of this page to send a family link request")
+        pending = db.query(FamilyLinkRequest).filter(FamilyLinkRequest.status == "pending", or_(
+            and_(FamilyLinkRequest.memorial_id == memorial_id, FamilyLinkRequest.related_memorial_id == related.id),
+            and_(FamilyLinkRequest.memorial_id == related.id, FamilyLinkRequest.related_memorial_id == memorial_id)
+        )).first()
+        if pending:
+            raise HTTPException(409, "A request for this pair is already pending")
+        req = FamilyLinkRequest(memorial_id=memorial_id, related_memorial_id=related.id,
+                                requester_id=current_user.id, source_owner_id=memorial.owner_id,
+                                target_owner_id=related.owner_id, **relationship.model_dump(exclude={"related_memorial_id"}))
+        db.add(req)
+        _commit(db)
+        db.refresh(req)
+        return dict(status="pending", request_id=req.id)
+    require_memorial_access(related.id, current_user, db, min_role=UserRole.EDITOR)
+    rel = store_link(db, memorial_id, related.id, relationship)
+    _commit(db)
+    db.refresh(rel)
+    response = FamilyRelationshipResponse.model_validate(rel)
+    response.related_memorial_name = related.name
+    return response
 
 
 @router.get("/memorials/{memorial_id}/relationships", response_model=List[FamilyRelationshipResponse])
@@ -381,7 +384,8 @@ async def get_relationships(
     if relationship_type:
         query = query.filter(FamilyRelationship.relationship_type == relationship_type)
     
-    relationships = query.all()
+    relationships = [r for r in visible_relationships(db, current_user) if r.memorial_id == memorial_id
+                     and (not relationship_type or r.relationship_type == relationship_type)]
 
     # Bulk-load связанных мемориалов — один запрос вместо N
     related_ids = {rel.related_memorial_id for rel in relationships}
@@ -452,7 +456,15 @@ async def delete_relationship(
         if reverse:
             db.delete(reverse)
     
+    low, high = sorted((relationship.memorial_id, relationship.related_memorial_id))
     db.delete(relationship)
+    db.flush()
+    remaining = db.query(FamilyRelationship).filter(or_(
+        and_(FamilyRelationship.memorial_id == low, FamilyRelationship.related_memorial_id == high),
+        and_(FamilyRelationship.memorial_id == high, FamilyRelationship.related_memorial_id == low),
+    )).first()
+    if not remaining:
+        db.query(FamilyLinkPrivacy).filter_by(memorial_low=low, memorial_high=high).delete()
     db.commit()
 
     return None
@@ -472,7 +484,12 @@ async def update_relationship(
 
     require_memorial_access(relationship.memorial_id, current_user, db, min_role=UserRole.EDITOR)
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    if "relationship_type" in updates and updates["relationship_type"] != relationship.relationship_type:
+        raise HTTPException(400, "Remove and recreate the relationship to change its type")
+    if relationship.relationship_type == RelationshipType.CUSTOM and "custom_label" in updates and not (updates["custom_label"] or "").strip():
+        raise HTTPException(400, "custom_label is required")
+    for field, value in updates.items():
         setattr(relationship, field, value)
 
     db.commit()
@@ -487,7 +504,7 @@ async def update_relationship(
 @router.get("/memorials/{memorial_id}/tree", response_model=FamilyTreeResponse)
 async def get_family_tree(
     memorial_id: int,
-    max_depth: int = 3,
+    max_depth: int = Query(3, ge=1, le=10),
     current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -510,10 +527,9 @@ async def get_family_tree(
     frontier: Set[int] = {memorial_id}
     depth_map: Dict[int, int] = {memorial_id: 0}
 
+    visible_rels = visible_relationships(db, current_user, memorial_id)
     while frontier:
-        rels_batch = db.query(FamilyRelationship).filter(
-            FamilyRelationship.memorial_id.in_(frontier)
-        ).all()
+        rels_batch = [r for r in visible_rels if r.memorial_id in frontier]
         new_ids: Set[int] = set()
         for rel in rels_batch:
             if rel.related_memorial_id not in all_ids:
@@ -527,9 +543,7 @@ async def get_family_tree(
     memorials_map: Dict[int, Memorial] = {
         m.id: m for m in db.query(Memorial).filter(Memorial.id.in_(all_ids)).all()
     }
-    all_rels = db.query(FamilyRelationship).filter(
-        FamilyRelationship.memorial_id.in_(all_ids)
-    ).all()
+    all_rels = [r for r in visible_rels if r.memorial_id in all_ids and r.related_memorial_id in all_ids]
 
     children_map: Dict[int, List[int]] = defaultdict(list)
     spouse_map: Dict[int, List[int]] = defaultdict(list)
@@ -626,7 +640,7 @@ async def get_full_family_tree(
         raise HTTPException(status_code=404, detail="Memorial not found")
 
     # Load all relationships once
-    all_rels = db.query(FamilyRelationship).all()
+    all_rels = visible_relationships(db, current_user, memorial_id)
 
     # Build undirected adjacency: node_id → [(neighbor_id, rel_type)]
     adj: Dict[int, List[tuple]] = defaultdict(list)
@@ -719,7 +733,7 @@ async def get_hidden_connections(
         raise HTTPException(status_code=404, detail="Memorial not found")
 
     # Загружаем все связи одним запросом (нужны оба направления)
-    all_rels = db.query(FamilyRelationship).all()
+    all_rels = visible_relationships(db, current_user, memorial_id)
 
     # Строим неориентированный граф: node_id → [(neighbor_id, rel_type, direction)]
     graph: Dict[int, List[tuple]] = defaultdict(list)
@@ -812,7 +826,7 @@ async def get_network_clusters(
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
 
-    all_rels = db.query(FamilyRelationship).all()
+    all_rels = visible_relationships(db, current_user, memorial_id)
 
     # Split into structural and custom edges
     structural: List[tuple] = []   # (a, b)

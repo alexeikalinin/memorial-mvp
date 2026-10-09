@@ -11,10 +11,12 @@ from pathlib import Path
 
 import httpx
 
+from app.services.voice_models import resolve_fish_model
+from app.services.memory_overview import is_memory_overview_question, overview_context
 from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
 
 from app.db import get_db
-from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner
+from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner, require_memorial_access
 from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
 from app.services.billing import (
     check_chat_quota,
@@ -83,7 +85,7 @@ async def get_tts_status(
     memorial = require_memorial_access(memorial_id, current_user, db, min_role=UserRole.VIEWER, allow_public=True)
     _, provider = _resolve_tts_voice(memorial)
     key = settings.FISH_AUDIO_API_KEY if provider == "fish_audio" else settings.ELEVENLABS_API_KEY
-    return {"provider": provider, "configured": bool(key), "has_custom_voice": bool(memorial.voice_id), "model": (memorial.voice_tts_model or settings.FISH_AUDIO_MODEL) if provider == "fish_audio" else None}
+    return {"provider": provider, "configured": bool(key), "has_custom_voice": bool(memorial.voice_id), "model": resolve_fish_model(memorial.voice_tts_model, settings.FISH_AUDIO_MODEL) if provider == "fish_audio" else None}
 
 
 @router.post("/photo/animate", response_model=PhotoAnimateResponse)
@@ -298,9 +300,8 @@ async def _avatar_chat_response(
     family_memorial_map = {}  # {memorial_id: (name, relationship_type)}
 
     if request.include_family_memories:
-        family_rels = db.query(FamilyRelationship).filter(
-            FamilyRelationship.memorial_id == request.memorial_id
-        ).all()
+        from app.services.family_graph import visible_relationships
+        family_rels = [r for r in visible_relationships(db, current_user) if r.memorial_id == request.memorial_id]
         for rel in family_rels:
             related = db.query(Memorial).filter(
                 Memorial.id == rel.related_memorial_id
@@ -326,162 +327,168 @@ async def _avatar_chat_response(
         )
         return AvatarChatResponse(answer=no_mem_msg, sources=[])
     
-    # Проверяем, есть ли воспоминания с embeddings
-    # Важно: используем новый запрос к БД, чтобы избежать проблем с кэшем сессии
-    # Сначала проверяем через прямой SQL запрос
-    from sqlalchemy import text
-    result = db.execute(
-        text("SELECT id, embedding_id FROM memories WHERE memorial_id = :memorial_id"),
-        {"memorial_id": request.memorial_id}
-    )
-    memory_embeddings_map = {row[0]: row[1] for row in result}
+    overview = is_memory_overview_question(request.question)
+    if not overview:
+        # Проверяем, есть ли воспоминания с embeddings
+        # Важно: используем новый запрос к БД, чтобы избежать проблем с кэшем сессии
+        # Сначала проверяем через прямой SQL запрос
+        from sqlalchemy import text
+        result = db.execute(
+            text("SELECT id, embedding_id FROM memories WHERE memorial_id = :memorial_id"),
+            {"memorial_id": request.memorial_id}
+        )
+        memory_embeddings_map = {row[0]: row[1] for row in result}
     
-    # Теперь проверяем объекты с учетом данных из БД
-    memories_with_embeddings = []
-    for m in all_memories:
-        # Обновляем объект из БД
-        db.refresh(m)
-        # Также проверяем через прямой запрос
-        db_embedding_id = memory_embeddings_map.get(m.id)
+        # Теперь проверяем объекты с учетом данных из БД
+        memories_with_embeddings = []
+        for m in all_memories:
+            # Обновляем объект из БД
+            db.refresh(m)
+            # Также проверяем через прямой запрос
+            db_embedding_id = memory_embeddings_map.get(m.id)
         
-        # Используем embedding_id из БД, если он есть
-        embedding_id_to_check = db_embedding_id if db_embedding_id else m.embedding_id
+            # Используем embedding_id из БД, если он есть
+            embedding_id_to_check = db_embedding_id if db_embedding_id else m.embedding_id
         
-        # Проверяем embedding_id
-        has_embedding = False
-        if embedding_id_to_check:
-            if isinstance(embedding_id_to_check, str):
-                has_embedding = bool(embedding_id_to_check.strip())
-            else:
-                has_embedding = bool(embedding_id_to_check)
-        
-        if has_embedding:
-            # Обновляем объект, если embedding_id был в БД, но не в объекте
-            if db_embedding_id and not m.embedding_id:
-                m.embedding_id = db_embedding_id
-            memories_with_embeddings.append(m)
-    
-    print(f"Total memories: {len(all_memories)}, with embeddings: {len(memories_with_embeddings)}")
-    for m in all_memories:
-        db_emb = memory_embeddings_map.get(m.id)
-        print(f"  Memory {m.id}: obj.embedding_id={repr(m.embedding_id)}, db.embedding_id={repr(db_emb)}")
-    
-    # Если есть воспоминания без embeddings, пытаемся создать их
-    if len(memories_with_embeddings) < len(all_memories):
-        from app.services.ai_tasks import upsert_memory_embedding
-        
-        created = 0
-        errors = []
-        for memory in all_memories:
-            # Проверяем, что embedding_id действительно отсутствует
+            # Проверяем embedding_id
             has_embedding = False
-            if memory.embedding_id:
-                if isinstance(memory.embedding_id, str):
-                    has_embedding = bool(memory.embedding_id.strip())
+            if embedding_id_to_check:
+                if isinstance(embedding_id_to_check, str):
+                    has_embedding = bool(embedding_id_to_check.strip())
                 else:
-                    has_embedding = bool(memory.embedding_id)
-            
-            if not has_embedding:
-                try:
-                    # Используем get_embedding, который уже импортирован в начале функции
-                    embedding = await get_embedding(memory.content)
-                    vector_id = await upsert_memory_embedding(
-                        memory_id=memory.id,
-                        memorial_id=request.memorial_id,
-                        text=memory.content,
-                        embedding=embedding,
-                        title=memory.title
-                    )
-                    memory.embedding_id = vector_id
-                    created += 1
-                    print(f"Created embedding for memory {memory.id}: {vector_id}")
-                except Exception as e:
-                    error_msg = f"Failed to create embedding for memory {memory.id}: {str(e)}"
-                    print(f"Warning: {error_msg}")
-                    errors.append(error_msg)
+                    has_embedding = bool(embedding_id_to_check)
         
-        if created > 0:
-            try:
-                db.commit()
-                print(f"✅ Committed {created} embeddings to database")
-                # Сбрасываем кэш сессии и перезагружаем объекты
-                db.expire_all()
-                # Перезагружаем все объекты из БД
-                for memory in all_memories:
-                    db.refresh(memory)
-                # Пересчитываем список с embeddings
-                memories_with_embeddings = []
-                for m in all_memories:
-                    db.refresh(m)
-                    if m.embedding_id and (isinstance(m.embedding_id, str) and m.embedding_id.strip() or m.embedding_id):
-                        memories_with_embeddings.append(m)
-                print(f"✅ After refresh: {len(memories_with_embeddings)} memories with embeddings")
-            except Exception as commit_error:
-                print(f"❌ ERROR committing embeddings: {commit_error}")
-                import traceback
-                traceback.print_exc()
-                db.rollback()
-        
-        # Если были ошибки, логируем их
-        if errors:
-            print(f"Errors creating embeddings: {errors}")
+            if has_embedding:
+                # Обновляем объект, если embedding_id был в БД, но не в объекте
+                if db_embedding_id and not m.embedding_id:
+                    m.embedding_id = db_embedding_id
+                memories_with_embeddings.append(m)
     
-    # Используем только воспоминания с embeddings для поиска
-    memories = memories_with_embeddings
+        print(f"Total memories: {len(all_memories)}, with embeddings: {len(memories_with_embeddings)}")
+        for m in all_memories:
+            db_emb = memory_embeddings_map.get(m.id)
+            print(f"  Memory {m.id}: obj.embedding_id={repr(m.embedding_id)}, db.embedding_id={repr(db_emb)}")
+    
+        # Если есть воспоминания без embeddings, пытаемся создать их
+        if len(memories_with_embeddings) < len(all_memories):
+            from app.services.ai_tasks import upsert_memory_embedding
+        
+            created = 0
+            errors = []
+            for memory in all_memories:
+                # Проверяем, что embedding_id действительно отсутствует
+                has_embedding = False
+                if memory.embedding_id:
+                    if isinstance(memory.embedding_id, str):
+                        has_embedding = bool(memory.embedding_id.strip())
+                    else:
+                        has_embedding = bool(memory.embedding_id)
+            
+                if not has_embedding:
+                    try:
+                        # Используем get_embedding, который уже импортирован в начале функции
+                        embedding = await get_embedding(memory.content)
+                        vector_id = await upsert_memory_embedding(
+                            memory_id=memory.id,
+                            memorial_id=request.memorial_id,
+                            text=memory.content,
+                            embedding=embedding,
+                            title=memory.title
+                        )
+                        memory.embedding_id = vector_id
+                        created += 1
+                        print(f"Created embedding for memory {memory.id}: {vector_id}")
+                    except Exception as e:
+                        error_msg = f"Failed to create embedding for memory {memory.id}: {str(e)}"
+                        print(f"Warning: {error_msg}")
+                        errors.append(error_msg)
+        
+            if created > 0:
+                try:
+                    db.commit()
+                    print(f"✅ Committed {created} embeddings to database")
+                    # Сбрасываем кэш сессии и перезагружаем объекты
+                    db.expire_all()
+                    # Перезагружаем все объекты из БД
+                    for memory in all_memories:
+                        db.refresh(memory)
+                    # Пересчитываем список с embeddings
+                    memories_with_embeddings = []
+                    for m in all_memories:
+                        db.refresh(m)
+                        if m.embedding_id and (isinstance(m.embedding_id, str) and m.embedding_id.strip() or m.embedding_id):
+                            memories_with_embeddings.append(m)
+                    print(f"✅ After refresh: {len(memories_with_embeddings)} memories with embeddings")
+                except Exception as commit_error:
+                    print(f"❌ ERROR committing embeddings: {commit_error}")
+                    import traceback
+                    traceback.print_exc()
+                    db.rollback()
+        
+            # Если были ошибки, логируем их
+            if errors:
+                print(f"Errors creating embeddings: {errors}")
+    
+        # Используем только воспоминания с embeddings для поиска
+        memories = memories_with_embeddings
     
     try:
-        # Создание embedding вопроса
-        question_embedding = await get_embedding(request.question)
-        
-        # Поиск релевантных воспоминаний в векторной БД
-        # Понижаем порог для лучшего поиска, особенно для общих вопросов
-        similar_memories = await search_similar_memories(
-            memorial_ids=search_memorial_ids,
-            query_embedding=question_embedding,
-            top_k=5,
-            min_score=0.1  # Низкий порог — длинные тексты дают размытые embeddings
-        )
-        
-        print(f"🔍 Found {len(similar_memories)} similar memories for question: '{request.question}'")
-        for i, mem in enumerate(similar_memories):
-            print(f"  {i+1}. Memory ID: {mem.get('memory_id')}, Score: {mem.get('score', 0):.3f}, Title: {mem.get('title', 'N/A')}")
-        
-        # ВАЖНО: Всегда получаем полный текст из БД, так как в векторной БД
-        # текст может быть обрезанным (например, только 1000 символов в Qdrant payload)
-        context_chunks = []
         has_family_context = False
-        for mem in similar_memories:
-            memory_id = mem.get("memory_id")
-            source_memorial_id = mem.get("source_memorial_id")
-            if memory_id:
-                # Всегда получаем полный текст из БД для гарантии полноты контекста
-                memory = db.query(Memory).filter(Memory.id == memory_id, Memory.status == "approved", Memory.memorial_id.in_(search_memorial_ids)).first()
-                if memory:
-                    text = memory.content
-                    # Добавляем метку, если воспоминание от родственника
-                    if source_memorial_id and source_memorial_id != request.memorial_id and source_memorial_id in family_memorial_map:
-                        rel_name, rel_type = family_memorial_map[source_memorial_id]
-                        if request.language == "en":
-                            label = f"[From memories of {rel_name} ({rel_type})]: "
-                        else:
-                            label = f"[Из воспоминаний {rel_name} ({rel_type})]: "
-                        text = label + text
-                        has_family_context = True
-                    context_chunks.append({
-                        "text": text,
-                        "memory_id": memory.id,
-                        "score": mem.get("score", 0),
-                        "title": memory.title,
-                        "source_memorial_id": source_memorial_id,
-                    })
-                    print(f"✅ Added context chunk: Memory #{memory.id}, text length: {len(memory.content)} chars")
-                else:
-                    print(f"⚠️ Memory {memory_id} not found in database")
-            elif mem.get("text"):
-                # Fallback: если memory_id нет, используем текст из payload
-                # (но это не должно происходить в нормальной работе)
-                context_chunks.append(mem)
-                print(f"⚠️ Using text from payload (no memory_id): {len(mem.get('text', ''))} chars")
+        similar_memories = []
+        if overview:
+            context_chunks = overview_context(all_memories, request.memorial_id)
+        else:
+            # Создание embedding вопроса
+            question_embedding = await get_embedding(request.question)
+        
+            # Поиск релевантных воспоминаний в векторной БД
+            # Понижаем порог для лучшего поиска, особенно для общих вопросов
+            similar_memories = await search_similar_memories(
+                memorial_ids=search_memorial_ids,
+                query_embedding=question_embedding,
+                top_k=5,
+                min_score=0.1  # Низкий порог — длинные тексты дают размытые embeddings
+            )
+        
+            print(f"🔍 Found {len(similar_memories)} similar memories for question: '{request.question}'")
+            for i, mem in enumerate(similar_memories):
+                print(f"  {i+1}. Memory ID: {mem.get('memory_id')}, Score: {mem.get('score', 0):.3f}, Title: {mem.get('title', 'N/A')}")
+        
+            # ВАЖНО: Всегда получаем полный текст из БД, так как в векторной БД
+            # текст может быть обрезанным (например, только 1000 символов в Qdrant payload)
+            context_chunks = []
+            for mem in similar_memories:
+                memory_id = mem.get("memory_id")
+                source_memorial_id = mem.get("source_memorial_id")
+                if memory_id:
+                    # Всегда получаем полный текст из БД для гарантии полноты контекста
+                    memory = db.query(Memory).filter(Memory.id == memory_id, Memory.status == "approved", Memory.memorial_id.in_(search_memorial_ids)).first()
+                    if memory:
+                        text = memory.content
+                        # Добавляем метку, если воспоминание от родственника
+                        if source_memorial_id and source_memorial_id != request.memorial_id and source_memorial_id in family_memorial_map:
+                            rel_name, rel_type = family_memorial_map[source_memorial_id]
+                            if request.language == "en":
+                                label = f"[From memories of {rel_name} ({rel_type})]: "
+                            else:
+                                label = f"[Из воспоминаний {rel_name} ({rel_type})]: "
+                            text = label + text
+                            has_family_context = True
+                        context_chunks.append({
+                            "text": text,
+                            "memory_id": memory.id,
+                            "score": mem.get("score", 0),
+                            "title": memory.title,
+                            "source_memorial_id": source_memorial_id,
+                        })
+                        print(f"✅ Added context chunk: Memory #{memory.id}, text length: {len(memory.content)} chars")
+                    else:
+                        print(f"⚠️ Memory {memory_id} not found in database")
+                elif mem.get("text"):
+                    # Fallback: если memory_id нет, используем текст из payload
+                    # (но это не должно происходить в нормальной работе)
+                    context_chunks.append(mem)
+                    print(f"⚠️ Using text from payload (no memory_id): {len(mem.get('text', ''))} chars")
         
         # Fallback: векторный поиск пуст (часто на проде — новый пустой Qdrant/volume при той же Postgres,
         # или порог score отфильтровал всё), хотя воспоминания в БД есть.
@@ -812,7 +819,7 @@ async def get_animation_status_endpoint(
 @router.post("/voice/preview")
 async def preview_voice_model(
     memorial_id: int,
-    model: Literal["s1", "s2-pro", "s2.1-pro"],
+    model: Literal["s2-pro", "s2.1-pro"],
     language: Literal["ru", "en"] = "ru",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -834,7 +841,7 @@ async def preview_voice_model(
 @router.patch("/voice/model")
 def select_voice_model(
     memorial_id: int,
-    model: Literal["s1", "s2-pro", "s2.1-pro"],
+    model: Literal["s2-pro", "s2.1-pro"],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1065,6 +1072,7 @@ async def sync_family_memories_endpoint(
     memorial_id: int,
     dry_run: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Memory Sync Agent: находит упоминания родственников в воспоминаниях мемориала
@@ -1072,8 +1080,16 @@ async def sync_family_memories_endpoint(
 
     dry_run=true — только анализирует, не записывает в БД.
     """
+    require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    from app.models import MemorialAccess
+    from app.auth import has_site_wide_memorial_owner
+    allowed = None if has_site_wide_memorial_owner(current_user) else {
+        mid for (mid,) in db.query(MemorialAccess.memorial_id).filter(
+            MemorialAccess.user_id == current_user.id,
+            MemorialAccess.role.in_([UserRole.EDITOR, UserRole.OWNER])).all()
+    }
     try:
-        result = await sync_family_memories(memorial_id=memorial_id, db=db, dry_run=dry_run)
+        result = await sync_family_memories(memorial_id=memorial_id, db=db, dry_run=dry_run, allowed_memorial_ids=allowed)
         return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

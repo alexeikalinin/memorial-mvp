@@ -31,6 +31,8 @@ function MemorialPublic() {
   const [qrBlobUrl, setQrBlobUrl] = useState(null)
   const [qrLoading, setQrLoading] = useState(false)
   const [requestSent, setRequestSent] = useState(false)
+  const [requestRole, setRequestRole] = useState('editor')
+  const [requestMessage, setRequestMessage] = useState('')
   const [requestLoading, setRequestLoading] = useState(false)
   const [requestError, setRequestError] = useState(null)
 
@@ -100,6 +102,8 @@ function MemorialPublic() {
         setLoading(false)
       }
     }
+    setRequestSent(false)
+    setRequestMessage('')
     loadData()
   }, [id])
 
@@ -138,7 +142,7 @@ function MemorialPublic() {
     setRequestLoading(true)
     setRequestError(null)
     try {
-      await accessAPI.requestAccess(id, { requested_role: 'viewer' })
+      await accessAPI.requestAccess(id, { requested_role: requestRole, message: requestMessage.trim() || null })
       setRequestSent(true)
     } catch (err) {
       const detail = err.response?.data?.detail
@@ -451,13 +455,18 @@ function MemorialPublic() {
       </div>
 
       {/* ── Request Access (для авторизованных без доступа) ── */}
-      {user && !memorial.current_user_role && !memorial.is_public && (
+      {user && (!memorial.current_user_role || memorial.current_user_role === 'viewer') && (
         <div className="public-request-access">
           {requestSent ? (
             <p className="request-access-sent">✓ {t('public.access_request_sent')}</p>
           ) : (
             <>
-              <p className="request-access-hint">{t('public.no_access_hint')}</p>
+              <p className="request-access-hint">{lang === 'ru' ? 'Это ваш родственник? Можно попросить владельца разрешить вам дополнять страницу. Родство не выдаёт права автоматически.' : 'Is this your relative? Ask the owner for permission to contribute. Kinship does not automatically grant access.'}</p>
+              <label>{lang === 'ru' ? 'Какой доступ нужен?' : 'Requested access'}<select value={requestRole} onChange={e => setRequestRole(e.target.value)}>
+                <option value="editor">{lang === 'ru' ? 'Редактировать и дополнять' : 'Edit and contribute'}</option>
+                {!memorial.current_user_role && <option value="viewer">{lang === 'ru' ? 'Просматривать' : 'View'}</option>}
+              </select></label>
+              <label>{lang === 'ru' ? 'Кем вы приходитесь человеку? Пояснение для владельца' : 'Your relationship to this person / message to owner'}<textarea maxLength={2000} value={requestMessage} onChange={e => setRequestMessage(e.target.value)} /></label>
               {requestError && <p className="request-access-error">{requestError}</p>}
               <button
                 className="btn-request-access"

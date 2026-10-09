@@ -274,8 +274,8 @@ def test_duplicate_request_upsert(auth_client, memorial, client, second_user_hea
     assert len(pending) == 1
 
 
-def test_request_when_already_have_access(auth_client, memorial, client, second_user_headers):
-    """Пользователь с уже выданным доступом не может подавать заявку → 400."""
+def test_viewer_can_request_editor_upgrade(auth_client, memorial, client, second_user_headers):
+    """Просматривающий может запросить редактирование, без автоматического повышения."""
     # Выдаём доступ
     auth_client.post(
         f"/api/v1/memorials/{memorial['id']}/access",
@@ -287,7 +287,7 @@ def test_request_when_already_have_access(auth_client, memorial, client, second_
         json={"requested_role": "editor"},
         headers=second_user_headers,
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 201
 
 
 def test_non_owner_cannot_list_access(client, auth_client, memorial, second_user_headers):

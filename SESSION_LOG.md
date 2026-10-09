@@ -1,10 +1,180 @@
+## 2026-10-09 — Превью с более явным женским профилем
+
+По дополнительному запросу во время подготовки общего выпуска показана отдельная AI-версия: волосы в виде золотых прядей переходят в линии бесконечности и пиксели, профиль более женский. Сохранено design-previews/current-logo-feminine-hair-v1.png. Надпись/подпись сохранены; новая версия не применяется к production без выбора пользователя.
+
+## 2026-10-09 — Общий выпуск и логотип с подписью на двух фонах
+
+Пользователь явно поручил использовать везде логотип с ВСПОМИНАЙ на всю ширину vspomin.ai, адаптировать светлый фон и push/deploy вместе с остальными готовыми правками. Прозрачные AI-cutout попытки дали артефакты, поэтому сохранён уже чистый production знак/wordmark и добавлена нативная SVG-подпись textLength=1547, x514; никакого изменения формы знака. Light SVG имеет бронзовую цветовую матрицу, тёмный сохраняет тёплое золото. Header light, hero/landing/footer dark; все пять auth-страниц используют полный BrandVisual light. Убран старый brightness-фильтр шапки, сохранено reduced-motion. Браузерное сравнение подтверждено и сохранено design-previews/logo-light-dark-proof.png. Старые версии остаются в design-previews.
+
+В общий выпуск включаются уже подготовленные семейное дерево/уведомления/передача владения, ограничения видимости и циклов, overview воспоминаний, перевод legacy S1 на S2-pro и их тесты. Временная PostgreSQL15 в Docker: создание четырёх новых таблиц и повторный create_all прошли. 11 frontend-тестов, frontend build и критический flake8 прошли. Первый полный backend-прогон с локальной .env упёрся во внешнее S3 (5 cover-photo failures), остановлен; повторяется полностью offline с внешними ключами/хранилищем отключёнными. GitHub авторизация восстановлена пользователем через device flow.
+
+## 2026-10-09 — Золотой логотип опубликован; русская подпись в превью
+
+По явному запросу пользователя выбран current-logo-warm-gold.png. Подготовлен прозрачный вариант current-logo-warm-gold-transparent.png; обновлены brand-flame.svg/static в frontend/src/assets и frontend/landing/images, logo-mark.png для auth. В SVG сохранено лёгкое мерцание двух огоньков и reduced-motion. Прежние активы сохранены в design-previews/brand-before-warm-gold; исходные генерации и все итерации остаются в design-previews/logo-chat-originals.
+
+Коммит 5297844 содержит только 5 активов. GitHub push не прошёл: сохранённый токен аккаунта невалиден. Чистая release-копия /private/tmp/memorial-logo-release собрана успешно. Первый deploy без project link вызвал неоднозначность services, следующую попытку отклонил auto-review. После подтверждения точного проекта prj_B3C7STI6HUELC6SNUARVTdtryxMo и успешного vercel build --prod с полученными настройками повторная проверка одобрила deploy --prebuilt. Production READY dpl_4s72NbGYLHoRnbXDtQqhD5wr1dS8; alias https://memorial-mvp.vercel.app. Публичный images/brand-flame.svg скачан и побайтно совпал с выбранным активом. Build обеих частей сайта успешен. Прочие локальные правки не включены.
+
+Дополнительное превью с подписью ВСПОМИНАЙ: design-previews/current-logo-warm-gold-ru.png. Пользователь попросил растянуть подпись на всю ширину vspomin.ai; отдельная imagegen-правка. Эта подпись пока только превью, в опубликованную версию не включена.
+
+## 2026-10-09 — Текущий логотип проекта в тёплом золоте
+
+Проверены BrandVisual/Layout/Home: используется brand-flame.svg, static sibling brand-flame-static.svg. Статичный SVG отрендерен в design-previews/current-logo-reference.png. Built-in imagegen: edit current lockup using v7 only as warm metallic gold color reference, preserve pixel profile/infinity/wordmark/flames. Превью design-previews/current-logo-warm-gold.png. AI-версия для сравнения, не точная замена SVG; исходные production assets/код не менялись.
+
+## 2026-10-09 — Правое кольцо компактнее, золотая пыль слева убрана
+
+Пользователь одобрил направление v6 и попросил слегка поджать правую петлю влево, убрать шум/золотую пыль слева. Built-in imagegen: compress right lobe horizontally7–9%, preserve vertical size/profile/hair/text spacing/flames; remove all airborne dust around left loop, preserve memory photos above right. Результат design-previews/logo-chat-originals/05-option2-clean-v7.png. Визуально правый край сдвинут влево, фон слева очищен. Превью, сайт без изменений.
+
+## 2026-10-09 — Отступ надписи и уменьшение огоньков
+
+По запросу пользователя built-in imagegen выполнил локальную правку v5: lower wordmark/subtitle, reduce flames to65%, preserve upper mark. Результат design-previews/logo-chat-originals/05-option2-spacing-v6.png: увеличен просвет между огоньками и волосами. Сайт без изменений.
+
+## 2026-10-09 — Небольшое уменьшение правого кольца
+
+По замечанию пользователя правое кольцо v4 чуть больше. Built-in imagegen выполнил тонкую правку: уменьшить внутреннюю область справа примерно6–8%, приподнять нижнюю дугу, сохранить положение головы и прочие элементы. Результат design-previews/logo-chat-originals/05-option2-balanced-v5.png. Это визуальное превью; точное равенство площадей не измерялось. Сайт без изменений.
+
+## 2026-10-09 — Голова вправо и раскрытие правого кольца
+
+По запросу пользователя built-in imagegen отредактировал v3: move head right, enlarge right negative space to match left, hair along outer arcs. Результат design-previews/logo-chat-originals/05-option2-head-right-v4.png. Правая внутренняя область заметно раскрыта; фотографии перенесены над верхней дугой для освобождения кольца. Математическое равенство площадей не проверено; превью для оценки пользователя. Сайт без изменений.
+
+## 2026-10-09 — Нижняя правая дуга варианта2
+
+Пользователь выбрал вариант2 и приложил красную направляющую для углубления нижней правой дуги. Built-in imagegen: change only lower-right gold arc following red guide, preserve profile/hair/upper arcs/left lobe/text; remove annotation. Результат design-previews/logo-chat-originals/05-option2-lower-arc-v3.png. Нижние экстремумы визуально стали ближе, точная геометрия не измерялась. Сайт не менялся, ждём оценки.
+
+## 2026-10-09 — Четыре превью пропорций логотипа №5
+
+По запросу пользователя built-in imagegen подготовил 2×2 comparison board: 1 широкие кольца/малая голова, 2 округлые/средняя, 3 широкие/крупная, 4 компактные/малая. Исходник05, сохранить gold/profile/hair; prompt требует симметричный infinity scaffold до интеграции головы. Файл design-previews/logo-chat-originals/05-four-proportions-preview.png. Геометрическая симметрия генерацией не гарантирована: правая часть остаётся визуально отличной. Предложено выбрать композицию для следующей доработки. Сайт без изменений.
+
+## 2026-10-09 — Доработка выбранного логотипа №5
+
+Пользователь выбрал исходник05: сохранить профиль справа и переход волос в ленты, выровнять пропорции колец. Built-in imagegen выполнил две правки: 05-refined-board-v1.png и крупный 05-refined-mark-v2.png в design-previews/logo-chat-originals/. Prompt: edit original05, equal width/height of infinity lobes, centered crossing, preserve gold/profile/hair/memory particles/wordmark/flames. Визуально приблизили размеры; математическая симметрия не подтверждена и остаточная разница контуров сохраняется. Это preview, сайт не обновлялся. Следующий шаг — оценка пользователем и точная геометрия при финализации.
+
+## 2026-10-09 — Исходные генерации логотипа из ChatGPT
+
+По просьбе пользователя из чата «Идеи логотипа VSPOMIN.AI» (6ac82047-68d8-83ed-8d96-ce10d6a1a0a3) через Chrome и кнопку Скачать получены 10 оригинальных PNG. Сохранены без изменений в design-previews/logo-chat-originals/01.png–10.png; номера соответствуют галерее просмотрщика, хронология не подтверждена. Новая генерация и изменения сайта не выполнялись. Следующий шаг — выбор исходника и конкретных правок пользователем.
+
+## 2026-10-09 — S1 исключена из выбора Fish Audio
+
+По просьбе пользователя после приложенного предупреждения Fish о retirement S1 убрана из UI сравнения, Literal preview/select API допускает только s2-pro/s2.1-pro. Значение по умолчанию в config и .env.example — s2-pro, согласно выбранной пользователем модели. Новый services/voice_models.py согласованно разрешает legacy s1 в сохранённом выборе/серверном env как s2-pro при status и реальном TTS HTTP заголовке; voice_id/reference_id не меняются, сохранённые s2-pro/s2.1-pro сохраняют приоритет. DB не переписывалась, production пока не обновлён.
+
+Обновлены два устаревших CI-теста голосовой анимации: поле model, speed/pronunciations/model аргументы. Новые проверки запрещают выбор/preview S1 и проверяют фактический HTTP model для legacy S1 и сохранение reference_id.24 теста прошли (voice preview, AI mocked, memory overview), frontend build и diff-check успешны. Платные запросы не выполнялись. Commit/push/deploy не выполнялись; параллельные изменения других задач сохранены.
+
+## 2026-10-09 — Исправление общих вопросов к архиву воспоминаний
+
+По запросу «исправь обработку» добавлен services/memory_overview.py: узкое распознавание RU/EN вопросов о себе/жизни, без захвата тематических, текущих или составных запросов. Для overview avatar/chat получает одобренные непустые воспоминания прямо из БД (до30 записей,18k символов с равной долей для каждой), обходя embeddings/indexing/vector search. Конкретные вопросы сохраняют прежнюю RAG-ветку. В generate_rag_response добавлена инструкция для общего рассказа:1–3 подтверждённых биографических факта считаются прямым ответом, без требования буквального «помню». Exact quotes и независимый verifier остаются обязательными.
+
+Добавлен test_memory_overview.py: регистр/пунктуация RU/EN, запрет расширения тематических/current/invention-вопросов,9 approved memories без embeddings, исключение pending, бюджет контекста, принятие/отказ независимого verifier. Проверки:22 passed (новые тесты + test_visitor_flow), компиляция Python и diff-check успешны. Платных OpenAI/Fish запросов не выполнялось. Production не обновлён, commit/push не выполнялись. Существующие параллельные изменения семейного дерева и других модулей сохранены.
+
+## 2026-10-09 — Проверка S2-pro после уточнения о S1 в CI
+
+В production мемориале318 через Chrome открыт диалог настройки голоса: s2-pro — используется. Выбор не менялся, платные preview/чат/загрузка не запускались. S1 в CI — значение по умолчанию для нового тестового мемориала без voice_tts_model. Код сохраняет выбор в Memorial.voice_tts_model; avatar/chat передаёт его generate_speech, Fish TTS ставит выбранную модель в заголовок model, fallback FISH_AUDIO_MODEL применяется при пустом выборе. Создание clone /model отдельно от TTS: запись сохраняется как reference_id, в запросе создания параметра s1/s2-pro нет. Настройка пользователя S2-pro подтверждена интерфейсом; реальный платный запрос Fish не выполнялся.
+
+## 2026-10-09 — Логи CI прочитаны через авторизованный Chrome
+
+После уточнения пользователя о входе в браузере прочитан реальный лог CI #130 (37849572878/job/113558845025) через Chrome. Итог GitHub: 2 failed, 240 passed, 10 skipped, 671 warnings за499.22s. Оба падения — test_voice_reply_starts_video_animation[True/False], лишнее поле model:s1 относительно устаревшего ожидаемого JSON. Ошибка семейных связей из локального параллельного прогона в этом CI отсутствует. Доступ через браузер работает; повторная авторизация CLI для чтения этих логов не нужна. CLI отдельно имеет недействительный сохранённый токен. Изменения тестов, push и повторный запуск не выполнялись.
+
+## 2026-10-09 — Реализация семейного дерева и согласования прав
+
+Пользователь разрешил реализацию согласованного сценария. Сохранены существующее портретное дерево, поколения, линии супругов/бывших супругов, масштаб и ручная расстановка. Добавлены выделение человека и боковая панель, поиск доступных/публичных страниц, быстрый приватный мемориал, похожие страницы, явное направление связи, необязательная связь при обычном создании, защита повтора после частичного сбоя. Живой человек требует подтверждения согласия в обеих формах. Общие родители предлагаются отдельными снятыми флажками, не создаются автоматически.
+
+Между владельцами — отдельные запросы связи с принять/отклонить/отменить, публичность независима от страницы и прав редактирования. Поиск и пять читателей графа фильтруют доступность до обхода, семейный RAG и синхронизация защищены теми же правами. Запрещены циклы/дубли/конфликты поколений. Новые sidecar-таблицы создаются create_all; реальные старые связи без согласия скрываются от посторонних, канонические EN демо сохранены.
+
+Существующие запросы доступа расширены повышением viewer→editor, пояснением родства. Реализованы предложение передачи владения только реальным владельцем, принятие подтверждённым получателем, сохранение прежнему владельцу editor либо отзыв доступа, отмена устаревших запросов связи. Владение и права не выдаются автоматически за родство.
+
+Проверки: 92 backend family/access/workflow + семейный RAG + удаление/повтор публичности =94 прошли; 8 frontend helper-тестов; frontend build и строгий backend flake8 успешны. UI с двумя аккаунтами прошёл поиск→согласие→создание родителей→передача владения, выбор человека и мобильную ширину; отдельно повтор связи после искусственного503 без дубля. Полный CI не заявлен зелёным: ранее выявленные два voice-теста не изменялись. Проверка выполнялась на отдельной копии SQLite `/tmp/vspomin-family-review.db`, не на продакшене или исходной базе. Старые отсутствующие auth-колонки и статус воспоминаний исправлены только в этой временной копии для теста, не в продукте.
+
+Подробные сценарии, API/таблицы, проверки и оставшиеся отдельные этапы: docs/FAMILY_TREE_IMPLEMENTATION_2026-10-09.md. Реализован первый рабочий этап; модерация споров, полный журнал правок/восстановление, email/push, фильтры поиска и серверная дозагрузка графа ещё отдельные задачи. Снимки artifacts/family-tree-review/. Публикация/коммит/push в этой сессии не выполнялись. Прежние изменения других задач сохранены.
+
+## 2026-10-09 — Диагностика красных GitHub Actions CI
+
+По запросу «проверь» проверены GitHub Actions CI #130 (37849572878, 61006b8) и #129. Установка зависимостей и flake8 успешны; падает Run tests (около 8m23s). Детальные логи через GitHub API недоступны текущей авторизации: HTTP403 Must have admin rights to Repository. Аннотации содержат только exit1 и предупреждения, не traceback.
+
+Локально воспроизведены два падения test_ai_mocked.py::test_voice_reply_starts_video_animation[True/False]: ожидаемый JSON tts/status не включает добавленное поле model (s1). Дальнейшее ожидание generate_speech также устарело: реальный вызов передаёт speed, pronunciations, model. Исходники и CI не исправлялись, push/re-run не выполнялись.
+
+Дополнительный полный прогон с временным внешним pytest-plugin, отключающим delay очереди embeddings, и пустыми AI/email-ключами: 249 passed / 3 failed за92.43s. Третье падение test_family_relationships_full.py::TestValidation::test_different_types_between_same_pair_allowed (409 вместо201) относится к одновременно изменявшемуся незакоммиченному backend/app/api/family.py; его нельзя считать причиной опубликованного CI. Два медленных прогона без plugin остановлены после завершения дополнительного полного прогона. CI не поднимает Redis, создание воспоминаний пробует Celery и замедляет тесты. Рекомендация: обновить ожидания тестов голоса и изолировать очередь в тестовом окружении; зелёный GitHub run пока не подтверждён.
+
+## 2026-10-09 — Аудит переезда на vspomin.ai
+
+Подтверждён домен vspomin.ai, первые рынки РБ/РФ, платёжный провайдер не выбран. Подготовлен docs/VSPOMIN_DOMAIN_MIGRATION_PLAN_2026-10-09.md: inventory бренда/хостов, routing /app, frontend/backend URL, QR/invites/mail/media/OAuth/billing, внешние кабинеты, пошаговый переход/rollback и критерии закрытого теста. Повторный поиск tracked text приложен с номерами строк. Найдены QR helper с принудительным /app, billing fallback /app/app, Home /app/demo, Google без state/JWT в query/непроверенное связывание email. Предложены app.vspomin.ai и api.vspomin.ai, отдельная схема root-app при необходимости. БД/коллекции/бакеты не переименовывать глобально. Платёжные кандидаты требуют страны/статуса продавца и актуального подтверждения РБ/РФ способов оплаты. Проверены официальные документы Vercel/Railway/Google/Яндекс/Resend/ЮKassa/WEBPAY. Кабинеты и production env/DNS в этой сессии не проверены; runtime, DNS и платежи не менялись, тесты не запускались (изменена документация). Существующие локальные изменения сохранены.
+
+## 2026-10-09 — Approved warm invitation wording
+
+Applied user-selected invitation opening2 with ending1 to Russian memoryList.invite_sms. Memorial name stays verbatim in quotes, link appended. Frontend production build passed, pushed61006b8; Vercel production Ready, primary alias memorial-mvp.vercel.app confirmed. No recipient messaging or data changes.
+
+## 2026-10-09 — Реальное demo-дерево открыто, три дополнительных варианта
+
+Пользователь отметил, что первое preview не объясняет, чей ребёнок ниже, и попросил открыть существующее дерево и предложить дополнительные оформления с сохранением возможностей.
+
+Через Chrome /app/demo выбрана Kelly, Michael Robert Kelly (production ID2, отличается от локального ID18). Открыта /app/memorials/2?tab=family, загружено21 карточка/граничные ветви, «К этому человеку» приблизила Michael/Catherine/Sarah/Daniel. Tab1256942473 marked deliverable, оставлена пользователю. Fullscreen click не подтвердился переходом в fullscreen; заявляем только открытие/центрирование. Данные/координаты не сохранялись.
+
+Подготовлено frontend/public/family-tree-variants.html (vspomin-design-agent): три вида — классический холст, семейные блоки, слева направо. Explicit Sarah daughter и Daniel son Michael/Catherine; Emily daughter David/Jennifer, spouse Daniel. Родительские линии приходят в карточку ребёнка, супруги соединяются отдельно. Robert/Patricia отмечены бывшими супругами (как actual prod). При визуальной проверке исправлена ошибочная подстановка тётки Patricia Anne1901 вместо матери Patricia Ann Murphy1935–2010; сверено с локальной базой. Zoom/pan/focus/fit/выбор и ветвь родителей Emily, demo wizard existing Daniel/Emily без duplicate; полная интеграция ports/сохранения не выполнялась.
+
+Playwright локально: три вида, explicit son, выбор Sarah→список родителей, zoom, hide branch7nodes, absent search→disabled save, reopen reset, duplicate toast, viewport390 для всех3 без page overflow, no pageerror. Три desktop screenshots обновлены после исправления имени, artifacts/family-tree-review/variant-{1,2,3}.png. Browser security policy запретила открыть file:// нового preview в Chrome: не обходили. Пользователю доступны локальный HTML-link и screenshots; actual online tree открыт успешно.
+
+Обсуждение/рекомендация: docs/FAMILY_TREE_DESIGN_OPTIONS_2026-10-09.md. Сохранить нынешние функции, улучшить читаемый initial focus/подписи/union geometry. Production UI не менялся. Следующий шаг — выбор оформления и интеграция после privacy/cycle fixes из предыдущего аудита.
+
+## 2026-10-09 — Invitation sharing audit and exact memorial name
+
+Checked MemoryList invitation creation, token backend validation/revocation and ContributePage sharing. No external delivery provider: own invite API/database plus Web Share or Clipboard APIs. Removed name declension from invitation text, panel heading and native share title; Russian templates now use memorial quotes so nominative name is grammatical. Found onward sharing omitted Vite /app/ base; reused buildContributeInviteUrl. Handle native-share cancellation without unhandled rejection, show localized error on other failures. Build passed; all eight backend invite tests passed on isolated SQLite (initial test invocation inherited production DB config and failed DNS before tests; reran with explicit in-memory DATABASE_URL). No messages sent to anyone and no production invite/memory data changed. Pushed c5f91e6; Vercel production Ready at memorial-mvp.vercel.app. Actual outbound sharing not exercised; no authorization to message recipients.
+
+## 2026-10-09 — Fix blocked onboarding voice step
+
+User screenshot showed step6 with disabled Next after opening Chat. Found DOM MutationObserver scheduleMeasure cancels the shared animation frame used by initial find/scroll; async chat mounting could prevent target scrolling and leave ready=false indefinitely. Separated initial lookup frame from geometry-update frame and cancel both on cleanup. Three layout tests and production build passed. Pushed6ae9374; Vercel production Ready, alias memorial-mvp.vercel.app. Browser reproduction after this fix not repeated; prior production checks covered the normal path, this patch addresses the async frame cancellation seen on user screenshot.
+
+## 2026-10-09 — Проверка семейного дерева и два превью
+
+Запрос: найти тестовые мемориалы, проверить связывание и поколения, предложить упрощение и два дизайна до решения об изменении продукта.
+
+Найдены 43 EN demo memorials/152 directed relationships в backend/memorial.db и двух копиях. Проверены manifest, обратные связи, отсутствующие endpoints/самосвязи и parent/child поколения при каждом из43 корней: ошибок в найденных демо-данных нет. 54 теста family/manifest прошли с DATABASE_URL=sqlite:// USE_S3=false. Первоначальный запуск с окружением проекта упёрся в DNS Supabase; переключён на независимую in-memory базу.
+
+На отдельной in-memory базе API воспроизведены: анонимный full-tree публичного корня выдаёт имена приватных родственников; цепь предков допускает замыкание цикла (201); parent пара допускает противоречащий child (201). Код также классифицирует произвольные фамилии в Other по demo-конфигурации; форма использует общий select и числовой ID при пустом списке. Исправления продукта не применены: пользователь запросил аудит/предложения и превью до решения.
+
+Дизайн подготовлен vspomin-design-agent: frontend/public/family-tree-preview.html, переключаемые «Тёплое дерево»/«Семейный альбом», настоящая вымышленная Kelly-ветвь James, мастер поиска Patricia→sibling с однозначным предложением и добавлением только в preview. Playwright: desktop screenshot обоих видов, поиск без результата блокирует сохранение, сохранение сестры работает, viewport390 не имеет переполнения страницы, pageerror отсутствуют. Локальный Chromium потребовал стандартного sandbox escalation, auto review разрешил. Скриншоты artifacts/family-tree-review/{generations,album,mobile}.png. Внешний дизайн-проект/DesignSync недоступен.
+
+Подробности и порядок внедрения: docs/FAMILY_TREE_AUDIT_2026-10-09.md. Рабочие базы/production и текущий FamilyTree не менялись; live production end-to-end не проверялся. Следующий шаг: исправить приватность и валидацию, затем общий мастер связей и ветви по графу; согласовать визуальный вариант. Существующие изменения HANDOFF/SESSION_LOG/vite config сохранены.
+
+## 2026-10-09 — Onboarding pointer and geometry
+
+Found cursor unmounted when each step cleared rect, then remounted with no initial position; wrappers used instead of exact buttons; repeated scrollIntoView effect triggered on every rect update. Replaced with portal overlay and persistent pointer (initial=false), actual upload/voice buttons and checkbox pointer anchor. One scroll per step; requestAnimationFrame tracks scroll/resize and ResizeObserver tracks target/card sizes. Tooltip placement uses measured size and viewport bounds. Added Back/progress/Escape/focus containment, keyboard focus restoration, reduced-motion support, unavailable-target fallback and updated bilingual voice-wizard guidance. Three layout tests passed (mobile/desktop/short-screen bounds, placement, checkbox pointer); frontend build passed. Published9faa4ec. Browser traversed all five steps and Back; exact cursor coordinates match upload/invite/checkbox centers. Live test revealed async voice-status replaces anchor and shifts chat header; added child-list MutationObserver, font readiness and ResizeObserver rebinding to current anchor with geometry equality guard in ad18f9d. Verified async replacement on live ad18f9d: cursor matches actual Change button center exactly after voice status loads. User further noted automatic tab switches were easy to miss; added separate navigation steps highlighting Memories tab while still in Media and Chat tab while still in Memories, with explicit Open memories/Open chat buttons. New flow7steps, updated bilingual copy and responsive navigation. Published30212e7, Vercel Ready. Traversed all seven steps on production memorial318: Memories navigation shown while Media remains active, explicit Open memories leads to add-memory guidance; explicit Open chat leads to voice guidance; final checkbox step and Done restore focus to help button and remove overlay. Screenshot /private/tmp/onboarding-navigation.png. No paid API calls/data edits required.
+
+## 2026-10-09 — Guided voice setup
+
+Replaced inline scrolling voice panel with native modal dialog rendered through a portal, outside fixed-height chat. Four stages: recording upload/capture, original vs optional cleanup review, Fish-model comparison, completion. Persistent header/step indicator/footer; main action never scrolls with samples. Existing clone opens sound stage directly; replacement available explicitly. Clone success automatically advances to sound, selected model advances to confirmation, Done returns to chat and enables audio. Native dialog focus containment/Escape handling; close disabled during requests/recording. Retained existing samples and comparison API semantics; no paid Fish generation performed. Frontend build and diff check passed. Published commit a92ddca, Vercel Ready. Browser verified existing clone opens model stage, all three model buttons visible, S2 Pro remains selected, Keep current model opens completion, Done closes modal and enables voice replies. Replacement opens upload stage with Next disabled until a sample exists. Browser revealed global CSS reset overrides dialog positioning; fixed explicit inset/margin-auto and improved preview button contrast in follow-up4fc28c2. Full paid cloning/preview not repeated. Final4fc28c2 deployment Ready; browser confirms centered dialog, all three model buttons and pinned footer visible, selected S2 Pro preserved. Screenshot /private/tmp/voice-wizard.png. Browser session required normal Google reauthentication after deploy.
+
+## 2026-10-08 — Biography replaces inaccurate sample memories
+
+Rewrote memorial318 memories in third person using owner biography. Updated IDs1484,1485,1487–1491 and added1492–1493 (nine total): Novogrudok, school hockey, bass-guitar ensemble, Larisa, Katya1999-10-01, local factory/road organization, roadwork in Russia, respected supervisor/helping colleagues, family travel. Removed invented seaside/fishing/jazz/vinyl and habitual family-dinner stories by replacing their records. Deleted old vectors before updating, cleared embedding IDs to prevent stale facts in RAG. DB operation succeeded, count9. New-text OpenAI indexing awaits explicit consent; prior consent covered five earlier texts.
+
+## 2026-10-08 — Лестница annual тарифов с расширенным учетом расходов
+
+Предложены40/80/140 annual без видео: pages2/10/20, clones2/5/10, text100/300/700, voice5/15/40min(bytecaps). Расчет расширен support/setup/CAC5/paymentreserve6.1%+.30/refunds2%/fixed271.25 incl trademark recovery24months/VAT0or20 stress. At500 peruser profit=.91/2.31/3.57 безVAT либо .36/1.20/1.63 приVAT20. Mixed breakeven141/232. Создан memorial-plan-ladder.html inline, математическая динамика проверена5сценариями. Все неизвестные rates/reserves названы assumptions, не всеобъемлющая гарантия actual costs. UNIT_ECONOMICS обновлен. Production/Stripe не менялись. Next: agree audience budget, verify clone entitlement/charges, enforce all-quota cost caps, actual tax/CAC/support/free traffic.
+
+## 2026-10-08 — Расчет масштаба без видео
+
+По запросу пользователя расчет $40 annual для 100/500/1000/10000 paid: обновлен UNIT_ECONOMICS, создан memorial-growth-no-video.html (inline preview). Fixed199.583 одинаков для сравнения, не прогноз infrastructure at10k; variable .75 и3 сценарные. Low-use результат44.25/1019.58/2238.75/24183.75 monthly; active cost3 дает-180.75/-105.42/-11.25/1683.75. Труд/CAC/tax/free audience/знак отдельно; actual usage не измерен. Динамические вычисления проверены успешно. Тарифы/production не менялись.
+
+## 2026-10-08 — Превью экономики $40/год
+
+По запросу пользователя сделано интерактивное превью memorial-economics.html в директории визуализаций чата: annual price/N/variable/fixed/fee/VAT/CAC/trademark. Предыдущие $13/$29 объяснены как расчет целевой 70% маржи с модельными costs, не минимально возможная цена; пользователь отверг для своего рынка, текущая рабочая гипотеза $40/год и ограниченные AI-квоты. При 100 paid annual, fixed $199.583 и variable $0.75 результат $44.25/мес, при variable $3 — -$180.75. Минимальная цена на 100 в low-use сценарии $34.49; break-even82. Variable $0.75 лишь сценарий, не telemetry. Trademark upfront $1000 превращает годовой $531 остаток в -$469. Документ обновлен. Локальная проверка интерактивной логики: 6 сценариев passed. Production/Stripe/тарифы не менялись. Следующее: измерить costs и обеспечить bytes/tokens/media budgets, уточнить приватные Fish slots без подписки, страна Stripe/налоги/CAC.
+
+## 2026-10-08 — Cleanup before voice retry
+
+User explicitly requested deleting all current clones to free all 10 Fish slots. Deleted three private workspace voices (1da0e30513f14510a41c41dd1d1f376d, b0debdba38df468f8bbc54d8671ccb6f, b9d525c8582e4e5ca91bbd3ec41cf3da) via production Fish API. Cleared memorial318 voice_id, voice_provider and voice_tts_model after successful remote deletion; production remaining_fish_links=0. No recordings or chat audio deleted in this action.
+
+## 2026-10-08 — Уточнены реальные расходы владельца
+
+Railway $5/мес, Vercel free, Fish подписка оплачена $20 (период неизвестен), OpenAI $20/мес плюс ~$10 API balance, домен $350/2 года, план торгового знака $1,000. Обновлен UNIT_ECONOMICS_2026-10.md: база условно $59.58/мес без API, домен $14.58/мес, знак как разовый расход/цель возврата. Fish pay-as-you-go без обязательной API-подписки подтвержден; entitlement private clones и downgrade без подписки не подтверждены, не советуем отменять на предположении. Vercel Hobby non-commercial, платный коммерческий сценарий учтен. Фонд роста ~$300/мес с инструментом разработки/резервом/возвратом знака: при $13/$29 mix70/30 и модельных costs покрывается 24 monthly/30 annual клиентами. Ничего не отменялось/оплачивалось, сообщения support не отправлялись. Следующее: invoices Fish/OpenAI, Stripe country, стоимость фактического API, прочие счета.
+
+## 2026-10-08 — Анализ юнит-экономики и тарифов
+
+По запросу владельца изучены MONETIZATION, billing.py, billing API/config/AI и публичные цены Fish, Supabase, Railway, Vercel, OpenAI, Stripe, LemonSlice, Qdrant, Resend. Подготовлен docs/UNIT_ECONOMICS_2026-10.md: инвентарь расходов, предложение 2 страницы Plus/10 Family, общие семейные AI/storage квоты, расчет переменных расходов, комиссии, break-even, live-пакеты и резерв lifetime. Нынешние lifetime с ежемесячным AI без срока и live-квоты в сессиях признаны рискованными. Предложенные цены — гипотезы: $9/$19 старт либо $13/$29 при целевой 70% марже вклада и полном потреблении модельных квот. Фиксированный $200 — плановый бюджет, не реальный счет; $500 — сценарий чувствительности. Запрошены реальные платежи/страна Stripe/существующие покупатели. Продуктовые тарифы, Stripe и production не менялись. Тесты не нужны для аналитического документа. Следующее: подставить счета, внедрить cost accounting/квоты после согласования модели. Подробности и источники в документе.
+
 ## 2026-10-08 — Permanent owner admin, delegation and voice-model comparison
 
 - Following explicit user clarification, set production user 1alexeikalinin1@gmail.com `is_admin=True` in DB. Service owner identity is separately configured through SERVICE_OWNER_EMAIL (default this account), requires verified email, retains global admin rights and cannot be demoted through admin API.
 - Only service owner may list/grant/revoke global administrators. Recipients must exist, be active and have verified email. Delegated admins cannot delegate; per-memorial access stays editor/viewer only. Added owner-only management section to Detail → Access, and broadened real-owner helper to allow authenticated global admins (not investor demo visitors).
 - One Fish clone can be previewed with same fixed test text and speed1 on s1/s2-pro/s2.1-pro. Preview returns no-store MP3 bytes, no stored response files, no model creation/deletion. User-triggered generation is billed by Fish. Selected model persisted per memorial as voice_tts_model, then honored by subsequent chat; choosing clears browser preview object URLs. Samples retained when closing panel to support retry within same page.
-- Indexed memories 1487–1491 remain pending consent: automatic review rejected broad “continue” as consent for sending family text to OpenAI. Exact payload/destination question presented again; no further retry until explicit answer.
-- Checks: billing/sample/admin suites passed (58 tests), visitor+preview/admin suites passed (14), model-header propagation check added; frontend build passed. Deployment follows.
+- User explicitly approved sending the five texts to OpenAI. Indexed all memories 1487–1491 successfully into local production Qdrant and saved embedding IDs; production confirms indexed_memories=5.
+- Checks: billing/sample/admin suites passed (58 tests), visitor+preview/admin suites passed (14), model-header propagation check passed (admin+preview 4 tests); frontend build passed. Pushed 1356cd7 to main: Vercel Ready, Railway SUCCESS. Production confirms owner_admin=True, can_delegate_admin=True, chat_limit=None. Browser confirms unlimited chat, three comparison buttons and owner-only admin management with service owner listed. Screenshots: /private/tmp/voice-model-comparison.png, /private/tmp/service-admin-access.png. Paid live Fish previews were not generated by agent; preview routing/model headers validated with mocks.
 
 ## 2026-10-08 — Admin quota UI and five owner-provided memories
 

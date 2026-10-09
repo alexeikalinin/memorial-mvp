@@ -334,3 +334,58 @@ class GuestChatUsage(Base):
     memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False)
     chat_messages = Column(Integer, nullable=False, default=0)
     __table_args__ = (UniqueConstraint("guest_id", "memorial_id"),)
+
+
+class FamilyLinkPrivacy(Base):
+    """Visibility belongs to a pair of pages, independently of page visibility.
+
+    A separate table lets existing SQLite/Postgres installations adopt this feature
+    via create_all without altering the historical family_relationships table.
+    """
+    __tablename__ = "family_link_privacy"
+    id = Column(Integer, primary_key=True)
+    memorial_low = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False)
+    memorial_high = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False)
+    is_public = Column(Boolean, default=False, nullable=False)
+    __table_args__ = (UniqueConstraint("memorial_low", "memorial_high", name="uq_family_link_privacy"),)
+
+
+class FamilyLinkRequest(Base):
+    __tablename__ = "family_link_requests"
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    related_memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    requester_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    source_owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    relationship_type = Column(RelationshipTypeColumn(), nullable=False)
+    custom_label = Column(String(100))
+    notes = Column(Text)
+    nickname_for_visitor = Column(String(100))
+    is_public = Column(Boolean, default=False, nullable=False)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True))
+    reviewed_by = Column(Integer, ForeignKey("users.id"))
+
+
+class OwnershipTransfer(Base):
+    __tablename__ = "memorial_ownership_transfers"
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    keep_editor = Column(Boolean, default=True, nullable=False)
+    status = Column(String(20), default="pending", nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True))
+
+
+class MemorialAccessEvent(Base):
+    __tablename__ = "memorial_access_events"
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(40), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

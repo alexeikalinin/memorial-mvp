@@ -75,7 +75,7 @@ class Settings(BaseSettings):
 
     # Fish Audio (альтернатива ElevenLabs: клонирование голоса + TTS, дешевле по API)
     FISH_AUDIO_API_KEY: str = ""
-    FISH_AUDIO_MODEL: str = "s1"  # TTS-модель Fish Audio (см. https://docs.fish.audio)
+    FISH_AUDIO_MODEL: str = "s2-pro"  # TTS-модель Fish Audio (см. https://docs.fish.audio)
     # Провайдер, который используется по умолчанию для НОВЫХ клонов голоса.
     # Уже созданные голоса всегда используют провайдера, сохранённого в Memorial.voice_provider.
     TTS_PROVIDER: str = "elevenlabs"  # "elevenlabs" | "fish_audio"

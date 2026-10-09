@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-do
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import './AuthPage.css'
+import BrandVisual from '../components/BrandVisual'
 import { safeReturn } from '../utils/authReturn'
 
 export default function LoginPage() {
@@ -45,6 +46,7 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <BrandVisual className="auth-brand" tone="light" />
         <h1 className="auth-title">{t('auth.signin_title')}</h1>
         {resetSuccess && (
           <div className="auth-success-banner">

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { authAPI } from '../api/client'
 import './AuthPage.css'
+import BrandVisual from '../components/BrandVisual'
 import { safeReturn } from '../utils/authReturn'
 
 export default function RegisterPage() {
@@ -45,6 +46,7 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <BrandVisual className="auth-brand" tone="light" />
         <h1 className="auth-title">{t('auth.create_account_title')}</h1>
 
         <a
