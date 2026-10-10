@@ -401,5 +401,8 @@ class MemorialSign(Base):
     kind = Column(String(10), nullable=False)
     variant = Column(String(30), nullable=False)
     display_name = Column(String(80), nullable=False, default='')
+    comment = Column(String(500), nullable=True)
+    flower_type = Column(String(30), nullable=True)
+    flower_color = Column(String(20), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)

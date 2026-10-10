@@ -44,4 +44,4 @@ lightCandle=function(){const n=history.length;originalLight();if(history.length>
 confirmFlower=function(){const n=history.length;originalFlower();if(history.length>n)history[history.length-1].label=demoVisitors[activeVisitor].name+' оставил(а): '+flowerNames[flowerKind];renderDemo();syncVisitors()};
 setHour=function(h,b){originalHour(h,b);syncVisitors()};resetDemo=function(){originalReset();Object.values(demoVisitors).forEach(v=>Object.assign(v,{candleAt:null,flowerAt:null,flowerKind:null}));syncVisitors()};
 document.getElementById('demo-visitor').onchange=e=>{rememberVisitor();activeVisitor=e.target.value;({candleAt,flowerAt,flowerKind}=demoVisitors[activeVisitor]);renderDemo();syncVisitors()};
-</script><script src="memorial-editor-preview.js"></script></body></html>
+</script><script type="module" src="memorial-editor-preview.js"></script></body></html>

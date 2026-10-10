@@ -52,6 +52,12 @@ def _add_missing_columns():
         if "voice_provider" not in cols:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE memorials ADD COLUMN voice_provider VARCHAR(20)"))
+    if insp.has_table("memorial_signs"):
+        sign_columns = {c["name"] for c in insp.get_columns("memorial_signs")}
+        for column, size in (("comment", 500), ("flower_type", 30), ("flower_color", 20)):
+            if column not in sign_columns:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE memorial_signs ADD COLUMN {column} VARCHAR({size})"))
     if insp.has_table("users"):
         ucols = {c["name"] for c in insp.get_columns("users")}
         user_alters = []

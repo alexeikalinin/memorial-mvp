@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&family=Cormorant+Garamond:wght@300;400&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&family=Lora:wght@400;500&family=Merriweather:wght@400&family=PT+Serif:wght@400&family=Playfair+Display:wght@400;500&family=Roboto:wght@400;500&display=swap');
 .appearance-candle{position:absolute;right:-7px;bottom:-3px;width:30px;height:82px;object-fit:contain;pointer-events:none;z-index:3;filter:drop-shadow(0 3px 5px #0006)}
 .appearance-composition{position:relative;min-width:0;min-height:210px;display:flex;align-items:flex-start;padding-top:26px;flex:1}
 .appearance-quote{position:relative;z-index:1;font:italic 1.8rem/1.2 var(--font-serif,Georgia);white-space:pre-line;color:#e2cba7;margin:0;width:48%;overflow-wrap:anywhere}
@@ -15,3 +16,47 @@
 
 .appearance-editable-quote{max-height:112px;overflow:auto}@media(max-width:768px){.appearance-editable-quote{max-height:86px}}
 .appearance-edit-candle .appearance-cycle{top:auto;bottom:100%;left:50%;transform:translateX(-50%)}.appearance-edit-candle .appearance-drag-label{bottom:calc(100% + 30px)}.appearance-inline-editor .appearance-cycle,.appearance-inline-editor .appearance-drag-label{z-index:2}
+.appearance-font-serif{font-family:'Instrument Serif',Georgia,serif}.appearance-font-sans{font-family:Inter,Arial,sans-serif}.appearance-font-script{font-family:Caveat,'Segoe Script',cursive}.appearance-font-georgia{font-family:Georgia,serif}.appearance-font-playfair{font-family:'Playfair Display',Georgia,serif}.appearance-font-lora{font-family:Lora,Georgia,serif}.appearance-font-cormorant{font-family:'Cormorant Garamond',Georgia,serif}.appearance-font-merriweather{font-family:Merriweather,Georgia,serif}.appearance-font-pt_serif{font-family:'PT Serif',Georgia,serif}.appearance-font-roboto{font-family:Roboto,Arial,sans-serif}.appearance-item-name{width:285px}.appearance-display-name{margin:0;color:#f5efe6;font-weight:400;line-height:1.07;overflow-wrap:anywhere}.appearance-item-dates{width:285px}.appearance-display-dates{margin:0;color:#c4a882;line-height:1.3;overflow-wrap:anywhere}.appearance-edit-name{width:285px}.appearance-edit-dates{width:285px}.appearance-editor-name,.appearance-editor-dates{margin:0;line-height:1.07;color:#f5efe6;overflow-wrap:anywhere;pointer-events:none}.appearance-editor-dates{color:#c4a882;min-height:20px}.appearance-real-flowers{display:block;width:100%;height:auto}.appearance-edit-item>img,.appearance-edit-item>.appearance-real-flowers,.appearance-edit-item>.appearance-candle{pointer-events:none}.appearance-edit-item{cursor:default}.appearance-edit-item.selected{cursor:move}.appearance-guide{position:absolute;pointer-events:none;background:#edc77e;z-index:40}.appearance-guide-x{top:0;bottom:0;width:1px}.appearance-guide-y{left:0;right:0;height:1px}.memorial-hero:has(.appearance-stage) .memorial-hero-name,.memorial-hero:has(.appearance-stage) .memorial-hero-dates,.memorial-hero:has(.appearance-inline-editor) .memorial-hero-name,.memorial-hero:has(.appearance-inline-editor) .memorial-hero-dates,.public-hero:has(.appearance-stage) .public-name,.public-hero:has(.appearance-stage) .public-years{display:none}.preview-react-active>.name{visibility:hidden}.appearance-editor-bar>span:first-child{font-weight:500}.appearance-tooltip{white-space:pre-line}.appearance-item-unlit .appearance-candle{filter:brightness(.8)}
+@media(max-width:768px){.appearance-item-name,.appearance-edit-name{width:180px}.appearance-display-name,.appearance-editor-name{font-size:29px!important}.appearance-item-dates,.appearance-edit-dates{width:180px}.appearance-display-dates,.appearance-editor-dates{font-size:13px!important}.appearance-edit-flowers{width:175px}.appearance-item-flowers{width:175px}}
+.appearance-flower-sprite{display:block;width:100%;aspect-ratio:1;background-image:url('/memorial-appearance/atlases/flowers-6x6-v2.png');background-size:600% 600%;background-repeat:no-repeat}.appearance-candle-sprite{display:block;aspect-ratio:1;background-image:url('/memorial-appearance/atlases/candles-5x2-v1.png');background-size:500% 200%;background-repeat:no-repeat;position:relative!important;right:auto!important;bottom:auto!important;object-fit:unset}.appearance-sprite-flame{position:absolute;left:50%;width:13%;height:18%;transform:translate(-50%,-100%);filter:drop-shadow(0 0 5px #faba64);animation:appearanceFlicker 5s ease-in-out infinite}.appearance-item-unlit .appearance-sprite-flame{display:none}.appearance-item-flowers{width:230px}.appearance-edit-flowers{width:230px}.appearance-item-candle{width:88px;height:88px}.appearance-edit-candle{width:100px;height:100px}.appearance-edit-candle .appearance-candle{width:100%;height:100%}.appearance-edit-item>.appearance-real-flowers,.appearance-edit-item>.appearance-candle{pointer-events:none}.appearance-cycle{max-width:285px;white-space:normal;text-align:center;min-width:160px}.appearance-cycle span{line-height:1.3}.appearance-item .appearance-art-button{display:block;width:100%}.appearance-item-name,.appearance-item-dates{pointer-events:none}.appearance-font-script .appearance-editor-name{font-weight:400}@media(max-width:768px){.appearance-item-flowers,.appearance-edit-flowers{width:155px}.appearance-item-candle{width:55px;height:55px}.appearance-edit-candle{width:64px;height:64px}.appearance-cycle{min-width:125px;max-width:170px}.appearance-item-name,.appearance-edit-name{width:180px}}
+
+@media(max-width:768px){.appearance-display-name,.appearance-editor-name{font-size:calc(var(--text-size,48px)*.625)!important}.appearance-display-dates,.appearance-editor-dates{font-size:calc(var(--text-size,16px)*.82)!important}}
+
+/* Fixed arrow positions independent of label length. */
+.appearance-cycle,.appearance-species-control{display:grid;grid-template-columns:30px 170px 30px;gap:6px;align-items:center;width:242px;min-width:242px;max-width:242px;box-sizing:border-box;text-align:center}
+.appearance-cycle button{width:30px;height:30px;padding:0}.appearance-cycle span{line-height:1.3}
+.appearance-edit-flowers .appearance-cycle{top:auto;bottom:0}.appearance-edit-candle .appearance-cycle{top:0;bottom:auto}
+.appearance-selection-tabs{display:flex;gap:5px;width:100%;flex-wrap:wrap}.appearance-selection-tabs button[aria-pressed=true]{background:#795c3b;color:white}
+.appearance-color-control{display:flex;gap:6px}.appearance-color-control button{width:24px;height:24px;padding:0;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px #ac9574}.appearance-color-control button[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #795c3b}
+.appearance-mobile .appearance-item{left:var(--mobile-x);top:var(--mobile-y);transform:translate(-50%,-50%) scale(var(--mobile-scale))}
+.appearance-mobile .appearance-item-name,.appearance-mobile .appearance-edit-name,.appearance-mobile .appearance-item-dates,.appearance-mobile .appearance-edit-dates{width:164px}
+.appearance-mobile .appearance-display-name,.appearance-mobile .appearance-editor-name{font-size:calc(var(--text-size,48px)*.625)!important}.appearance-mobile .appearance-display-dates,.appearance-mobile .appearance-editor-dates{font-size:calc(var(--text-size,16px)*.82)!important}
+.appearance-mobile .appearance-item-quote,.appearance-mobile .appearance-edit-quote{width:148px}.appearance-mobile .appearance-edit-quote textarea{font-size:calc(var(--text-size,28px)*.8)!important;min-height:100px}.appearance-mobile .appearance-editable-quote{font-size:calc(var(--text-size,28px)*.8)!important;max-height:115px}
+.appearance-mobile .appearance-item-flowers,.appearance-mobile .appearance-edit-flowers{width:142px}.appearance-mobile .appearance-item-candle,.appearance-mobile .appearance-edit-candle{width:58px;height:58px}
+.hero:has(.appearance-mobile),.memorial-hero:has(.appearance-mobile),.public-hero:has(.appearance-mobile){height:390px;min-height:390px;position:relative}.hero:has(.appearance-mobile) .avatar{position:absolute;left:16px;top:20px;width:100px;height:125px;margin:0}
+.hero:has(.appearance-inline-editor),.memorial-hero:has(.appearance-inline-editor){overflow:visible;margin-bottom:185px}.hero:has(.appearance-mobile.appearance-inline-editor),.memorial-hero:has(.appearance-mobile.appearance-inline-editor){margin-bottom:245px}.appearance-mobile .appearance-editor-bar{gap:8px;padding:10px;touch-action:auto}
+
+/* Identity always stays above decorative objects, including during editing. */
+.appearance-item-quote,.appearance-edit-quote{z-index:2}
+.appearance-item-flowers,.appearance-item-candle,.appearance-edit-flowers,.appearance-edit-candle{z-index:1}
+.appearance-item-name,.appearance-item-dates,.appearance-edit-name,.appearance-edit-dates{z-index:5}
+.appearance-display-name,.appearance-display-dates,.appearance-editor-name,.appearance-editor-dates{text-shadow:0 1px 3px #251c14,0 0 7px #251c14,0 0 12px #251c14}
+.appearance-editable-quote{max-height:none;overflow:visible}
+.appearance-edit-item{box-sizing:border-box}
+
+/* Only the item selected in the toolbar is editable. */
+.appearance-edit-item:not(.selected){border-color:transparent;pointer-events:none;cursor:default}
+.appearance-edit-item:not(.selected) .appearance-resize{display:none}
+.appearance-edit-item.selected{z-index:4;pointer-events:auto;border-color:#dfbc83}
+.appearance-edit-name,.appearance-edit-dates,.appearance-edit-name.selected,.appearance-edit-dates.selected{z-index:5}
+.appearance-inline-editor .appearance-cycle{position:fixed;left:auto;top:auto;bottom:auto;transform:none;z-index:50;margin-top:-48px}
+.appearance-edit-candle .appearance-cycle{margin-left:0}
+.appearance-tooltip{bottom:auto;top:100%;max-width:min(240px,calc(100vw - 32px));z-index:50}
+.hero:has(.appearance-stage){overflow:visible}
+.appearance-item-flowers .appearance-tooltip{left:auto;right:0;transform:none}
+.appearance-item-candle .appearance-tooltip{left:0;transform:none}
+.appearance-selection-tabs button:last-of-type{background:none;color:#705332}
+.appearance-selection-tabs button[aria-pressed=true]:last-of-type{background:#795c3b;color:white}
+
+.appearance-inline-editor>.appearance-cycle{position:absolute;left:auto;right:70px;top:12px;bottom:auto;margin:0;transform:none;z-index:60;background:#34271df5}
+.appearance-edit-item:not(.selected) textarea{background:transparent}

@@ -230,7 +230,7 @@ function MemorialPublic() {
             </p>
           )}
         </div>
-        <MemorialComposition settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
+        <MemorialComposition name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
       </div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />

@@ -22,13 +22,25 @@ class SignCreate(BaseModel):
     kind: Literal['candle', 'flowers']
     variant: str
     display_name: str = Field('', max_length=80)
+    comment: str = Field('', max_length=500)
+    flower_type: Optional[Literal['carnations', 'roses', 'chrysanthemums', 'lilies', 'asters', 'gerberas']] = None
+    flower_color: Optional[Literal['red', 'white', 'yellow', 'pink', 'purple', 'blue']] = None
 
     @model_validator(mode='after')
     def valid_variant(self):
-        choices = {'candle': {'classic', 'taper', 'votive', 'lampada', 'lantern'},
-                   'flowers': {'red_carnations', 'white_carnations'}}
+        choices = {'candle': {'classic', 'taper', 'votive', 'lampada', 'lantern', 'pillar', 'beeswax', 'tea_light', 'memorial_glass', 'oil_lamp'},
+                   'flowers': {'red_carnations', 'white_carnations', 'carnations', 'roses', 'chrysanthemums', 'lilies', 'asters', 'gerberas'}}
         if self.variant not in choices[self.kind]:
             raise ValueError('Invalid variant for this sign')
+        if self.kind == 'candle' and (self.flower_type or self.flower_color):
+            raise ValueError('Flower choices apply only to flowers')
+        if self.kind == 'flowers':
+            legacy_type = 'carnations' if self.variant.endswith('_carnations') else self.variant
+            if self.flower_type and self.flower_type != legacy_type:
+                raise ValueError('Flower type must match variant')
+            self.flower_type = self.flower_type or legacy_type
+            self.flower_color = self.flower_color or ('white' if self.variant == 'white_carnations' else 'red')
+        self.comment = self.comment.strip()
         self.display_name = self.display_name.strip()
         return self
 
@@ -42,7 +54,7 @@ def utc(value):
 
 def serialize(sign):
     result = {key: getattr(sign, key) for key in
-              ('id', 'kind', 'variant', 'display_name')}
+              ('id', 'kind', 'variant', 'display_name', 'comment', 'flower_type', 'flower_color')}
     result.update(created_at=utc(sign.created_at), expires_at=utc(sign.expires_at))
     return result
 
@@ -83,7 +95,8 @@ def leave_sign(request: Request, memorial_id: int, body: SignCreate,
         db.commit()
         return serialize(existing)
     sign = MemorialSign(memorial_id=memorial_id, visitor_key=key, kind=body.kind,
-                        variant=body.variant, display_name=body.display_name,
+                        variant=body.variant, display_name=body.display_name, comment=body.comment,
+                        flower_type=body.flower_type, flower_color=body.flower_color,
                         created_at=now, expires_at=now + timedelta(hours=24))
     db.add(sign)
     db.commit()

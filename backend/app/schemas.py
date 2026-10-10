@@ -106,7 +106,12 @@ class AppearanceElement(BaseModel):
         extra = 'forbid'
 
 
+FontChoice = Literal["serif", "sans", "script", "georgia", "playfair", "lora", "cormorant", "merriweather", "pt_serif", "roboto"]
+
+
 class AppearanceLayout(BaseModel):
+    name: Optional[AppearanceElement] = None
+    dates: Optional[AppearanceElement] = None
     quote: Optional[AppearanceElement] = None
     flowers: Optional[AppearanceElement] = None
     candle: Optional[AppearanceElement] = None
@@ -117,12 +122,18 @@ class AppearanceLayout(BaseModel):
 
 class MemorialAppearance(BaseModel):
     quote: str = Field('', max_length=160)
-    font: Literal['serif', 'sans', 'script'] = 'serif'
+    font: FontChoice = 'serif'
+    font_name: FontChoice = 'serif'
+    font_size_name: int = Field(48, ge=16, le=72)
+    font_dates: FontChoice = 'serif'
+    font_size_dates: int = Field(16, ge=10, le=32)
+    flower_type: Optional[Literal['carnations', 'roses', 'chrysanthemums', 'lilies', 'asters', 'gerberas']] = None
+    flower_color: Optional[Literal['red', 'white', 'yellow', 'pink', 'purple', 'blue']] = None
     font_size: int = Field(28, ge=16, le=48)
     layout: Optional[AppearanceLayout] = None
     layout_mobile: Optional[AppearanceLayout] = None
     flowers: Literal['red_carnations', 'white_carnations', 'none'] = 'red_carnations'
-    candle: Literal['classic', 'taper', 'votive', 'lantern', 'lampada', 'none'] = 'classic'
+    candle: Literal['classic', 'taper', 'votive', 'lantern', 'lampada', 'pillar', 'beeswax', 'tea_light', 'memorial_glass', 'oil_lamp', 'none'] = 'classic'
 
     class Config:
         extra = 'forbid'

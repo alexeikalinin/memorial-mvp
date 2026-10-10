@@ -537,8 +537,8 @@ function MemorialDetail() {
             </div></details>
           </div>
         </div>
-        {!showAppearance && <MemorialComposition settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
-      {showAppearance && canEdit && <MemorialAppearanceEditor settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
+        {!showAppearance && <MemorialComposition name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
+      {showAppearance && canEdit && <MemorialAppearanceEditor name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />
       {showSignsJournal && isActualOwner && <MemorialSignsJournal memorialId={id} lang={lang} onClose={() => setShowSignsJournal(false)} />}
