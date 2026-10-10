@@ -60,3 +60,5 @@
 
 .appearance-inline-editor>.appearance-cycle{position:absolute;left:auto;right:70px;top:12px;bottom:auto;margin:0;transform:none;z-index:60;background:#34271df5}
 .appearance-edit-item:not(.selected) textarea{background:transparent}
+
+.appearance-stage{z-index:4}.appearance-item-candle{z-index:3}
