@@ -3,7 +3,17 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
   "rewrites": [
-    { "source": "/app/(.*)", "destination": "/app/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/memorial-appearance/:path*",
+      "destination": "/app/memorial-appearance/:path*"
+    },
+    {
+      "source": "/app/(.*)",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
