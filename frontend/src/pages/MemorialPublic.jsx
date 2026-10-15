@@ -88,26 +88,31 @@ function MemorialPublic() {
   }
 
   useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
     const loadData = async () => {
       try {
         const [memRes, memoriesRes, mediaRes] = await Promise.all([
           memorialsAPI.get(id),
-          memorialsAPI.getMemories(id),
+          user ? memorialsAPI.getMemories(id) : Promise.resolve({ data: [] }),
           memorialsAPI.getMedia(id),
         ])
+        if (cancelled) return
         setMemorial(memRes.data)
         setMemories(Array.isArray(memoriesRes.data) ? memoriesRes.data : [])
         setPhotos(Array.isArray(mediaRes.data) ? mediaRes.data.filter((m) => m.media_type === 'photo') : [])
       } catch (err) {
-        setError([401, 403].includes(err.response?.status) ? t('public.private_memorial') : err.response?.data?.detail || t('public.not_found'))
+        if (!cancelled) setError([401, 403].includes(err.response?.status) ? t('public.private_memorial') : err.response?.data?.detail || t('public.not_found'))
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     setRequestSent(false)
     setRequestMessage('')
     loadData()
-  }, [id])
+    return () => { cancelled = true }
+  }, [id, user?.id])
 
   useEffect(() => {
     if (loading || error || hash !== '#chat') return
@@ -309,6 +314,7 @@ function MemorialPublic() {
               <DemoTutorial step={3} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
             )}
             <AvatarChat
+                onAddMemory={memorial.is_public ? () => { setActiveSection('memories'); setShowMemoryForm(true); setMemSubmitted(false) } : undefined}
                 textOnly
                 disabled={chatLimitReached}
                 memorialId={id}
@@ -325,7 +331,13 @@ function MemorialPublic() {
             {(tutorialStep === 4 || tutorialStep === 5) && (
               <DemoTutorial step={tutorialStep} type="hint" onNext={advanceTutorial} onSkip={skipTutorial} />
             )}
-            {memories.length === 0 ? (
+            {!user ? (
+              <div className="public-memory-invitation">
+                <h3>{t('public.share_memory')}</h3>
+                <p>{t('public.memory_invitation')}</p>
+                <p>{t('public.memory_review_hint')}</p>
+              </div>
+            ) : memories.length === 0 ? (
               <div className="public-empty"><p>{t('public.no_memories')}</p></div>
             ) : (
               memories.map((m) => (

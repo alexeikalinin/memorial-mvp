@@ -1359,3 +1359,6 @@
 .voice-wizard .voice-clone-panel-header, .voice-wizard-steps { flex-shrink: 0; }
 .voice-wizard .btn-voice-change { color: #6e4d33; background: #eee4d6; border-color: #c9bba6; min-height: 40px; }
 .voice-wizard .btn-voice-change:disabled { opacity: .55; }
+
+.chat-memory-invitation { margin-top: .75rem; padding: .85rem; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--surface); }
+.chat-memory-invitation p { margin: 0 0 .65rem; font-size: .9rem; line-height: 1.5; }

@@ -325,7 +325,7 @@ async def _avatar_chat_response(
             if request.language == "en" else
             "У меня пока нет информации об этом человеке. Пожалуйста, добавьте воспоминания, чтобы я мог отвечать на вопросы."
         )
-        return AvatarChatResponse(answer=no_mem_msg, sources=[])
+        return AvatarChatResponse(answer=no_mem_msg, sources=[], suggest_memory=True)
     
     overview = is_memory_overview_question(request.question)
     if not overview:
@@ -482,6 +482,7 @@ async def _avatar_chat_response(
                         context_chunks.append({
                             "text": text,
                             "memory_id": memory.id,
+                            "contributor_name": memory.contributor_name,
                             "score": mem.get("score", 0),
                             "title": memory.title,
                             "source_memorial_id": source_memorial_id,
@@ -509,6 +510,7 @@ async def _avatar_chat_response(
                 context_chunks.append({
                     "text": piece,
                     "memory_id": memory.id,
+                    "contributor_name": memory.contributor_name,
                     "score": 0.35,
                     "title": memory.title,
                     "source_memorial_id": request.memorial_id,
@@ -523,7 +525,7 @@ async def _avatar_chat_response(
                 if request.language == "en" else
                 "Я не могу найти информацию об этом в моих воспоминаниях."
             )
-            return AvatarChatResponse(answer=no_info_msg, sources=[])
+            return AvatarChatResponse(answer=no_info_msg, sources=[], suggest_memory=True)
         
         print(f"📝 Created {len(context_chunks)} context chunks for RAG")
         
@@ -675,7 +677,8 @@ async def _avatar_chat_response(
             audio_error=audio_error,
             animation_task_id=animation_task_id,
             animation_provider=animation_provider,
-            sources=sources
+            sources=sources,
+            suggest_memory=not bool(source_ids),
         )
     
     except Exception as e:

@@ -33,5 +33,6 @@ def overview_context(memories, memorial_id, max_chars=18000):
             if end >= 0:
                 text = text[:end + 1]
         chunks.append({'text': text, 'memory_id': memory.id, 'title': memory.title,
+                       'contributor_name': getattr(memory, 'contributor_name', None),
                        'score': 1.0, 'source_memorial_id': memorial_id})
     return chunks

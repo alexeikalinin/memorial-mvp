@@ -21,6 +21,7 @@ function ContributePage() {
   const [transcribing, setTranscribing] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [memoryTitle, setMemoryTitle] = useState('')
+  const [contributorName, setContributorName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [viralSharing, setViralSharing] = useState(false)
@@ -104,13 +105,14 @@ function ContributePage() {
   }
 
   const handleSave = async () => {
-    if (!transcript.trim()) return
+    if (!transcript.trim() || !contributorName.trim()) return
     setSaving(true)
     try {
       await memorialsAPI.createMemory(info.memorial_id, {
         title: memoryTitle || null,
         content: transcript,
         source: 'voice_invite',
+        contributor_name: contributorName.trim(),
       }, token)
       setSaved(true)
       setTranscript('')
@@ -201,6 +203,9 @@ function ContributePage() {
               </div>
             ) : (
               <>
+                <label htmlFor="contributor-name">{t('public.your_name')}</label>
+                <input id="contributor-name" className="mem-input" type="text" maxLength={100}
+                  value={contributorName} onChange={e => setContributorName(e.target.value)} required />
                 <div className="record-area">
                   {!recording && !audioBlob && !transcribing && (
                     <>
@@ -247,7 +252,7 @@ function ContributePage() {
                       <button
                         className="btn-save"
                         onClick={handleSave}
-                        disabled={saving || !transcript.trim()}
+                        disabled={saving || !transcript.trim() || !contributorName.trim()}
                       >
                         {saving ? t('contribute.btn_saving') : t('contribute.btn_save_memory')}
                       </button>
@@ -284,7 +289,7 @@ function ContributePage() {
                       <button
                         className="btn-save"
                         onClick={handleSave}
-                        disabled={saving}
+                        disabled={saving || !contributorName.trim()}
                       >
                         {saving ? t('contribute.btn_saving') : t('contribute.btn_save')}
                       </button>
@@ -299,6 +304,7 @@ function ContributePage() {
         {activeTab === 'chat' && info.permissions.chat && (
           <AvatarChat
             memorialId={info.memorial_id}
+            onAddMemory={info.permissions.add_memories ? () => setActiveTab('record') : undefined}
             inviteToken={token}
             textOnly
             coverPhotoId={info.cover_photo_id}

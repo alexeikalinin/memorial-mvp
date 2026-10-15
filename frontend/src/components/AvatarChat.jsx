@@ -60,7 +60,7 @@ function getPlayableAudioUrl(url) {
   return `${base}/media/audio/${url}`
 }
 
-function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, portraitSettings, onEditPortrait, canManageVoice = false, textOnly = false, disabled = false, inviteToken }) {
+function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, portraitSettings, onEditPortrait, canManageVoice = false, textOnly = false, disabled = false, inviteToken, onAddMemory }) {
   const location = useLocation()
   const [quotaBlocked, setQuotaBlocked] = useState(false)
   const [chatUsage, setChatUsage] = useState(null)
@@ -423,6 +423,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         videoUrl: null,
         videoStatus: response.data.animation_task_id ? 'pending' : null,
         sources: response.data.sources || [],
+        suggestMemory: response.data.suggest_memory === true,
       }
 
       setMessages((prev) => [...prev, assistantMessage])
@@ -838,6 +839,14 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             )}
             <div className="message-content">
               <p>{msg.text}</p>
+              {msg.role === 'assistant' && msg.suggestMemory && onAddMemory && (
+                <div className="chat-memory-invitation">
+                  <p>{t('chat.add_memory_hint')}</p>
+                  <button type="button" className="btn btn-secondary" onClick={onAddMemory}>
+                    {t('public.share_memory')}
+                  </button>
+                </div>
+              )}
               {msg.videoUrl ? (
                 <div className="video-container">
                   <video

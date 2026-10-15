@@ -14,7 +14,7 @@ function formatApiDetail(err) {
   return String(d)
 }
 
-function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canModerate = false, pendingMemories = [], pendingLoading = false, onApprove, onReject }) {
+function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canModerate = false, pendingMemories = [], pendingLoading = false, onApprove, onReject, composeRequest = 0 }) {
   const { lang, t } = useLanguage()
   const locale = lang === 'en' ? 'en-US' : 'ru-RU'
   const [showPending, setShowPending] = useState(false)
@@ -51,6 +51,10 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   useEffect(() => {
     loadMemories(debouncedQuery)
   }, [memorialId, debouncedQuery])
+
+  useEffect(() => {
+    if (composeRequest > 0 && canEdit) setShowForm(true)
+  }, [composeRequest, canEdit])
 
   const startRecording = async () => {
     try {
@@ -515,6 +519,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
                 <>
                   {memory.title && <h3>{memory.title}</h3>}
                   <p>{memory.content}</p>
+                  {canModerate && memory.contributor_name && (
+                    <p className="memory-contributor">{t('memoryList.contributor', { name: memory.contributor_name })}</p>
+                  )}
                   <div className="memory-meta">
                     {memory.event_date && (
                       <span className="event-date">
