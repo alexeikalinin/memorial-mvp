@@ -6,11 +6,7 @@ import { safeReturn } from '../utils/authReturn'
 import './AuthPage.css'
 import './PricingPage.css'
 
-const plans = [
-  { name: 'Plus', price: 40, pages: 2, storage: 1, text: 100, clones: 2, voice: 5 },
-  { name: 'Family', price: 80, pages: 10, storage: 3, text: 300, clones: 5, voice: 15 },
-  { name: 'Family Pro', price: 140, pages: 20, storage: 8, text: 700, clones: 10, voice: 40 },
-]
+import plans from '../data/planCatalog.json'
 
 export default function PricingPage() {
   const { lang } = useLanguage()
@@ -55,7 +51,7 @@ export default function PricingPage() {
       </article>
     </div>
     <p>{ru ? 'Лимиты общие для аккаунта и всех его мемориалов. Текстовые ответы и минуты голоса обновляются ежемесячно, не накапливаются. Минуты озвучивания ориентировочные. Видео не включено и пока недоступно.' : 'Limits are shared across the account and its memorials. Text replies and voice minutes renew monthly and do not roll over. Voice minutes are approximate. Video is not included and is currently unavailable.'}</p>
-    {usage && <p>{ru ? 'Текущий тариф: ' : 'Current plan: '}{usage.plan}</p>}
+    {usage && <p>{ru ? 'Текущий тариф: ' : 'Current plan: '}{usage.plan} · {usage.chat_messages_used}/{usage.chat_messages_limit ?? '∞'} {ru ? 'текстовых ответов за месяц' : 'text replies this month'}</p>}
     {params.get('checkout') === 'success' && <p role="status">{active ? (ru ? 'Тариф активирован. Можно вернуться к разговору.' : 'Your plan is active. Return to your conversation.') : (ru ? 'Ждём подтверждение оплаты. Обновите статус через несколько секунд.' : 'Waiting for payment confirmation. Refresh the status in a few seconds.')}</p>}
     {params.get('checkout') === 'cancel' && <p>{ru ? 'Оплата отменена. Ваш тариф не изменился.' : 'Payment cancelled. Your plan has not changed.'}</p>}
     {error && <p role="alert">{error}</p>}

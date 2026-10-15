@@ -1,3 +1,4 @@
+import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { createPortal } from 'react-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import apiClient, { aiAPI, memorialsAPI } from '../api/client'
@@ -17,14 +18,16 @@ function useVoiceRecorder() {
   const recorderRef = useRef(null)
   const chunksRef = useRef([])
 
+  useEffect(() => () => releaseRecorder(recorderRef.current), [])
+
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      const recorder = createAudioRecorder(stream)
       chunksRef.current = []
       recorder.ondataavailable = (e) => chunksRef.current.push(e.data)
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const blob = recordingBlob(chunksRef.current, recorder)
         setAudioBlob(blob)
         setAudioUrl(URL.createObjectURL(blob))
         stream.getTracks().forEach((t) => t.stop())
@@ -267,7 +270,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
   const handleAddRecording = () => {
     if (!voiceRecorder.audioBlob) return
-    const file = new File([voiceRecorder.audioBlob], `voice_clone_${voiceSamples.length + 1}.webm`, { type: 'audio/webm' })
+    const file = recordingFile(voiceRecorder.audioBlob, `voice_clone_${voiceSamples.length + 1}`)
     setVoiceSamples((prev) => [
       ...prev,
       { id: `${Date.now()}_rec_${Math.random()}`, file, originalUrl: sampleUrl(file), label: t('chat.voice_recording_label', { n: String(prev.length + 1) }) },

@@ -4,7 +4,7 @@ API endpoints для AI-функций: анимация фото и чат с �
 import logging
 import asyncio
 
-from fastapi import Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import Request, Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List, Literal
 from pathlib import Path
@@ -15,6 +15,7 @@ from app.services.voice_models import resolve_fish_model
 from app.services.memory_overview import is_memory_overview_question, overview_context
 from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
 
+from app.limiter import limiter
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner, require_memorial_access
 from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
@@ -1015,60 +1016,59 @@ async def upload_voice(
 
 
 @router.post("/transcribe")
+@limiter.limit("5/minute")
 async def transcribe_audio(
+    request: Request,
     audio_file: UploadFile = File(...),
-    language: str = "ru",
+    language: Optional[str] = Form(None),
+    query_language: Optional[str] = Query(None, alias="language"),
+    memorial_id: Optional[int] = Form(None),
+    invite_token: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
 ):
-    """
-    Транскрибировать аудио через OpenAI Whisper.
-    Принимает MP3/WAV/M4A/WebM, возвращает текст.
-    Используется для добавления голосовых воспоминаний.
-    """
+    """Transcribe an authorized memory recording, preserving its actual format."""
+    from datetime import datetime
+    if invite_token:
+        invite = db.query(MemorialInvite).filter(MemorialInvite.token == invite_token).first()
+        if (not invite or invite.memorial_id != memorial_id
+                or (invite.expires_at and invite.expires_at.replace(tzinfo=None) < datetime.utcnow())
+                or not (invite.permissions or {}).get("add_memories")):
+            raise HTTPException(403, "Invalid or expired recording invitation")
+    elif current_user:
+        if memorial_id is not None:
+            require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    else:
+        raise HTTPException(401, "A valid invitation or sign-in is required")
+    resolved_language = language or query_language or "ru"
+    if resolved_language not in ("ru", "en"):
+        raise HTTPException(400, "Choose Russian or English transcription")
+    suffix = Path(audio_file.filename or "recording.webm").suffix.lstrip(".").lower()
+    if suffix not in {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg"}:
+        raise HTTPException(400, "Upload MP3, WAV, M4A, MP4 or WebM audio")
+    # Read at most one byte over the provider limit, never an unbounded upload.
+    max_bytes = 25 * 1024 * 1024
+    contents = await audio_file.read(max_bytes + 1)
+    if not contents:
+        raise HTTPException(400, "The recording is empty. Please record again.")
+    if len(contents) > max_bytes:
+        raise HTTPException(413, "Audio must be no larger than 25 MB")
     if not settings.OPENAI_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OpenAI API key not configured"
-        )
-
-    # Допустимые форматы Whisper
-    allowed_audio = {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg"}
-    suffix = Path(audio_file.filename or "audio.webm").suffix.lstrip(".").lower()
-    if not suffix:
-        suffix = "webm"
-
-    contents = await audio_file.read()
-    if len(contents) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пустой аудиофайл"
-        )
-
-    tmp_path = None
+        raise HTTPException(503, "Speech recognition is temporarily unavailable")
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
-            tmp.write(contents)
-            tmp_path = tmp.name
-
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
-        with open(tmp_path, "rb") as f:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=f,
-                language=language,
-            )
-
-        return {"text": transcript.text, "language": language}
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка транскрипции: {str(e)}"
+        from openai import AsyncOpenAI, BadRequestError, RateLimitError, APITimeoutError
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, timeout=60, max_retries=1)
+        transcript = await client.audio.transcriptions.create(
+            model="whisper-1", file=(f"recording.{suffix}", contents), language=resolved_language,
         )
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+        return {"text": transcript.text, "language": resolved_language}
+    except BadRequestError:
+        raise HTTPException(400, "The audio could not be read. Try another recording or format.")
+    except (RateLimitError, APITimeoutError):
+        raise HTTPException(503, "Speech recognition is busy. Please retry shortly.")
+    except Exception:
+        logging.exception("Memory transcription failed")
+        raise HTTPException(503, "Speech recognition failed. You can retry or enter text manually.")
 
 
 @router.post("/family/sync-memories/{memorial_id}")

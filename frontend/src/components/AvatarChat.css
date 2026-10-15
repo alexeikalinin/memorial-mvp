@@ -1362,3 +1362,8 @@
 
 .chat-memory-invitation { margin-top: .75rem; padding: .85rem; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--surface); }
 .chat-memory-invitation p { margin: 0 0 .65rem; font-size: .9rem; line-height: 1.5; }
+.chat-memory-invitation { min-width:0; }
+.chat-memory-invitation button { display:block; width:100%; max-width:100%; min-width:0; white-space:normal; overflow-wrap:anywhere; }
+@media(max-width:480px){.message.assistant .message-content{max-width:calc(100% - 38px);min-width:0;padding:.75rem}.chat-memory-invitation{padding:.65rem}}
+.chat-input { min-width:0; }
+@media(max-width:768px){.chat-input{font-size:16px}.chat-panel{min-width:0}}

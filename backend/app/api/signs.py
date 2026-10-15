@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 from typing import Literal, Optional
 from sqlalchemy.orm import Session
 
-from app.auth import get_optional_user, get_current_user, require_memorial_access, require_actual_memorial_owner
+from app.auth import get_optional_authenticated_user, get_current_user, require_memorial_access, require_actual_memorial_owner
 from app.config import settings
 from app.db import get_db
 from app.limiter import limiter
@@ -61,7 +61,7 @@ def serialize(sign):
 
 @router.get('/{memorial_id}/signs')
 def active_signs(memorial_id: int, db: Session = Depends(get_db),
-                 current_user: Optional[User] = Depends(get_optional_user)):
+                 current_user: Optional[User] = Depends(get_optional_authenticated_user)):
     require_memorial_access(memorial_id, current_user, db, allow_public=True)
     now = datetime.now(timezone.utc)
     signs = db.query(MemorialSign).filter(MemorialSign.memorial_id == memorial_id,
@@ -75,7 +75,7 @@ def active_signs(memorial_id: int, db: Session = Depends(get_db),
 @limiter.limit('10/minute')
 def leave_sign(request: Request, memorial_id: int, body: SignCreate,
                visitor: Optional[str] = Header(None, alias='X-Memorial-Visitor'),
-               db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_optional_user)):
+               db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_optional_authenticated_user)):
     require_memorial_access(memorial_id, current_user, db, allow_public=True)
     if current_user:
         identity = f'user:{current_user.id}'
@@ -92,8 +92,11 @@ def leave_sign(request: Request, memorial_id: int, body: SignCreate,
                  MemorialSign.visitor_key == key, MemorialSign.kind == body.kind,
                  MemorialSign.expires_at > now).first()
     if existing:
+        for field in ('variant', 'display_name', 'comment', 'flower_type', 'flower_color'):
+            setattr(existing, field, getattr(body, field))
         db.commit()
-        return serialize(existing)
+        db.refresh(existing)
+        return {**serialize(existing), 'already_active': True}
     sign = MemorialSign(memorial_id=memorial_id, visitor_key=key, kind=body.kind,
                         variant=body.variant, display_name=body.display_name, comment=body.comment,
                         flower_type=body.flower_type, flower_color=body.flower_color,
@@ -101,7 +104,7 @@ def leave_sign(request: Request, memorial_id: int, body: SignCreate,
     db.add(sign)
     db.commit()
     db.refresh(sign)
-    return serialize(sign)
+    return {**serialize(sign), 'already_active': False}
 
 
 @router.get('/{memorial_id}/signs/journal')

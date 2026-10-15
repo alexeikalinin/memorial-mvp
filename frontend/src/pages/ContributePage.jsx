@@ -1,3 +1,4 @@
+import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
@@ -9,7 +10,7 @@ import './ContributePage.css'
 
 function ContributePage() {
   const { token } = useParams()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [info, setInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -29,11 +30,10 @@ function ContributePage() {
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
 
+  useEffect(() => () => releaseRecorder(mediaRecorderRef.current), [])
+
   useEffect(() => {
-    const stored = sessionStorage.getItem('invite_token')
-    if (!stored || stored !== token) {
-      sessionStorage.setItem('invite_token', token)
-    }
+    try { sessionStorage.setItem('invite_token', token) } catch { /* The URL remains the source of invitation access. */ }
     invitesAPI.validate(token)
       .then(res => setInfo(res.data))
       .catch(err => setError(err.response?.data?.detail || t('contribute.invalid_link')))
@@ -43,11 +43,11 @@ function ContributePage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream)
+      const recorder = createAudioRecorder(stream)
       chunksRef.current = []
       recorder.ondataavailable = e => chunksRef.current.push(e.data)
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const blob = recordingBlob(chunksRef.current, recorder)
         setAudioBlob(blob)
         stream.getTracks().forEach(t => t.stop())
         handleTranscribe(blob)
@@ -64,7 +64,7 @@ function ContributePage() {
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop()
       setRecording(false)
     }
@@ -73,8 +73,8 @@ function ContributePage() {
   const handleTranscribe = async (blob) => {
     setTranscribing(true)
     try {
-      const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
-      const res = await aiAPI.transcribe(file)
+      const file = recordingFile(blob)
+      const res = await aiAPI.transcribe(file, lang, { memorialId: info.memorial_id, inviteToken: token })
       setTranscript(res.data.text || '')
     } catch {
       setTranscript('')

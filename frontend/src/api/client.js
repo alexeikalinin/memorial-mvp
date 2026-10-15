@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getVisitorId } from '../utils/visitorIdentity'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
@@ -18,11 +19,12 @@ const apiClient = axios.create({
 
 // Добавляем Bearer token и текущий язык интерфейса (см. LanguageContext) к каждому запросу
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken')
+  let token, language = 'ru'
+  try { token = localStorage.getItem('authToken'); language = localStorage.getItem('lang') || 'ru' } catch { /* Restricted browser storage. */ }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  config.headers['X-Lang'] = localStorage.getItem('lang') || 'ru'
+  config.headers['X-Lang'] = language
   return config
 })
 
@@ -118,20 +120,18 @@ export const aiAPI = {
   animatePhoto: (data) => apiClient.post('/ai/photo/animate', data),
   getAnimationStatus: (data) => apiClient.post('/ai/animation/status', data),
   chat: (data) => {
-    let guestId = localStorage.getItem('guestChatId')
-    if (!guestId) {
-      guestId = crypto.randomUUID()
-      localStorage.setItem('guestChatId', guestId)
-    }
+    const guestId = getVisitorId('guestChatId')
     const { invite_token, ...body } = data
     return apiClient.post('/ai/avatar/chat', body, { params: { guest_id: guestId, invite_token } })
   },
   syncFamilyMemories: (memorialId, dryRun = false) =>
     apiClient.post(`/ai/family/sync-memories/${memorialId}?dry_run=${dryRun}`),
-  transcribe: (audioFile, language = 'ru') => {
+  transcribe: (audioFile, language = 'ru', { memorialId, inviteToken } = {}) => {
     const formData = new FormData()
     formData.append('audio_file', audioFile)
     formData.append('language', language)
+    if (memorialId) formData.append('memorial_id', memorialId)
+    if (inviteToken) formData.append('invite_token', inviteToken)
     return apiClient.post('/ai/transcribe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })

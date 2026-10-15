@@ -18,6 +18,8 @@ def test_multiple_visitors_and_expiry(auth_client, client, db_session, monkeypat
     assert datetime.fromisoformat(first.json()['expires_at']).tzinfo is not None
     repeated = client.post(path, headers=first_headers, json={'kind': 'candle', 'variant': 'lantern'})
     assert repeated.json()['id'] == first.json()['id']
+    assert repeated.json()['variant'] == 'lantern'
+    assert repeated.json()['already_active'] is True
     assert repeated.json()['expires_at'] == first.json()['expires_at']
     second = client.post(path, headers={'Authorization': '', 'X-Memorial-Visitor': str(uuid4())}, json={'kind': 'candle', 'variant': 'lampada'})
     assert second.json()['id'] != first.json()['id']
