@@ -14,6 +14,7 @@ export default {
     password: 'Пароль',
     password_min_placeholder: 'Минимум 8 символов',
     username: 'Имя пользователя',
+    username_hint: 'Имя вашего профиля. Для входа используйте email или Google.',
     username_placeholder: 'username',
     full_name: 'Полное имя',
     full_name_placeholder: 'Иван Иванов',

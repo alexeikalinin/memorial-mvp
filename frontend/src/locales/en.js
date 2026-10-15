@@ -14,6 +14,7 @@ export default {
     password: 'Password',
     password_min_placeholder: 'Minimum 8 characters',
     username: 'Username',
+    username_hint: 'Your profile identifier. Sign in with email or Google.',
     username_placeholder: 'username',
     full_name: 'Full name',
     full_name_placeholder: 'John Smith',

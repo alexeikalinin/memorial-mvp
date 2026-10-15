@@ -40,6 +40,12 @@ function fittedLayout(value,kind,size,mobile){
  const scale=Math.max(.5,Math.min(source.scale,(size.width-gutter*2)/w,(size.height-gutter*2)/h))
  const hx=(w*scale/2+gutter)/Math.max(1,size.width),hy=(h*scale/2+gutter)/Math.max(1,size.height)
  const result={...source,scale,x:Math.max(hx,Math.min(1-hx,source.x)),y:Math.max(hy,Math.min(1-hy,source.y))}
+ // Default mobile candle rests beside the portrait's lower edge. Saved positions stay intact.
+ if(kind==='candle'&&mobile&&size.portrait&&!value?.candle){
+  const p=size.portrait
+  result.x=Math.max(hx,Math.min(1-hx,(p.right-p.width*.2+w*scale/2)/size.width))
+  result.y=Math.max(hy,Math.min(1-hy,(p.bottom-h*scale*.2)/size.height))
+ }
  if(kind==='candle'&&size.portrait){
   const p=size.portrait,left=result.x*size.width-w*scale/2,right=left+w*scale,top=result.y*size.height-h*scale/2
   if(left<p.right&&right>p.left&&top<p.bottom&&top+h*scale>p.top){

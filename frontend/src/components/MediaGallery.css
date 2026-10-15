@@ -243,6 +243,14 @@
   .audio-placeholder {
     height: 160px;
   }
+
+  .gallery-photo-open img {
+    height: auto;
+    max-height: 70dvh;
+    object-fit: contain;
+  }
+
+  .media-item:hover .gallery-photo-open img { transform: none; }
 }
 
 /* Album photo viewer */

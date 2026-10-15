@@ -89,6 +89,7 @@ export default function RegisterPage() {
               placeholder={t('auth.username_placeholder')}
               required
             />
+            <small className="auth-hint">{t('auth.username_hint')}</small>
           </div>
 
           <div className="auth-field">

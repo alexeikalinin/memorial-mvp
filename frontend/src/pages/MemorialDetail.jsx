@@ -522,7 +522,7 @@ function MemorialDetail() {
                 disabled={deleting}
                 title={t('detail.btn_delete')}
               >
-                {deleting ? t('detail.deleting') : '✕'}
+                {deleting ? t('detail.deleting') : `✕ ${lang === 'ru' ? 'Удалить мемориал' : 'Delete memorial'}`}
               </button>
             )}
             <button
@@ -532,7 +532,7 @@ function MemorialDetail() {
               title={t('onboarding.help_button')}
               aria-label={t('onboarding.help_button')}
             >
-              ?
+              ? {lang === 'ru' ? 'Как пользоваться' : 'How to use'}
             </button>
             </div></details>
           </div>
@@ -953,4 +953,3 @@ function MemorialDetail() {
 }
 
 export default MemorialDetail
-
