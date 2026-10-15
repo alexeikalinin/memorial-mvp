@@ -438,17 +438,22 @@ async def _avatar_chat_response(
         if overview:
             context_chunks = overview_context(all_memories, request.memorial_id)
         else:
-            # Создание embedding вопроса
-            question_embedding = await get_embedding(request.question)
-        
-            # Поиск релевантных воспоминаний в векторной БД
-            # Понижаем порог для лучшего поиска, особенно для общих вопросов
-            similar_memories = await search_similar_memories(
-                memorial_ids=search_memorial_ids,
-                query_embedding=question_embedding,
-                top_k=5,
-                min_score=0.1  # Низкий порог — длинные тексты дают размытые embeddings
-            )
+            # An unavailable or incomplete index must not hide approved DB memories.
+            try:
+                question_embedding = await get_embedding(request.question)
+                similar_memories = await search_similar_memories(
+                    memorial_ids=search_memorial_ids,
+                    query_embedding=question_embedding,
+                    top_k=5,
+                    min_score=0.1,
+                )
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Vector search unavailable for memorial %s; using approved DB memories",
+                    request.memorial_id, exc_info=True,
+                )
+                similar_memories = []
         
             print(f"🔍 Found {len(similar_memories)} similar memories for question: '{request.question}'")
             for i, mem in enumerate(similar_memories):
@@ -490,31 +495,27 @@ async def _avatar_chat_response(
                     context_chunks.append(mem)
                     print(f"⚠️ Using text from payload (no memory_id): {len(mem.get('text', ''))} chars")
         
-        # Fallback: векторный поиск пуст (часто на проде — новый пустой Qdrant/volume при той же Postgres,
-        # или порог score отфильтровал всё), хотя воспоминания в БД есть.
-        if not context_chunks and all_memories:
-            print(
-                f"⚠️ RAG returned no usable chunks; falling back to DB memories only "
-                f"(memorial_id={request.memorial_id}, count={len(all_memories)})"
-            )
-            max_chars = 18000
-            used = 0
-            for m in sorted(all_memories, key=lambda x: x.id, reverse=True):
-                if used >= max_chars:
-                    break
-                piece = (m.content or "").strip()
+        # A nonempty result can still be stale: include approved entries omitted
+        # by top-k/indexing, including newly moderated memories, within a budget.
+        if not overview:
+            included_ids = {chunk.get("memory_id") for chunk in context_chunks}
+            remaining = 18000
+            for memory in sorted(all_memories, key=lambda item: item.id, reverse=True):
+                if memory.id in included_ids or remaining <= 0:
+                    continue
+                piece = (memory.content or "").strip()[:remaining]
                 if not piece:
                     continue
-                take = piece[: max_chars - used]
                 context_chunks.append({
-                    "text": take,
-                    "memory_id": m.id,
+                    "text": piece,
+                    "memory_id": memory.id,
                     "score": 0.35,
-                    "title": m.title,
+                    "title": memory.title,
                     "source_memorial_id": request.memorial_id,
                 })
-                used += len(take)
-        
+                included_ids.add(memory.id)
+                remaining -= len(piece)
+
         if not context_chunks:
             print(f"❌ No context chunks after RAG + DB fallback (similar_hits={len(similar_memories)})")
             no_info_msg = (

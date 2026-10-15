@@ -898,7 +898,11 @@ async def approve_memory(
         from app.workers.worker import create_memory_embedding_task
         create_memory_embedding_task.delay(memory_id=mem.id, memorial_id=memorial_id, text=mem.content)
     except Exception:
-        pass
+        import logging
+        logging.getLogger(__name__).warning(
+            "Could not queue embedding for approved memory %s; chat uses DB fallback",
+            mem.id, exc_info=True,
+        )
     return mem
 
 

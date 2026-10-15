@@ -53,7 +53,7 @@ def test_appearance_layout_validation(auth_client, memorial):
     assert res.status_code == 200
     assert res.json()['appearance_settings']['layout']['flowers'] == {'x':.8, 'y':.6, 'scale':1.5}
     assert res.json()['appearance_settings']['layout'] == {'name': None, 'dates': None, 'flowers': {'x':.8, 'y':.6, 'scale':1.5}, 'quote':None, 'candle':None}
-    for bad in [{'font_size':49}, {'layout':{'flowers':{'x':2,'y':0}}}, {'layout':{'candle':{'x':.1,'y':.1,'scale':3}}}]:
+    for bad in [{'font_size':49}, {'layout':{'flowers':{'x':2,'y':0}}}, {'layout':{'candle':{'x':.1,'y':.1,'scale':11}}}]:
         assert auth_client.patch(path, json={'appearance_settings':bad}).status_code == 422
 
 

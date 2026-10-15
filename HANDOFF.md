@@ -1,3 +1,5 @@
+15.10: выпуск исправления moderation→chat подготовлен: vector context дополняется approved SQL memories, retrieval exceptions используют DB fallback; enqueue errors логируются. 300 passed, 846 warnings in 118.42s (0:01:58). Frontend build/11tests passed; уже опубликованный frontend10.10 синхронизирован в Git для сохранения при auto-deploy. Детали docs/MODERATED_MEMORY_CHAT_FIX_2026-10-15.md; SESSION_LOG.md.
+
 Контрольная точка по запросу владельца: checkpoint-2026-10-09-2305. 293backend/11frontendtests,build/flake8passed. Текущее состояние подготовлено кpush/deploy; инструкция отката docs/CHECKPOINT_2026-10-09_2305.md. Подробности SESSION_LOG.md.
 
 Локально готов inlineeditor композиции (стрелки/drag/resize/font/size, desktop/mobilelayout), подсказки и API знаков памяти24ч +ownerjournal «⋯ → Знаки памяти». 16backendtests/UIреальныхReactcomponents прошли. Durablepreview memorial-carnations-preview.html используетdemoadapter; app сохраняетнасервер. Production не опубликован. Документ docs/MEMORIAL_APPEARANCE_DESIGN.md; снимки artifacts/memorial-carnations/inline-editor-*.png/signs-journal.png. Подробности SESSION_LOG.md.
