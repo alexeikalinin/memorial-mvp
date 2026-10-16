@@ -87,3 +87,17 @@ def test_failed_attempt_not_retried_and_old_voice_kept(auth_client, memorial, db
     assert upload(auth_client,m.id).status_code == 409
     assert clone.await_count == 1 and m.voice_id == 'old'
     assert not list((tmp_path/'uploads/voices').iterdir())
+
+
+def test_missing_audio_processor_is_service_error_without_cloning(auth_client, memorial, monkeypatch, tmp_path):
+    from app.api import ai
+    monkeypatch.chdir(tmp_path)
+    probe = AsyncMock(side_effect=RuntimeError('Audio processing unavailable: FFmpeg'))
+    clone = AsyncMock()
+    monkeypatch.setattr(ai, 'validate_fish_sample_duration', probe)
+    monkeypatch.setattr(ai, 'create_custom_voice', clone)
+    response = upload(auth_client, memorial['id'])
+    assert response.status_code == 503
+    assert 'FFmpeg' in response.json()['detail']
+    assert clone.await_count == 0
+    assert not list((tmp_path / 'uploads/voices').iterdir())

@@ -1034,6 +1034,9 @@ async def upload_voice(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_str
         )
+    except RuntimeError as e:
+        _cleanup()
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         _cleanup()
         raise HTTPException(
