@@ -118,3 +118,38 @@ def test_speech_controls_are_bounded():
         AvatarChatRequest(memorial_id=1, question='Hi', speech_speed=4)
     with pytest.raises(ValidationError):
         AvatarChatRequest(memorial_id=1, question='Hi', pronunciations={str(i): 'word' for i in range(21)})
+
+
+@pytest.mark.parametrize('durations,valid', [([269.0], True), ([270.0], False), ([150.0, 120.0], False), ([100.0, 100.0], True)])
+def test_fish_total_duration_boundary(monkeypatch, durations, valid):
+    import json
+    from app.services import voice_samples
+    iterator = iter(durations)
+    async def probe(*args):
+        return json.dumps({'streams': [{'codec_type': 'audio'}], 'format': {'duration': next(iterator)}}).encode()
+    monkeypatch.setattr(voice_samples, '_run', probe)
+    paths = [Path(str(i)) for i in range(len(durations))]
+    if valid:
+        assert asyncio.run(voice_samples.validate_fish_sample_duration(paths)) == sum(durations)
+    else:
+        with pytest.raises(ValueError, match='4 минут 30 секунд'):
+            asyncio.run(voice_samples.validate_fish_sample_duration(paths))
+
+
+def test_fish_overlong_batch_never_calls_provider(auth_client, memorial, monkeypatch, tmp_path):
+    import json
+    from app.api import ai
+    from app.services import voice_samples
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(ai, 'check_tts_access', lambda user: None)
+    async def probe(*args):
+        return json.dumps({'streams': [{'codec_type': 'audio'}], 'format': {'duration': '270'}}).encode()
+    async def forbidden(*args, **kwargs):
+        pytest.fail('Overlong recordings must not reach Fish Audio')
+    monkeypatch.setattr(voice_samples, '_run', probe)
+    monkeypatch.setattr(ai, 'create_custom_voice', forbidden)
+    response = auth_client.post(f'/api/v1/ai/voice/upload?memorial_id={memorial["id"]}', files=[('audio_files', ('voice.wav', b'test', 'audio/wav'))], data={'provider': 'fish_audio'})
+    assert response.status_code == 400
+    assert '4 минут 30 секунд' in response.json()['detail']
+    assert not list((tmp_path / 'uploads/voices').iterdir())
+    assert not auth_client.get(f'/api/v1/memorials/{memorial["id"]}').json().get('voice_id')

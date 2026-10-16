@@ -11,9 +11,11 @@ from pathlib import Path
 
 import httpx
 
+from app.services.voice_library import preserve_current_voice, serialize_voice, reserve_voice
+from app.models import MemorialVoice
 from app.services.voice_models import resolve_fish_model
 from app.services.memory_overview import is_memory_overview_question, overview_context
-from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
+from app.services.voice_samples import prepare_voice_samples, clean_voice_sample, validate_fish_sample_duration, FISH_DURATION_ERROR
 
 from app.limiter import limiter
 from app.db import get_db
@@ -826,20 +828,34 @@ async def preview_voice_model(
     memorial_id: int,
     model: Literal["s2-pro", "s2.1-pro"],
     language: Literal["ru", "en"] = "ru",
+    version_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     memorial = require_actual_memorial_owner(memorial_id, current_user, db)
     check_tts_access(current_user)
     voice_id, provider = _resolve_tts_voice(memorial)
+    row = None
+    if version_id is not None:
+        row = db.query(MemorialVoice).filter_by(id=version_id, memorial_id=memorial.id, state="ready").populate_existing().with_for_update().first()
+        if not row:
+            raise HTTPException(status_code=404, detail="Сохранённый голос не найден.")
+        voice_id, provider = row.voice_id, row.provider
     if not voice_id or provider != "fish_audio":
         raise HTTPException(status_code=400, detail="Create a Fish Audio voice clone first")
     text = ("Привет. Это проверка звучания моего голоса. Послушайте, насколько естественно звучат слова и паузы между предложениями."
             if language == "ru" else "Hello. This is a test of my voice. Listen to how naturally the words sound, and to the pauses between sentences.")
+    import base64
+    cache_key = f'{model}:{language}:v1'
+    if row and (row.preview_cache or {}).get(cache_key):
+        return Response(base64.b64decode(row.preview_cache[cache_key]), media_type='audio/mpeg', headers={'Cache-Control': 'no-store'})
     try:
         audio = await generate_speech(text, voice_id=voice_id, provider=provider, speed=1, model=model)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row:
+        row.preview_cache = {**(row.preview_cache or {}), cache_key: base64.b64encode(audio).decode('ascii')}
+        db.commit()
     return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
@@ -948,15 +964,20 @@ async def upload_voice(
             if p.exists():
                 p.unlink()
 
-    # Запоминаем старый голос до перезаписи — после успешного клонирования удалим его
-    # у провайдера, чтобы не копились неиспользуемые модели в аккаунте.
-    old_voice_id = memorial.voice_id
-    old_voice_provider = memorial.voice_provider
+    saved_voice = None
 
     try:
         # Создаем кастомный клонированный голос через выбранного провайдера
         voice_provider_final = provider if provider in ("elevenlabs", "fish_audio") else settings.TTS_PROVIDER
+        if voice_provider_final == "fish_audio":
+            await validate_fish_sample_duration(temp_paths)
         voice_name_final = voice_name or f"{memorial.name} Voice"
+        saved_voice, reused = reserve_voice(db, memorial, temp_paths, voice_provider_final, voice_name_final)
+        if reused:
+            _cleanup()
+            return {'success': True, 'voice_id': saved_voice.voice_id, 'voice_provider': saved_voice.provider,
+                    'version_id': saved_voice.id, 'reused': True, 'active': serialize_voice(saved_voice, memorial)['active']}
+
         voice_id = await create_custom_voice(
             audio_file_paths=[str(p) for p in temp_paths],
             voice_name=voice_name_final,
@@ -964,21 +985,15 @@ async def upload_voice(
             provider=voice_provider_final,
         )
 
-        # Сохраняем voice_id и провайдера в мемориал (без провайдера voice_id непереносим между сервисами)
-        memorial.voice_id = voice_id
-        memorial.voice_provider = voice_provider_final
+        saved_voice.voice_id = voice_id
+        saved_voice.state = 'ready'
+        # Only the first candidate is selected automatically. Old voices remain reusable.
+        if not memorial.voice_id:
+            memorial.voice_id = voice_id
+            memorial.voice_provider = voice_provider_final
         db.commit()
         db.refresh(memorial)
-
         _cleanup()
-
-        # Удаляем старую модель голоса (best-effort — ошибка здесь не должна ломать ответ,
-        # новый голос уже сохранён и рабочий)
-        if old_voice_id and old_voice_id != voice_id:
-            try:
-                await delete_custom_voice(old_voice_id, old_voice_provider)
-            except Exception as cleanup_err:
-                print(f"Warning: failed to delete old voice {old_voice_id}: {cleanup_err}")
 
         return {
             "success": True,
@@ -986,12 +1001,24 @@ async def upload_voice(
             "voice_name": voice_name_final,
             "voice_provider": voice_provider_final,
             "samples_used": len(temp_paths),
+            "version_id": saved_voice.id,
+            "reused": False,
+            "active": serialize_voice(saved_voice, memorial)["active"],
             "message": f"Голос успешно создан и сохранен для мемориала '{memorial.name}'"
         }
 
+    except HTTPException:
+        _cleanup()
+        raise
     except ValueError as e:
+        if saved_voice is not None:
+            db.rollback()
+            saved_voice.state = 'failed'
+            db.commit()
         _cleanup()
         error_str = str(e)
+        if voice_provider_final == "fish_audio" and "Total duration of audios is too long" in error_str:
+            raise HTTPException(status_code=400, detail=FISH_DURATION_ERROR) from e
         # Понятное сообщение для платного плана ElevenLabs
         if "paid_plan_required" in error_str or "payment_required" in error_str or "instant_voice_cloning" in error_str:
             raise HTTPException(
@@ -1211,3 +1238,24 @@ async def get_elevenlabs_quota(_current_user: User = Depends(get_current_user)):
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(e),
         )
+
+
+@router.get('/voice/versions')
+def list_voice_versions(memorial_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    db.query(Memorial).filter_by(id=memorial.id).with_for_update().one()
+    preserve_current_voice(db, memorial)
+    db.commit()
+    rows = db.query(MemorialVoice).filter_by(memorial_id=memorial.id).order_by(MemorialVoice.id.desc()).all()
+    return {'voices': [serialize_voice(row, memorial) for row in rows]}
+
+
+@router.patch('/voice/versions/{version_id}/select')
+def select_voice_version(version_id: int, memorial_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    row = db.query(MemorialVoice).filter_by(id=version_id, memorial_id=memorial.id, state='ready').first()
+    if not row or not row.voice_id:
+        raise HTTPException(status_code=404, detail='Сохранённый голос не найден.')
+    memorial.voice_id, memorial.voice_provider = row.voice_id, row.provider
+    db.commit()
+    return serialize_voice(row, memorial)

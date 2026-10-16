@@ -85,6 +85,37 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const hasFamilyRag = user && (user.is_admin || user.is_demo || ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan))
   const [syncing, setSyncing] = useState(false)
   const [uploadingVoice, setUploadingVoice] = useState(false)
+  const [voiceVersions, setVoiceVersions] = useState([])
+  const [versionPreviews, setVersionPreviews] = useState({})
+  const [versionBusy, setVersionBusy] = useState(null)
+  const refreshVoiceVersions = async () => {
+    const generation = sampleGeneration.current
+    const response = await aiAPI.listVoiceVersions(memorialId)
+    if (generation === sampleGeneration.current) setVoiceVersions(response.data.voices)
+  }
+  const handleSavedVoice = async (version, select) => {
+    const generation = sampleGeneration.current
+    setVersionBusy(version.id)
+    try {
+      if (select) {
+        await aiAPI.selectVoiceVersion(memorialId, version.id)
+        if (generation !== sampleGeneration.current) return
+        await refreshVoiceVersions()
+        const status = await aiAPI.getTtsStatus(memorialId)
+        setTtsStatus(status.data)
+        setHasCustomVoice(true)
+        Object.values(modelPreviews).forEach((url) => URL.revokeObjectURL(url))
+        setModelPreviews({})
+      } else if (!versionPreviews[version.id]) {
+        const response = await aiAPI.previewVoiceVersion(memorialId, version.id, localText('ru', 'en'))
+        if (generation !== sampleGeneration.current) return
+        setVersionPreviews((prev) => ({ ...prev, [version.id]: sampleUrl(new Blob([response.data], { type: 'audio/mpeg' })) }))
+      }
+    } catch (error) {
+      alert(error.response?.data?.detail || localText('Не удалось загрузить голос.', 'Could not load the voice.'))
+    } finally { if (generation === sampleGeneration.current) setVersionBusy(null) }
+  }
+
   const [voiceName, setVoiceName] = useState('')
   const [hasCustomVoice, setHasCustomVoice] = useState(false)
   const [showVoicePanel, setShowVoicePanel] = useState(false)
@@ -95,7 +126,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const [preparingSample, setPreparingSample] = useState(null)
   const [modelPreviews, setModelPreviews] = useState({})
   const [previewBusy, setPreviewBusy] = useState(null)
-  const voiceBusy = uploadingVoice || preparingSample !== null || previewBusy !== null
+  const voiceBusy = uploadingVoice || preparingSample !== null || previewBusy !== null || versionBusy !== null
   useEffect(() => {
     if (showVoicePanel && voiceDialog.current && !voiceDialog.current.open) voiceDialog.current.showModal()
   }, [showVoicePanel])
@@ -125,6 +156,12 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       sampleUrls.current.clear()
     }
   }, [memorialId])
+  useEffect(() => {
+    setVoiceVersions([])
+    setVersionBusy(null)
+    setVersionPreviews({})
+    if (canManageVoice) refreshVoiceVersions().catch(() => {})
+  }, [memorialId, canManageVoice])
   const [ttsStatus, setTtsStatus] = useState(null)
   const [elQuota, setElQuota] = useState(null)
   const [elQuotaErr, setElQuotaErr] = useState(null)
@@ -352,6 +389,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         voiceSamples.map((s) => s.useCleaned && s.cleanedFile ? s.cleanedFile : s.file),
         voiceName || undefined
       )
+      await refreshVoiceVersions()
       setVoiceStep(2)
       Object.values(modelPreviews).forEach((url) => { URL.revokeObjectURL(url); sampleUrls.current.delete(url) })
       setModelPreviews({})
@@ -651,6 +689,18 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             {[localText('Запись', 'Recording'), localText('Подготовка', 'Preparation'), localText('Звучание', 'Sound'), localText('Готово', 'Done')].map((label, i) => <li key={label} aria-current={voiceStep === i ? 'step' : undefined} className={voiceStep === i ? 'active' : voiceStep > i ? 'complete' : ''}><span>{i + 1}</span>{label}</li>)}
           </ol>
           <div className="voice-wizard-body" ref={voiceBody}>
+          <section className="voice-clone-samples voice-library" aria-label={localText('Сохранённые голоса', 'Saved voices')}>
+            <h4>{localText('Сохранённые голоса', 'Saved voices')}</h4>
+            <p className="option-hint">{localText('Новый клон сохраняется отдельно. Смена сохранённого голоса не запускает клонирование. Новая тестовая озвучка расходует API-баланс; повторно слушайте уже созданную запись.', 'New clones are saved separately. Switching saved voices does not clone again. A new voice preview uses API credits; replay an existing preview instead.')}</p>
+            {voiceVersions.map((version) => <div key={version.id} className="voice-samples-item voice-version">
+              <strong>{version.name} #{version.id} {version.active ? localText('· используется', '· selected') : ''}</strong>
+              {version.state === 'ready' ? <>
+                {version.provider === 'fish_audio' && !versionPreviews[version.id] && <button type="button" className="btn-voice-change" disabled={voiceBusy || versionBusy !== null} onClick={() => handleSavedVoice(version, false)}>{localText('Создать тестовую озвучку', 'Generate voice preview')}</button>}
+                {versionPreviews[version.id] && <audio controls preload="metadata" src={versionPreviews[version.id]} />}
+                {!version.active && <button type="button" className="btn-voice-change" disabled={voiceBusy || versionBusy !== null} onClick={() => handleSavedVoice(version, true)}>{localText('Использовать этот голос', 'Use this voice')}</button>}
+              </> : <span>{version.state === 'pending' ? localText('Обрабатывается — не отправляйте повторно', 'Processing — do not resubmit') : localText('Попытка не завершена. Автоповтор отключён.', 'Attempt did not complete. Automatic retry is disabled.')}</span>}
+            </div>)}
+          </section>
           {voiceStep === 0 && <>
           <h4>{localText('Добавьте запись голоса', 'Add a voice recording')}</h4>
           <p className="voice-preparation-note">{localText('Лучше всего — 30–60 секунд речи одного человека без музыки и сильного эха. Можно загрузить видео: звук извлечётся автоматически.', 'Use 30–60 seconds of one person speaking, without music or strong echo. Video is supported: audio is extracted automatically.')}</p>
@@ -663,6 +713,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
               disabled={uploadingVoice || preparingSample !== null || previewBusy !== null}
             />
           </div>
+          {ttsStatus?.provider === 'fish_audio' && <p className="option-hint">{localText('Общая длительность всех образцов — меньше 4 минут 30 секунд. Длинную запись нужно предварительно сократить; оригинал не обрезается автоматически.', 'All samples combined must be shorter than 4 minutes 30 seconds. Trim longer recordings first; originals are not automatically trimmed.')}</p>}
           <div className="voice-clone-options">
             <div className="voice-clone-option">
               <p className="option-label">{t('chat.voice_record_now')} <span className="option-hint">{t('chat.voice_if_alive')}</span>:</p>

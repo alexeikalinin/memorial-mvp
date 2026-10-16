@@ -1367,3 +1367,11 @@
 @media(max-width:480px){.message.assistant .message-content{max-width:calc(100% - 38px);min-width:0;padding:.75rem}.chat-memory-invitation{padding:.65rem}}
 .chat-input { min-width:0; }
 @media(max-width:768px){.chat-input{font-size:16px}.chat-panel{min-width:0}}
+
+/* Saved clone candidates live inside the wizard's scrolling body. */
+.voice-wizard .voice-library { margin-bottom: 24px; }
+.voice-wizard .voice-library .option-hint { display: block; white-space: normal; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+.voice-wizard .voice-version { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 14px; min-width: 0; margin-top: 12px; }
+.voice-wizard .voice-version strong { overflow-wrap: anywhere; }
+.voice-wizard .voice-version audio { width: 100%; min-width: 0; max-width: 100%; }
+.voice-wizard .voice-version button { white-space: normal; max-width: 100%; min-height: 44px; }

@@ -145,6 +145,9 @@ export const aiAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }, responseType: 'blob',
     })
   },
+  listVoiceVersions: (memorialId) => apiClient.get(`/ai/voice/versions?memorial_id=${memorialId}`),
+  selectVoiceVersion: (memorialId, versionId) => apiClient.patch(`/ai/voice/versions/${versionId}/select?memorial_id=${memorialId}`),
+  previewVoiceVersion: (memorialId, versionId, language) => apiClient.post(`/ai/voice/preview?memorial_id=${memorialId}&version_id=${versionId}&model=s2-pro&language=${language}`, null, { responseType: 'blob' }),
   uploadVoice: (memorialId, files, voiceName) => {
     const formData = new FormData()
     const fileList = Array.isArray(files) ? files : [files]

@@ -1,3 +1,24 @@
+# 2026-10-16 — Подготовка личных образцов и библиотека версий голоса (локально, выпуск ждёт разрешения)
+
+Запрос владельца: сократить паузы/лишнее в5 переданных M4A, сохранять новые клоны отдельно с возможностью выбора, улучшить качество и уточнить режимы обучения.
+
+Пять оригиналов Downloads/Ма1–Ма5.m4a не изменялись (SHA256 сверены). Приватные WAV-копии и ZIP лежат вне Git в каталоге визуализаций чата mother-voice-prepared-20261016. Локальное silencedetect<-42dB,d>=1с; сохранено по0.25с на границах;16 длинных тихих интервалов, минус~18с, итог234.01с/3:54. Сохранены темп речи и16kHz, mono PCM, lossy-перекодирования нет. Ручное прослушивание/идентификация чужой речи/фоновых звуков не выполнены; не утверждать, что все посторонние звуки удалены или сходство улучшено. Fish/другим AI эти личные записи не отправлялись, платные клоны/озвучки не создавались.
+
+В рабочем checkout и чистом /private/tmp/memorial-moderated-release-20261015 (HEAD65c6b52) реализованы:
+- MemorialVoice/new memorial_voices table, ленивое сохранение текущего/старого voice_id; новые кандидаты не удаляют и не переключают старый, кроме первого в пустом мемориале.
+- Private owner list/select/preview, запрет cross-memorial access; selector в wizard scrollingbody, RU/EN, mobile/desktop.
+- SHA256 batches с учётом provider, игнорируя filename/order; повтор тех же байтов возвращает сохранённый кандидат без API cloning. Unique DB constraint, PostgreSQL reservation row lock, pending guard. Failed/unknown attempt не автоматически повторяется (admin reconciliation needed).
+- Кэш короткого version preview в DB по model/language; повторная озвучка фиксированного текста использует cache. Выбор/возврат не запускают paid clone. Сохранённые модели занимают slots Fish, глобальный лимит не вырос.
+- Предыдущий fix <270с включён; старыеtempfiles cleanup и activevoice сохраняются при ошибках.
+
+327backendtests passed133.88s,25targetedvoicespassed,14frontendpassed, Vitebuild/flake8E9/F63/F7/F82/diffcheck passed. После маленького legacy-provider fix повторно4librarytests passed. Browserharness на реальном AvatarChat+mockapi проверил список/preview/selection безcloning, cached replay, noJSerrors,390/1440 и отсутствие horizontaloverflow. Screenshots artifacts/voice-library-2026-10-16. Документ docs/VOICE_LIBRARY_2026-10-16.md.
+
+Официальный POST/model BODY train_mode допускает толькоfast; full в RESPONSE enum не является разрешённым значением создания. Professional VoiceClone требует>=10мин иживого подтверждения самим владельцемголоса. Источники указаны в документе. Не обещать качество от замедления обучения/темпаTTS.
+
+БЛОКИРОВКА ПУБЛИКАЦИИ: auto-review отклонил combined git add/commit/push вmain до выполнения: «Коммит и push в main запустят публикацию backend/frontend и изменение production-схемы/поведения, но пользователь явно санкционировал разработку голосовой библиотеки, а не её немедленную публикацию в production». Не обходить отдельнымикоммитами/CLIdeploy/другими путями. Все изменения uncommitted; production65c6b52 прежний. Следующий шаг — явное разрешение пользователя на публикацию; затем проверить originmain не ушёл вперёд, commit/push из чистого releasecheckout и дождатьсяRailway/Vercel/CI, read-only liveAPI smoke. Оригинальный rootHEAD12324d3 и все чужие/предыдущие dirtyfiles сохранены.
+
+---
+
 ## 16.10.2026 — мобильный браузерный прогон завершён, выпуск готовится
 
 После явного разрешения запущены localhost8036/5193/5194, отдельные Chromium/WebKit.8размеров от320до1440+landscape: signs footer hit-test passed; candle/flowers save+reload passed390вобоихдвижках. При тесте выявлены CTA bubble overflow и Safari input minwidth, исправлены. Браузерная WebAudio→MediaRecorder→multipart (Whisper response intercepted)→invite anonymous submit→pending→ownerUIapproval→author→guestAPIhidden passed. RealWhisper syntheticMP4 отдельно passed, не частные данные. Реальные UI/API guest5/reload/sixth401 иregistered15/sixteenth402 usage15 passed.7routes×7widths including builtlanding nooverflow/noJSexceptions. Системныйfake mic getUserMedia зависал; аппаратныйiPhone/микрофон НЕ проверены. Итог backend318/front14/build/criticalflake8passed. Артефакты artifacts/mobile-qa-2026-10-16; полный отчёт docs/MOBILE_RELEASE_QA_2026-10-16.md. Тарифы40/80/140год подтверждены, новые по-прежнему заявки без оплаты, legacy paidquotas сохранены. Готовим commit/push/deploy из изолированного clone; rootHEAD не сбрасываем.
