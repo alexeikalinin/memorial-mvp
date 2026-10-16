@@ -1,3 +1,5 @@
+16.10: разрешён release исправления кириллических имён фото: ключ UUID.extension, исходное имя сохранено. docs/MEDIA_UPLOAD_UNICODE_FIX_2026-10-16.md; SESSION_LOG.md.
+
 16.10: библиотека вариантов голоса +dedup/previewcache/<270s готовы локально;327backend/14frontend/build/browserpassed. Подготовлены5 приватных WAV (3:54) внеGit, оригиналыцелы. Auto-review отклонил commit/push/deploy без явного согласия владельца наproduction; не обходить. Production65c6b52 прежний, чистыйreleasecheckout содержит uncommitted changes. Следующий шаг — разрешение на публикацию. docs/VOICE_LIBRARY_2026-10-16.md;SESSION_LOG.md.
 
 16.10 mobileQA browser passed Chromium/WebKit8sizes, guest5/auth15, invite voice→pending→approve/author; real syntheticWhisperMP4 passed.318backend/14front/buildpassed. New fixes ready forcommit/deploy, isolated/private/tmp/memorial-moderated-release-20261015; rootHEADunchanged. docs/MOBILE_RELEASE_QA_2026-10-16.md;SESSION_LOG.md.

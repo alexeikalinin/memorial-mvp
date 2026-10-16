@@ -410,7 +410,9 @@ async def upload_media(
     
     # Генерация уникального имени файла
     file_id = str(uuid.uuid4())
-    file_name = f"{file_id}_{file.filename}"
+    # Storage keys must not inherit user filenames: Supabase rejects Cyrillic
+    # and other non-ASCII characters. Keep the original name in Media.file_name.
+    file_name = f"{file_id}.{file_ext}"
     file_path = UPLOAD_DIR / file_name
     
     # Сохранение файла
