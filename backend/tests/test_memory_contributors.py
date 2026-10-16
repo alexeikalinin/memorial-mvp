@@ -99,6 +99,7 @@ async def test_contributor_identity_in_generation_and_independent_verification(m
     create = AsyncMock(side_effect=[
         completion({'supported': True, 'answer': answer, 'excerpts': [{'memory_id': 7, 'quote': quote}]}),
         completion({'supported': supported}),
+        completion({'supported': False}),
     ])
     monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kwargs: SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
     result, sources = await generate_rag_response('Что помнишь о рыбалке?' if language == 'ru' else 'What do you remember about fishing?',

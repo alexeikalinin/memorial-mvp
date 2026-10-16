@@ -74,6 +74,7 @@ def test_verifier_rejection_logs_stage_without_private_text(monkeypatch, caplog)
         completion({'supported': True, 'answer': 'Я родилась в 1900 году.',
                     'excerpts': [{'memory_id': 7, 'segment_ids': [1]}]}),
         completion({'supported': False}),
+        completion({'supported': False}),
     ])
     monkeypatch.setattr(settings, 'OPENAI_API_KEY', 'offline-test')
     monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kw: SimpleNamespace(
@@ -122,6 +123,8 @@ def test_live_biography_fact_checker(monkeypatch, case_id, language, subject, so
             if self.calls == 1:
                 return completion({'supported': True, 'answer': answer,
                                    'excerpts': [{'memory_id': 7, 'segment_ids': [1, 2] if '. ' in source else [1]}]})
+            if self.calls == 3:
+                return completion({"supported": False})
             return await self.client.chat.completions.create(**kwargs)
 
     monkeypatch.setattr(openai, 'AsyncOpenAI', CandidateThenRealVerifier)

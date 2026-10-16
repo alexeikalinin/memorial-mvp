@@ -165,10 +165,11 @@ async def test_first_person_paraphrase_rejected_when_verifier_finds_added_facts(
     results = [
         {'supported': True, 'answer': 'Я любил шахматы и выиграл чемпионат.', 'excerpts': [{'memory_id': 1, 'quote': 'Он любил шахматы.'}]},
         {'supported': False},
+        {'supported': False},
     ]
     create = AsyncMock(side_effect=[SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(item)))]) for item in results])
     monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kwargs: SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
     answer, sources = await generate_rag_response('Какое хобби?', [{'memory_id': 1, 'text': 'Он любил шахматы.'}])
     assert answer == 'Я не могу найти информацию об этом в моих воспоминаниях.'
     assert sources == []
-    assert create.await_count == 2
+    assert create.await_count == 3

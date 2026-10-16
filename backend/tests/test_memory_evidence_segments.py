@@ -56,9 +56,10 @@ def test_valid_segments_do_not_bypass_fact_checker(monkeypatch):
     complete = fake_provider(monkeypatch, [
         {'supported': True, 'answer': 'We caught fifty fish.', 'excerpts': [{'memory_id': 42, 'segment_ids': [1]}]},
         {'supported': False},
+        {'supported': False},
     ])
     assert asyncio.run(generate_rag_response('Fishing?', [{'memory_id': 42, 'text': 'We caught five fish.'}]))[1] == []
-    assert complete.await_count == 2
+    assert complete.await_count == 3
 
 
 def test_legacy_modified_quote_is_still_rejected(monkeypatch):
