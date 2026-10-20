@@ -1,4 +1,4 @@
-20.10 mobile: реализована отдельная RN/Expo58 версия вmobile/, общийAPI/аккаунт,13unit+4integration/typecheck/lint/doctor20/builds passed;303web/backendfiles unchanged. Стартовый tagcodex/mobile-start-2026-10-20(commit87736a2). Локальныйsyntheticpreview8081/API8000/web5188; deviceQA/GoogleOAuth/HTTPSlinks ещёpending, production не менялся. Подробностиmobile/README.md,mobile/QA.md,SESSION_LOG.md.
+20.10 mobile: сохранена локальная веткаcodex/mobile-app; реализована отдельная RN/Expo58 версия вmobile/, общийAPI/аккаунт,13unit+4integration/typecheck/lint/doctor20/builds passed;303web/backendfiles unchanged. Стартовый tagcodex/mobile-start-2026-10-20(commit87736a2). Локальныйsyntheticpreview8081/API8000/web5188; deviceQA/GoogleOAuth/HTTPSlinks ещёpending, production не менялся. Подробностиmobile/README.md,mobile/QA.md,SESSION_LOG.md.
 
 20.10: предложена мобильная IA «Мои страницы/Семья/Профиль», отдельные разделы человека и owner management; утверждённый light/dark логотип встроен в интерактивную концепцию. Гамма одобрена, структура ещё на обсуждении; native app/production не менялись. Preview и проверки — SESSION_LOG.md.
 
