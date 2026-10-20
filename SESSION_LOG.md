@@ -1,3 +1,9 @@
+## 2026-10-21 — сохранение проекта перед обновлением macOS (в работе)
+
+Пользователь явно запросил push и deployment всей текущей версии. Получен origin/main a9cfd70; root HEAD12324d3 и локальные изменения сохранены. Используются отдельный temporary index и release поверх актуального origin, без reset исходной рабочей папки. Секреты, uploads, DB, Qdrant и временные/private screenshots исключаются. GitHub repo публичный; выполняется проверка шаблонов секретов. Обнаружен игнорируемый root правилом media/ исходник mobile/src/media/recording.ts: добавлено узкое исключение в mobile/.gitignore, чтобы исходник сохранялся/клонировался.
+
+Проверки: backend354passed/9live skipped; mobile17integration+15unit/typecheck/lintpassed; frontend14unit/buildpassed. Cloud config read-only: PostgreSQL, USE_S3=true, DEBUG=false, Google и OpenAI настроены. Старый production SECRET_KEY содержал шаблонные secret/change; заменён случайным86символьным через stdin Railway с --skip-deploys. Секрет не выведен/не сохранён в Git; временный env файл удалён. Пользователь заранее предупреждён о повторном входе после deployment. Нативная сборка/iPhoneQA и реальныйGoogleOAuth не заявлены проверенными.
+
 ## 2026-10-20 — Google-вход для мобильного приложения
 
 Пользователь сообщил устройства: iPhone12ProMax иiPadAir, приоритет iPhone, Android найдёт позднее. В ходе подготовки iPhone получил запрос добавить Google sign-in. Проверены Expo58 WebBrowser/Crypto и GoogleOAuth docs. Публичный API https://api.vspomin.ai/api/v1/health/ HTTP200; пользовательские данные не читались. LAN Mac192.168.1.14, ExpoCLI/Go может требовать общий Expo account; devserver/QR пока не запущены, т.к.Google с собственнымcallback требуетdevelopmentbuild, неExpoGo.

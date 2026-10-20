@@ -41,3 +41,7 @@ yarn-error.*
 /android
 /dist-native
 /qa
+
+# Source audio helpers are code, not uploaded media.
+!src/media/
+!src/media/**
