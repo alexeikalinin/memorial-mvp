@@ -1,18 +1,116 @@
 import { useEffect, useRef, useState } from 'react'
 import apiClient from '../api/client'
-import {FLOWER_TYPES,FLOWER_COLORS,CANDLE_TYPES,FlowerArtwork,MemorialCandle,signDescription} from './MemorialAppearance'
+import { getVisitorId } from '../utils/visitorIdentity'
+import { FLOWER_TYPES, FLOWER_COLORS, CANDLE_TYPES, FlowerArtwork, MemorialCandle, signDescription } from './MemorialAppearance'
 import './MemorialSigns.css'
-function visitorHeaders(){let id=localStorage.getItem('memorialVisitor');if(!id){id=crypto.randomUUID();localStorage.setItem('memorialVisitor',id)}return {'X-Memorial-Visitor':id}}
-export function MemorialSigns({memorialId,lang,onChange}){
- const[items,setItems]=useState([]),[choice,setChoice]=useState(null),[name,setName]=useState(''),[comment,setComment]=useState(''),[flowerType,setFlowerType]=useState('carnations'),[flowerColor,setFlowerColor]=useState('red'),[candle,setCandle]=useState('classic'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loadError,setLoadError]=useState('')
- const requestVersion=useRef(0),picker=useRef(null),ru=lang==='ru'
- async function load(){const version=requestVersion.current;try{const{data}=await apiClient.get(`/memorials/${memorialId}/signs`);if(version!==requestVersion.current)return;setLoadError('');setItems(data.items);onChange?.(data)}catch{if(version===requestVersion.current)setLoadError(ru?'Не удалось загрузить знаки памяти.':'Could not load signs.')}}
- useEffect(()=>{requestVersion.current++;setItems([]);load();const timer=setInterval(load,60000);return()=>{requestVersion.current++;clearInterval(timer)}},[memorialId])
- async function submit(){setBusy(true);setError('');try{await apiClient.post(`/memorials/${memorialId}/signs`,{kind:choice,variant:choice==='candle'?candle:flowerType,...(choice==='flowers'?{flower_type:flowerType,flower_color:flowerColor}:{}),display_name:name.trim()||undefined,comment:comment.trim()||undefined},{headers:visitorHeaders()});await load();picker.current.close();setChoice(null)}catch(e){setError(typeof e.response?.data?.detail==='string'?e.response.data.detail:(ru?'Не удалось оставить знак памяти.':'Could not leave a sign of remembrance.'))}finally{setBusy(false)}}
- function open(kind){setChoice(kind);setError('');picker.current.showModal()}
- const flowers=items.filter(e=>e.kind==='flowers')
- return <section className="memorial-signs">{loadError&&<span role="alert">{loadError} <button type="button" onClick={load}>{ru?'Повторить':'Retry'}</button></span>}<div className="memorial-signs-actions"><button type="button" onClick={()=>open('candle')}>{ru?'Зажечь свечу':'Light a candle'}</button><button type="button" onClick={()=>open('flowers')}>{ru?'Оставить цветы':'Leave flowers'}</button><span>{ru?'На 24 часа':'For 24 hours'}</span></div><div className="memorial-visitor-signs">{flowers.slice(0,3).map(e=><button type="button" key={e.id} className="visitor-flower" title={signDescription(e,lang)} aria-label={signDescription(e,lang)}><FlowerArtwork type={e.flower_type||'carnations'} color={e.flower_color||(e.variant==='white_carnations'?'white':'red')}/><span className="visitor-tooltip">{signDescription(e,lang)}<br/>{e.comment&&<>{e.comment}<br/></>}{new Date(e.created_at).toLocaleString(ru?'ru-RU':'en-US')}<br/>{ru?'До':'Until'} {new Date(e.expires_at).toLocaleString(ru?'ru-RU':'en-US')}</span></button>)}{flowers.length>3&&<span>+{flowers.length-3}</span>}</div>
- <dialog ref={picker} className="signs-dialog" aria-labelledby="signs-title" onCancel={e=>{if(busy)e.preventDefault();else setChoice(null)}}><h2 id="signs-title">{choice==='candle'?(ru?'Зажечь свечу':'Light a candle'):(ru?'Оставить цветы':'Leave flowers')}</h2><p>{ru?'Знак памяти будет виден 24 часа. Повторное действие не продлевает срок. Имя и комментарий будут видны другим посетителям.':'Your sign stays visible for 24 hours. Repeating does not extend its duration. Your name and comment are public.'}</p>{choice==='flowers'?<><div className="signs-variant-grid" role="group" aria-label={ru?'Все виды цветов':'All flowers'}>{FLOWER_TYPES.flatMap(([v,l])=>FLOWER_COLORS.map(([color,colorLabel])=><button type="button" className="signs-variant-tile" key={`${v}-${color}`} aria-pressed={flowerType===v&&flowerColor===color} disabled={busy} onClick={()=>{setFlowerType(v);setFlowerColor(color)}}><FlowerArtwork type={v} color={color}/><span>{ru?`${colorLabel} ${l.toLowerCase()}`:`${color} ${v}`}</span></button>))}</div></>:<div className="signs-variant-grid" role="group" aria-label={ru?'Все свечи':'All candles'}>{CANDLE_TYPES.map(([v,l])=><button type="button" className="signs-variant-tile" key={v} aria-pressed={candle===v} disabled={busy} onClick={()=>setCandle(v)}><MemorialCandle variant={v}/><span>{ru?l:v}</span></button>)}</div>}<div className={`signs-choice-preview signs-choice-preview-${choice}`}>{choice==='flowers'?<FlowerArtwork type={flowerType} color={flowerColor}/>:<MemorialCandle variant={candle}/>}</div><label htmlFor="sign-name">{ru?'Ваше имя (необязательно)':'Your name (optional)'}</label><input id="sign-name" maxLength={80} value={name} onChange={e=>setName(e.target.value)} disabled={busy}/><label htmlFor="sign-comment">{ru?'Комментарий (необязательно)':'Comment (optional)'}</label><textarea id="sign-comment" maxLength={500} value={comment} onChange={e=>setComment(e.target.value)} disabled={busy}/><small>{comment.length} / 500</small>{error&&<p role="alert">{error}</p>}<div><button type="button" onClick={()=>{picker.current.close();setChoice(null)}} disabled={busy}>{ru?'Отмена':'Cancel'}</button><button type="button" disabled={busy} onClick={submit}>{busy?'…':ru?'Оставить знак памяти':'Leave a sign'}</button></div></dialog></section>
+
+export function MemorialSigns({ memorialId, lang, onChange }) {
+  const [items, setItems] = useState([])
+  const [choice, setChoice] = useState(null)
+  const [name, setName] = useState('')
+  const [comment, setComment] = useState('')
+  const [flowerType, setFlowerType] = useState('carnations')
+  const [flowerColor, setFlowerColor] = useState('red')
+  const [candle, setCandle] = useState('classic')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('')
+  const [confirmation, setConfirmation] = useState('')
+  const requestVersion = useRef(0)
+  const picker = useRef(null)
+  const ru = lang === 'ru'
+
+  async function load() {
+    const version = requestVersion.current
+    try {
+      const { data } = await apiClient.get(`/memorials/${memorialId}/signs`)
+      if (version !== requestVersion.current) return
+      setLoadError(''); setItems(data.items); onChange?.(data)
+    } catch {
+      if (version === requestVersion.current) setLoadError(ru ? 'Не удалось обновить знаки памяти.' : 'Could not refresh signs.')
+    }
+  }
+  useEffect(() => {
+    requestVersion.current++; setItems([]); setConfirmation(''); load()
+    const timer = setInterval(load, 60000)
+    return () => { requestVersion.current++; clearInterval(timer) }
+  }, [memorialId])
+  useEffect(() => {
+    if (!choice) return
+    const update = () => {
+      const viewport = window.visualViewport
+      picker.current?.style.setProperty('--signs-vp-height', `${viewport?.height || innerHeight}px`)
+      picker.current?.style.setProperty('--signs-vp-center', `${(viewport?.offsetTop || 0) + (viewport?.height || innerHeight) / 2}px`)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    update()
+    window.visualViewport?.addEventListener('resize', update)
+    window.visualViewport?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.visualViewport?.removeEventListener('resize', update)
+      window.visualViewport?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [choice])
+  function close() { picker.current?.close(); setChoice(null) }
+  function open(kind) { setChoice(kind); setError(''); setConfirmation(''); picker.current.showModal() }
+  async function submit(event) {
+    event.preventDefault()
+    if (busy) return
+    setBusy(true); setError('')
+    try {
+      const { data } = await apiClient.post(`/memorials/${memorialId}/signs`, {
+        kind: choice, variant: choice === 'candle' ? candle : flowerType,
+        ...(choice === 'flowers' ? { flower_type: flowerType, flower_color: flowerColor } : {}),
+        display_name: name.trim(), comment: comment.trim(),
+      }, { headers: { 'X-Memorial-Visitor': getVisitorId('memorialVisitor') } })
+      const updatedItems = [data, ...items.filter(item => item.id !== data.id)]
+      setItems(updatedItems)
+      onChange?.({ items: updatedItems, candle_lit: updatedItems.some(item => item.kind === 'candle') })
+      setConfirmation(data.already_active
+        ? (ru ? 'Ваш знак памяти обновлён. Срок остаётся прежним — 24 часа с первого действия.' : 'Your sign has been updated. It still expires 24 hours after the first action.')
+        : (choice === 'candle' ? (ru ? 'Свеча зажжена. Спасибо за вашу память.' : 'Your candle is lit. Thank you for remembering.') : (ru ? 'Цветы оставлены. Спасибо за вашу память.' : 'Your flowers have been placed. Thank you for remembering.')))
+      close()
+      await load()
+    } catch (e) {
+      setError(typeof e.response?.data?.detail === 'string' ? e.response.data.detail : (ru ? 'Не удалось оставить знак памяти. Попробуйте ещё раз.' : 'Could not leave a sign. Please retry.'))
+    } finally { setBusy(false) }
+  }
+  const visibleItems = [...items.filter(item => item.kind === 'candle').slice(0, 3), ...items.filter(item => item.kind === 'flowers').slice(0, 3)]
+  return <section className="memorial-signs">
+    <div className="memorial-signs-actions">
+      <button type="button" onClick={() => open('candle')}>{ru ? 'Зажечь свечу' : 'Light a candle'}</button>
+      <button type="button" onClick={() => open('flowers')}>{ru ? 'Оставить цветы' : 'Leave flowers'}</button>
+      <span>{ru ? 'На 24 часа' : 'For 24 hours'}</span>
+    </div>
+    {confirmation && <p role="status" className="signs-confirmation">{confirmation}</p>}
+    {loadError && <p role="alert">{loadError} <button type="button" onClick={load}>{ru ? 'Повторить' : 'Retry'}</button></p>}
+    <div className="memorial-visitor-signs" aria-label={ru ? 'Оставленные знаки памяти' : 'Signs of remembrance'}>
+      {visibleItems.map(item => <button type="button" key={item.id} className={`visitor-sign visitor-${item.kind}`} title={signDescription(item, lang)} aria-label={signDescription(item, lang)}>
+        {item.kind === 'flowers' ? <FlowerArtwork type={item.flower_type || 'carnations'} color={item.flower_color || 'red'} /> : <MemorialCandle variant={item.variant} />}
+        <span className="visitor-tooltip">{signDescription(item, lang)}<br />{item.comment && <>{item.comment}<br /></>}{new Date(item.created_at).toLocaleString(ru ? 'ru-RU' : 'en-US')}<br />{ru ? 'До' : 'Until'} {new Date(item.expires_at).toLocaleString(ru ? 'ru-RU' : 'en-US')}</span>
+      </button>)}
+      {items.length > visibleItems.length && <span>+{items.length - visibleItems.length}</span>}
+    </div>
+    <dialog ref={picker} className="signs-dialog signs-picker" aria-labelledby="signs-title" onClose={() => setChoice(null)} onCancel={event => { if (busy) event.preventDefault(); else setChoice(null) }}>
+      <form className="signs-form" onSubmit={submit}>
+        <header className="signs-dialog-header"><h2 id="signs-title">{choice === 'candle' ? (ru ? 'Зажечь свечу' : 'Light a candle') : (ru ? 'Оставить цветы' : 'Leave flowers')}</h2><button type="button" disabled={busy} onClick={close} aria-label={ru ? 'Закрыть' : 'Close'}>×</button></header>
+        <div className="signs-dialog-body">
+          <p>{ru ? 'Знак будет виден 24 часа. Вы можете изменить выбор, не продлевая этот срок. Имя и комментарий увидят другие посетители.' : 'Your sign stays visible for 24 hours. You can change your choice without extending this period. Your name and comment are public.'}</p>
+          {choice === 'flowers' ? <div className="signs-variant-grid" role="group" aria-label={ru ? 'Все виды цветов' : 'All flowers'}>
+            {FLOWER_TYPES.flatMap(([type, label]) => FLOWER_COLORS.map(([color, colorLabel]) => <button type="button" key={`${type}-${color}`} className="signs-variant-tile" aria-pressed={flowerType === type && flowerColor === color} disabled={busy} onClick={() => { setFlowerType(type); setFlowerColor(color) }}><FlowerArtwork type={type} color={color} /><span>{ru ? `${colorLabel} ${label.toLowerCase()}` : `${color} ${type}`}</span></button>))}
+          </div> : <div className="signs-variant-grid" role="group" aria-label={ru ? 'Все свечи' : 'All candles'}>{CANDLE_TYPES.map(([variant, label]) => <button type="button" key={variant} className="signs-variant-tile" aria-pressed={candle === variant} disabled={busy} onClick={() => setCandle(variant)}><MemorialCandle variant={variant} /><span>{ru ? label : variant.replaceAll('_', ' ')}</span></button>)}</div>}
+          <div className={`signs-choice-preview signs-choice-preview-${choice}`}>{choice === 'flowers' ? <FlowerArtwork type={flowerType} color={flowerColor} /> : <MemorialCandle variant={candle} />}</div>
+          <label htmlFor="sign-name">{ru ? 'Ваше имя (необязательно)' : 'Your name (optional)'}</label><input id="sign-name" maxLength={80} value={name} onChange={event => setName(event.target.value)} disabled={busy} />
+          <label htmlFor="sign-comment">{ru ? 'Комментарий (необязательно)' : 'Comment (optional)'}</label><textarea id="sign-comment" maxLength={500} value={comment} onChange={event => setComment(event.target.value)} disabled={busy} /><small>{comment.length} / 500</small>
+        </div>
+        <footer className="signs-dialog-footer">{error && <p role="alert">{error}</p>}<div><button type="button" onClick={close} disabled={busy}>{ru ? 'Отмена' : 'Cancel'}</button><button type="submit" disabled={busy}>{busy ? (ru ? 'Сохраняем…' : 'Saving…') : (ru ? 'Оставить знак памяти' : 'Leave a sign')}</button></div></footer>
+      </form>
+    </dialog>
+  </section>
 }
 export function MemorialSignsJournal({memorialId,lang,onClose}){
  const dialog=useRef(null),[data,setData]=useState(null),[offset,setOffset]=useState(0),[error,setError]=useState(''),ru=lang==='ru'

@@ -1,0 +1,5 @@
+[
+  { "name": "Plus", "price": 40, "pages": 2, "storage": 1, "text": 100, "clones": 2, "voice": 5 },
+  { "name": "Family", "price": 80, "pages": 10, "storage": 3, "text": 300, "clones": 5, "voice": 15 },
+  { "name": "Family Pro", "price": 140, "pages": 20, "storage": 8, "text": 700, "clones": 10, "voice": 40 }
+]

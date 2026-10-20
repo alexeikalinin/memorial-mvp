@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from app.auth import (
     get_current_user,
     get_optional_user,
+    get_optional_authenticated_user,
     has_site_wide_memorial_owner,
     require_memorial_access,
 )
@@ -242,7 +243,7 @@ async def create_memorial(
 async def get_memorial(
     memorial_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
 ):
     """
     Получить мемориал по ID со всеми медиа и воспоминаниями.
@@ -271,7 +272,7 @@ async def get_memorial(
                 current_user_role = access.role.value
 
     response = MemorialDetailResponse.model_validate(memorial)
-    response.memories = [memory for memory in response.memories if memory.status == "approved"]
+    response.memories = [memory for memory in response.memories if memory.status == "approved"] if current_user else []
     response.current_user_role = current_user_role
     # Populate is_demo from owner
     owner = db.query(User).filter(User.id == memorial.owner_id).first()
@@ -409,7 +410,9 @@ async def upload_media(
     
     # Генерация уникального имени файла
     file_id = str(uuid.uuid4())
-    file_name = f"{file_id}_{file.filename}"
+    # Storage keys must not inherit user filenames: Supabase rejects Cyrillic
+    # and other non-ASCII characters. Keep the original name in Media.file_name.
+    file_name = f"{file_id}.{file_ext}"
     file_path = UPLOAD_DIR / file_name
     
     # Сохранение файла
@@ -646,11 +649,11 @@ async def create_memory(
 
     memory_source = "invite" if invite_token else "user"
     db_memory = Memory(
-        **memory.dict(),
+        **memory.model_dump(exclude={"contributor_name"}),
         memorial_id=memorial_id,
         source=memory_source,
         status="pending" if invite_token else "approved",
-        contributor_name=invite.label if invite_token else None,
+        contributor_name=(memory.contributor_name or invite.label) if invite_token else (current_user.full_name or current_user.username),
     )
     db.add(db_memory)
     db.commit()
@@ -898,7 +901,11 @@ async def approve_memory(
         from app.workers.worker import create_memory_embedding_task
         create_memory_embedding_task.delay(memory_id=mem.id, memorial_id=memorial_id, text=mem.content)
     except Exception:
-        pass
+        import logging
+        logging.getLogger(__name__).warning(
+            "Could not queue embedding for approved memory %s; chat uses DB fallback",
+            mem.id, exc_info=True,
+        )
     return mem
 
 
@@ -929,13 +936,16 @@ async def get_memorial_memories(
     q: Optional[str] = None,
     include_pending: bool = False,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
 ):
     """
-    Получить воспоминания мемориала. Публичные мемориалы доступны без авторизации.
+    Получить воспоминания мемориала. Гость получает пустой список.
     Approved-only by default; owners/editors can pass include_pending=true.
     """
     require_memorial_access(memorial_id, current_user, db, allow_public=True)
+    if current_user is None:
+        return []
+
     query = db.query(Memory).filter(Memory.memorial_id == memorial_id)
     # Determine if requester has editor+ role
     is_editor = False
@@ -1044,13 +1054,16 @@ def _month_year_label(dt: datetime, lang: str) -> str:
 async def get_timeline(
     memorial_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
 ):
     """
-    Хронологическая лента воспоминаний. Публичные мемориалы доступны без авторизации.
+    Хронологическая лента одобренных воспоминаний для вошедших пользователей.
     Сначала события с датой (по event_date), затем без даты (по дате добавления).
     """
     memorial = require_memorial_access(memorial_id, current_user, db, allow_public=True)
+
+    if current_user is None:
+        return []
 
     lang = (memorial.language or "ru").lower()
     if lang not in ("en", "ru"):
@@ -1059,13 +1072,13 @@ async def get_timeline(
 
     dated = (
         db.query(Memory)
-        .filter(Memory.memorial_id == memorial_id, Memory.event_date.isnot(None))
+        .filter(Memory.memorial_id == memorial_id, Memory.status == "approved", Memory.event_date.isnot(None))
         .order_by(Memory.event_date)
         .all()
     )
     undated = (
         db.query(Memory)
-        .filter(Memory.memorial_id == memorial_id, Memory.event_date.is_(None))
+        .filter(Memory.memorial_id == memorial_id, Memory.status == "approved", Memory.event_date.is_(None))
         .order_by(Memory.created_at)
         .all()
     )
@@ -1098,4 +1111,3 @@ async def get_timeline(
             )
         )
     return items
-

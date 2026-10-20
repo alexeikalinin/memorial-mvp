@@ -171,3 +171,18 @@ def test_png_bytes():
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_memory_queue_and_uploads(monkeypatch, tmp_path_factory):
+    """Keep API tests independent of Redis and process working-directory changes."""
+    from unittest.mock import Mock
+    import app.api.memorials as memorial_api
+    from app.workers.worker import create_memory_embedding_task
+
+    monkeypatch.setattr(create_memory_embedding_task, "delay", Mock())
+    uploads = tmp_path_factory.mktemp("api-media") / "uploads"
+    thumbnails = uploads / "thumbnails"
+    thumbnails.mkdir(parents=True)
+    monkeypatch.setattr(memorial_api, "UPLOAD_DIR", uploads)
+    monkeypatch.setattr(memorial_api, "THUMBNAILS_DIR", thumbnails)

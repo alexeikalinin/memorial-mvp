@@ -4,10 +4,10 @@
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title id="meta-title">vspomin.ai — Поговорите с ними снова</title>
-  <meta id="meta-description" name="description" content="Живой мемориал на основе AI. Общайтесь с аватаром, созданным из реальных воспоминаний. Клонирование голоса. Фотографии, истории и семейное древо." />
-  <meta id="meta-og-title" property="og:title" content="vspomin.ai — Поговорите с ними снова" />
-  <meta id="meta-og-description" property="og:description" content="AI-мемориалы на основе реальных воспоминаний. Фотографии, истории, семейное древо и AI-чат." />
+  <title id="meta-title">vspomin.ai — Сохранить память. Передать дальше.</title>
+  <meta id="meta-description" name="description" content="Семейная страница памяти: фотографии, истории, записи голоса и семейное древо. AI-разговор на основе сохранённых воспоминаний." />
+  <meta id="meta-og-title" property="og:title" content="vspomin.ai — Сохранить память. Передать дальше." />
+  <meta id="meta-og-description" property="og:description" content="Фотографии, семейные истории, знакомый голос и связанные страницы памяти." />
   <meta property="og:image" content="/images/hero-portrait.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <script>window.__MEMORIAL_API_BASE__ = __INJECT_LANDING_API__;</script>
@@ -515,7 +515,7 @@
 
     /* ─── PRICING ─── */
     #pricing { background: var(--bg2); }
-    #pricing .pricing-section-head { text-align: left; max-width: 920px; margin: 0 auto 0; }
+    #pricing .pricing-section-head { text-align: left; max-width: none; margin: 0; }
     #pricing .pricing-section-head .section-label { justify-content: flex-start; }
     #pricing .pricing-section-head .section-label::before { display: none; }
     #pricing .pricing-section-head .section-title { max-width: 100%; }
@@ -731,7 +731,9 @@
     .footer-top { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 48px; margin-bottom: 56px; }
     .footer-brand p { font-size: 14px; color: var(--text3); margin-top: 12px; line-height: 1.65; max-width: 220px; }
     .footer-logo { display: flex; align-items: center; gap: 10px; font-family:'Playfair Display',serif; font-size:24px; font-weight: 700; color:var(--accent); }
-    .footer-logo img { height: auto; width: 213px; display: block; }
+    .footer-logo img { height: auto; width: 290px; max-width:100%; display: block; }
+    .footer-top { grid-template-columns:1.35fr repeat(3,minmax(0,1fr)); }
+    .footer-brand { min-width:0; }
     .footer-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text3); margin-bottom: 16px; }
     .footer-col a { display: block; font-size: 14px; color: var(--text2); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
     .footer-col a:hover { color: var(--accent); }
@@ -767,7 +769,9 @@
       }
       section { padding: 72px 24px; }
       .hero-inner { grid-template-columns: minmax(0, 1fr); }
-      .hero-visual { display: none; }
+      .hero-visual { display: block; width: 100%; max-width: 440px; margin: 24px auto 0; }
+      .hero-photo-frame { aspect-ratio: 4/5; }
+      .chat-float { position: relative; left: auto; bottom: auto; width: 100%; margin-top: 16px; }
       .problem-cards { grid-template-columns: minmax(0, 1fr); }
       .steps-grid { grid-template-columns: minmax(0, 1fr); }
       .feature-row { grid-template-columns: minmax(0, 1fr); }
@@ -801,12 +805,94 @@
       .qr-badge { right: 0; top: 16px; padding: 14px 16px; }
     }
   
+    /* A quieter dark landing: warm charcoal, generous rhythm, restrained gold. */
+    :root { --bg:#100f10; --bg2:#171516; --bg3:#1d1a1b; --text:#f3ede5; --text2:#b4aaa4; --text3:#9f9690; --accent:#bc9b73; --accent2:#dec5a3; --purple:#bc9b73; --green:#a1b69f; --border:rgba(222,197,163,.10); --border2:rgba(222,197,163,.18); }
+    nav { background:rgba(16,15,16,.88); backdrop-filter:blur(18px); }
+    section { padding:88px 48px; }
+    .section-inner { max-width:1200px; }
+    .section-title { font-weight:400; letter-spacing:-.035em; }
+    .hero-headline { font-weight:400; font-size:clamp(42px,5.5vw,76px); line-height:1.12; }
+    .problem-headline { max-width:850px; font-weight:400; font-size:clamp(28px,3.5vw,44px); line-height:1.35; margin-bottom:44px; }
+    .problem-cards { gap:0; border:1px solid var(--border); border-radius:18px; }
+    .problem-card { padding:32px; background:transparent; }
+    .problem-card + .problem-card { border-left:1px solid var(--border); }
+    .problem-label { color:var(--accent); margin-bottom:14px; }
+    .problem-after { color:var(--text2); font-weight:400; font-size:15px; }
+    .problem-after-note { font-size:12px; margin-top:6px; }
+    .steps-grid { margin-top:40px; }
+    .step-card { background:transparent; box-shadow:none; border:0; padding:28px; }
+    .step-num { font-family:'Playfair Display',serif; font-weight:400; color:var(--accent); }
+    .feat-block, .feat-block.dark { background:var(--bg2); box-shadow:none; border:1px solid var(--border); border-radius:18px; }
+    .feat-content { padding:30px; }
+    .feat-title { font-weight:400; font-size:30px; }
+    .feat-photo { height:220px; }
+    .feat-desc { font-size:15px; }
+    .features-list { gap:24px; }
+    .feature-row { gap:24px; }
+    .feat-points { margin-top:18px; }
+    .qr-photo { box-shadow:none; }
+    .qr-badge { padding:18px 22px; border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,.2); }
+    .qr-badge-icon { display:none; }
+    .qr-phone-float { bottom:80px; }
+    .qr-usecases { gap:0; }
+    .uc { border:0; border-top:1px solid var(--border); border-radius:0; padding:20px 0; background:transparent; }
+    .privacy-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 48px; margin-top:36px; }
+    .privacy-card { background:transparent; border:0; border-top:1px solid var(--border); border-radius:0; padding:24px 0; text-align:left; }
+    .privacy-title { font-size:17px; line-height:1.4; margin-bottom:12px; }
+    .privacy-desc { font-size:16px; line-height:1.65; }
+    #pricing .pricing-section-head .section-sub { max-width:640px; }
+    .privacy-icon { display:none; }
+    .pricing-legend { display:none; } .pricing-details { margin-top:28px; }
+    .pricing-details summary { cursor:pointer; width:max-content; padding:14px 24px; border:1px solid var(--border2); border-radius:30px; color:var(--accent2); }
+    .pricing-details[open] summary { margin-bottom:28px; }
+    .btn { box-shadow:none !important; }
+    #final-cta { padding:80px 24px; }
+    @media(max-width:768px) { section { padding:60px 22px; } .problem-card { padding:24px; } .problem-card + .problem-card { border-left:0; border-top:1px solid var(--border); } .feat-content { padding:24px; } .feat-title { font-size:28px; } .qr-badge { right:12px; } .qr-phone-float { bottom:96px; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none !important; transition:none !important; } .reveal { opacity:1; transform:none; } }
+
+  
     #pricing .pricing-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
-    .pricing-free { padding: 24px; border: 1px solid var(--border2); border-radius: var(--radius); margin-top: 28px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .pricing-free { padding: 28px; border: 1px solid rgba(200,169,126,.32); border-radius: var(--radius); margin-top: 28px; display: flex; align-items: center; justify-content: space-between; gap: 28px; background:linear-gradient(110deg,rgba(200,169,126,.12),rgba(200,169,126,.045)); }
+    .pricing-free p { font-size:16px; line-height:1.65; color:var(--accent2); max-width:760px; }
+    .pricing-free .btn { flex-shrink:0; font-size:15px; color:var(--accent2); border-color:rgba(200,169,126,.45); background:rgba(200,169,126,.08); }
+    .pricing-free .btn:hover { background:rgba(200,169,126,.16); border-color:var(--accent); }
     .pricing-custom { font-size: 23px; line-height: 1.4; min-height: 94px; color: var(--accent2); }
     .footer-top { grid-template-columns: 1fr 1fr; }
     @media(max-width:1100px) { #pricing .pricing-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
-    @media(max-width:600px) { #pricing .pricing-grid { grid-template-columns: minmax(0,1fr); } .pricing-free { flex-direction:column; align-items:flex-start; } .footer-top { grid-template-columns:1fr; } }
+    @media(max-width:600px) { .privacy-grid { grid-template-columns:1fr; gap:0; } .pricing-free { padding:24px; gap:20px; } .pricing-free .btn { width:100%; justify-content:center; } #pricing .pricing-grid { grid-template-columns: minmax(0,1fr); } .pricing-free { flex-direction:column; align-items:flex-start; } .footer-top { grid-template-columns:1fr; } }
+
+    .nav-purpose { display:none; }
+    .qr-photo-wrap { display:flex; flex-direction:column; gap:18px; }
+    .qr-badge { position:static; order:-1; width:100%; padding:16px 20px; text-align:left; display:flex; flex-wrap:wrap; align-items:baseline; gap:5px 10px; }
+    .qr-badge-text { font-size:15px; }
+    .qr-badge-highlight { font-size:16px; margin:0; }
+    .qr-phone-float { position:static; transform:none; width:100%; max-width:340px; align-self:center; box-shadow:none; }
+    .qr-phone-content { padding:18px; }
+    .qr-phone-name { font-size:17px; }
+    .qr-phone-bubble { font-size:14px; padding:12px; }
+    .qr-phone-notch { display:none; }
+    .qr-visual-caption { margin:0; font-size:13px; max-width:none; }
+    .remembrance-inner { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; }
+    #remembrance { background:linear-gradient(110deg,rgba(188,155,115,.07),transparent); border-block:1px solid var(--border); }
+    #remembrance .section-sub { margin:0 0 24px; max-width:540px; }
+    .feat-photo:has(img[src*="feat-tree-vertical"]) { height:100%; }
+    .feat-photo:has(img[src*="feat-tree-vertical"]) img { object-fit:contain; object-position:center; }
+    @media(max-width:960px) {
+      nav { display:grid; grid-template-columns: minmax(72px, .85fr) minmax(85px,1.25fr) minmax(100px,1fr); gap:8px; padding:10px 12px; }
+      nav > .nav-logo { grid-column:1; grid-row:1; min-width:0; justify-content:flex-start; }
+      .nav-logo img { width:100%; max-width:150px; height:auto; }
+      .nav-purpose { display:block; grid-column:2; grid-row:1; font-size:11px; line-height:1.4; text-align:center; color:var(--text2); }
+      .nav-actions { display:contents !important; }
+      nav .nav-actions > .btn-primary { grid-column:3; grid-row:1; justify-content:center; padding:10px 7px; font-size:10px; white-space:nowrap; min-height:40px; }
+      nav .nav-actions > .btn-outline { display:none; }
+      #nav-toggle { grid-column:1; grid-row:2; order:0; width:36px; height:32px; min-height:32px; border-radius:8px; z-index:1001; }
+      #lang-toggle { grid-column:3; grid-row:2; justify-self:end; padding:0 !important; border:0 !important; }
+      #lang-toggle .btn { min-height:32px; min-width:34px; padding:6px 8px !important; font-size:11px; }
+      .nav-links { top:0; }
+      #hero { padding-top:142px; }
+      .remembrance-inner { grid-template-columns:1fr; gap:24px; }
+      .qr-badge { padding:14px 18px; }
+    }
 </style>
 </head>
 <body>
@@ -817,6 +903,7 @@
 <!-- NAV -->
 <nav id="main-nav">
   <div class="nav-logo"><img class="brand-motion" src="images/brand-flame.svg" alt="vspomin.ai" width="247" height="44" /><img class="brand-still" src="images/brand-flame-static.svg" alt="vspomin.ai" width="247" height="44" /></div>
+  <div class="nav-purpose" data-i18n="nav.purpose">Цифровые мемориалы ваших близких</div>
   <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false" aria-controls="nav-links-menu" aria-label="Открыть меню">
     <span></span><span></span><span></span>
   </button>
@@ -828,7 +915,7 @@
     <a href="#faq" data-i18n="nav.faq">Вопросы</a>
   </div>
   <div class="nav-backdrop" id="nav-backdrop"></div>
-  <div style="display:flex;gap:12px;align-items:center">
+  <div class="nav-actions" style="display:flex;gap:12px;align-items:center">
     <div id="lang-toggle" style="display:flex;gap:4px;align-items:center;border:1px solid var(--border2);border-radius:100px;padding:4px;">
       <button type="button" id="lang-btn-ru" class="btn" data-lang="ru" style="padding:6px 14px;font-size:12px;">RU</button>
       <button type="button" id="lang-btn-en" class="btn" data-lang="en" style="padding:6px 14px;font-size:12px;">EN</button>
@@ -843,12 +930,12 @@
   <div class="hero-glow"></div>
   <div class="hero-inner">
     <div>
-      <div class="hero-eyebrow"><span></span> <span data-i18n="hero.eyebrow">Цифровые мемориалы на основе AI</span></div>
-      <h1 class="hero-headline" data-i18n="hero.headline">Поговорите с ними <em>снова.</em><br>Их собственными словами.</h1>
+      <div class="hero-eyebrow"><span></span> <span data-i18n="hero.eyebrow">Семейная память в одном месте</span></div>
+      <h1 class="hero-headline" data-i18n="hero.headline">Сохранить близкое.<br><em>Передать дальше.</em></h1>
       <p class="hero-sub" data-i18n="hero.sub">Соберите фотографии, истории и записи голоса в одном месте. Общайтесь с AI на основе воспоминаний и связывайте мемориалы в семейное древо.</p>
       <div class="hero-cta">
         <a href="/app/register" class="btn btn-primary btn-xl" data-i18n="hero.cta_primary">Создать мемориал — бесплатно</a>
-        <a href="/app/demo" class="btn btn-outline btn-lg" data-i18n="hero.cta_secondary">Посмотреть демо-семьи →</a>
+        
       </div>
       <div class="hero-note">
         <div class="hero-note-item" data-i18n="hero.note1">Простые и понятные тарифы</div>
@@ -863,7 +950,7 @@
         <img src="/images/hero-portrait.png" alt="Портрет для мемориала" data-i18n="hero.photo_alt" data-i18n-attr="alt" loading="eager" width="600" height="750" />
         <div class="hero-photo-overlay"></div>
         <div class="hero-photo-caption">
-          <div class="hero-photo-name" data-i18n="hero.photo_name">Георгий Томпсон</div>
+          <div class="hero-photo-name" data-i18n="hero.photo_name">Алексей Соколов</div>
           <div class="hero-photo-dates" data-i18n="hero.photo_dates">1938 – 2015 · Иллюстративный мемориал</div>
         </div>
       </div>
@@ -896,21 +983,17 @@
 <!-- ═══ PROBLEM ═══ -->
 <section id="problem">
   <div class="section-inner">
-    <div class="section-label reveal" data-i18n="problem.label">Проблема</div>
+    <div class="section-label reveal" data-i18n="problem.label">Сохранить близкое</div>
     <p class="problem-headline reveal reveal-delay-1" data-i18n="problem.headline">Фотографии и истории легко потерять.<br>Соберите их в одном семейном архиве.</p>
     <div class="problem-cards">
       <div class="problem-card reveal">
-        <span class="problem-icon">📷</span>
         <div class="problem-label" data-i18n="problem.card1_label">Фото и видео</div>
-        <div class="problem-before" data-i18n="problem.card1_before">Лежат забытыми в коробках и на старых дисках</div>
         <div class="problem-after" data-i18n="problem.card1_after">→ Собраны в галерее мемориала</div>
       </div>
       <div class="problem-card reveal reveal-delay-1">
-        <span class="problem-icon">🎙️</span>
         <div class="problem-label" data-i18n="problem.card2_label">Их голос</div>
-        <div class="problem-before" data-i18n="problem.card2_before">Остаётся в домашних аудио и видео</div>
         <div class="problem-after-stack">
-          <div class="problem-after" data-i18n="problem.card2_after">→ Клонируется из ваших записей — аватар говорит их голосом</div>
+          <div class="problem-after" data-i18n="problem.card2_after">Сохраните записи и настройте голос для ответов на основе семейных воспоминаний.</div>
           <div class="problem-after-note">
             <span data-i18n="problem.card2_note">Исходные записи можно сохранить в архиве</span>
             <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span>
@@ -918,9 +1001,7 @@
         </div>
       </div>
       <div class="problem-card reveal reveal-delay-2">
-        <span class="problem-icon">🌳</span>
         <div class="problem-label" data-i18n="problem.card3_label">Семейные истории</div>
-        <div class="problem-before" data-i18n="problem.card3_before">Разбросаны среди родственников, которые никогда не пересекаются</div>
         <div class="problem-after" data-i18n="problem.card3_after">→ Собраны вместе и связаны семейным древом</div>
       </div>
     </div>
@@ -931,23 +1012,20 @@
 <section id="how">
   <div class="section-inner">
     <div class="section-label reveal" data-i18n="how.label">Как это работает</div>
-    <h2 class="section-title reveal reveal-delay-1" data-i18n="how.title">Просто начать.<br>Глубоко прожить.</h2>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="how.title">Три простых шага.<br>В своём темпе.</h2>
     <div class="steps-grid">
       <div class="step-card reveal">
         <div class="step-num">1</div>
-        <div class="step-icon">📁</div>
         <div class="step-title" data-i18n="how.step1_title">Создайте мемориал</div>
-        <p class="step-desc" data-i18n="how.step1_desc">Загрузите фото, опишите воспоминания, добавьте видео и аудиозаписи голоса. Каждая история становится частью AI-аватара.</p>
+        <p class="step-desc" data-i18n="how.step1_desc">Добавьте имя, фотографию и первую историю. Остальное можно сохранить позже.</p>
       </div>
       <div class="step-card reveal reveal-delay-1">
         <div class="step-num">2</div>
-        <div class="step-icon">👨‍👩‍👧‍👦</div>
         <div class="step-title" data-i18n="how.step2_title">Пригласите семью</div>
-        <p class="step-desc" data-i18n="how.step2_desc">Отправьте ссылку-приглашение. Родственники смогут добавить воспоминания без создания аккаунта. Публичная ссылка служит для просмотра.</p>
+        <p class="step-desc" data-i18n="how.step2_desc">Отправьте ссылку-приглашение. Родственники смогут добавить воспоминания без создания аккаунта. Воспоминания публикуются после одобрения семьи; публичная ссылка служит для просмотра.</p>
       </div>
       <div class="step-card reveal reveal-delay-2">
         <div class="step-num">3</div>
-        <div class="step-icon">💬</div>
         <div class="step-title" data-i18n="how.step3_title">Начните разговор</div>
         <p class="step-desc" data-i18n="how.step3_desc">Задавайте вопросы AI по добавленным историям. Ответы могут быть неточными: проверяйте их по воспоминаниям семьи.</p>
       </div>
@@ -962,7 +1040,7 @@
 <section id="features">
   <div class="section-inner">
     <div class="section-label reveal" data-i18n="features.label">Возможности</div>
-    <h2 class="section-title reveal reveal-delay-1" data-i18n="features.title">Больше, чем мемориал.<br>Живое присутствие.</h2>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="features.title">Место для памяти.<br>И для вашей семьи.</h2>
     <div class="features-list">
 
       <!-- Row 1 -->
@@ -973,20 +1051,8 @@
           </div>
           <div class="feat-content">
             <div class="feat-tag" data-i18n="features.chat_tag">AI-чат с аватаром</div>
-            <h3 class="feat-title" data-i18n="features.chat_title">Они отвечают.<br>Своими словами.</h3>
+            <h3 class="feat-title" data-i18n="features.chat_title">Разговор на основе<br>ваших воспоминаний.</h3>
             <p class="feat-desc" data-i18n="features.chat_desc">AI ищет сведения в воспоминаниях вашей семьи и использует их для ответа. Больше подробных историй помогает сделать разговор содержательнее.</p>
-            <div class="compare">
-              <div class="compare-col">
-                <div class="compare-col-label bad" data-i18n="features.compare_generic_label">Обычный AI</div>
-                <div class="compare-q" data-i18n="features.compare_question">«Что делало тебя по-настоящему счастливым?»</div>
-                <div class="compare-a" data-i18n="features.compare_generic_answer">«Счастье зависит от множества факторов: отношений, личных достижений и чувства смысла жизни...»</div>
-              </div>
-              <div class="compare-col">
-                <div class="compare-col-label good" data-i18n="features.compare_memorial_label">Аватар мемориала · пример</div>
-                <div class="compare-q" data-i18n="features.compare_question">«Что делало тебя по-настоящему счастливым?»</div>
-                <div class="compare-a good" data-i18n="features.compare_memorial_answer">«Субботние утра на даче. Только я и твоя бабушка, кофе из старых термосов, пока весь мир еще спит. Большего и не нужно было».</div>
-              </div>
-            </div>
           </div>
         </div>
         <div class="feat-block dark reveal reveal-delay-1">
@@ -994,24 +1060,16 @@
             <img src="/images/feat-voice.png" alt="Клонирование голоса по записям" data-i18n="features.voice_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
-            <div class="feat-tag"><span data-i18n="features.voice_tag">Клонирование голоса</span> <span class="badge-soon" data-i18n="badge.coming_soon">Скоро</span></div>
-            <h3 class="feat-title" data-i18n="features.voice_title">Услышьте их,<br>а не робота.</h3>
+            <div class="feat-tag"><span data-i18n="features.voice_tag">Клонирование голоса</span></div>
+            <h3 class="feat-title" data-i18n="features.voice_title">Сохранить голос.<br>Услышать знакомое.</h3>
             <p class="feat-desc" data-i18n="features.voice_desc">Загрузите запись голоса или видео с разборчивой речью, чтобы создать голос для озвучивания AI-ответов. Качество зависит от исходной записи.</p>
             <ul class="feat-points">
               <li data-i18n="features.voice_point1">Добавьте запись с хорошо различимым голосом</li>
               <li data-i18n="features.voice_point2">Подходят аудио и видео с разборчивой речью без громких помех</li>
               <li data-i18n="features.voice_point3">Сходство и интонация зависят от записи и синтеза</li>
+              <li data-i18n="features.voice_available">Клонирование голоса уже доступно</li>
             </ul>
             
-            <div class="voice-widget" style="opacity:0.5;cursor:default;pointer-events:none">
-              <div class="voice-play-btn">▶</div>
-              <div class="voice-bars">
-                <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
-                <div class="vbar"></div><div class="vbar"></div><div class="vbar"></div>
-                <div class="vbar"></div>
-              </div>
-              <span class="voice-label" data-i18n="features.voice_widget_label">Клонирование голоса из записи</span>
-            </div>
           </div>
         </div>
       </div>
@@ -1024,31 +1082,31 @@
           </div>
           <div class="feat-content">
             <div class="feat-tag" data-i18n="features.timeline_tag">Таймлайн жизни</div>
-            <h3 class="feat-title" data-i18n="features.timeline_title">Каждая жизнь — история.<br>Расскажите её по порядку.</h3>
+            <h3 class="feat-title" data-i18n="features.timeline_title">Каждая жизнь — история.<br>Сохраните важные моменты.</h3>
             <p class="feat-desc" data-i18n="features.timeline_desc">Воспоминания с датами автоматически выстраиваются в хронологический рассказ — от первых шагов до последних лет. Жизнь, рассказанная красиво.</p>
             <div class="timeline-mini">
               <div class="tl-item">
-                <div class="tl-year">1938</div>
-                <div class="tl-text" data-i18n="features.tl_text1">Родился в Мельбурне, рос недалеко от залива</div>
+                <div class="tl-year">1947</div>
+                <div class="tl-text" data-i18n="features.tl_text1">Родился в небольшом городе на Волге</div>
               </div>
               <div class="tl-item">
-                <div class="tl-year">1963</div>
-                <div class="tl-text" data-i18n="features.tl_text2">Познакомился с Маргарет на танцах в серф-клубе</div>
+                <div class="tl-year">1971</div>
+                <div class="tl-text" data-i18n="features.tl_text2">Познакомился с будущей женой на танцах</div>
               </div>
               <div class="tl-item">
                 <div class="tl-year">1978</div>
-                <div class="tl-text" data-i18n="features.tl_text3">Построил семейный дом в горах — это заняло два года</div>
+                <div class="tl-text" data-i18n="features.tl_text3">Построил дом, где собиралась вся семья</div>
               </div>
               <div class="tl-item">
-                <div class="tl-year">2002</div>
-                <div class="tl-text" data-i18n="features.tl_text4">Вышел на пенсию. Тренировал юношескую сборную по крикету каждую субботу</div>
+                <div class="tl-year">2007</div>
+                <div class="tl-text" data-i18n="features.tl_text4">Вышел на пенсию, проводил лето с внуками</div>
               </div>
             </div>
           </div>
         </div>
         <div class="feat-block reveal reveal-delay-1">
           <div class="feat-photo">
-            <img src="/images/feat-tree.png" alt="Интерактивное семейное древо" data-i18n="features.tree_img_alt" data-i18n-attr="alt" width="800" height="500" />
+            <img src="/images/feat-tree-vertical.svg" alt="Интерактивное семейное древо" data-i18n="features.tree_img_alt" data-i18n-attr="alt" width="800" height="500" />
           </div>
           <div class="feat-content">
             <div class="feat-tag" data-i18n="features.tree_tag">Семейное древо</div>
@@ -1068,6 +1126,8 @@
   </div>
 </section>
 
+<section id="remembrance"><div class="section-inner remembrance-inner"><div><div class="section-eyebrow" data-i18n="remembrance.tag">Знаки памяти</div><h2 class="section-title" data-i18n="remembrance.title">Тёплый жест.<br>Бережная память.</h2></div><div><p class="section-sub" data-i18n="remembrance.desc">Зажгите виртуальную свечу или оставьте цветы на странице близкого — знак памяти останется на 24 часа. Семья может выбрать оформление мемориала — цветы, свечи и памятную фразу.</p><a href="/app" class="btn btn-outline" data-i18n="remembrance.cta">Открыть мемориалы</a></div></div></section>
+
 <!-- ═══ HIDDEN CONNECTIONS ═══ -->
 
 
@@ -1082,44 +1142,44 @@
         </div>
         <div class="qr-badge">
           <div class="qr-badge-icon">📱</div>
-          <div class="qr-badge-text" data-i18n="qr.badge_text">Посетители сканируют</div>
-          <div class="qr-badge-highlight" data-i18n="qr.badge_highlight">+ открывают мемориал</div>
+          <div class="qr-badge-text" data-i18n="qr.badge_text">Посетители сканируют QR-код</div>
+          <div class="qr-badge-highlight" data-i18n="qr.badge_highlight">и открывают мемориал</div>
         </div>
         <div class="qr-phone-float">
           <div class="qr-phone-notch"></div>
           <div class="qr-phone-content">
-            <div class="qr-phone-name" data-i18n="hero.photo_name">Георгий Томпсон</div>
-            <div class="qr-phone-bubble" data-i18n="qr.phone_q">«Что ты больше всего вспоминаешь из прошлого?»</div>
-            <div class="qr-phone-bubble" style="background:rgba(200,169,126,0.1);color:var(--accent2)" data-i18n="qr.phone_a">«Воскресные обеды у бабушки. Четырнадцать человек за одним столом. В доме пахло всем самым вкусным».</div>
+            <div class="qr-phone-name" data-i18n="hero.photo_name">Алексей Соколов</div>
+            <div class="qr-phone-bubble" data-i18n="qr.phone_q">Фотографии · Истории · Записи</div>
+            <div class="qr-phone-bubble" style="background:rgba(200,169,126,0.1);color:var(--accent2)" data-i18n="qr.phone_a">Семейные воспоминания на одной странице. Открывается по QR-коду.</div>
           </div>
         </div>
         <p class="qr-visual-caption" data-i18n="qr.caption">Пример размещения QR-кода. Изготовление и установка таблички не входят в сервис.</p>
       </div>
 
       <div class="reveal reveal-delay-1">
-        <div class="section-label" data-i18n="qr.label">Физический мемориал</div>
-        <h2 class="section-title" data-i18n="qr.title">Пусть надгробие<br>говорит.</h2>
-        <p class="section-sub" style="margin-bottom:36px" data-i18n="qr.sub">QR-код открывает публичную страницу с фотографиями и историями. Посетитель может задать текстовый вопрос AI. Для добавления воспоминаний нужна ссылка-приглашение.</p>
+        <div class="section-label" data-i18n="qr.label">Память рядом</div>
+        <h2 class="section-title" data-i18n="qr.title">Одна ссылка.<br>Целая жизнь в историях.</h2>
+        <p class="section-sub" style="margin-bottom:36px" data-i18n="qr.sub">QR-код открывает публичный мемориал. Без регистрации можно задать 5 вопросов AI и поделиться воспоминанием для проверки владельцем. После регистрации бесплатно доступны 15 текстовых AI-ответов в месяц. Архив воспоминаний гостям без входа не показывается.</p>
         <div class="qr-usecases">
           <div class="uc">
-            <div class="uc-icon">🪦</div>
+            
             <div>
-              <div class="uc-title" data-i18n="qr.uc1_title">Постоянные памятники</div>
+              <div class="uc-title" data-i18n="qr.uc1_title">Открыть память</div>
               <div class="uc-desc" data-i18n="qr.uc1_desc">Скачайте QR-код публичного мемориала и разместите его там, где удобно вашей семье.</div>
             </div>
           </div>
           <div class="uc">
-            <div class="uc-icon">💐</div>
+            
             <div>
               <div class="uc-title" data-i18n="qr.uc2_title">Семейные альбомы</div>
               <div class="uc-desc" data-i18n="qr.uc2_desc">Добавьте QR-код в печатный альбом, чтобы открыть цифровые фотографии и истории.</div>
             </div>
           </div>
           <div class="uc">
-            <div class="uc-icon">🗓️</div>
+            
             <div>
-              <div class="uc-title" data-i18n="qr.uc3_title">Ежегодное поминовение</div>
-              <div class="uc-desc" data-i18n="qr.uc3_desc">Мемориал становится богаче с каждым годом. Новые голоса, новые истории — каждая годовщина приносит что-то новое.</div>
+              <div class="uc-title" data-i18n="qr.uc3_title">Возвращаться вместе</div>
+              <div class="uc-desc" data-i18n="qr.uc3_desc">Ссылка остаётся одной и той же, а семья может дополнять страницу новыми историями.</div>
             </div>
           </div>
         </div>
@@ -1136,8 +1196,8 @@
 <section id="privacy">
   <div class="section-inner">
     <div class="section-label reveal" data-i18n="privacy.label">Приватность и доверие</div>
-    <h2 class="section-title reveal reveal-delay-1" data-i18n="privacy.title">Основано на доверии.<br>Не на данных.</h2>
-    <p class="section-sub reveal reveal-delay-2" style="margin:0" data-i18n="privacy.sub">Воспоминания о близком человеке священны. Мы относимся к ним именно так.</p>
+    <h2 class="section-title reveal reveal-delay-1" data-i18n="privacy.title">Вы решаете,<br>чем делиться.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0" data-i18n="privacy.sub">Доступ к странице и приглашения для близких — под вашим контролем.</p>
     <div class="privacy-grid">
       <div class="privacy-card reveal">
         <div class="privacy-icon">🔒</div>
@@ -1203,7 +1263,7 @@
 <!-- ═══ FINAL CTA ═══ -->
 <section id="final-cta">
   <div class="final-bg-photo">
-    <img src="/images/feat-tree.png" alt="" width="1600" height="900" />
+    <img src="/images/feat-tree-vertical.svg" alt="" width="1600" height="900" />
   </div>
   <div class="final-bg-overlay"></div>
   <div class="final-content reveal">
@@ -1225,7 +1285,7 @@
   <div class="footer-inner">
     <div class="footer-top">
       <div class="footer-brand">
-        <div class="footer-logo"><img class="brand-motion" src="images/brand-flame.svg" alt="vspomin.ai" width="213" height="38" /><img class="brand-still" src="images/brand-flame-static.svg" alt="vspomin.ai" width="213" height="38" /></div>
+        <div class="footer-logo"><img src="images/brand-footer.svg" alt="vspomin.ai — Ваша память навсегда" width="290" height="57" /></div>
         <p data-i18n="footer.brand_text">Фотографии, истории и голоса близких — в семейном архиве.</p>
       </div>
       
@@ -1273,6 +1333,12 @@ var SHOW_EN_LANGUAGE_OPTION = true;
 
 var LANDING_I18N = {
   "ru": {
+    "nav.purpose": "Цифровые мемориалы ваших близких",
+    "features.voice_available": "Клонирование голоса уже доступно",
+    "remembrance.tag": "Знаки памяти",
+    "remembrance.title": "Тёплый жест.<br>Бережная память.",
+    "remembrance.desc": "Зажгите виртуальную свечу или оставьте цветы на странице близкого — знак памяти останется на 24 часа. Семья может выбрать оформление мемориала — цветы, свечи и памятную фразу.",
+    "remembrance.cta": "Открыть мемориалы",
     "nav.how": "Как это работает",
     "nav.features": "Возможности",
     "nav.hidden": "Скрытые связи",
@@ -1282,8 +1348,8 @@ var LANDING_I18N = {
     "nav.getstarted": "Начать бесплатно",
     "nav.toggle_open": "Открыть меню",
     "nav.toggle_close": "Закрыть меню",
-    "hero.eyebrow": "Цифровые мемориалы на основе AI",
-    "hero.headline": "Поговорите с ними <em>снова.</em><br>Их собственными словами.",
+    "hero.eyebrow": "Семейная память в одном месте",
+    "hero.headline": "Сохранить близкое.<br><em>Передать дальше.</em>",
     "hero.sub": "Соберите фотографии, истории и записи голоса в одном месте. Общайтесь с AI на основе воспоминаний и связывайте мемориалы в семейное древо.",
     "hero.cta_primary": "Создать мемориал — бесплатно",
     "hero.cta_secondary": "Посмотреть демо-семьи →",
@@ -1291,46 +1357,46 @@ var LANDING_I18N = {
     "hero.note2": "Начните бесплатно",
     "hero.note3": "Без технических навыков",
     "hero.photo_alt": "Портрет для мемориала",
-    "hero.photo_name": "Георгий Томпсон",
+    "hero.photo_name": "Алексей Соколов",
     "hero.photo_dates": "1938 – 2015 · Иллюстративный мемориал",
     "hero.chat_ready": "Пример AI-разговора",
     "hero.chat_question": "Что делало тебя по-настоящему счастливым?",
     "trust.text": "Новые мемориалы приватны по умолчанию. Для публикации страницы и доступа семьи используйте настройки и приглашения.",
-    "problem.label": "Проблема",
+    "problem.label": "Сохранить близкое",
     "problem.headline": "Фотографии и истории легко потерять.<br>Соберите их в одном семейном архиве.",
     "problem.card1_label": "Фото и видео",
     "problem.card1_before": "Лежат забытыми в коробках и на старых дисках",
     "problem.card1_after": "→ Собраны в галерее мемориала",
     "problem.card2_label": "Их голос",
     "problem.card2_before": "Остаётся в домашних аудио и видео",
-    "problem.card2_after": "→ Клонируется из ваших записей — аватар говорит их голосом",
+    "problem.card2_after": "Сохраните записи и настройте голос для ответов на основе семейных воспоминаний.",
     "problem.card2_note": "Исходные записи можно сохранить в архиве",
     "problem.card3_label": "Семейные истории",
     "problem.card3_before": "Разбросаны среди родственников, которые никогда не пересекаются",
     "problem.card3_after": "→ Собраны вместе и связаны семейным древом",
     "badge.coming_soon": "Скоро",
     "how.label": "Как это работает",
-    "how.title": "Просто начать.<br>Глубоко прожить.",
+    "how.title": "Три простых шага.<br>В своём темпе.",
     "how.step1_title": "Создайте мемориал",
-    "how.step1_desc": "Загрузите фото, опишите воспоминания, добавьте видео и аудиозаписи голоса. Каждая история становится частью AI-аватара.",
+    "how.step1_desc": "Добавьте имя, фотографию и первую историю. Остальное можно сохранить позже.",
     "how.step2_title": "Пригласите семью",
-    "how.step2_desc": "Отправьте ссылку-приглашение. Родственники смогут добавить воспоминания без создания аккаунта. Публичная ссылка служит для просмотра.",
+    "how.step2_desc": "Отправьте ссылку-приглашение. Родственники смогут добавить воспоминания без создания аккаунта. Воспоминания публикуются после одобрения семьи; публичная ссылка служит для просмотра.",
     "how.step3_title": "Начните разговор",
     "how.step3_desc": "Задавайте вопросы AI по добавленным историям. Ответы могут быть неточными: проверяйте их по воспоминаниям семьи.",
     "features.label": "Возможности",
-    "features.title": "Больше, чем мемориал.<br>Живое присутствие.",
+    "features.title": "Место для памяти.<br>И для вашей семьи.",
     "features.chat_img_alt": "AI-аватар отвечает на основе воспоминаний",
     "features.chat_tag": "AI-чат с аватаром",
-    "features.chat_title": "Они отвечают.<br>Своими словами.",
+    "features.chat_title": "Разговор на основе<br>ваших воспоминаний.",
     "features.chat_desc": "AI ищет сведения в воспоминаниях вашей семьи и использует их для ответа. Больше подробных историй помогает сделать разговор содержательнее.",
     "features.compare_generic_label": "Обычный AI",
     "features.compare_question": "«Что делало тебя по-настоящему счастливым?»",
     "features.compare_generic_answer": "«Счастье зависит от множества факторов: отношений, личных достижений и чувства смысла жизни...»",
     "features.compare_memorial_label": "Аватар мемориала · пример",
-    "features.compare_memorial_answer": "«Субботние утра на даче. Только я и твоя бабушка, кофе из старых термосов, пока весь мир еще спит. Большего и не нужно было».",
+    "features.compare_memorial_answer": "«В первый поход мы взяли слишком тяжёлые рюкзаки. А вечером у костра ты впервые сыграл нашу любимую песню».",
     "features.voice_img_alt": "Клонирование голоса по записям",
     "features.voice_tag": "Клонирование голоса",
-    "features.voice_title": "Услышьте их,<br>а не робота.",
+    "features.voice_title": "Сохранить голос.<br>Услышать знакомое.",
     "features.voice_desc": "Загрузите запись голоса или видео с разборчивой речью, чтобы создать голос для озвучивания AI-ответов. Качество зависит от исходной записи.",
     "features.voice_point1": "Добавьте запись с хорошо различимым голосом",
     "features.voice_point2": "Подходят аудио и видео с разборчивой речью без громких помех",
@@ -1338,12 +1404,12 @@ var LANDING_I18N = {
     "features.voice_widget_label": "Клонирование голоса из записи",
     "features.timeline_img_alt": "Таймлайн жизни на основе дат из воспоминаний",
     "features.timeline_tag": "Таймлайн жизни",
-    "features.timeline_title": "Каждая жизнь — история.<br>Расскажите её по порядку.",
+    "features.timeline_title": "Каждая жизнь — история.<br>Сохраните важные моменты.",
     "features.timeline_desc": "Воспоминания с датами автоматически выстраиваются в хронологический рассказ — от первых шагов до последних лет. Жизнь, рассказанная красиво.",
-    "features.tl_text1": "Родился в Мельбурне, рос недалеко от залива",
-    "features.tl_text2": "Познакомился с Маргарет на танцах в серф-клубе",
-    "features.tl_text3": "Построил семейный дом в горах — это заняло два года",
-    "features.tl_text4": "Вышел на пенсию. Тренировал юношескую сборную по крикету каждую субботу",
+    "features.tl_text1": "Родился в небольшом городе на Волге",
+    "features.tl_text2": "Познакомился с будущей женой на танцах",
+    "features.tl_text3": "Построил дом, где собиралась вся семья",
+    "features.tl_text4": "Вышел на пенсию, проводил лето с внуками",
     "features.tree_img_alt": "Интерактивное семейное древо",
     "features.tree_tag": "Семейное древо",
     "features.tree_title": "Вся ваша семья.<br>Одна живая карта.",
@@ -1353,24 +1419,24 @@ var LANDING_I18N = {
     "features.tree_point3": "Масштабирование, перемещение, удобно на мобильных устройствах",
     "features.tree_point4": "Приглашайте родственников дополнять воспоминания по ссылке",
     "qr.photo_alt": "Надгробие на кладбище (иллюстративная сцена)",
-    "qr.badge_text": "Посетители сканируют",
-    "qr.badge_highlight": "+ открывают мемориал",
-    "qr.phone_q": "«Что ты больше всего вспоминаешь из прошлого?»",
-    "qr.phone_a": "«Воскресные обеды у бабушки. Четырнадцать человек за одним столом. В доме пахло всем самым вкусным».",
+    "qr.badge_text": "Посетители сканируют QR-код",
+    "qr.badge_highlight": "и открывают мемориал",
+    "qr.phone_q": "Фотографии · Истории · Записи",
+    "qr.phone_a": "Семейные воспоминания на одной странице. Открывается по QR-коду.",
     "qr.caption": "Пример размещения QR-кода. Изготовление и установка таблички не входят в сервис.",
-    "qr.label": "Физический мемориал",
-    "qr.title": "Пусть надгробие<br>говорит.",
-    "qr.sub": "QR-код открывает публичную страницу с фотографиями и историями. Посетитель может задать текстовый вопрос AI. Для добавления воспоминаний нужна ссылка-приглашение.",
-    "qr.uc1_title": "Постоянные памятники",
+    "qr.label": "Память рядом",
+    "qr.title": "Одна ссылка.<br>Целая жизнь в историях.",
+    "qr.sub": "QR-код открывает публичный мемориал. Без регистрации можно задать 5 вопросов AI и поделиться воспоминанием для проверки владельцем. После регистрации бесплатно доступны 15 текстовых AI-ответов в месяц. Архив воспоминаний гостям без входа не показывается.",
+    "qr.uc1_title": "Открыть память",
     "qr.uc1_desc": "Скачайте QR-код публичного мемориала и разместите его там, где удобно вашей семье.",
     "qr.uc2_title": "Семейные альбомы",
     "qr.uc2_desc": "Добавьте QR-код в печатный альбом, чтобы открыть цифровые фотографии и истории.",
-    "qr.uc3_title": "Ежегодное поминовение",
-    "qr.uc3_desc": "Мемориал становится богаче с каждым годом. Новые голоса, новые истории — каждая годовщина приносит что-то новое.",
+    "qr.uc3_title": "Возвращаться вместе",
+    "qr.uc3_desc": "Ссылка остаётся одной и той же, а семья может дополнять страницу новыми историями.",
     "qr.cta": "Создать мемориал с QR-кодом →",
     "privacy.label": "Приватность и доверие",
-    "privacy.title": "Основано на доверии.<br>Не на данных.",
-    "privacy.sub": "Воспоминания о близком человеке священны. Мы относимся к ним именно так.",
+    "privacy.title": "Вы решаете,<br>чем делиться.",
+    "privacy.sub": "Доступ к странице и приглашения для близких — под вашим контролем.",
     "privacy.card1_title": "Доступ через аккаунт",
     "privacy.card1_desc": "Для управления мемориалом нужен аккаунт. Приглашения позволяют семье добавлять воспоминания.",
     "privacy.card2_title": "Приватность по умолчанию",
@@ -1429,7 +1495,7 @@ var LANDING_I18N = {
     "waitlist.error_invalid_email": "Пожалуйста, введите корректный email.",
     "waitlist.error_request_failed": "Запрос не выполнен",
     "waitlist.error_generic": "Не удалось отправить заявку. Попробуйте позже.",
-    "hero.typewriter_quote": "Если честно? Субботние утра на даче с твоей бабушкой. Мы приезжали раньше всех, только мы двое, с кофе в тех старых термосах. Больше ничего и не нужно было. Это был весь мир.",
+    "hero.typewriter_quote": "Когда мы вместе мастерили скворечник. Ты держал доски, я забивал гвозди. Весной в нём поселились птицы — и мы каждый день смотрели на них из окна.",
     "waitlist.duplicate": "Этот email уже есть в списке. Повторная заявка не создана. Оплата не списывалась.",
     "pricing.title": "Выберите масштаб<br>семейного архива.",
     "pricing.status": "Новые тарифы готовятся к запуску. Сейчас можно оставить заявку без оплаты.",
@@ -1461,6 +1527,12 @@ var LANDING_I18N = {
     "pricing.lt_payment": "Разовая оплата согласованного пакета"
   },
   "en": {
+    "nav.purpose": "Digital memorials for your loved ones",
+    "features.voice_available": "Voice cloning is available now",
+    "remembrance.tag": "Signs of remembrance",
+    "remembrance.title": "A warm gesture.<br>A cherished memory.",
+    "remembrance.desc": "Light a virtual candle or leave flowers on a loved one’s page for 24 hours. The family can personalise the memorial with flowers, candles and a remembrance phrase.",
+    "remembrance.cta": "Explore memorials",
     "nav.how": "How it works",
     "nav.features": "Features",
     "nav.hidden": "Hidden Connections",
@@ -1470,8 +1542,8 @@ var LANDING_I18N = {
     "nav.getstarted": "Get started free",
     "nav.toggle_open": "Open menu",
     "nav.toggle_close": "Close menu",
-    "hero.eyebrow": "AI-Powered Digital Memorials",
-    "hero.headline": "Talk to them <em>again.</em><br>In their own words.",
+    "hero.eyebrow": "Family memories in one place",
+    "hero.headline": "Keep what matters.<br><em>Pass it on.</em>",
     "hero.sub": "Keep photos, stories and voice recordings together. Chat with AI using your memories and connect memorials in a family tree.",
     "hero.cta_primary": "Create a memorial — it's free",
     "hero.cta_secondary": "Explore demo families →",
@@ -1479,46 +1551,46 @@ var LANDING_I18N = {
     "hero.note2": "Start free",
     "hero.note3": "No technical skills needed",
     "hero.photo_alt": "Memorial portrait",
-    "hero.photo_name": "George Thompson",
+    "hero.photo_name": "Alexei Sokolov",
     "hero.photo_dates": "1938 – 2015 · Illustrative memorial",
     "hero.chat_ready": "Example AI conversation",
     "hero.chat_question": "What made you happiest in life?",
     "trust.text": "New memorials are private by default. Use page settings and invitations to publish or share with family.",
-    "problem.label": "The Problem",
+    "problem.label": "Keep what matters",
     "problem.headline": "Photos and stories are easy to lose.<br>Keep them together in one family archive.",
     "problem.card1_label": "Photos & Videos",
     "problem.card1_before": "Locked in boxes and hard drives, unseen",
     "problem.card1_after": "→ Collected in a memorial gallery",
     "problem.card2_label": "Their Voice",
     "problem.card2_before": "Lives in home audio and video recordings",
-    "problem.card2_after": "→ Cloned from your recordings — the avatar speaks in their voice",
+    "problem.card2_after": "Preserve recordings and set up a voice for replies based on family memories.",
     "problem.card2_note": "Keep original recordings in the archive",
     "problem.card3_label": "Family Stories",
     "problem.card3_before": "Scattered across relatives who never connect",
     "problem.card3_after": "→ Kept together and linked through a family tree",
     "badge.coming_soon": "Coming soon",
     "how.label": "How It Works",
-    "how.title": "Simple to start.<br>Profound to experience.",
+    "how.title": "Three simple steps.<br>At your own pace.",
     "how.step1_title": "Create the memorial",
-    "how.step1_desc": "Upload photos, write memories, add videos and voice recordings. Each story becomes a building block for the AI avatar.",
+    "how.step1_desc": "Add a name, a photograph and a first story. You can add more later.",
     "how.step2_title": "Invite your family",
-    "how.step2_desc": "Send an invitation link so relatives can contribute without creating an account. A public link is for viewing.",
+    "how.step2_desc": "Send an invitation link so relatives can contribute without creating an account. Contributions appear after family approval; a public link is for viewing.",
     "how.step3_title": "Start the conversation",
     "how.step3_desc": "Ask AI questions about the stories you add. Replies can be inaccurate; check them against your family’s memories.",
     "features.label": "Features",
-    "features.title": "More than a memorial.<br>A living presence.",
+    "features.title": "A place for memories.<br>And for your family.",
     "features.chat_img_alt": "AI avatar chat grounded in memories",
     "features.chat_tag": "AI Avatar Chat",
-    "features.chat_title": "They answer.<br>In their own words.",
+    "features.chat_title": "A conversation based<br>on your memories.",
     "features.chat_desc": "AI looks for information in your family’s memories and uses it to respond. More detailed stories help make conversations more informative.",
     "features.compare_generic_label": "Generic AI",
     "features.compare_question": "\"What made you happiest in life?\"",
     "features.compare_generic_answer": "\"Happiness is influenced by many factors including relationships, personal achievements, and a sense of purpose...\"",
     "features.compare_memorial_label": "Memorial avatar · example",
-    "features.compare_memorial_answer": "\"Saturday mornings at Manly. Just me and your nan, coffee in old thermoses, before the world woke up. That was enough.\"",
+    "features.compare_memorial_answer": "\"Our first hiking trip began with backpacks far too heavy. That evening by the fire, you played our favourite song for the first time.\"",
     "features.voice_img_alt": "Voice cloning from recordings",
-    "features.voice_tag": "Voice Cloning",
-    "features.voice_title": "Hear them,<br>not a robot.",
+    "features.voice_tag": "Voice cloning",
+    "features.voice_title": "Preserve a voice.<br>Hear something familiar.",
     "features.voice_desc": "Upload a clear voice recording or video to create a voice for AI replies. Quality depends on the source recording.",
     "features.voice_point1": "Add a recording with a clearly audible voice",
     "features.voice_point2": "Use audio or video with clear speech and little background noise",
@@ -1526,12 +1598,12 @@ var LANDING_I18N = {
     "features.voice_widget_label": "Voice cloning from a recording",
     "features.timeline_img_alt": "Life timeline from dated memories",
     "features.timeline_tag": "Life Timeline",
-    "features.timeline_title": "Every life is a story.<br>Tell it in order.",
+    "features.timeline_title": "Every life is a story.<br>Preserve its meaningful moments.",
     "features.timeline_desc": "Memories with dates arrange themselves into a chronological narrative — from first steps to final years. A life, beautifully told.",
-    "features.tl_text1": "Born in Melbourne, grew up near the bay",
-    "features.tl_text2": "Met Margaret at a surf club dance in Manly",
-    "features.tl_text3": "Built the family home in the Blue Mountains — took two years",
-    "features.tl_text4": "Retired. Coached junior cricket every Saturday morning",
+    "features.tl_text1": "Born in a small town on the Volga",
+    "features.tl_text2": "Met his future wife at a dance",
+    "features.tl_text3": "Built the home where the whole family gathered",
+    "features.tl_text4": "Retired and spent summers with his grandchildren",
     "features.tree_img_alt": "Interactive family tree",
     "features.tree_tag": "Family Tree",
     "features.tree_title": "Your whole family.<br>One living map.",
@@ -1541,24 +1613,24 @@ var LANDING_I18N = {
     "features.tree_point3": "Zoom, pan, touch-friendly on mobile",
     "features.tree_point4": "Invite relatives to contribute memories through a link",
     "qr.photo_alt": "Headstone in a cemetery (illustrative scene)",
-    "qr.badge_text": "Visitors scan",
-    "qr.badge_highlight": "+ open memorial",
-    "qr.phone_q": "\"What do you miss most about the old days?\"",
-    "qr.phone_a": "\"Sunday roasts at your nan's place. Fourteen people around one table. The house smelled like everything good.\"",
+    "qr.badge_text": "Visitors scan the QR code",
+    "qr.badge_highlight": "and open the memorial",
+    "qr.phone_q": "Photos · Stories · Recordings",
+    "qr.phone_a": "Family memories on one page. Open it with the QR code.",
     "qr.caption": "Example QR placement. Plaque manufacture and installation are not included.",
-    "qr.label": "Physical Memorial",
-    "qr.title": "Let the headstone<br>speak.",
-    "qr.sub": "A QR code opens a public page with photos and stories. Visitors can ask AI a text question. Contributing memories requires an invitation link.",
-    "qr.uc1_title": "Permanent monuments",
+    "qr.label": "Memories close by",
+    "qr.title": "One link.<br>A lifetime of stories.",
+    "qr.sub": "A QR code opens the public memorial. Guests can ask 5 AI questions and submit a memory for owner approval. After registration, free accounts receive 15 text AI replies per month. The memory archive is hidden from signed-out visitors.",
+    "qr.uc1_title": "Open the memories",
     "qr.uc1_desc": "Download the public memorial’s QR code and place it wherever suits your family.",
     "qr.uc2_title": "Family albums",
     "qr.uc2_desc": "Add a QR code to a printed album to open digital photos and stories.",
-    "qr.uc3_title": "Annual remembrance",
-    "qr.uc3_desc": "The memorial grows richer every year. New voices, new stories — every anniversary brings something new.",
+    "qr.uc3_title": "Return together",
+    "qr.uc3_desc": "The link stays the same while the family adds more stories to the page.",
     "qr.cta": "Create a memorial with a QR code →",
     "privacy.label": "Privacy & Trust",
-    "privacy.title": "Built on trust.<br>Not on data.",
-    "privacy.sub": "Your loved one's memories are sacred. We treat them that way.",
+    "privacy.title": "You decide<br>what to share.",
+    "privacy.sub": "You control page access and invitations for loved ones.",
     "privacy.card1_title": "Account access",
     "privacy.card1_desc": "Manage your memorial through an account. Invitations let family members contribute memories.",
     "privacy.card2_title": "Private by default",
@@ -1617,7 +1689,7 @@ var LANDING_I18N = {
     "waitlist.error_invalid_email": "Please enter a valid email address.",
     "waitlist.error_request_failed": "Request failed",
     "waitlist.error_generic": "Could not send your request. Please try again later.",
-    "hero.typewriter_quote": "Honestly? Saturday mornings at Manly Beach with your grandmother. We'd get there before anyone else, just the two of us with coffee in those old thermoses. Didn't need anything else. That was the whole world right there.",
+    "hero.typewriter_quote": "Building a birdhouse together. You held the boards while I hammered the nails. Birds moved in that spring, and we watched them from the window every day.",
     "waitlist.duplicate": "This email is already on the list. No duplicate request was created and no payment was taken.",
     "pricing.title": "Choose the size<br>of your family archive.",
     "pricing.status": "New plans are being prepared for launch. You can leave a request without paying now.",
@@ -1652,16 +1724,16 @@ var LANDING_I18N = {
 
 var LANDING_META = {
   ru: {
-    title: "vspomin.ai — Поговорите с ними снова",
-    description: "Живой мемориал на основе AI. Общайтесь с аватаром, созданным из реальных воспоминаний. Клонирование голоса. Фотографии, истории и семейное древо.",
-    ogTitle: "vspomin.ai — Поговорите с ними снова",
-    ogDescription: "AI-мемориалы на основе реальных воспоминаний. Фотографии, истории, семейное древо и AI-чат."
+    title: "vspomin.ai — Сохранить память. Передать дальше.",
+    description: "Семейная страница памяти: фотографии, истории, записи голоса и семейное древо. AI-разговор на основе сохранённых воспоминаний.",
+    ogTitle: "vspomin.ai — Сохранить память. Передать дальше.",
+    ogDescription: "Фотографии, семейные истории, знакомый голос и связанные страницы памяти."
   },
   en: {
-    title: "vspomin.ai — Talk to Them Again",
-    description: "A living memorial powered by AI. Chat with an avatar built from real memories. Voice cloning. Photos, stories and a family tree.",
-    ogTitle: "vspomin.ai — Talk to Them Again",
-    ogDescription: "AI memorials grounded in real memories. Photos, stories, a family tree and AI chat."
+    title: "vspomin.ai — Preserve memories. Pass them on.",
+    description: "A family memory page with photographs, stories, voice recordings and a family tree. AI conversations based on saved memories.",
+    ogTitle: "vspomin.ai — Preserve memories. Pass them on.",
+    ogDescription: "Photographs, family stories, a familiar voice and connected memory pages."
   }
 };
 

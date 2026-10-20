@@ -406,3 +406,18 @@ class MemorialSign(Base):
     flower_color = Column(String(20), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class MemorialVoice(Base):
+    """Saved clone candidates. Selection remains on Memorial for legacy TTS clients."""
+    __tablename__ = 'memorial_voices'
+    __table_args__ = (UniqueConstraint('memorial_id', 'request_hash', name='uq_memorial_voice_request'),)
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey('memorials.id', ondelete='CASCADE'), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    provider = Column(String(20), nullable=False)
+    voice_id = Column(String(255), nullable=True)
+    request_hash = Column(String(64), nullable=True)
+    state = Column(String(20), nullable=False, default='pending')
+    preview_cache = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

@@ -107,3 +107,35 @@ async def clean_voice_sample(source: Path, destination: Path):
                '-i', str(source), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', '44100',
                '-af', 'highpass=f=65,afftdn=nf=-28,agate=threshold=0.015:ratio=2:attack=10:release=180,loudnorm=I=-18:TP=-2:LRA=11',
                '-c:a', 'libmp3lame', '-b:a', '128k', str(destination))
+
+
+FISH_MAX_TOTAL_SECONDS = 270
+FISH_DURATION_ERROR = (
+    'Для клонирования голоса общая длительность всех записей должна быть меньше '
+    '4 минут 30 секунд. Сократите запись или удалите лишние образцы и повторите попытку.'
+)
+
+
+async def validate_fish_sample_duration(paths):
+    """Reject an oversized batch before contacting the paid cloning provider."""
+    import math
+    total = 0.0
+    for path in paths:
+        try:
+            metadata = json.loads(await _run(
+                'ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
+                '-show_format', '-show_streams', '-of', 'json', str(path),
+            ))
+            if not any(s.get('codec_type') == 'audio' for s in metadata.get('streams', [])):
+                raise ValueError('В записи нет аудиодорожки.')
+            duration = float(metadata.get('format', {}).get('duration', 0))
+            if not math.isfinite(duration) or duration <= 0:
+                raise ValueError('Не удалось определить длительность записи. Выберите другой файл.')
+        except (TypeError, KeyError, json.JSONDecodeError) as exc:
+            raise ValueError('Не удалось определить длительность записи. Выберите другой файл.') from exc
+        except asyncio.TimeoutError as exc:
+            raise ValueError('Проверка записи заняла слишком много времени. Выберите другой файл.') from exc
+        total += duration
+        if total >= FISH_MAX_TOTAL_SECONDS:
+            raise ValueError(FISH_DURATION_ERROR)
+    return total

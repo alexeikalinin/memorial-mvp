@@ -67,6 +67,7 @@ async def test_overview_keeps_independent_grounding(monkeypatch, verifier_suppor
         completion({'supported': True, 'answer': 'Я родился в Новогрудке.',
                     'excerpts': [{'memory_id': 7, 'quote': 'Александр родился в Новогрудке.'}]}),
         completion({'supported': verifier_supports}),
+        completion({'supported': False}),
     ])
     monkeypatch.setattr(openai, 'AsyncOpenAI', lambda **kwargs: SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
@@ -74,7 +75,7 @@ async def test_overview_keeps_independent_grounding(monkeypatch, verifier_suppor
     answer, sources = await generate_rag_response('Расскажи что помнишь о себе?',
         [{'memory_id': 7, 'text': 'Александр родился в Новогрудке.', 'source_memorial_id': 318}],
         memorial_name='Александр')
-    assert create.await_count == 2
+    assert create.await_count == (2 if verifier_supports else 3)
     assert 'OVERVIEW REQUEST' in create.call_args_list[0].kwargs['messages'][0]['content']
     assert bool(sources) is verifier_supports
     if verifier_supports:

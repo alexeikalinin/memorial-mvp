@@ -4,17 +4,20 @@ API endpoints для AI-функций: анимация фото и чат с �
 import logging
 import asyncio
 
-from fastapi import Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import Request, Response, APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List, Literal
 from pathlib import Path
 
 import httpx
 
+from app.services.voice_library import preserve_current_voice, serialize_voice, reserve_voice
+from app.models import MemorialVoice
 from app.services.voice_models import resolve_fish_model
 from app.services.memory_overview import is_memory_overview_question, overview_context
-from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
+from app.services.voice_samples import prepare_voice_samples, clean_voice_sample, validate_fish_sample_duration, FISH_DURATION_ERROR
 
+from app.limiter import limiter
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner, require_memorial_access
 from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
@@ -325,7 +328,7 @@ async def _avatar_chat_response(
             if request.language == "en" else
             "У меня пока нет информации об этом человеке. Пожалуйста, добавьте воспоминания, чтобы я мог отвечать на вопросы."
         )
-        return AvatarChatResponse(answer=no_mem_msg, sources=[])
+        return AvatarChatResponse(answer=no_mem_msg, sources=[], suggest_memory=True)
     
     overview = is_memory_overview_question(request.question)
     if not overview:
@@ -438,17 +441,22 @@ async def _avatar_chat_response(
         if overview:
             context_chunks = overview_context(all_memories, request.memorial_id)
         else:
-            # Создание embedding вопроса
-            question_embedding = await get_embedding(request.question)
-        
-            # Поиск релевантных воспоминаний в векторной БД
-            # Понижаем порог для лучшего поиска, особенно для общих вопросов
-            similar_memories = await search_similar_memories(
-                memorial_ids=search_memorial_ids,
-                query_embedding=question_embedding,
-                top_k=5,
-                min_score=0.1  # Низкий порог — длинные тексты дают размытые embeddings
-            )
+            # An unavailable or incomplete index must not hide approved DB memories.
+            try:
+                question_embedding = await get_embedding(request.question)
+                similar_memories = await search_similar_memories(
+                    memorial_ids=search_memorial_ids,
+                    query_embedding=question_embedding,
+                    top_k=5,
+                    min_score=0.1,
+                )
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Vector search unavailable for memorial %s; using approved DB memories",
+                    request.memorial_id, exc_info=True,
+                )
+                similar_memories = []
         
             print(f"🔍 Found {len(similar_memories)} similar memories for question: '{request.question}'")
             for i, mem in enumerate(similar_memories):
@@ -477,6 +485,7 @@ async def _avatar_chat_response(
                         context_chunks.append({
                             "text": text,
                             "memory_id": memory.id,
+                            "contributor_name": memory.contributor_name,
                             "score": mem.get("score", 0),
                             "title": memory.title,
                             "source_memorial_id": source_memorial_id,
@@ -490,31 +499,28 @@ async def _avatar_chat_response(
                     context_chunks.append(mem)
                     print(f"⚠️ Using text from payload (no memory_id): {len(mem.get('text', ''))} chars")
         
-        # Fallback: векторный поиск пуст (часто на проде — новый пустой Qdrant/volume при той же Postgres,
-        # или порог score отфильтровал всё), хотя воспоминания в БД есть.
-        if not context_chunks and all_memories:
-            print(
-                f"⚠️ RAG returned no usable chunks; falling back to DB memories only "
-                f"(memorial_id={request.memorial_id}, count={len(all_memories)})"
-            )
-            max_chars = 18000
-            used = 0
-            for m in sorted(all_memories, key=lambda x: x.id, reverse=True):
-                if used >= max_chars:
-                    break
-                piece = (m.content or "").strip()
+        # A nonempty result can still be stale: include approved entries omitted
+        # by top-k/indexing, including newly moderated memories, within a budget.
+        if not overview:
+            included_ids = {chunk.get("memory_id") for chunk in context_chunks}
+            remaining = 18000
+            for memory in sorted(all_memories, key=lambda item: item.id, reverse=True):
+                if memory.id in included_ids or remaining <= 0:
+                    continue
+                piece = (memory.content or "").strip()[:remaining]
                 if not piece:
                     continue
-                take = piece[: max_chars - used]
                 context_chunks.append({
-                    "text": take,
-                    "memory_id": m.id,
+                    "text": piece,
+                    "memory_id": memory.id,
+                    "contributor_name": memory.contributor_name,
                     "score": 0.35,
-                    "title": m.title,
+                    "title": memory.title,
                     "source_memorial_id": request.memorial_id,
                 })
-                used += len(take)
-        
+                included_ids.add(memory.id)
+                remaining -= len(piece)
+
         if not context_chunks:
             print(f"❌ No context chunks after RAG + DB fallback (similar_hits={len(similar_memories)})")
             no_info_msg = (
@@ -522,7 +528,7 @@ async def _avatar_chat_response(
                 if request.language == "en" else
                 "Я не могу найти информацию об этом в моих воспоминаниях."
             )
-            return AvatarChatResponse(answer=no_info_msg, sources=[])
+            return AvatarChatResponse(answer=no_info_msg, sources=[], suggest_memory=True)
         
         print(f"📝 Created {len(context_chunks)} context chunks for RAG")
         
@@ -674,7 +680,8 @@ async def _avatar_chat_response(
             audio_error=audio_error,
             animation_task_id=animation_task_id,
             animation_provider=animation_provider,
-            sources=sources
+            sources=sources,
+            suggest_memory=not bool(source_ids),
         )
     
     except Exception as e:
@@ -821,20 +828,34 @@ async def preview_voice_model(
     memorial_id: int,
     model: Literal["s2-pro", "s2.1-pro"],
     language: Literal["ru", "en"] = "ru",
+    version_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     memorial = require_actual_memorial_owner(memorial_id, current_user, db)
     check_tts_access(current_user)
     voice_id, provider = _resolve_tts_voice(memorial)
+    row = None
+    if version_id is not None:
+        row = db.query(MemorialVoice).filter_by(id=version_id, memorial_id=memorial.id, state="ready").populate_existing().with_for_update().first()
+        if not row:
+            raise HTTPException(status_code=404, detail="Сохранённый голос не найден.")
+        voice_id, provider = row.voice_id, row.provider
     if not voice_id or provider != "fish_audio":
         raise HTTPException(status_code=400, detail="Create a Fish Audio voice clone first")
     text = ("Привет. Это проверка звучания моего голоса. Послушайте, насколько естественно звучат слова и паузы между предложениями."
             if language == "ru" else "Hello. This is a test of my voice. Listen to how naturally the words sound, and to the pauses between sentences.")
+    import base64
+    cache_key = f'{model}:{language}:v1'
+    if row and (row.preview_cache or {}).get(cache_key):
+        return Response(base64.b64decode(row.preview_cache[cache_key]), media_type='audio/mpeg', headers={'Cache-Control': 'no-store'})
     try:
         audio = await generate_speech(text, voice_id=voice_id, provider=provider, speed=1, model=model)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row:
+        row.preview_cache = {**(row.preview_cache or {}), cache_key: base64.b64encode(audio).decode('ascii')}
+        db.commit()
     return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "no-store"})
 
 
@@ -943,15 +964,20 @@ async def upload_voice(
             if p.exists():
                 p.unlink()
 
-    # Запоминаем старый голос до перезаписи — после успешного клонирования удалим его
-    # у провайдера, чтобы не копились неиспользуемые модели в аккаунте.
-    old_voice_id = memorial.voice_id
-    old_voice_provider = memorial.voice_provider
+    saved_voice = None
 
     try:
         # Создаем кастомный клонированный голос через выбранного провайдера
         voice_provider_final = provider if provider in ("elevenlabs", "fish_audio") else settings.TTS_PROVIDER
+        if voice_provider_final == "fish_audio":
+            await validate_fish_sample_duration(temp_paths)
         voice_name_final = voice_name or f"{memorial.name} Voice"
+        saved_voice, reused = reserve_voice(db, memorial, temp_paths, voice_provider_final, voice_name_final)
+        if reused:
+            _cleanup()
+            return {'success': True, 'voice_id': saved_voice.voice_id, 'voice_provider': saved_voice.provider,
+                    'version_id': saved_voice.id, 'reused': True, 'active': serialize_voice(saved_voice, memorial)['active']}
+
         voice_id = await create_custom_voice(
             audio_file_paths=[str(p) for p in temp_paths],
             voice_name=voice_name_final,
@@ -959,21 +985,15 @@ async def upload_voice(
             provider=voice_provider_final,
         )
 
-        # Сохраняем voice_id и провайдера в мемориал (без провайдера voice_id непереносим между сервисами)
-        memorial.voice_id = voice_id
-        memorial.voice_provider = voice_provider_final
+        saved_voice.voice_id = voice_id
+        saved_voice.state = 'ready'
+        # Only the first candidate is selected automatically. Old voices remain reusable.
+        if not memorial.voice_id:
+            memorial.voice_id = voice_id
+            memorial.voice_provider = voice_provider_final
         db.commit()
         db.refresh(memorial)
-
         _cleanup()
-
-        # Удаляем старую модель голоса (best-effort — ошибка здесь не должна ломать ответ,
-        # новый голос уже сохранён и рабочий)
-        if old_voice_id and old_voice_id != voice_id:
-            try:
-                await delete_custom_voice(old_voice_id, old_voice_provider)
-            except Exception as cleanup_err:
-                print(f"Warning: failed to delete old voice {old_voice_id}: {cleanup_err}")
 
         return {
             "success": True,
@@ -981,12 +1001,24 @@ async def upload_voice(
             "voice_name": voice_name_final,
             "voice_provider": voice_provider_final,
             "samples_used": len(temp_paths),
+            "version_id": saved_voice.id,
+            "reused": False,
+            "active": serialize_voice(saved_voice, memorial)["active"],
             "message": f"Голос успешно создан и сохранен для мемориала '{memorial.name}'"
         }
 
+    except HTTPException:
+        _cleanup()
+        raise
     except ValueError as e:
+        if saved_voice is not None:
+            db.rollback()
+            saved_voice.state = 'failed'
+            db.commit()
         _cleanup()
         error_str = str(e)
+        if voice_provider_final == "fish_audio" and "Total duration of audios is too long" in error_str:
+            raise HTTPException(status_code=400, detail=FISH_DURATION_ERROR) from e
         # Понятное сообщение для платного плана ElevenLabs
         if "paid_plan_required" in error_str or "payment_required" in error_str or "instant_voice_cloning" in error_str:
             raise HTTPException(
@@ -1002,6 +1034,9 @@ async def upload_voice(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_str
         )
+    except RuntimeError as e:
+        _cleanup()
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         _cleanup()
         raise HTTPException(
@@ -1011,60 +1046,59 @@ async def upload_voice(
 
 
 @router.post("/transcribe")
+@limiter.limit("5/minute")
 async def transcribe_audio(
+    request: Request,
     audio_file: UploadFile = File(...),
-    language: str = "ru",
+    language: Optional[str] = Form(None),
+    query_language: Optional[str] = Query(None, alias="language"),
+    memorial_id: Optional[int] = Form(None),
+    invite_token: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_authenticated_user),
 ):
-    """
-    Транскрибировать аудио через OpenAI Whisper.
-    Принимает MP3/WAV/M4A/WebM, возвращает текст.
-    Используется для добавления голосовых воспоминаний.
-    """
+    """Transcribe an authorized memory recording, preserving its actual format."""
+    from datetime import datetime
+    if invite_token:
+        invite = db.query(MemorialInvite).filter(MemorialInvite.token == invite_token).first()
+        if (not invite or invite.memorial_id != memorial_id
+                or (invite.expires_at and invite.expires_at.replace(tzinfo=None) < datetime.utcnow())
+                or not (invite.permissions or {}).get("add_memories")):
+            raise HTTPException(403, "Invalid or expired recording invitation")
+    elif current_user:
+        if memorial_id is not None:
+            require_memorial_access(memorial_id, current_user, db, min_role=UserRole.EDITOR)
+    else:
+        raise HTTPException(401, "A valid invitation or sign-in is required")
+    resolved_language = language or query_language or "ru"
+    if resolved_language not in ("ru", "en"):
+        raise HTTPException(400, "Choose Russian or English transcription")
+    suffix = Path(audio_file.filename or "recording.webm").suffix.lstrip(".").lower()
+    if suffix not in {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg"}:
+        raise HTTPException(400, "Upload MP3, WAV, M4A, MP4 or WebM audio")
+    # Read at most one byte over the provider limit, never an unbounded upload.
+    max_bytes = 25 * 1024 * 1024
+    contents = await audio_file.read(max_bytes + 1)
+    if not contents:
+        raise HTTPException(400, "The recording is empty. Please record again.")
+    if len(contents) > max_bytes:
+        raise HTTPException(413, "Audio must be no larger than 25 MB")
     if not settings.OPENAI_API_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OpenAI API key not configured"
-        )
-
-    # Допустимые форматы Whisper
-    allowed_audio = {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg"}
-    suffix = Path(audio_file.filename or "audio.webm").suffix.lstrip(".").lower()
-    if not suffix:
-        suffix = "webm"
-
-    contents = await audio_file.read()
-    if len(contents) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пустой аудиофайл"
-        )
-
-    tmp_path = None
+        raise HTTPException(503, "Speech recognition is temporarily unavailable")
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
-            tmp.write(contents)
-            tmp_path = tmp.name
-
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
-        with open(tmp_path, "rb") as f:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=f,
-                language=language,
-            )
-
-        return {"text": transcript.text, "language": language}
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка транскрипции: {str(e)}"
+        from openai import AsyncOpenAI, BadRequestError, RateLimitError, APITimeoutError
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, timeout=60, max_retries=1)
+        transcript = await client.audio.transcriptions.create(
+            model="whisper-1", file=(f"recording.{suffix}", contents), language=resolved_language,
         )
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+        return {"text": transcript.text, "language": resolved_language}
+    except BadRequestError:
+        raise HTTPException(400, "The audio could not be read. Try another recording or format.")
+    except (RateLimitError, APITimeoutError):
+        raise HTTPException(503, "Speech recognition is busy. Please retry shortly.")
+    except Exception:
+        logging.exception("Memory transcription failed")
+        raise HTTPException(503, "Speech recognition failed. You can retry or enter text manually.")
 
 
 @router.post("/family/sync-memories/{memorial_id}")
@@ -1207,3 +1241,24 @@ async def get_elevenlabs_quota(_current_user: User = Depends(get_current_user)):
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(e),
         )
+
+
+@router.get('/voice/versions')
+def list_voice_versions(memorial_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    db.query(Memorial).filter_by(id=memorial.id).with_for_update().one()
+    preserve_current_voice(db, memorial)
+    db.commit()
+    rows = db.query(MemorialVoice).filter_by(memorial_id=memorial.id).order_by(MemorialVoice.id.desc()).all()
+    return {'voices': [serialize_voice(row, memorial) for row in rows]}
+
+
+@router.patch('/voice/versions/{version_id}/select')
+def select_voice_version(version_id: int, memorial_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = require_actual_memorial_owner(memorial_id, current_user, db)
+    row = db.query(MemorialVoice).filter_by(id=version_id, memorial_id=memorial.id, state='ready').first()
+    if not row or not row.voice_id:
+        raise HTTPException(status_code=404, detail='Сохранённый голос не найден.')
+    memorial.voice_id, memorial.voice_provider = row.voice_id, row.provider
+    db.commit()
+    return serialize_voice(row, memorial)

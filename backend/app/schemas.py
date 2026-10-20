@@ -2,7 +2,7 @@
 Pydantic схемы для валидации и сериализации данных.
 """
 from __future__ import annotations
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator, field_validator
 from typing import Optional, List, Dict, Any, Literal
 from datetime import datetime
 from app.models import MediaType, RelationshipType
@@ -205,7 +205,14 @@ class MemoryBase(BaseModel):
 
 
 class MemoryCreate(MemoryBase):
-    pass
+    contributor_name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+    @field_validator("contributor_name")
+    @classmethod
+    def clean_contributor_name(cls, value):
+        if value is not None and not value.strip():
+            raise ValueError("Contributor name cannot be blank")
+        return value.strip() if value else value
 
 
 class MemoryUpdate(BaseModel):
@@ -233,6 +240,14 @@ class PublicMemorySubmit(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
     content: str = Field(..., min_length=10, max_length=5000)
     contributor_name: str = Field(..., min_length=1, max_length=100)
+
+    @field_validator("contributor_name")
+    @classmethod
+    def clean_contributor_name(cls, value):
+        if not value.strip():
+            raise ValueError("Contributor name cannot be blank")
+        return value.strip()
+
 
 
 class MemorialDetailResponse(MemorialResponse):
@@ -337,6 +352,7 @@ class AvatarChatRequest(BaseModel):
 
 class AvatarChatResponse(BaseModel):
     answer: str
+    suggest_memory: bool = False
     guest_questions_remaining: Optional[int] = None
     audio_url: Optional[str] = None
     audio_error: Optional[str] = None  # Причина сбоя генерации аудио (если include_audio=True, но аудио нет)

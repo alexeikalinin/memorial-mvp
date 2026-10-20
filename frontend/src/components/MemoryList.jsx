@@ -1,3 +1,4 @@
+import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { useState, useEffect, useRef } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
@@ -14,7 +15,7 @@ function formatApiDetail(err) {
   return String(d)
 }
 
-function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canModerate = false, pendingMemories = [], pendingLoading = false, onApprove, onReject }) {
+function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canModerate = false, pendingMemories = [], pendingLoading = false, onApprove, onReject, composeRequest = 0 }) {
   const { lang, t } = useLanguage()
   const locale = lang === 'en' ? 'en-US' : 'ru-RU'
   const [showPending, setShowPending] = useState(false)
@@ -43,6 +44,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
 
+  useEffect(() => () => releaseRecorder(mediaRecorderRef.current), [])
+  useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl) }, [audioUrl])
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300)
     return () => clearTimeout(timer)
@@ -52,14 +56,18 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     loadMemories(debouncedQuery)
   }, [memorialId, debouncedQuery])
 
+  useEffect(() => {
+    if (composeRequest > 0 && canEdit) setShowForm(true)
+  }, [composeRequest, canEdit])
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      const recorder = createAudioRecorder(stream)
       chunksRef.current = []
       recorder.ondataavailable = (e) => chunksRef.current.push(e.data)
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const blob = recordingBlob(chunksRef.current, recorder)
         setAudioBlob(blob)
         setAudioUrl(URL.createObjectURL(blob))
         stream.getTracks().forEach((t) => t.stop())
@@ -73,7 +81,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   }
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop()
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop()
     setIsRecording(false)
   }
 
@@ -90,8 +98,8 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     try {
       const file = audioBlob instanceof File
         ? audioBlob
-        : new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
-      const response = await aiAPI.transcribe(file)
+        : recordingFile(audioBlob)
+      const response = await aiAPI.transcribe(file, lang, { memorialId })
       const text = response.data.text
       setFormData((prev) => ({
         ...prev,
@@ -111,7 +119,8 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     setAudioBlob(null)
     setAudioUrl(null)
     if (isRecording) {
-      mediaRecorderRef.current?.stop()
+      releaseRecorder(mediaRecorderRef.current)
+      mediaRecorderRef.current = null
       setIsRecording(false)
     }
   }
@@ -515,6 +524,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
                 <>
                   {memory.title && <h3>{memory.title}</h3>}
                   <p>{memory.content}</p>
+                  {canModerate && memory.contributor_name && (
+                    <p className="memory-contributor">{t('memoryList.contributor', { name: memory.contributor_name })}</p>
+                  )}
                   <div className="memory-meta">
                     {memory.event_date && (
                       <span className="event-date">

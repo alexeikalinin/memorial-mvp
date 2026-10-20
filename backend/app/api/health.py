@@ -11,5 +11,5 @@ async def health_check():
     """
     Проверка работоспособности сервиса.
     """
-    return {"status": "ok", "service": "memorial-mvp"}
+    return {"status": "ok", "service": "vspomin.ai"}
 

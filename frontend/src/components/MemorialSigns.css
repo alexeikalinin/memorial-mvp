@@ -8,3 +8,24 @@
 .signs-variant-tile .appearance-flower-sprite,.signs-variant-tile .appearance-candle-sprite{position:relative!important;right:auto!important;bottom:auto!important;width:100px;height:100px;max-width:100%;flex-shrink:0}
 .signs-variant-tile span:last-child{text-align:center}
 @media(max-width:480px){.signs-variant-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.signs-variant-tile .appearance-flower-sprite,.signs-variant-tile .appearance-candle-sprite{width:88px;height:88px}}
+
+.memorial-signs { flex-wrap:wrap; }
+.signs-confirmation { flex-basis:100%; margin:0; color:#536a43; font-size:14px; }
+.memorial-visitor-signs { flex-wrap:wrap; }
+.visitor-sign { position:relative; border:0; background:none; padding:0; cursor:pointer; width:46px; height:50px; }
+.visitor-sign .appearance-real-flowers { width:45px; height:45px; }
+.visitor-sign .appearance-candle { position:relative!important; width:44px; height:48px; }
+.visitor-sign:hover .visitor-tooltip,.visitor-sign:focus .visitor-tooltip { display:block; }
+.signs-picker { padding:0; margin:0 auto; inset:auto 0; top:var(--signs-vp-center,50%); bottom:auto; transform:translateY(-50%); max-height:calc(100vh - 32px); max-height:calc(var(--signs-vp-height,100dvh) - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); overflow:hidden; }
+.signs-picker[open] { display:flex; flex-direction:column; }
+.signs-form { display:flex; flex-direction:column; min-height:0; width:100%; max-height:inherit; overflow:hidden; }
+.signs-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; flex-shrink:0; border-bottom:1px solid #e2d5c1; }
+.signs-dialog-header h2 { margin:0; font-size:24px; }
+.signs-dialog-header button { margin:0; min-width:44px; min-height:44px; }
+.signs-dialog-body { overflow:auto; min-height:0; flex:1 1 auto; padding:0 20px 16px; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; scroll-padding-bottom:20px; }
+.signs-dialog-footer { flex-shrink:0; background:#faf8f5; border-top:1px solid #e2d5c1; padding:12px 20px max(12px,env(safe-area-inset-bottom,0px)); }
+.signs-dialog-footer>div { display:flex; justify-content:flex-end; gap:10px; }
+.signs-dialog-footer button { margin:0; min-height:44px; font-size:14px; }
+.signs-dialog-footer button[type=submit] { background:#88613f; color:white; }
+.signs-dialog-footer p { margin:0 0 8px; color:#a93626; }
+@media(max-width:768px){.signs-picker input,.signs-picker textarea{font-size:16px}.signs-dialog-body{padding-inline:14px}.signs-dialog-header,.signs-dialog-footer{padding-inline:14px}.signs-dialog-footer button[type=submit]{flex:1}.visitor-tooltip{right:0;max-width:calc(100vw - 32px)}}

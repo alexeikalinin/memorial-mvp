@@ -14,6 +14,7 @@ export default {
     password: 'Password',
     password_min_placeholder: 'Minimum 8 characters',
     username: 'Username',
+    username_hint: 'Your profile identifier. Sign in with email or Google.',
     username_placeholder: 'username',
     full_name: 'Full name',
     full_name_placeholder: 'John Smith',
@@ -65,6 +66,7 @@ export default {
     back: '← Go back',
   },
   public: {
+    memory_invitation: 'Your stories preserve moments that are still missing from this page. Every memory makes the picture of this person more complete and conversations with their digital memorial more personal.',
     private_memorial: 'This memorial is private. Ask the owner to enable public access or sign in with an account that has access.',
     not_found: 'Memorial not found',
     qr_error: 'Error generating QR code',
@@ -243,6 +245,7 @@ export default {
     title: 'Life timeline',
   },
   chat: {
+    add_memory_hint: 'Share this story so that, after the owner approves it, I can remember it next time.',
     placeholder: 'Ask a question...',
     send: 'Send',
     suggested_label: 'Try asking:',
@@ -611,6 +614,7 @@ export default {
     ],
   },
   memoryList: {
+    contributor: 'Memory shared by: {name}',
     pending_requests: 'Memory submissions',
     pending_short: 'awaiting review',
     pending_help: 'Only you can see these submissions. Approved memories appear in the shared list and become available to the avatar.',

@@ -76,6 +76,7 @@ function MemorialDetail() {
   const [pendingRequests, setPendingRequests] = useState([])
   const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false)
   const [pendingMemories, setPendingMemories] = useState([])
+  const [memoryComposeRequest, setMemoryComposeRequest] = useState(0)
   const [pendingMemoriesLoading, setPendingMemoriesLoading] = useState(false)
 
   useEffect(() => {
@@ -522,7 +523,7 @@ function MemorialDetail() {
                 disabled={deleting}
                 title={t('detail.btn_delete')}
               >
-                {deleting ? t('detail.deleting') : '✕'}
+                {deleting ? t('detail.deleting') : `✕ ${lang === 'ru' ? 'Удалить мемориал' : 'Delete memorial'}`}
               </button>
             )}
             <button
@@ -532,7 +533,7 @@ function MemorialDetail() {
               title={t('onboarding.help_button')}
               aria-label={t('onboarding.help_button')}
             >
-              ?
+              ? {lang === 'ru' ? 'Как пользоваться' : 'How to use'}
             </button>
             </div></details>
           </div>
@@ -677,7 +678,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('memories') && (
           <div style={{ display: activeTab === 'memories' ? 'block' : 'none' }}>
-            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} canModerate={isActualOwner} pendingMemories={pendingMemories} pendingLoading={pendingMemoriesLoading} onApprove={handleApproveMemory} onReject={handleRejectMemory} />
+            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} canModerate={isActualOwner} pendingMemories={pendingMemories} pendingLoading={pendingMemoriesLoading} onApprove={handleApproveMemory} onReject={handleRejectMemory} composeRequest={memoryComposeRequest} />
           </div>
         )}
         {mountedTabs.has('chat') && (
@@ -686,6 +687,7 @@ function MemorialDetail() {
               memorialId={id}
               coverPhotoId={memorial.cover_photo_id}
               memorialName={memorial.name}
+              onAddMemory={canEdit ? () => { handleTabClick('memories'); setMemoryComposeRequest(n => n + 1) } : undefined}
               canManageVoice={isActualOwner}
               textOnly={!isActualOwner}
               portraitSettings={memorial.portrait_settings}
@@ -953,4 +955,3 @@ function MemorialDetail() {
 }
 
 export default MemorialDetail
-
