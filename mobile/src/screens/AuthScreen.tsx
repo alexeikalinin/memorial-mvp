@@ -10,6 +10,7 @@ import {
   message,
 } from "../components/UI";
 import { styles as s } from "../theme";
+import { signInWithGoogle } from "../auth/google";
 export function AuthScreen({
   api,
   onAuthenticated,
@@ -53,6 +54,27 @@ export function AuthScreen({
       <Text style={s.subtitle}>
         Войдите в тот же аккаунт, что и на сайте. Ваши страницы и воспоминания
         будут рядом.
+      </Text>
+      <Button
+        secondary
+        label="Продолжить с Google"
+        busy={busy}
+        onPress={() => {
+          void (async () => {
+            setBusy(true);
+            setError("");
+            try {
+              if (await signInWithGoogle(api)) await onAuthenticated();
+            } catch (e) {
+              setError(message(e));
+            } finally {
+              setBusy(false);
+            }
+          })();
+        }}
+      />
+      <Text style={[s.small, { textAlign: "center" }]}>
+        или по электронной почте
       </Text>
       {register && (
         <>
@@ -100,19 +122,19 @@ export function AuthScreen({
           setError("");
         }}
       />
-      <Text style={s.small}>
-        Google-вход и восстановление пароля доступны на сайте.
-      </Text>
+      <Text style={s.small}>Восстановить пароль можно на сайте.</Text>
       <Button
         secondary
         label="Открыть сайт"
-        onPress={() => void Linking.openURL(api.websiteUrl('/login'))}
+        onPress={() => void Linking.openURL(api.websiteUrl("/login"))}
       />
-      {__DEV__ && <Button
-        secondary
-        label="Настройки подключения"
-        onPress={() => setConfig(!config)}
-      />}
+      {__DEV__ && (
+        <Button
+          secondary
+          label="Настройки подключения"
+          onPress={() => setConfig(!config)}
+        />
+      )}
       {config && (
         <View style={s.card}>
           <Field

@@ -119,8 +119,13 @@ def google_login(lang: str = Depends(get_lang)):
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
+async def google_callback(code: str | None = None, state: str | None = None, error: str | None = None, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
     """Google OAuth callback: обменивает code на токен, создаёт/находит User, возвращает JWT."""
+    if state and state.startswith('mobile.'):
+        from app.api.mobile_auth import complete
+        return await complete(code, state, error, db)
+    if not code:
+        raise HTTPException(status_code=400, detail='Google sign-in was not completed')
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=501, detail=tr(lang, "google_oauth_not_configured"))
 

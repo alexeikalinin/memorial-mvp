@@ -27,7 +27,7 @@
 - На физических iPhone/Android приложение **не запускалось**. Не проверены реальный микрофон, разрешения, нативный файловый выбор, аудиопрерывания/наушники, secure-store persistence после переустановки и реальные системные переходы.
 - Xcode / Android Studio / device SDK в этой среде не обнаружены. Финальные native build/install и device QA остаются обязательными перед выпуском.
 - HTTPS Universal/App Links ещё не настроены на домене. QR продолжает вести в существующую веб-страницу.
-- Самостоятельный Google OAuth, native purchases и автоматическая транскрипция записи в мобильном приложении — отдельные этапы.
+- Native purchases и автоматическая транскрипция записи — отдельные этапы. Статус Google OAuth указан ниже.
 - Первичная установка npm сообщила transitive audit findings в дереве нового Expo SDK. Совместимость проверена Expo Doctor; отдельный release dependency/security audit ещё не выполнялся. Не считать baseline разрешением на публикацию.
 
 ## Следующий ручной прогон на телефонах
@@ -38,3 +38,12 @@
 4. Проверить owner/editor/viewer, private/public страницу и гостевую модерацию.
 5. Проверить настоящую запись, предпрослушивание, повторную загрузку после ошибки сети, воспроизведение аудио/видео.
 6. Проверить выход, восстановление сессии, смену аккаунта, большой размер текста и системный возврат.
+
+## Дополнение: Google-вход
+
+- 15 mobile unit tests passed (включая проверку callback origin/attempt/code).
+- 17 integration tests passed:13Google handoff cases +4shared API cases. Google provider synthetic.
+- Подтверждено: существующий web User ID/ACL сохраняется; новый Google-user создаётся; secret остаётся серверным; callback не содержит JWT; неверные verifier/code/state, replay, expiry, cancelled/unverified/disabled/conflicting identity не выдают сессию.
+- Прежний happy-path Google web callback отдельно прошёл regression test.
+- Typecheck/lint и web/iOS/Android export passed; Expo Doctor после добавления crypto/web-browser прошёл20/20.
+- Реальный Google на iPhone12ProMax не проверен; deployment серверного дополнения и собственная development-сборка ещё необходимы.

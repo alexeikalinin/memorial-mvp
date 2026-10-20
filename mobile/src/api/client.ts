@@ -232,6 +232,27 @@ export class MobileApi {
     this.token = result.access_token;
     return result.user;
   }
+  startGoogle(challenge: string) {
+    return this.request<{
+      attempt_id: string;
+      authorization_url: string;
+      expires_in: number;
+    }>(
+      "/auth/mobile/google/start",
+      { method: "POST", body: JSON.stringify({ challenge }) },
+      false,
+    );
+  }
+  async completeGoogle(attempt_id: string, verifier: string, code: string) {
+    const result = await this.request<{ access_token: string; user: User }>(
+      "/auth/mobile/google/exchange",
+      { method: "POST", body: JSON.stringify({ attempt_id, verifier, code }) },
+      false,
+    );
+    await this.store.set(result.access_token);
+    this.token = result.access_token;
+    return result.user;
+  }
   register(
     username: string,
     email: string,
@@ -413,7 +434,9 @@ export class MobileApi {
   publicPageUrl(id: number) {
     return this.websiteUrl(`/m/${id}`);
   }
-  websiteUrl(path = '') { return `${(process.env.EXPO_PUBLIC_WEB_URL || 'https://vspomin.ai/app').replace(/\/$/,'')}${path}`; }
+  websiteUrl(path = "") {
+    return `${(process.env.EXPO_PUBLIC_WEB_URL || "https://vspomin.ai/app").replace(/\/$/, "")}${path}`;
+  }
   resolveMediaUrl(url: string) {
     return new URL(url, this.baseUrl + "/").toString();
   }
