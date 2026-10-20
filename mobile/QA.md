@@ -1,0 +1,49 @@
+# Mobile baseline QA — 2026-10-20
+
+## Выполнено
+
+- TypeScript: `npm run typecheck` — passed.
+- ESLint / Expo: `npm run lint` — passed.
+- Клиент API / сессии / WAV: `npm test` — **13 passed**.
+- Проверки существующего FastAPI на отдельной SQLite: `pytest mobile/integration -q` — **4 passed**.
+  - Два независимо авторизованных клиента видят одинаковый аккаунт и созданные страницы.
+  - Тексты добавляются с обеих сторон, изменения биографии видны после чтения.
+  - PNG, WAV, настоящее MP4-видео и AAC/MP4-аудио загружаются, появляются у другого клиента и скачиваются без изменения байтов.
+  - Чужой аккаунт не получает private page; viewer не пишет и не модерирует.
+  - Гостевое воспоминание остаётся pending до одобрения владельцем; гостевой архив закрыт.
+- `expo-doctor` — **20/20 passed** после добавления обязательного peer `expo-asset`.
+- `expo install --check` — зависимости совместимы с SDK 58.
+- `expo export --platform all` — скомпилированы web, iOS и Android bundles (Hermes для native). Это **не** подписанные APK/IPA и не запуск симулятора.
+- Существующий `frontend npm run build` — passed.
+- 303 файла `frontend/` и `backend/` сравнены по Git blob hash со стартовым тегом — **0 изменений**.
+- Browser smoke: отдельные мобильный RN Web и существующий React/Vite интерфейсы, одна временная БД и независимые сессии. Вход, создание страницы, mobile→web воспоминание, web→mobile воспоминание, транспорт чата — passed. Файловый выбор фото в mobile → upload → веб-галерея — passed. Финальный browser smoke также прошёл проверку ширины 320px и подтвердил: выход из mobile не закрывает независимую веб-сессию.
+
+Результаты браузерного сценария: `qa/mobile-home.png`, `qa/mobile-shared-memories.png`, `qa/web-shared-memories.png`, `qa/mobile-materials.png`. Это скриншоты работающих интерфейсов с вымышленными тестовыми данными. `qa/`, сборки и зависимости не включены в Git.
+
+## Ограничения результатов
+
+- В браузерном QA внешний AI намеренно заменён тестовым ответом. Проверено соединение chat UI→API, не качество OpenAI/Fish и не реальное платное озвучивание.
+- Email, embedding workers и production storage не вызываются в тестовом окружении. Проверена общая API-модель, а не загрузка в production Supabase.
+- На физических iPhone/Android приложение **не запускалось**. Не проверены реальный микрофон, разрешения, нативный файловый выбор, аудиопрерывания/наушники, secure-store persistence после переустановки и реальные системные переходы.
+- Xcode / Android Studio / device SDK в этой среде не обнаружены. Финальные native build/install и device QA остаются обязательными перед выпуском.
+- HTTPS Universal/App Links ещё не настроены на домене. QR продолжает вести в существующую веб-страницу.
+- Native purchases и автоматическая транскрипция записи — отдельные этапы. Статус Google OAuth указан ниже.
+- Первичная установка npm сообщила transitive audit findings в дереве нового Expo SDK. Совместимость проверена Expo Doctor; отдельный release dependency/security audit ещё не выполнялся. Не считать baseline разрешением на публикацию.
+
+## Следующий ручной прогон на телефонах
+
+1. Собрать/запустить с тем же HTTPS API, что веб; войти в существующий аккаунт email/password.
+2. Создать страницу, фото, видео, голосовую запись и текст на телефоне; проверить их на компьютере.
+3. Добавить материалы на компьютере; вернуться в приложение и обновить.
+4. Проверить owner/editor/viewer, private/public страницу и гостевую модерацию.
+5. Проверить настоящую запись, предпрослушивание, повторную загрузку после ошибки сети, воспроизведение аудио/видео.
+6. Проверить выход, восстановление сессии, смену аккаунта, большой размер текста и системный возврат.
+
+## Дополнение: Google-вход
+
+- 15 mobile unit tests passed (включая проверку callback origin/attempt/code).
+- 17 integration tests passed:13Google handoff cases +4shared API cases. Google provider synthetic.
+- Подтверждено: существующий web User ID/ACL сохраняется; новый Google-user создаётся; secret остаётся серверным; callback не содержит JWT; неверные verifier/code/state, replay, expiry, cancelled/unverified/disabled/conflicting identity не выдают сессию.
+- Прежний happy-path Google web callback отдельно прошёл regression test.
+- Typecheck/lint и web/iOS/Android export passed; Expo Doctor после добавления crypto/web-browser прошёл20/20.
+- Реальный Google на iPhone12ProMax не проверен; deployment серверного дополнения и собственная development-сборка ещё необходимы.

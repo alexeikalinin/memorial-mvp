@@ -1,6 +1,145 @@
-## 2026-10-16 — Release загрузки фото с кириллицей
+## 2026-10-21 — сохранение проекта перед обновлением macOS (в работе)
 
-Владелец явно разрешил исправить, push и production deploy. Исправление изолировано от остальных локальных изменений в чистом release checkout от e2fa80b. Ключ оригинала и производных миниатюр теперь ASCII UUID.extension; исходное имя остаётся в Media.file_name. 14 targeted tests ранее passed; release checks and deployment results follow in session logs.
+Пользователь явно запросил push и deployment всей текущей версии. Получен origin/main a9cfd70; root HEAD12324d3 и локальные изменения сохранены. Используются отдельный temporary index и release поверх актуального origin, без reset исходной рабочей папки. Секреты, uploads, DB, Qdrant и временные/private screenshots исключаются. GitHub repo публичный; выполняется проверка шаблонов секретов. Обнаружен игнорируемый root правилом media/ исходник mobile/src/media/recording.ts: добавлено узкое исключение в mobile/.gitignore, чтобы исходник сохранялся/клонировался.
+
+Проверки: backend354passed/9live skipped; mobile17integration+15unit/typecheck/lintpassed; frontend14unit/buildpassed. Cloud config read-only: PostgreSQL, USE_S3=true, DEBUG=false, Google и OpenAI настроены. Старый production SECRET_KEY содержал шаблонные secret/change; заменён случайным86символьным через stdin Railway с --skip-deploys. Секрет не выведен/не сохранён в Git; временный env файл удалён. Пользователь заранее предупреждён о повторном входе после deployment. Нативная сборка/iPhoneQA и реальныйGoogleOAuth не заявлены проверенными.
+
+## 2026-10-20 — Google-вход для мобильного приложения
+
+Пользователь сообщил устройства: iPhone12ProMax иiPadAir, приоритет iPhone, Android найдёт позднее. В ходе подготовки iPhone получил запрос добавить Google sign-in. Проверены Expo58 WebBrowser/Crypto и GoogleOAuth docs. Публичный API https://api.vspomin.ai/api/v1/health/ HTTP200; пользовательские данные не читались. LAN Mac192.168.1.14, ExpoCLI/Go может требовать общий Expo account; devserver/QR пока не запущены, т.к.Google с собственнымcallback требуетdevelopmentbuild, неExpoGo.
+
+Реализованы кнопка «Продолжить сGoogle», expo-crypto/web-browser, случайныйverifier/S256challenge, ASWebAuthenticationSession/Androidsystembrowser и callbackvspomin://oauth/callback. JWT не передаётся вdeeplink; single-usehandoffcode + verifier обмениваются на обычную сессию, сохранениеSecureStore прежнее. ExpoGo/RNWeb явно показывают необходимостьdevelopmentbuild вместо ложного обещания работающегоredirect. ПарольGoogle/Googleclientsecret вmobile не попадают.
+
+Серверное дополнение изолировано: backend/app/api/mobile_auth.py и backend/app/mobile_auth_models.py. Вmain толькоimport+router, вauth.google_callback только dispatch для signed mobile state и обработка missingcode. Новыйmobile_google_attempts(5minTTL) хранитchallenge/hashhandoff/status/user_id, claim/redeem условнымSQLupdateодноразовые. GooglecallbackURI остаётся прежним, используются существующиеGoogleclientcredentials, новыеiOS/AndroidGoogleclientIDs не нужны. ExistingGoogleuser/email_verified account связывается с прежнимUserID/ACL; unverified/conflict/disabled не выдаётсессию. LegacywebGoogle happy-path не изменён, отдельныйregressionpass.
+
+Проверки:15mobileunitpassed,17integrationpassed(13Googlehand-off +4sharedAPI), typecheck/lintpassed, ExpoDoctor20/20passed, exportweb/iOS/Androidpassed. ProviderGoogle синтетический, реальный аккаунт/согласиеGoogle не использовались. README/QA обновлены. Backendдобавление НЕ опубликовано; для реальногоGoogleвхода нужно развернуть его на общемAPI и поставитьdevelopmentbuild наiPhone. ПолныйUI и прежниеклиентыfrontend не менялись. Сохранение вветкуcodex/mobile-app; rootmainнепереключается. Productionenv/GoogleConsole/данные не менялись.
+
+## 2026-10-20 — Первая изолированная мобильная версия React Native / Expo
+
+Пользователь разрешил реализацию согласованной мобильной структуры, потребовал заранее сохранить текущее состояние и изолировать мобильный код от веба. До любых мобильных изменений создан отдельный checkpoint commit87736a2ba3a9ae6e9b20e3668820260c159d2e99 и аннотированный тег codex/mobile-start-2026-10-20 («Начало создания мобильного приложения»). Сохранены tracked local changes и38новых исходных файлов; секреты, БД, uploads, зависимости/временные артефакты в Git не включены. Исходные HEADmain12324d3 и индекс не переключались. Это резервная точка исходников, не backup БД.
+
+Результат сохранён отдельным мобильным коммитом в локальной ветке codex/mobile-app; main не переключался, push/deploy не выполнялись.
+
+Новый mobile/ — самостоятельный Expo58 / ReactNative0.88 / React19.3 TypeScript проект с собственным package-lock и Router в src/app; web root scripts/deps не менялись. UI: Мои страницы, поиск/создание/профиль, обзор человека, воспоминания, медиа и плееры, запись голоса, чат/источники/опциональное аудио, родные списком, хронология, owner/editor редактирование, owner privacy/moderation, публичное предложение истории. Утверждённые SVG знака экспортированы без перерисовки в PNG; брендинг/тёплая палитра сохранены. Настройки голоса/оформления/подписка остаются веб-переходами.
+
+Типизированный mobile API вызывает существующие endpoints без новой БД и backend changes. Native токен SecureStore, привязка к API host; web preview токен только memory. Есть logout/401 invalidation, защита от позднего ответа прошлой сессии, focus/AppState refresh и pull-to-refresh. Список ограничен фактическими ACL через detail requests(4parallel), т.к. legacy list включает посторонние public. Guest archive дополнительно скрыт в UI, владелец/редактор/viewer различаются; серверные права не расширены. Native HIGH_QUALITY AAC/MP4 отправляется .mp4/audio/mp4, web recording конвертируется PCM16WAV, т.к. текущие backend defaults не принимают .m4a/.webm. Аудио сохраняется в материалах; автоматическая мобильная транскрипция пока не подключена. QR paths /app/m/:id нормализуются в native/m/:id; ссылки в существующий веб исправлены на /app. HTTPS association не опубликованы.
+
+Проверки: 13mobile unit tests passed, 4isolated realbackend integration passed (две сессии, text/PNG/WAV/realMP4video/AAC-MP4audio, profile, ACLviewer, guestpending→approve); typecheck/lintpassed; ExpoDoctor20/20passed после peerexpo-asset; compatible dependencies checkpassed. Expo export --platform all успешно собирает web/iOS/Android JS+Hermes resources. Это НЕ подписанныеAPK/IPA и не запуск симуляторов. Existing frontend buildpassed. 303frontend/backendfiles сравнены с checkpoint по Gitblob hashes:0changes. Browser smoke на общей одноразовой SQLite: email/password login, mobilecreate, memorymobile→existingwebUI иweb→mobileUI, realfilepicker photo→webgallery, chattransportwith explicitAIstub passed. Финальный прогон прошёл320pxиlogoutindependentsession checks; итог вmobile/QA.md. Screenshots mobile/qa (неGit).
+
+Локально оставлены disposable QA API localhost8000, existingweb localhost5188 и mobilewebpreview localhost8081. Только вымышленные данные, demoaccount mobile-qa@example.com / MobileTest123!, email/embedding/paidAI не вызываются. Реальные production аккаунты/материалы не читались/не изменялись; публикации не было. Native GoogleOAuth, realdevice mic/camera/player/Keychain, подписанные builds, storepayments и HTTPS Universal/AppLinks остаются следующими этапами. Xcode/AndroidSDK не обнаружены; асинхронно запрошены доступные телефоны. README/QA находятся вmobile/. npm сообщил transitive auditfindings вnewExpo tree; releaseaudit отдельно, baseline не объявлен готовым к магазинам. Рекомендован Node24 вместо системного25, .nvmrc добавлен.
+
+## 2026-10-20 — Структура мобильного приложения и утверждённый логотип
+
+Пользователь одобрил гамму мобильной концепции, попросил продумать функции/расположение разделов и применить ранее выбранный логотип. По design/brand/README.md и BrandVisual.jsx подтверждён набор: существующий знак + vspomin.ai + «ВСПОМИНАЙ», bronze light / gold dark. В новую интерактивную концепцию встроены исходные brand-flame-light-static.svg и brand-flame-static.svg без перерисовки; полная марка на главной/профиле/входе, внутри страницы приоритет имени человека.
+
+Предлагаемая структура: нижние «Мои страницы / Семья / Профиль»; внутри человека обзор и отдельные экраны воспоминаний, фото/записей, хронологии, родственных связей и AI-разговора. Управление страницей (данные, оформление, доступ, модерация, голос, публичность) отдельно от аккаунта. Добавление предлагает текст/голос/фото-видео/аудиофайл; QR — дополнительное действие. Гостевой QR-сценарий не раскрывает семейный архив, owner и invited-editor показаны отдельно. Одобрена только гамма, структура остаётся предложением; native app ещё не реализовано. Рекомендация React Native из предыдущего обсуждения не менялась.
+
+Предпросмотр: /Users/alexei.kalinin/.codex/visualizations/2026/10/20/01a15aaa-74e1-7081-8040-dcdaba75d6b1/vspomin-mobile-structure.html (вымышленные данные, без API/сохранения/записи). Проверено: JS syntax; browser на390/320, логотипы загружены, без горизонтального overflow, owner management и его отсутствие у editor, guest без нижней аккаунтной навигации/архива. Последняя небольшая правка возврата contributor и скрытия private source у guest прошла syntax-check; отдельный browser повтор после этой правки не выполнялся. Сайт/backend/production не менялись. Следующее: получить обратную связь по навигации/приоритетам, затем детализировать нативные экраны.
+
+## 2026-10-17 — Проверка отказа на вопрос о знакомстве с мужем (319)
+
+Прочитаны approved записи только мемориала319 из настроенной БД. Новая1504 «Знакомтсво с мужем» существует, approved, embedding_id заполнен. Рассказ от первого лица мужчины, познакомившегося со Светой; contributor_name=Alexei Kalinin. Вероятна неоднозначность атрибуции: текущий grounding prompt относит I/me/my к contributor, тогда как событие описывает знакомство родителей. Это гипотеза, стадия отказа пока не установлена. В коде DB fallback включает недавно добавленные approved записи, но фактический production context для этого вопроса не перехвачен. Сырые личные тексты сюда не копировались.
+
+Точная попытка generate_rag_response на вопрос со скриншота без audio/DB writes отклонена auto-review: diagnosis не признана согласием на передачу private319contents в OpenAI. Вызов модели не состоялся; обходов нет. Требуется явное согласие на один точный вопрос через OpenAI с approved319memories. Продукт/воспоминания/deploy не изменены. Следующий шаг — разрешённое воспроизведение с трассировкой generation/verifier; не считать исправленным.
+
+## 2026-10-16 — Финал repairчата: публикация и CI успешны
+
+a9cfd70pushed/deployed:VercelD67zt9guMYgEUfYCLJXexJ4GeDf6SUCCESS,Railway60b3ea25-39dc-48b3-bd41-c27ef092b372SUCCESS. CI38931683733completed/success,lint-and-test3m45s/fulltests/lintgreen. РеальныйdeployedAPI_response319точныйвопроссdefaultpersona/noaudioвернулбиографическийответ,3sources,suggest_memoryFalse. Общийrepairмеханизмдлявсехмемориалов,проверкиисточников/фактовнеослаблены. Приватныемемориалыкроме319неиспользовались. УспешныеответынедобавляютAPIвызовов;одинrepairприотклонениидобавляетмаксимум2modelcalls. Исходныевоспоминания/голоса/базанеизменены. Никакихнезавершённыхproductfix/deployшаговнет;browserHTTPend-to-endнепроводился,проверенаdeployedAPIresponsefunctionиofflineauthenticatedHTTPregressions.
+
+## 2026-10-16 — a9cfd70 опубликован, deployed API_response319 отвечает
+
+GitHub combinedstatus a9cfd7008997514e2cda72d8a585eff71e951ad1success: VercelD67zt9guMYgEUfYCLJXexJ4GeDf6 иRailway60b3ea25-39dc-48b3-bd41-c27ef092b372success. Послеdeployровноодинточныйвопрос319«что ты помнишь о себе?» выполнен через неизменённую deployed app.api.ai._avatar_chat_response (defaultuse_personaTrue, current_user=actualowner, noaudio/nofamily). Вернул законченныйбиографическийответ, sources1495/1496/1498, suggest_memoryFalse, commitподтверждён вprocess. Сессияrollback, memoriestextsнеизменены, voiceAPIнеиспользован. Это проверка APIresponsefunctionна production, не браузерный/HTTP end-to-end запрос; authenticatedHTTPграницы покрытыofflineсинтетическимитестами.
+
+CI38931683733покаRun tests/in_progress, ожидаетсяфинальныйрезультат. 9liveвымышленныхcasepassed, реальныйexact319исправлен. Подробнаяпричина/изменения docs/CHAT_GROUNDED_REPAIR_2026-10-16.md.
+
+## 2026-10-16 — Общий repair чата отправлен в main
+
+Scoped commit a9cfd7008997514e2cda72d8a585eff71e951ad1 pushedmain из uploadreleasecheckout8315bd2. Включены только ai_tasks, новый repairtest,5существующих groundingtestfiles и doc CHAT_GROUNDED_REPAIR. Root/чужиеdirtyfilesсохранены. Fullrelease351passed/9skipped+однаошибкаустаревшегоожиданиячислазапросов; поправлен толькоassertion2дляуспешногопервогоответа, полныйзатронутыйvisitorfile11/11passed. Предыдущаяпопыткаfullтакженашлаодинnegativefixtureбезrepairresponse, исправлен. Fatalflake8/diffcheckpassed;9syntheticreallivepassed. Это не claimчистогоfullrunпослеисправленияassertion: окончательныйcloudCIещёожидается.
+
+VercelD67zt9guMYgEUfYCLJXexJ4GeDf6 иRailway60b3ea25-39dc-48b3-bd41-c27ef092b372 pendingпослеpush. ПослеSUCCESSвыполнитьровноодинточныйquestion319 черезdeployed API_responseсdefaultpersona/noaudio ипроверитьsources. Сырыеданныенеизменялись.
+
+## 2026-10-16 — Разрешённая диагностика319: потерянная ссылка на источник в общем ответе
+
+Владелец явно разрешил проверку319черезOpenAI. Реальный deployed8315bd2:8approved/8context; точный overview отказ, вопросы о рождении и школьном спорте отвечают сsources. Трассировка объяснения verifier: общий draft содержит факт изчетвёртой записи, ноexcerpts указывают только1495/1496/1497. Поэтому verifier верно отвергает неподтверждённый выбраннымиevidenceфакт; backend преждевременно выдаётno-evidence. Это другой случай, чем прежнее исправление местоимений.
+
+Локальная общая правка: явное покрытие всех фактов источниками; при factual rejection ровноодинrepair generation (1–2факта) с повтором всех source/segment/factual проверок. Secondrejection/invalidIDs сохраняютfallback. НормальныйsuccessбездополнительныхAPI, repairдо4modelcalls. Новые positive/negative/fabricatedrepairtests и корректировка прежнихnegativeмоков. Реальный суженный контроль точного разрешённого вопроса319вотдельном Railwayprocess: первоначальныйdraftотклонён, repairдалответс1495/1497.9/9вымышленныхliveverifiercasespassed. Fullreleaseвработе; ещёнеопубликовано.
+
+Auto-review отклонил расширенный7questionprivateнабор (повторы/постороннийsensitiveвопрос сверхточногосогласия); безопасно сужен доодного исходноговопроса, разрешён ивыполнен. Чужиечастныемемориалы/тексты неиспользовались. Вопрос владельца оразрешениях: исправлениеобщее длявсех, согласиеэтойдиагностики319неестьавтоматическоесогласие начтениедругихprivateмемориалов. docs/CHAT_GROUNDED_REPAIR_2026-10-16.md. Следующийшагпослеfulltests: scopedpush/deployипроверкаточногоHTTPchatбезозвучки.
+
+## 16.10.2026 — Проверка чата Светланы после добавления воспоминаний заблокирована
+
+Пользователь сообщил, что вопрос «что ты помнишь о себе» не даёт ответа по воспоминаниям. Признано: предыдущая операция проверяла сохранение 7 записей, но не работоспособность чата. По коду overview распознаётся и получает approved записи напрямую без требования embeddings. Подготовлен /private/tmp/check-svetlana-chat-now.py для настоящих production HTTP запросов (overview, имя мужа, дата рождения Алексея; без аудио). Первый запуск не состоялся: approval timeout. Единственный разрешённый retry отклонён auto-review из-за отсутствия специфического согласия на передачу приватных воспоминаний OpenAI. Не обходить; реальные chat ответы НЕ проверены. Требуется разрешение владельца на этот конкретный transfer. Browser inventory также не удался из-за request-header policy. Код/БД/публикация не менялись.
+
+## 2026-10-16 — Повторная жалоба на отказы чата 319: аудит публикации
+
+Пользователь сообщает частые ложные отказы, в том числе на «что ты помнишь о себе». GitHub API сейчас подтвердил main=8315bd27082fb1c3d696f91f3dc7178afd4124ab; combined status success: Vercel6xg7ciq31sPG6mFLufdatLM9eWfa и backendRailway1725b926-bdb2-419e-b7bd-36990ce6d5be. Оба RAG исправления318edbf/e2fa80b входят в этот release. Прежняя проверка319 использовала одну запись1495 до публикации; после добавления1496–1502 полный liveHTTP/генерация не подтверждены. Нельзя утверждать, что текущая жалоба решена прежним тестом. Сейчас повторены offline regressions:22passed/9live skipped,5.69s (biography/evidence/moderation).
+
+Автоматический approval-review отклонил Railway diagnostic: он передавал все approved private memories319вOpenAI, а текущего отдельного согласия на этот payload/destination reviewer не признал. Запрос согласия отправлен пользователю; не обходить блокировку через локальную генерацию/HTTP. Личные данные не передавались; изменений продукта/БД/deploy не было. Безопасная SSHпроверка только commit/распознавания вопроса запущена, ответа ещё нет. Следующий шаг: после явного согласия воспроизвести точный вопрос на текущих8записях, определить стадию отказа и исправить с положительными/отрицательными регрессиями. Существующие несвязанные dirtyfiles сохранены.
+
+## 2026-10-16 — Публикация исправления русских имён
+
+Владелец явно разрешил push/deploy. Изолированный checkout от originmaine2fa80b; commit8315bd27082fb1c3d696f91f3dc7178afd4124ab содержит только fix ключа UUID.extension, regressiontests и release notes. Fullrelease349passed/9skipped, fatalflake8/diffcheckpassed. Push main выполнен. Vercel6xg7ciq31sPG6mFLufdatLM9eWfa SUCCESS и Railway1725b926-bdb2-419e-b7bd-36990ce6d5be SUCCESS; https://vspomin.ai и /api/v1/health/ HTTP200/statusok. CI38928535316 completed/success (lint-and-test success). Чужие root/release изменения сохранены; rootHEAD12324d3 не менялся. Пользовательские фото не загружались при проверке.
+
+## 2026-10-16 — Кириллица в имени блокирует загрузку портрета
+
+По скриншоту мемориала319 исследована ошибка S3 PutObject. На настоящем настроенном Storage воспроизведено с синтетической PNG2×2: photo.png успешно загружается и удаляется, ма.png возвращает ClientError400 с пустыми Code/Message, как на скриншоте. Личные фото не передавались; успешный диагностический объект удалён. Причина: upload_media включал оригинальное кириллическое имя в ключ объекта. Локально изменён только служебный filename на UUID.extension, исходное имя остаётся в Media.file_name. Добавлен test_media_upload_names.py (русское имя, emoji, латиница; безопасные ключи оригинала/миниатюр и побайтовое сохранение оригинала). 14 targeted tests passed (upload names, cover photo, avatar reference), SQLite изолирована через окружение. Первый запуск тестов прервался при импорте из-за сетевого подключения к БД из .env; повторный изолированный запуск успешен. Изменения НЕ опубликованы. Временный обход на сайте: имя mama.png. Рабочее дерево содержит многочисленные другие изменения; не включать их в публикацию этого исправления.
+
+## 16.10.2026 — Семь воспоминаний о Светлане добавлены по рассказу владельца
+
+По явному запросу пользователя рассказ оформлен от третьего лица и разделён на 7 записей в мемориале 319 «Калинина Светлана»; имя/owner_id=9 проверены перед записью. IDs 1496–1502: родной город и рождение, школьный баскетбол и колледж, предпринимательство, рождение Жени/общежитие/обращения к Николаю, квартира и рождение Алексея, домашняя кухня, сестра Лариса. Даты событий проставлены только там, где пользователь дал точную дату. Записи source=user/status=approved; сохранение проверено повторным чтением, всего 8 воспоминаний. Существующая 1495 сохранена. Внешние AI/embedding API не вызывались, код и публикация не менялись.
+
+## 16.10.2026 — RAG318edbf опубликован, Светлана319 запись сохранена
+
+318edbf92b1865ca0111f64b9a9d651a1460cab0 pushedmain; Railway2034b839-d2c6-4789-a5f8-e22be0f65f68 SUCCESS. Full343passed/130.05s, targeted45. Послеdeploy повторён настоящий deployed generate_rag_response без инъекции:3/3positive exactuserquestion «расскажи про рыбалку», source memory1494; только предоставленная запись и synthetic distractors, остальныеprivate318истории не отправлялисьAI. Realnegative no companion ->supportedfalse. UserдобавилпроблемуСветланы: DBmemorial319 имеет1495approved; реальный localhost ownerAPI memories200/count1, pending200/count0. Поэтому новая запись не потеряна, screenshotNetworkError относитсяк загрузке. Externaldomain+OriginCORS finalcheck запущен. Userнедоволендлительностью, подробно объясненыготовые результаты; нерастягиватьдальше. Rootpatch/newtest/docs сохранены; unrelatedvoice dirtyfiles не staged. docs/MEMORY_EVIDENCE_FIX_2026-10-16.md.
+
+## 2026-10-16 — Исправление повторных ложных отказов в чате
+
+Пользователь попросил устранить повторяющиеся ответы «нет воспоминаний» при наличии данных. Уточнён factual verifier: различены I/me/my в candidate и источнике; разрешены подтверждённый third-person→first-person пересказ, coreference по source_text, name order и обычная орфография; stylistic/JSON delimiters перестали быть критерием factual rejection. Добавлено отдельное warning с memory IDs без private text. Предыдущий source-segment fix318edbf сохранён. Новые HTTP regressions RU/EN: approved unindexed biography→две точные evidence→verifier→ответ/source/noCTA. Новая opt-in synthetic live eval:9/9passed (4positive/5negative), полная synthetic generationRU/EN2/2passed. Исходная approved319 запись после текущего запроса исправить ошибку проверена повторно с ранее данным согласием OpenAI: генераторtrue/verifiertrue/source1495; DB не менялась. 48targetedpassed, fullroot348passed/9skipped129.20s; release346passed/9skipped127.21s; fatalflake8/diffcheckpassed. Automatic approval timeout предыдущего syntheticretry не означал unsafe; новый запуск разрешён и завершён. Release checkout318edbf, только ai_tasks/newtest/newdoc предназначены для commit, прочие dirtyvoice/logfiles сохранены. Коммит e2fa80b опубликован в main; Railway22792559-4144-4cde-9182-540fafbbeaef и Vercel4qCaCFDkxqvFMCBZ1zzUUFaVk1PW success. LivehealthHTTP200/statusok послеdeploy. CI38922900870: lint-and-test success3m57s (включая fulltests), без падений. Публикация завершена. Приватный319GET без аккаунта корректно401, поэтому postdeployHTTPchat пока не запускался; реальная проверка точногоsource выполнена до публикации. docs/CHAT_FALSE_REFUSALS_2026-10-16.md.
+
+## 2026-10-16 — Уточнение сходства и ещё три портрета
+
+Владелец отметил недостаточное сходство первых генераций и дал новое фото лица. Создан исправленный портрет; владелец оценил его как более похожий и запросил ещё варианты. Встроенным imagegen созданы три отдельных варианта: нейтральный фон, сидя у окна, сад. Исправленный портрет и варианты 05–07 сохранены вне Git в приватной папке визуализаций чата mother-portraits; там же generation-notes.txt с условиями генерации. В мемориал не загружались.
+
+## 2026-10-16 — Диагностика ложного отказа в чате 319
+
+По ссылке владельца read-only подтверждена одна approved запись (121 символ), без embedding_id. Для общего вопроса overview использует SQL напрямую, поэтому отсутствие embedding не является причиной. После явного согласия владельца выполнен один диагностический OpenAI-прогон только этой записи: генератор дал правильную биографию от первого лица с обоими source segment IDs, независимый verifier вернул supported=false; итог — стандартный отказ. Данные не изменялись. Уточнены правила verifier: совместная оценка evidence/source_text, third-person biography→first-person, связь местоимений с названным субъектом, автор не обязан быть участником биографических событий, порядок имени/фамилии. 30 targeted offline tests прошли. Реальная synthetic RU/EN проверка после правки упёрлась в сетевой таймаут OpenAI; повтор с коротким timeout в работе. Эффективность новой инструкции реальной моделью пока не подтверждена; production не обновлялся. Browser transport closed; health API ответил ok.
+
+## 2026-10-16 — Портреты по семейному слайдшоу
+
+По запросу владельца просмотрены кадры предоставленного видео и отдельный фотопортрет; встроенным imagegen созданы три художественные реконструкции с прямым взглядом, красным платьем, бордовым палантином и янтарными украшениями. Файлы сохранены в приватной папке визуализаций текущего чата (mother-portraits), вне репозитория. В мемориал не загружались. Сходство требует оценки владельца; это сгенерированные изображения, не архивные фотографии. Код и production не менялись.
+
+## 16.10.2026 — воспроизведён реальный false-negative1494; исправление evidence IDs
+
+UserURL/app/memorials/318, exactquestion «расскажи про рыбалку». Production readonly1494approved/indexed/authortrue; realretrieval includes1494among10/3039chars/source318/no persona. Realgeneration наоднойпредоставленнойзаписи(+synthetic distractors) before3/3fallback: modelcorrects «незабыаемо»→«незабываемо»+trailingperiod in quote, exactsubstringgate rejects beforeverifier. New numbered source segments +validated IDs, originalsource evidence resolvedserver-side, independentverifier unchanged; legacy quote remainsstrict(no fuzzy). After3/3realOpenAI positive memory1494.15newtests+45targetedpassed, fullrun andnegative realmodel inprogress. Sourcepatch appliedrootwithoutoverwritingunrelatededits, newtest/docs copied. ReleasecloneHEAD844d213 hasunrelateddirtyvoice docs/logs/artifacts: do NOT stage these withRAGfix. docs/MEMORY_EVIDENCE_FIX_2026-10-16.md. Other private318stories notsent toAI; noDBwrites/noquota changes. Next finishfulltests, commit onlyai_tasks/newtest/newdoc, push/deploy, verifydeployedgeneration.
+
+# 2026-10-16 — Выбран новый голос S2.1Pro, лишний клон удалён
+
+16.10: по явному выбору владельца вмемориале319 оставлен новый приватный клон, активнаяTTSмодель s2.1-pro. Прежний клон удалён вFish(APIdelete+GET404 подтверждены) и изmemorial_voices; осталась1готоваяверсия, выбранныйновыйголосдоступен. До удаления проверено, что лишнийvoice_id не используется другими мемориалами/ихбиблиотеками. Другие люди/оригинальные5записей не затронуты. S2Pro/S2.1Pro — вариантысинтеза одного новогоклона; новыйreference_id сохранён. Личныйreceipt selection-and-cleanup-result.txt вприватномкаталогевизуализаций, неGit. Новыхcloning/TTSзапросовнебыло.
+
+Productionкод844d213 прежний; изменены только разрешённые настройки/записи голосов. Пользователю достаточно обновить страницу мемориала.
+
+---
+
+# 2026-10-16 — Выпуск голосов завершён
+
+16.10 финал:844d213 опубликован; Vercel7120611352success, Railway7120605297success, CI38910685890completed/success. Новыеversionendpoints и UI подтверждены live. Один новый приватный клон из5подготовленныхзаписей создан(state trained), прежний не удалён/не переключён. Новый сохранён вмемориале319 отдельнойreadyверсией2;2готовыхверсии.3реальныеMP3пробы7–9с вприватномкаталоге визуализаций, неGit. Fish production-key доступ кновоймодели проверен перед импортом; сырые воспоминания не читались. Блокировкапубликации снята явнымсогласиемвладельца; повторно спрашивать не нужно.
+
+Проверки библиотечного API/UI прошли, первоначальный CIнедостатокFFmpeg исправлен workflowstep. Готовы синтетические пробы previous-s2-pro/new-s2-pro/new-s2.1-pro для прослушивания пользователем; сравнительное сходство не оцениваем безегоотзыва. Личные файлы/cloneledger/modelID/кошелёк остаются внеGit. RootHEAD12324d3 сохранён, releasecheckout844d213;3логовыхфайлаобновлены послеcommit и остаются локальными.
+
+---
+
+# 2026-10-16 — Публикация разрешена, реальный приватный клон создан
+
+
+## Разрешённая публикация и реальный приватный клон
+
+Владелец явно разрешил production-выпуск16.10.2026. Коммит5f417a4 pushed; backendRailway4bd994d8-d954-494d-b07c-aebd61c1058fSUCCESS, VercelProduction deployment7120433878success. LiveOpenAPI содержит versions/select, liveappbundle содержит новый каталог голосов. На первом CI выявлено отсутствиеFFmpeg вGitHubrunner (3failed309passed15skipped), не ошибка productionбиблиотеки. Добавлены установкаFFmpeg вCI и корректный503при недоступной проверке аудио;20targetedtests passed. Исправление844d213 pushed, повторныйCI/deploy проверяются.
+
+По отдельному запросу владельца создан один приватный Fishклон из5подготовленныхWAV, state=trained/private. Старый голос не удалён. Короткие реальные пробы: новый S2Pro, новыйS2.1Pro, предыдущийS2Pro, один русский текст/темп1x;валидныеMP3~7–9с, личные аудио/ledger/ID остаются только в приватном каталоге визуализаций, не вGit. Через productionключ подтверждён доступ кновой приватной модели; она добавлена отдельной readyверсией кточно найденному мемориалу старогоvoice_id, активныйголос не изменён. Старый и новый доступны владельцу вбиблиотеке; реальное сходство наслух не оценивалось.
+
+APIбаланс до9.827755/после9.819340; наблюдаемо-0.008415 за время операции. Состав списаний отдельно не детализирован. Голоса/баланс проверены через FISH_AUDIO_API_KEY существующего backend/.env без раскрытия ключа. Повторные запросы protected локальными ledger; клон создан ровноодинраз. Imports/privateprobes вкаталоге mother-voice-prepared-20261016 текущегочата, неGit. Сырые воспоминания мемориала не читались/не отправлялись. В ответе на screenshotобъяснено: name/description/private передаются; gender/age/usecase/voicequalities отдельными tags нашкоднеотправляет; документированного переключателя качества обучения вэтихметкахнет.
+
+---
 
 # 2026-10-16 — Подготовка личных образцов и библиотека версий голоса (локально, выпуск ждёт разрешения)
 
@@ -23,25 +162,177 @@
 
 ---
 
+16.10: по ошибке Fish270s добавлена локальная server preflight-проверка общей длительности всех образцов (<270s), понятный fallback для provider400, подсказка RU/EN в voice setup. Оригиналы не обрезаются, старый voice_id сохраняется, временные файлы удаляются при отказе. 15 targeted tests passed (включая boundary269/270, sum150+120, запрет вызова провайдера/cleanup). В основном checkout и изолированном /private/tmp/memorial-moderated-release-20261015; без commit/deploy, live пока65c6b52. Пользователь уточнил цель: повысить сходство голоса мамы через кабинет Fish Audio, затем использовать в проекте. Аудиофайлы/voiceID ещё не предоставлены. Наш текущий clone использует train_mode=fast, private; TTS уже принимает reference_id. Официальные docs.fish.audio/features/voice-cloning подтверждают повторное использование id; professional clone требует отдельной проверки условий, не обещать пригодность для архивных записей.
+
+## 16.10.2026 — выпуск65c6b52 опубликован и подтверждён
+
+Push main65c6b52478f235f19f7bcef270f5eba067672d28 выполнен из изолированногоclone; Railway8671d948-14c9-4905-856d-a68991539a24 SUCCESS, VercelDfp2znskicQJg6kKwBMKsTaq8ocU success/vspomin.ai, GitHubCI38820690142 success. Live390 read-only screenshot guestarchiveCTA/footerpassed; liveAPInewtranscribefields+unauth401 и guestdetail/memories/timeline hiddenpassed. Дополнительно syntheticRUmp4Whisper распознал «Мы с Николаем ездили на рыбалку, в тот день мы поймали много рыбы»; изолированный API matrix10candles+36flower combinations save/readback/update/expiry/no duplicatespassed. Production данные/env/схема не менялись. Скриншоты artifacts/mobile-qa-2026-10-16; отчётdocs/MOBILE_RELEASE_QA_2026-10-16.md. RootHEAD12324d3 оставлен как был, новые sourceфайлы синхронизированы выборочно, прочие dirtyedits не выпускались. Старый локальный audit test, намеренно ожидавший дефекты anonymous/language, преобразован в regression для исправленного поведения (в root, вне releasecommit). ФизическийiPhone, реальныймикрофон/noisyaudio, платежи новыхгодовыхпланов не объявлены проверенными; тарифы по-прежнему заявки, legacyquotas не мигрированы.
+
 ## 16.10.2026 — мобильный браузерный прогон завершён, выпуск готовится
 
 После явного разрешения запущены localhost8036/5193/5194, отдельные Chromium/WebKit.8размеров от320до1440+landscape: signs footer hit-test passed; candle/flowers save+reload passed390вобоихдвижках. При тесте выявлены CTA bubble overflow и Safari input minwidth, исправлены. Браузерная WebAudio→MediaRecorder→multipart (Whisper response intercepted)→invite anonymous submit→pending→ownerUIapproval→author→guestAPIhidden passed. RealWhisper syntheticMP4 отдельно passed, не частные данные. Реальные UI/API guest5/reload/sixth401 иregistered15/sixteenth402 usage15 passed.7routes×7widths including builtlanding nooverflow/noJSexceptions. Системныйfake mic getUserMedia зависал; аппаратныйiPhone/микрофон НЕ проверены. Итог backend318/front14/build/criticalflake8passed. Артефакты artifacts/mobile-qa-2026-10-16; полный отчёт docs/MOBILE_RELEASE_QA_2026-10-16.md. Тарифы40/80/140год подтверждены, новые по-прежнему заявки без оплаты, legacy paidquotas сохранены. Готовим commit/push/deploy из изолированного clone; rootHEAD не сбрасываем.
 
-## 2026-10-15 — автор воспоминания, guest privacy, CTA после no-answer
+16.10 verification update: full backend318 passed (122.83s), frontend14 passed, finalbuild passed; browser permission pending, no new deploy.
 
-15.10: авторство после moderation показано владельцу и передаётся в RAG+verifier; guest API/detail/timeline скрывают raw memories, вкладка приглашает добавить историю; no-evidence chat открывает форму.315backendtests,33targetedafterfinalprompt,11frontendtests/build,realbrowser390/320/desktoppassed. Реальная модель на synthetic sharedmemory называет Николая, negative не придумывает спутника. docs/MEMORY_AUTHORSHIP_AND_GUEST_FLOW_2026-10-15.md. Реальный private smoke ждёт явного разрешения (auto-review); конфигурация/БД не менялись.
+## 16.10.2026 — мобильная форма знаков, Safari voice, QA (в работе)
 
-Владелец видит contributor_name в approved карточках; invite форма собирает собственное имя, не label ссылки. Имя сохраняется и доходит до vector/SQL/overview context и independent verifier. Проверка настоящей моделью на вымышленном shared-we примере сначала выявила, что verifier отвергает имя вне quote; добавлены явные правила разрешения narrator/shared event и запрет автоприписывания автору любого события/чужих семейных событий. Synthetic realOpenAI: positive namedNikolai+source, negative "liked fishing"→no evidence. Предыдущий live fishing smoke1494 без author context вернул отказ; новая передача реального текста заблокирована auto-review, пользователю задан async вопрос явного разрешения, обход не выполнялся.
+Подготовлена новая партия в /private/tmp/memorial-moderated-release-20261015 (ещё без commit/push/deploy), исходные файлы выборочно синхронизированы в рабочий проект. Исправлены scroll/viewport/footer формы знаков, подтверждение, обновление повторного варианта без продления 24ч, отображение свечей посетителей и выбор последней; UUID fallback. Safari MP4/MIME/расширение, остановка микрофона/URL cleanup, защищённая bounded транскрибация OpenAI whisper-1 по настоящей авторизации/приглашению. 19 targeted backend и 14 frontend tests passed, первая сборка/criticalflake8 passed, повторная сборка и полный backend идут. Подтверждены тарифы40/80/140 в год/Lifetimecustom; JSON каталога+сверка landing, прежние оплаченные планы не изменены, новые принимают заявки без оплаты. QR copy актуализирован. Полный checklist и пределы доказательств: docs/MOBILE_RELEASE_QA_2026-10-16.md. Локальный сервер twice auto-review timeout; retry исчерпан, async запрос явного разрешения отправлен. Без браузерного прогона/новых screenshot/реального Whisper; не объявлять завершённым. Ранее 3f01f10 остаётся опубликованным.
 
-Guest API использует действительную авторизацию без DEBUG shortcut; anonymous detail.memories/memories/timeline=[]; timeline также исключает pending для вошедших. Public UI не запрашивает гостевой список, показывает объяснение и форму. Chat suggest_memory flag используется только при отсутствии evidence, кнопки открывают public/invite/owner composer. Авторские имена trim/blank validation; spoofed author own memories игнорируется. Смена user identity в Public loadData защищена cancellation guard.
+## 2026-10-15 — публикация завершена: авторство/guest privacy/CTA
 
-Headless isolated browser с реальной disposableSQLite8036/frontend5193: guest no-memory→CTA→public named submission→owner UI moderation→approved card author→guest reload/API hidden; invite name; noerrors;320px auth hydration+logout privacy passed. RU/EN ключи проверены, переключатель EN остаётся скрыт по прежнему правилу.315fulltests/119.91s +33targeted после финального prompt, build/11frontendtests/fatalflake8passed. Нет schema/config changes. Release поверхc4aa1d2.
+3f01f10b374cf3c8889076f3f02a8bd9f8a8ec0e main pushed. Railway5250b364-4a4c-4f8f-9e42-ec2859631ed7 SUCCESS; Vercel dpl_4aAFmDEXzQU3jm1G7A77P1FHbft9 READY, aliasvspomin.ai. GitHubCI38772305865 completed/success. Live SPA HTTP200 содержит authorlabel/chat-memory-invitation/guestinvitation/suggest_memory. Live anonymousAPI detail.memories/memories/include_pending/timeline все пусты; OpenAPI подтверждает suggest_memory и contributor_name. Production данные/схема/env не менялись.315fulltests,33finaltargeted,11frontend/build и isolated realbrowser390/320/1280passed.
 
-## 2026-10-15 — выпуск исправления moderated memories → chat
+Настоящий OpenAI проверен на synthetic positive/negative: shared-we→имяНиколая+source; thirdpersononlylikes→не придумывает спутника. Контроль реальной1494 после newprompt не выполнялся: auto-review отказал отправке частного текста без явного разрешения, async вопрос пользователю остаётся без ответа. Предыдущий раннийc4smoke отказа объяснён независимымverifier; новый prompt+metadata исправлен и проверен наsynthetic. Сброс исходной локальнойветки был отдельно отклонён авто-review; сохранён HEAD12324d3, origin/main обновлён безопаснымfetch до3f01f10, всефайлы/прочиедрафты сохранены, рабочиефайлыfeature совпадают сrelease. Это не блокировалоpush/deploy.
 
-15.10: выпуск исправления moderation→chat подготовлен: vector context дополняется approved SQL memories, retrieval exceptions используют DB fallback; enqueue errors логируются. 300 passed, 846 warnings in 118.42s (0:01:58). Frontend build/11tests passed; уже опубликованный frontend10.10 синхронизирован в Git для сохранения при auto-deploy. Детали docs/MODERATED_MEMORY_CHAT_FIX_2026-10-15.md; SESSION_LOG.md.
+Документ docs/MEMORY_AUTHORSHIP_AND_GUEST_FLOW_2026-10-15.md; screenshots artifacts/memory-contribution-2026-10-15/. Локальные disposableAPI8036/Vite5193 остановлены. Следующий шаг при явном согласии пользователя — один live chat вопрос о рыбалке и проверка source1494; до согласия не повторять передачу реального текста вOpenAI.
 
-Изолированный release12324d3 + утверждённый frontend patch + backend ai/memorials + regression tests. Production read-only: память1494 мемориала318 approved/indexed; причина не в утрате записи. Настройки/схема не менялись. Ротация существующего шаблонного SECRET_KEY отложена в отдельную задачу с повторным входом пользователей. Новые пожелания об авторстве, гостевой вкладке и CTA после no-answer ещё не включены.
+## 2026-10-15 — второй push: авторство/guest CTA/privacy
+
+Отправлен3f01f10 поверхc4aa1d2. Автор в approved owner cards и RAG+verifier; invite собственное имя/trim validation; guest archive скрыт на UI и API(detail/memories/timeline), no-answer CTA открывает public/invite/owner форму.315fulltests/119.91s,33последнихtargeted,11frontendtests/build; браузер390/1280 end-to-end и320 authhydration/logoutprivacy passed. Реальный OpenAI на synthetic: "мы вместе…" отНиколая→"мы сНиколаем…" +source, negative onlylikesfishing→no evidence. Документ docs/MEMORY_AUTHORSHIP_AND_GUEST_FLOW_2026-10-15.md. Новый deploy/CI в ожидании; предыдущийc4aa1d2 RailwaySUCCESS,CIgreen. Реальный private1494 запрос был отклонён auto-review; async разрешение ожидается, обхода нет.
+
+## 2026-10-15 — push/deploy moderated-memory fix, новые требования пользователя
+
+Push main выполнен из изолированного checkout:26b69cb сохраняет уже опубликованный frontend10.10; c4aa1d2 исправляет chat retrieval после moderation. Полный изолированный backend300passed/118.42s; frontend11passed/build; fatal flake8passed. Test-only: изолированы upload paths/embedding queue, stale scale validation3→11. Production memory1494 мемориала318 approved/indexed. Railway d104a103-6fbd-4758-821d-31204b5e6b69 в сборке, Vercel dpl_9LPeZqCMTJK1MTkKajhikdasdyUR READY. CI38769645527 выполняется. Ожидается live fishing smoke после backend SUCCESS.
+
+Автопроверка отклонила reset --mixed исходного checkout кorigin/main как риск потери локальных коммитов/индекса. Reset не выполнялся; безопасный fetch обновилorigin/main. Рабочий HEAD остаётся12324d3, файлы сохранены. Выпуск находится наGitHub и в/private/tmp/memorial-moderated-release-20261015. Конфигурация production не менялась; отдельный риск существующего SECRET_KEY требует ротации с повторным входом пользователей.
+
+Пользователь добавил требования и попросил подтвердить понимание: (1) автор записи виден владельцу после модерации; (2) контекст авторства для фраз «со мной» и имени спутника в чате, без автоматического приравнивания автора к участнику; (3) неавторизованному QR-посетителю вместо списка воспоминаний CTA с объяснением пользы дополнения памяти, с серверной защитой доступа; (4) после no-answer предложить добавить историю с упоминанием одобрения владельцем. Понимание подтверждено; эти новые требования НЕ включены в текущий выпуск.
+
+## 2026-10-15 — исправлено использование одобренных воспоминаний в чате
+
+Пользователь сообщил: рыбалка добавлена с другого телефона, пришла на модерацию, после одобрения чат не нашёл. Конкретная production запись не читалась. Воспроизведено новым HTTP regression: invite→anonymous submit→pending→owner approve→list→chat, queue down. На исходном ai.py 3failed/1passed: stale/nonempty search, vector exception и embedding exception; empty search уже работал.
+
+Исправлены backend/app/api/ai.py: всегда дополнить vector context отсутствующими approved DB memories (свежие первыми, дополнительный бюджет18000, без дублей); exceptions retrieval→DB fallback. backend/app/api/memorials.py: ошибка enqueue теперь warning вместо silent pass. Реальные RAG generation/quote validation/source building проходят тест с подменённым OpenAI. Pending до одобрения не передаётся модели; повтор approve не дублирует enqueue. Функциональность запуска индексации сохранена; долговременный retry/monitoring не добавлен.
+
+36 passed, 98 warnings in 29.52s. Fatal flake8/diff check passed. Tests: новый test_moderated_memory_chat.py + visitor/invites/overview/contribution. Изолированная SQLite, внешние сервисы подменены. Документ docs/MODERATED_MEMORY_CHAT_FIX_2026-10-15.md. Production/deploy не менялись; следующий шаг — выпуск backend и smoke конкретной записи на сайте. Большой архив ограничен контекстом; полный поиск старых записей всё ещё требует исправного vector index.
+
+## 2026-10-10 — утверждённые изменения опубликованы
+
+По явному запросу владельца frontend опубликован через изолированный release12324d3+14files наVercel. READY dpl_62azKzWBN1RoXQeZxMZv6EM4wN7K, aliasvspomin.ai. Текущий каталогPricingPage/domainenv сохранены, посторонние backend/healthчерновики не включены. Live390: landing200/imagesall/nooverflow/noerrors; registerusernamehint/loginforgotlink присутствуют. Rollback и cumulativepatch docs/VSPOMIN_APPROVED_FRONTEND_RELEASE_2026-10-10.md/.patch. Git push не выполнялся; следующий Git release обязан включить patch. Privateowner mobile menu/media проверены локальнымиfixture, resetrealAPI/34tests прошли ранее; mail delivery не проверена.
+
+## 2026-10-10 — аудит приглашений, модерации и голосовых воспоминаний
+
+Запрос: проверить вклад без регистрации, очередь владельца, голос/транскрибацию и составить pre-production тесты. Проверены API и frontend цепочки. Anonymous invite → pending → owner-only moderation → approved/public подтверждены существующими тестами; pending исключены из RAG. UI загружает очередь и обновляет каждые30с, email/push в сценарии нет. Голос: browser MediaRecorder → OpenAI whisper-1 → редактируемый текст; исходное аудио не сохраняется.
+
+Новые offline tests backend/tests/test_contribution_audit.py подтверждают anonymous доступ к платной транскрибации, игнорирование multipart language (query ожидается), whisper-1, 503 без ключа и400 пустого файла. Итог21passed/26.96s на временнойSQLite с отключённым реальным OpenAI и demo mode. Bootstrap сначала пытался Supabase и не разрешил host; далее изолирован. Промежуточный прогон прерван. Реальные production данные не менялись; браузер/микрофон и платный Whisper не проверялись.
+
+Риски: отсутствие авторизации/квот транскрибации; отсутствуют size/duration/format ограничения (allowed_audio не применяется); ru по умолчанию; принудительный WebM при автоматическом MIME браузера; нет cleanup записи при unmount; approve молча пропускает ошибку очереди embedding. source голосовых записей заменяется на invite; label не подтверждает личность. Подробный аудит/P0-P1 чек-лист: docs/CONTRIBUTION_AUDIT_2026-10-10.md. Код функций не менялся, публикации нет. Следующий шаг: закрыть P0 и прогнать реальный staging guest→voice→moderation→RAG на iOS/Android/desktop.
+
+## 2026-10-10 — мобильный мемориал и восстановление пароля
+
+По скриншотам владельца исправлен stackingcontext owner hero-main при открытом menu(z30 выше appearance4 и editor20), кнопки Delete/How to use подписаныRU/EN. Defaultmobilecandle привязана к lower-rightportrait, savedpositions не переписаны. Фото mobilecontain heightauto/max70dvh безhoverzoom, исходные пропорции сохранены. Файлы MemorialDetail.jsx/css, MemorialAppearance.jsx, MediaGallery.css. Browser fixture390px прошёл, main30/stage4, portrait100×120, candle58×58, photo364×485.33 для600×800. Candle320/390/768 проверены. Снимок artifacts/mobile-memorial-fixes/menu-and-media.png. Build passed.
+
+Username по коду только уникальный идентификатор профиля; login email/Google. В RegisterPage добавлена RU/EN подсказка. Passwordreset реализован:1h,oneuse,invalidatesoldJWT. 34 auth/auth_email backend tests passed на isolatedSQLite. Полный browser UI forgotten→reset→login проверен через локальный realbackend8012/disposableDB и перехват email callback вместо отправки: forgotten200, redirectlogin success, oldpassword401/new200/reusetoken400. Снимок artifacts/landing-dark-review/password-reset-success.png. Testbackend остановлен, disposableDB/token удалены. ЛокальноRESEND не настроен, реальная доставка письма не проверена. Production FRONTEND_URL=https://vspomin.ai/app подтверждён release doc, живые аккаунты не менялись. Без публикации.
+
+## 2026-10-10 — мобильная шапка и аудит контента лендинга
+
+По новым скриншотам владельца обновлены оба index: mobile3columns logo/purpose/CTA, compact secondary burger/lang. QR badge над фото и phone под фото без overlays. Клонирование голоса явно доступно, единственное soon относится кvideo, фальшивый player отсутствует. Таймлайн Сохраните важные моменты, примеры скворечник/поход вместо повторов. Создан code-native feat-tree-vertical.svg (top-down поколения), подключён tree/final; contain без растяжения. Добавлен компактный remembrance блок candles/flowers24h +owner decoration. Уточнено одобрение contributions семьёй. Проверка функций: signs.py public guests allowed, expires24h; MemorialPublic composition/signs; memories pending/approve, ai QR text-only. HANDOFF других сессий подтверждает appearance публикацию и domain release — учтено, новая работа только локально. Build passed, браузер1440/390/320 nooverflow/broken images/pageerrors; one soon badge. Снимки mobile-nav-v6.png, mobile-qr-v6.png, mobile-features-v6.png в artifacts/landing-dark-review. Local preview5181, новая публикация не выполнялась.
+
+## 2026-10-10 — опубликованы домен, каталог тарифов и мобильный портрет
+
+CORS/FRONTEND_URL/PUBLIC_FRONTEND_URL переключены на vspomin.ai, SPA/landing API на api.vspomin.ai. Старый memorial-mvp.vercel.app перенаправляет307 с сохранением path/query, правило опубликовано; ошибочная первая destination со звёздочкой исправлена. Google старый callback сохранён для отката. В приложении каталог Plus40/год, Family80/год, Family Pro140/год, Lifetime индивидуально, заявки вместо старого checkout. Backend подписки/квоты не мигрировали. На мобильном landing возвращён portrait, chat под ним; demo CTA временно убран, маршруты demo сохранены. Chrome320: без overflow/битых изображений/demo ссылок. Build passed. Vercel dpl_Dn1cJp5qafTFbsP8E6iD1FUP4oj2 READY, live API host/catalog подтверждены. Только изолированный12324d3 +3filepatch; прочие изменения не выпускались. Полная инструкция/rollback docs/VSPOMIN_FRONTEND_RELEASE_2026-10-10.md, точный patch рядом.
+
+## 2026-10-10 — проверка полноты доменного переезда
+
+Владелец подтвердил полный Google login. Проверены live HTML/JS vspomin.ai и /app/, Railway URL/CORS env, исходники. Остались старый API адрес в опубликованных landing/SPA, FRONTEND_URL/PUBLIC_FRONTEND_URL на Vercel, CORS не разрешает vspomin.ai (реальный OPTIONS400). Production health ещё memorial-mvp. Домен/Google имя/API callback уже новые. Сохранён docs/VSPOMIN_DOMAIN_AUDIT_2026-10-10.md с порядком перехода/отката; production в аудит не менялся.
+
+## 2026-10-10 — Google login vspomin.ai и сохранённый откат
+
+Переключён только Railway backend production PUBLIC_API_URL на https://api.vspomin.ai. Deployment019ec38e-a010-470c-9c5e-2cbece541c02 SUCCESS. Фактический redirect_uri новый; Google chooser визуально показывает vspomin.ai. Краткая502 при deploy прошла. Старый Google callback/domain и Railway endpoint оставлены для rollback; frontend/env CORS/DB не менялись. Полный login с выбором аккаунта ожидает владельца. Инструкция с точным восстановлением: docs/GOOGLE_AUTH_MIGRATION_RUNBOOK_2026-10-10.md; proof artifacts/domain-migration/google-login-vspomin.jpg.
+
+Продолжение Google migration: api.vspomin.ai custom domain успешно создан через Railway UI, порт8080, записаны CNAME/TXT и добавлены в Hoster.by; authoritative DNS подтвердил. Google client detail Failed to load/Retry, HTTPS/network проверки timeout; production PUBLIC_API_URL и callbacks пока прежние. Все значения и rollback в GOOGLE_AUTH_MIGRATION_RUNBOOK_2026-10-10.md.
+
+## 2026-10-10 — Google Auth branding и имя проекта
+
+По разрешению владельца App name Memorial→vspomin.ai, добавлен Authorized domain vspomin.ai; старый Railway domain сохранён до переключения callback. Google подтвердил Branding changes saved. Project name с точкой запрещён, сохранено vspomin ai, UI подтвердил; ID/number/keys неизменны. Начат следующий этап api-domain/callback, CLI mutation Unauthorized; открыт авторизованный Railway в Chrome. Журнал/откат docs/GOOGLE_AUTH_MIGRATION_RUNBOOK_2026-10-10.md, screenshots artifacts/domain-migration/google-branding.jpg и google-project-name.jpg. Production URL пока не переключались.
+
+## 2026-10-10 — свеча перед портретом
+
+Причина заднего слоя: родитель composition z2, portrait z3. Stage поднят z4, имя/даты внутри остаются выше декора. В useStageSize измеряется portrait, fittedLayout ограничивает пересечение свечи с правым краем портрета до25% его ширины; применяется в просмотре, drag и resize. Убран искусственный scale2, frontend/backend максимум10, реальные границы canvas сохраняются. 7backend appearance tests passed, previewv14 DOM:25px пересечения при100px portrait. Commit12324d3 pushed в рамках публикации исправления. VercelREADY, Railway проверен отдельно.
+
+## 2026-10-10 — Настроен DNS-хостинг Hoster.by для vspomin.ai
+
+По прямому разрешению владельца через авторизованный Chrome подключена отсутствовавшая DNS-зона vspomin.ai, ID141952. Кабинет отправил NS change с ns1/ns2.hoster.by на u1/u2.hoster.by. Пустая новая зона: добавлены @ A216.198.79.1 и @ A64.29.17.1, TTL3600. Ошибка ввода относительного имени в первой записи исправлена редактором на @; итог обе записи vspomin.ai. Подтверждены UI и authoritative u1 ответом; управление доменом показывает u1/u2, screenshot artifacts/domain-migration/hoster-dns-final.jpg. Vercel/public resolver пока видят старую делегацию, HTTPS не готов. Production code/env/OAuth и другие домены не менялись. Инструкция/проверка/откат: docs/HOSTER_VSPOMIN_DNS_SETUP_2026-10-10.md. Применены computer-use/chrome-browser skills; поддержке сообщения не отправлялись.
+
+## 2026-10-10 — Начат переезд vspomin.ai, этап DNS
+
+Пользователь разрешил начать переезд, приоритет сохранить работающий функционал. Прочитана vercel-cli skill и reference domains. Подтверждён production project; vspomin.ai успешно добавлен к текущему Vercel без удаления старого домена/deploy. verify: ownership verified, DNS invalid, ns1/ns2.hoster.by; resolver SERVFAIL/authoritative REFUSED. Получены точные A records 216.198.79.1 и64.29.17.1. У владельца запрошено открыть кабинет DNS Hoster.by. Railway status/URL-only env доступны; domain add api.vspomin.ai вернул Unauthorized, нужен ручной доступ/reauth, домен не добавлен. Подготовлены локально health brand vspomin.ai, CORS origin нового сайта с сохранением старого и примеры env; production env не изменялись. Этап1 сохраняет /app для снижения риска. Runtime workflow и точные прежние env записаны в docs/VSPOMIN_MIGRATION_PROGRESS_2026-10-10.md. Другие локальные изменения сохранены; wholesale deploy не выполнялся.
+
+## 2026-10-10 — публикация редактора оформления
+
+По прямому запросу пользователя commit/push/deploy. Коммит595659a включает редактор, плитки36цветов/10свечей, шрифты, центровку, слои имени/дат, комментарии API/журнал и nullable migration. Неопубликованные черновики лендинга оставлены локально; в index интегрирован точный patch опубликованного тарифного выпуска. Push main выполнен. На live выявлен абсолютный assetpath: Vite public находится /app, добавлен rewrite /memorial-appearance → /app/memorial-appearance, commit8681edf pushed. Vercel memorial-mans985x4 READY и Railway backend SUCCESS. /app200, оба атласа200 image/png. Проверки:12 targeted backend tests,11 frontend tests,build,flake8fatal passed; backend/OpenAPI200, comment field присутствует. Previous checkpoint tag сохранён. Финальные журнальные записи локальные, чтобы не инициировать ещё один deploy.
+
+## 2026-10-10 — читаемость доверия и золотая бесплатная область
+
+По скриншотам владельца privacy переведён из4 тесных центрированных колонок в2×2 с левым выравниванием, descriptions16px/titles17px. На мобильном1колонка. Pricing heading выровнен по левому краю общей секции, устранён inset920px. Бесплатный banner мягко золотой, text16px и золотая CTA. Только CSS в обоих landing index, без изменения контента/цен. Build passed; browser подтвердил font16px/leftalign/совпадение x heading и banner, без overflow390/320. Снимки artifacts/landing-dark-review/privacy-readable.png, pricing-readable.png, pricing-readable-mobile.png. Локально5181, публикации не было.
+
+## 2026-10-10 — футер: крупнее логотип и новая подпись
+
+По запросу владельца создан отдельный footer SVG frontend/landing/images/brand-footer.svg: знак и wordmark сохранены, нижняя подпись ВАША ПАМЯТЬ НАВСЕГДА растянута на ширину wordmark. Подключён только в футере обоих landing index, ширина213→290px, бренд-колонка расширена. Другие логотипы не менялись. Build успешен, footer screenshot artifacts/landing-dark-review/footer-logo.png, mobile overflow false. Разъяснено сокращение12→9sections: убраны demo-video, hidden discovery story и testimonials/stats. Локально, без публикации.
+
+# 2026-10-10 — Новые тарифы и аудит текущего лендинга (опубликовано)
+
+Запрос: обновить memorial-mvp.vercel.app под обсуждённые тарифы и убрать несуществующие возможности.
+
+- На действующем тёмном дизайне checkpoint 4e87c7c опубликованы Plus $40/год (2 страницы, 1 ГБ, 100 text/month, 2 clones, ~5 voice min), Family $80 (10/3 ГБ/300/5/~15), Family Pro $140 (20/8 ГБ/700/10/~40). Lifetime — индивидуальный пакет без фиксированной цены, голос отдельно, видео недоступно. Free выделен отдельно, 1 страница/15 text/month.
+- Удалены старые цены, Lifetime Pro, вечный AI, видеосеансы, сомнительные отзывы/статистика/поиск неизвестных родственников, экспорт и обещание уведомления за90дней, необоснованные гарантии поведения AI/голоса и пустые ссылки. QR уточнён: публичный просмотр/text, вклад по приглашению. RU/EN и метаданные обновлены.
+- Биллинг не мигрирован: backend PLAN_LIMITS и приложение PricingPage всё ещё старые. На лендинге новые планы явно готовятся к запуску; CTA собирают email через существующий waitlist с source выбранного плана вместо старого checkout. Повторные email не обновляют source — показано корректное сообщение; письма/CRM не добавлялись.
+- Сохранены предшествующие локальные неопубликованные варианты дизайна и изменения редактора. Выпуск собран из изолированной копии HEAD; единственная продуктовая правка frontend/landing/index.html. В рабочие frontend/landing/index.html и landing/index.html внесены те же смысловые/тарифные исправления поверх имеющихся черновиков.
+- Build successful, scripts parse, RU/EN1440/390/320 без overflow/missing translations/broken images/dead anchors. Forms tested using mocks: invalid email, selected Lifetime/Family, success/duplicate, Escape; FAQ и отсутствие JS ошибок. Тестовые заявки не записывались. HTML удалённой сборки точно соответствует исходнику, production API base подтверждён.
+- Vercel READY dpl_5LiPYWC3zXn9k7sLehZ7wArxvvKc, https://memorial-20phv7r23-1alexeikalinin1-3683s-projects.vercel.app; promote на https://memorial-mvp.vercel.app выполнен. Railway/бэкенд не публиковались.
+- Документ docs/LANDING_PRICING_AUDIT_2026-10-10.md, точный release patch docs/LANDING_PRICING_RELEASE_2026-10-10.patch. Выпуск сделан CLI, без Git commit/push; для следующего git-deploy надо интегрировать patch, чтобы не вернуть старый каталог и не включить неподтверждённые дизайн-черновики.
+
+Следующий этап: единый новый каталог в backend/checkout/app PricingPage и реальный контроль квот перед запуском оплаты, отдельно от обновления лендинга.
+
+---
+
+## 2026-10-10 — Разовая архивная покупка с регулярным текстовым AI
+
+Расчет200/300 text monthly безvoice/video: bounded-token full-quota budget1.3526/1.6526monthly incl storage/traffic/support/misc/fixedallocation. With2%costgrowth30yr reserve658.47/804.51, VAT20/fees/refunds/upfront reserves break-even888.93/1083.05; illustrative30yrprices999/1199. For20yr floors537.89/654.16, prices699/899. Все modelassumptions обозначены; truly indefinite monthlyAI нельзя доказать конечным30yearreserve, рекомендовать прозрачный срок либо конечныйAIpool. UNIT_ECONOMICS обновлен. No production/Stripe changes.
+
+## 2026-10-10 — обновлён основной тёмный лендинг локально
+
+Владелец отклонил светлое отдельное предложение: нужен тёмный основной лендинг, аудит необходимости блоков и инфографики, точный QR-сценарий, русские вымышленные имя и даты на фотографии. Обновлены frontend/landing/index.html и синхронизирован landing/index.html. Charcoal и мягкое золото, меньше рамок/карточек, спокойные заголовки. Убраны вымышленные отзывы/цифры, отдельная демонстрация будущего видео и граф с выдуманной историей обнаружения родственников. Инфографика без зачёркиваний и emoji, только описание функций. Тарифы с прежними суммами/планами в раскрытии. Голос доступен, видео скоро. Смягчены privacy/forever/AI claims; QR означает просмотр публичной страницы, отдельное приглашение для вклада. Проверка ai.py выявила text-only для QR/invite, TTS гостям не обещается. RU/EN тексты/метаданные согласованы; Алексей Соколов 1947–2021, русские события таймлайна.
+
+Built-in imagegen заменил надпись на frontend/landing/images/feat-headstone.png (точный запрос: заменить только имя на «Алексей Соколов» и даты на «1947 — 2021», сохранить портрет/камень/цветы/QR/освещение, убрать прямоугольную подложку старой надписи). Оригинал сохранён artifacts/landing-dark-review/feat-headstone-before.png. Сцена и QR иллюстративные.
+
+npm build passed. Playwright: все картинки загружены, no pageerror, ширины1440/390/320 без overflow, RU/EN, FAQ, 5 тарифов в раскрытии, мобильное меню работают. Исправлено перекрытие подписи карточкой телефона. Снимки artifacts/landing-dark-review/. Основной лендинг показан через локальную сборку http://127.0.0.1:5181/?preview=dark-v2; публикации/push не было. Следующий шаг — оценка владельцем локальной страницы.
+
+## 2026-10-10 — спокойное превью лендинга
+
+По просьбе владельца проведён аудит frontend/landing/index.html и создано отдельное frontend/public/landing-gentle-preview.html: cream/bronze, утверждённый логотип, льняной альбом, три возможности, пример AI-диалога, шаги и FAQ. Рекомендовано убрать вымышленные отзывы/цифры, драматичный problem и отдельный QR, сократить тарифную секцию. Проверены несоответствия: голос уже работает; forever/абсолютное отсутствие ошибок/экспорт и 90 дней не подтверждены. Анализ docs/LANDING_DESIGN_REVIEW_2026-10-10.md. Основной лендинг не изменён, публикации не было. Playwright: 1440/390/320px без overflow, изображения загружены, pageerror отсутствует, FAQ раскрывается. Снимки artifacts/landing-gentle-desktop.png и landing-gentle-mobile.png. Превью открыто в Codex: http://127.0.0.1:5180/landing-gentle-preview.html. Следующий шаг — оценка владельца, затем перенос утверждённого направления в основной лендинг.
+
+## 2026-10-10 — режим одного активного элемента
+
+Нижние вкладки определяют единственный активный объект. Остальные без рамок, resize, pointer и keyboard editing; фраза readonly при выборе другого объекта. Выбранный декор z4, имя/даты z5. Стрелки вынесены из stacking context объекта в общий верхний слой, справа сверху рядом с меню; dropdown внизу остаётся. Tooltip размещён под объектом, preview overflow visible. In-app подтверждено: при выборе свечи только candle pointer auto, остальные none. Превью v13, без публикации.
+
+## 2026-10-10 — dropdown редактора и плитки посетителей
+
+В нижней панели оформления выбор вида цветов заменён стрелками на native select; свечи уже select. Стрелки непосредственно на композиции сохранены, палитра цвета отдельно. Для посетителя dropdown заменены каталогом всех36 сочетаний цветок/цвет и10 видов свечей с изображениями, выделением выбранной плитки, общим превью и optional комментарием. На мобильном2колонки, desktop3. In-app проверены оба каталога, frontend build/preview bundle успешны. Без публикации.
+
+## 2026-10-10 — разнесение имени и фразы
+
+В общей раскладке добавлена проверка пересечения фразы и имени: при вертикальном пересечении и расположении фразы справа обеспечивается зазор минимум28px, включая сохранённые позиции. Применяется и в редакторе, и в просмотре. v11 проверено в in-app при1240px: nameRight587.95, quoteLeft651.27, gap63.32px. Превью пересобрано, без публикации.
+
+## 2026-10-10 — центровка и приоритет имени
+
+Проанализированы непрозрачные границы каждой ячейки атласов (36 цветов, 10 свечей), сохранены индивидуальные поправки в appearanceSpriteCenters.json; иллюстрации центрируются внутри рамок и имеют дополнительный запас. PNG не изменялись. Имя и даты закреплены выше фразы/цветов/свечи как в просмотре, так и в редакторе; добавлена тень для читаемости при пересечении. Стартовая фраза сдвинута вправо, scrollbar просмотра убран. Существующие пользовательские координаты сохраняются. In-app v10 показывает мобильную шапку без пересечения фразы и имени; DOM подтверждает z5 имени/дат, z2 фразы, z1 иллюстраций. Frontend build прошёл. Без публикации.
+
+## 2026-10-10 — исправление пустого превью
+
+Ошибка отдельной сборки: esbuild использовал classic JSX transform, а общие компоненты импортируют hooks без React namespace. После монтирования скрывались старые элементы, новый render падал. Пересобрано с --jsx=automatic; добавлена воспроизводимая команда npm run build:appearance-preview. В реальном in-app браузере v9 подтверждены композиция, меню и открытие редактора с 10 шрифтами и контролами. Без публикации.
+
+## 2026-10-10 — локальное оформление композиции
+
+Добавлены 10 шрифтов для имени, дат и фразы; имя/даты readonly. Drag/resize и направляющие, 6 видов цветов и 6 оттенков отдельными кнопками; стрелки переключают только вид. Фиксированная ширина обоих переключателей 242px под длинные названия. 10 реалистичных свечей, новый атлас цветов v2 с полными букетами. Мобильность определяется шириной контейнера, элементы ограничиваются границами. Посетитель выбирает знак с превью и необязательным комментарием; API сохраняет цвет/вид/комментарий, журнал показывает детали. Миграция старой таблицы сохраняет записи.
+
+Проверено: frontend build, 11 existing frontend tests, 12 targeted backend tests. Playwright не смог открыть браузер (profile already in use), новая визуальная проверка не завершена. Локальное превью открыто v=8. Ничего не опубликовано и не отправлено.
+
+## 2026-10-09 — Публикация контрольной точки завершена, возврат к локальному дизайну
+
+Коммит4e87c7cba2b9d753b65187a10f4022f5128f2a1d и annotatedtag checkpoint-2026-10-09-2305 отправлены origin/main. Vercel memorial-dyertmvav-1alexeikalinin1-3683s-projects.vercel.app READY, Railwayad023041-2403-4cfd-ad1e-4e8322b14aea SUCCESS, оба commit4e87c7c. Live/app200 иbackendroot200, OpenAPInewsignsendpoints+appearanceinput/outputschema confirmed; compiledproductionJS содержит editor/journal. GitHubCI былin_progress при публикации. Итогfulltest293passed, frontend11passed. Метка кода сохраняет состояние по запрошенному времени23:05, фактическая публикация позже.
+
+По новому запросу пользователя открыт только localinteractivepreview http://127.0.0.1:5173/memorial-carnations-preview.html?v=7; доступ200/Reactbundle confirmed. Дальнейшие эксперименты с дизайном локальные, без новых публикаций.
 
 ## 2026-10-09 — Запрошена публикация и точка отката23:05
 
@@ -1549,3 +1840,5 @@ getFullTree: (memorialId, maxDepth = 6) =>
 - Stripe интеграция: billing.py роутер, 4 endpoint'а, config.py с STRIPE_* переменными
 **Изменённые файлы:** e2e/tests/memorial.spec.js, docs/TEST_PLAN.md, backend/app/api/billing.py, backend/app/config.py, backend/requirements.txt
 **Осталось сделать:** npx playwright install chromium; заполнить STRIPE_* в .env и подключить webhook в Stripe Dashboard
+
+Проверка этапа1: health/root — 2 теста прошли на изолированной in-memory SQLite (DATABASE_URL=sqlite://). Первоначальный запуск остановился до тестов на недоступном DNS Supabase; повтор выполнялся без обращения к production-БД.

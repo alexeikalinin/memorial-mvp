@@ -1,0 +1,117 @@
+--- a/frontend/src/pages/PricingPage.jsx
++++ b/frontend/src/pages/PricingPage.jsx
+@@ -4,6 +4,13 @@
+ import { useLanguage } from '../contexts/LanguageContext'
+ import { safeReturn } from '../utils/authReturn'
+ import './AuthPage.css'
++import './PricingPage.css'
++
++const plans = [
++  { name: 'Plus', price: 40, pages: 2, storage: 1, text: 100, clones: 2, voice: 5 },
++  { name: 'Family', price: 80, pages: 10, storage: 3, text: 300, clones: 5, voice: 15 },
++  { name: 'Family Pro', price: 140, pages: 20, storage: 8, text: 700, clones: 10, voice: 40 },
++]
+ 
+ export default function PricingPage() {
+   const { lang } = useLanguage()
+@@ -12,30 +19,46 @@
+   const next = safeReturn(params.get('next'))
+   const [usage, setUsage] = useState(null)
+   const [error, setError] = useState('')
+-  const [loading, setLoading] = useState(false)
+-  const loadUsage = useCallback(() => billingAPI.usage().then(res => setUsage(res.data)).catch(() => setError(ru ? 'Не удалось проверить тариф. Попробуйте ещё раз.' : 'Could not check your plan. Please retry.')), [ru])
++  const loadUsage = useCallback(() => {
++    setError('')
++    billingAPI.usage().then(res => setUsage(res.data)).catch(() => setError(ru ? 'Не удалось проверить тариф. Попробуйте ещё раз.' : 'Could not check your plan. Please retry.'))
++  }, [ru])
+   useEffect(() => { loadUsage() }, [loadUsage])
+-  const checkout = async () => {
+-    setLoading(true); setError('')
+-    try {
+-      const base = `${window.location.origin}${import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '')}`
+-      const query = `next=${encodeURIComponent(next)}`
+-      const res = await billingAPI.checkout({ plan: 'plus_monthly', success_url: `${base}/pricing?${query}&checkout=success`, cancel_url: `${base}/pricing?${query}&checkout=cancel` })
+-      window.location.assign(res.data.checkout_url)
+-    } catch {
+-      setError(ru ? 'Оплата пока недоступна. Доступ не изменён — попробуйте позже.' : 'Payment is currently unavailable. Your access has not changed; please try later.')
+-    } finally { setLoading(false) }
+-  }
+   const active = usage?.plan && usage.plan !== 'free'
+-  return <div className="auth-page"><div className="auth-card">
+-    <h1>{ru ? 'Продолжить разговор' : 'Continue the conversation'}</h1>
+-    <p>{ru ? 'Бесплатно: 15 текстовых вопросов в месяц на аккаунт. Лимит обновляется 1-го числа.' : 'Free: 15 text questions per month per account. Resets on the first day of each month.'}</p>
+-    <h2>Plus</h2>
+-    <p>{ru ? '200 вопросов в месяц. Стоимость и условия подписки будут показаны перед оплатой.' : '200 questions per month. Subscription price and terms are shown before payment.'}</p>
++  return <div className="auth-page"><div className="auth-card pricing-catalog">
++    <h1>{ru ? 'Тарифы vspomin.ai' : 'vspomin.ai plans'}</h1>
++    <p>{ru ? 'Новые тарифы готовятся к запуску. Сейчас можно оставить заявку без оплаты.' : 'New plans are being prepared for launch. You can register your interest without payment.'}</p>
++    <p>{ru ? 'Бесплатно: 1 мемориал · 15 текстовых AI-ответов в месяц · фотографии, истории и приглашения.' : 'Free: 1 memorial · 15 text AI replies per month · photos, stories and invitations.'}</p>
++    <div className="pricing-catalog-grid">
++      {plans.map(plan => <article className="pricing-catalog-plan" key={plan.name}>
++        <h2>{plan.name}</h2>
++        <p className="pricing-catalog-price">${plan.price} <span>{ru ? '/ год' : '/ year'}</span></p>
++        <ul>
++          <li>{ru ? `До ${plan.pages} мемориалов` : `Up to ${plan.pages} memorials`}</li>
++          <li>{ru ? `${plan.storage} ГБ на аккаунт` : `${plan.storage} GB per account`}</li>
++          <li>{ru ? `${plan.text} текстовых AI-ответов в месяц` : `${plan.text} text AI replies per month`}</li>
++          <li>{ru ? `До ${plan.clones} клонов голоса` : `Up to ${plan.clones} voice clones`}</li>
++          <li>{ru ? `Около ${plan.voice} минут озвучивания в месяц` : `About ${plan.voice} voice minutes per month`}</li>
++        </ul>
++        <a className="btn btn-primary" href="/#pricing">{ru ? 'Оставить заявку' : 'Register interest'}</a>
++      </article>)}
++      <article className="pricing-catalog-plan">
++        <h2>Lifetime</h2>
++        <p className="pricing-catalog-price">{ru ? 'Индивидуально' : 'Custom pricing'}</p>
++        <ul>
++          <li>{ru ? 'Мемориалы и объём архива — по соглашению' : 'Memorial count and archive size by agreement'}</li>
++          <li>{ru ? 'Срок хранения и текстовый AI согласуем отдельно' : 'Storage term and text AI allowance agreed separately'}</li>
++          <li>{ru ? 'Голосовые ответы оплачиваются отдельно' : 'Voice replies are charged separately'}</li>
++          <li>{ru ? 'Разовая оплата согласованного пакета' : 'One-time payment for the agreed package'}</li>
++        </ul>
++        <a className="btn btn-primary" href="/#pricing">{ru ? 'Обсудить Lifetime' : 'Discuss Lifetime'}</a>
++      </article>
++    </div>
++    <p>{ru ? 'Лимиты общие для аккаунта и всех его мемориалов. Текстовые ответы и минуты голоса обновляются ежемесячно, не накапливаются. Минуты озвучивания ориентировочные. Видео не включено и пока недоступно.' : 'Limits are shared across the account and its memorials. Text replies and voice minutes renew monthly and do not roll over. Voice minutes are approximate. Video is not included and is currently unavailable.'}</p>
++    {usage && <p>{ru ? 'Текущий тариф: ' : 'Current plan: '}{usage.plan}</p>}
+     {params.get('checkout') === 'success' && <p role="status">{active ? (ru ? 'Тариф активирован. Можно вернуться к разговору.' : 'Your plan is active. Return to your conversation.') : (ru ? 'Ждём подтверждение оплаты. Обновите статус через несколько секунд.' : 'Waiting for payment confirmation. Refresh the status in a few seconds.')}</p>}
+     {params.get('checkout') === 'cancel' && <p>{ru ? 'Оплата отменена. Ваш тариф не изменился.' : 'Payment cancelled. Your plan has not changed.'}</p>}
+     {error && <p role="alert">{error}</p>}
+-    {!active && <button className="btn btn-primary" disabled={loading || !usage} onClick={checkout}>{loading ? (ru ? 'Открываем оплату…' : 'Opening checkout…') : (ru ? 'Перейти к оплате Plus' : 'Subscribe to Plus')}</button>}
+     <button className="btn btn-secondary" onClick={loadUsage}>{ru ? 'Обновить статус' : 'Refresh status'}</button>
+     <p><Link to={next}>{ru ? 'Вернуться к мемориалу' : 'Return to the memorial'}</Link></p>
+   </div></div>
+--- /dev/null
++++ b/frontend/src/pages/PricingPage.css
+@@ -0,0 +1,10 @@
++.pricing-catalog { max-width: 1120px; }
++.pricing-catalog-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 24px 0; }
++.pricing-catalog-plan { border: 1px solid var(--border-color, #b3936344); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
++.pricing-catalog-price { font-size: 24px; }
++.pricing-catalog-price span { font-size: 14px; }
++.pricing-catalog-plan ul { padding-left: 20px; flex: 1; }
++.pricing-catalog-plan li { margin-bottom: 10px; }
++.pricing-catalog-plan .btn { text-align: center; }
++@media (max-width: 1000px) { .pricing-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
++@media (max-width: 600px) { .pricing-catalog-grid { grid-template-columns: minmax(0, 1fr); } }
+--- a/frontend/landing/index.html
++++ b/frontend/landing/index.html
+@@ -767,7 +767,9 @@
+       }
+       section { padding: 72px 24px; }
+       .hero-inner { grid-template-columns: minmax(0, 1fr); }
+-      .hero-visual { display: none; }
++      .hero-visual { display: block; width: 100%; max-width: 440px; margin: 24px auto 0; }
++      .hero-photo-frame { aspect-ratio: 4/5; }
++      .chat-float { position: relative; left: auto; bottom: auto; width: 100%; margin-top: 16px; }
+       .problem-cards { grid-template-columns: minmax(0, 1fr); }
+       .steps-grid { grid-template-columns: minmax(0, 1fr); }
+       .feature-row { grid-template-columns: minmax(0, 1fr); }
+@@ -848,7 +850,7 @@
+       <p class="hero-sub" data-i18n="hero.sub">Соберите фотографии, истории и записи голоса в одном месте. Общайтесь с AI на основе воспоминаний и связывайте мемориалы в семейное древо.</p>
+       <div class="hero-cta">
+         <a href="/app/register" class="btn btn-primary btn-xl" data-i18n="hero.cta_primary">Создать мемориал — бесплатно</a>
+-        <a href="/app/demo" class="btn btn-outline btn-lg" data-i18n="hero.cta_secondary">Посмотреть демо-семьи →</a>
++        
+       </div>
+       <div class="hero-note">
+         <div class="hero-note-item" data-i18n="hero.note1">Простые и понятные тарифы</div>

@@ -23,3 +23,6 @@
 Финальный общий прогон:315passed/119.91s, frontend11passed/build, fatal flake8/diff-check passed. RU/EN новые ключи присутствуют, временное скрытие EN не менялось. После последнего уточнения rules семейных источников выполняются целевые regression tests.
 
 Последние targeted tests33passed; браузер320px auth hydration/logout privacy passed.
+
+## Итог production
+3f01f10 main pushed; Railway5250b364SUCCESS; Verceldpl_4aAFmDEXzQU3jm1G7A77P1FHbft9READY, vspomin.ai; CI38772305865success. Live anonymous detail/memories/include_pending/timeline не возвращают тексты; SPA содержит новые UI элементы; OpenAPI новые поля подтверждены. Тест реального частного текста остаётся на ожидании явного согласия пользователя.

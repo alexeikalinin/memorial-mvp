@@ -1111,4 +1111,3 @@ async def get_timeline(
             )
         )
     return items
-

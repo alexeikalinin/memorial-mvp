@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Вспоминай",
+    "slug": "vspomin-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ai.vspomin.mobile"
+    },
+    "android": {
+      "package": "ai.vspomin.mobile",
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Разрешить выбирать семейные фотографии и видео для страницы близкого.",
+          "cameraPermission": "Разрешить фотографировать для страницы близкого.",
+          "microphonePermission": "Разрешить записывать видео со звуком."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Разрешить записывать голосовые воспоминания."
+        }
+      ],
+      "expo-video",
+      "expo-font",
+      "expo-asset",
+      "expo-web-browser"
+    ],
+    "scheme": "vspomin",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

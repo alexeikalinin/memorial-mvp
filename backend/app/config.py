@@ -167,7 +167,7 @@ class Settings(BaseSettings):
     SQL_ECHO: bool = False  # SQL logs are expensive; enable only for debugging.
     API_V1_PREFIX: str = "/api/v1"
     # Локальная разработка + прод фронт на Vercel (можно дописать через env CORS_ORIGINS)
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://memorial-mvp.vercel.app"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,https://memorial-mvp.vercel.app,https://vspomin.ai"
     PUBLIC_API_URL: str = ""  # Публичный URL для доступа к API (для HeyGen и других внешних сервисов)
     PUBLIC_FRONTEND_URL: str = "http://localhost:5173"  # Публичный URL фронтенда (для QR-кодов)
     

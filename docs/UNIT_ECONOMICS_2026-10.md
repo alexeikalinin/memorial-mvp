@@ -2,6 +2,16 @@
 
 Дата: 2026-10-08. Статус: рабочая гипотеза, не изменение продаваемых тарифов. Фактические счета, страна Stripe, расходы на привлечение и статистика потребления пока неизвестны. Все суммы USD; налоги включены только в явно обозначенных сценариях. Публичные цены проверены, расходы клиентов моделируются, а не измерены.
 
+## 2026-10-10 — Разовая покупка с 200–300 текстовыми ответами каждый месяц
+
+Новый запрос: голос/видео отдельно; archive + 200/300 ежемесячных текстовых ответов в разовом плане. Это постоянная AI-обязанность, не чистое хранение.
+
+Budget full-quota: $0.003/text operation (прежний ограниченный gpt-4o-mini total-token scenario с резервом, не замер). Chat .60/.90 monthly. 2GB storage по marginal rate .0426, 1GB uncached traffic .09, support .25, miscellaneous reserve .12, доля общей инфраструктуры .25 = .7526/месяц без чата. Итого1.3526/1.6526 monthly. Infrastructure .25 — модельный бюджет примерно на тысячу paid-equivalents, не доказательство на100аккаунтах и не прогноз вечного фиксированного счета. Автоматические транскрипции/анализ медиа не безлимитны, первоначальная настройка/привлечение$10 общим reserve. Usage counts shared memorial including guests, 200–300 refer to all new AI operations, not per invited relative. Токены, context и retries должны ограничиваться общей cost envelope.
+
+Без роста цен20yr reserve324.62/396.62;30yr486.94/594.94. При hypothetical 2% ежегодном росте всех recurring costs20yr394.38/481.85;30yr658.47/804.51, без инвестиционного дохода. Комиссия reserve6.1%+.30 одноразовый платеж (Billing fee не доказан/внутри conservativereserve), refunds2%, upfront setup/CAC$10, VAT20inclusive stress (не установленная countryrate). Формула break-even upfront price: (service reserve+10+.30)/(1/1.2-.061-.02). При20yr floors537.89/654.16;30yr888.93/1083.05. Price recommendation as horizon-backed offer:20yr699/899 или30yr999/1199; на30yrs latter остаются82.81/87.23 сверх резервов вVAT20scenario, это небольшой запас, не гарантированная чистая прибыль. Инфляция2%,support,traffic иsharedallocation являются допущениями. Не утверждать finite price covers truly perpetual full monthly quota. Бессрочное хранение/AI потребуют reserve fund, migration rules and funding beyond finite horizon. Preferred product has explicit20/30yr term or fixed lifetime AI pool; no undisclosed stopping after horizon.
+
+Rates OpenAI/storage перепроверены10.10.2026. Production/Stripe/previous calculators не менялись; новый сценарий в документации.
+
 ## Предложение лестницы $40 / $80 / $140 annual, без видео
 
 Пользователь просит включить все расходы на клиента в стоимость тарифа. Предложение для согласования, не цены production: Plus $40, Family $80, Family Pro $140 в год. Мемориалы 2/10/20, private ordinary clones до2/5/10, storage всего1/3/8GB, text100/300/700 в месяц, голос ориентир5/15/40мин с internal byte caps10k/30k/80k. Общие семейные квоты; QR, privacy, invites, export во всех. Видео/live отсутствуют. Автоматическую расшифровку длинных записей/анализ фото не считать бесплатными неограниченными функциями.
