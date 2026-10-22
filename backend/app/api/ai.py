@@ -624,7 +624,11 @@ async def _avatar_chat_response(
         # Опциональная генерация аудио
         audio_url = None
         audio_error = None
-        recorded_reply = db.get(MemoryAudioReply, saved_speech.id) if saved_speech is not None else None
+        # Chat only needs the recording ID; do not download the MP3 from the DB
+        # until the browser actually requests playback.
+        recorded_reply = (db.query(MemoryAudioReply.memory_id)
+                          .filter(MemoryAudioReply.memory_id == saved_speech.id).first()
+                          if saved_speech is not None else None)
         if request.include_audio and recorded_reply is not None:
             from app.services.recorded_reply import recorded_reply_url
             audio_url = recorded_reply_url(recorded_reply.memory_id)
