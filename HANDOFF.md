@@ -1,3 +1,5 @@
+22.10: backup/push/deploy завершены. GitHub main b157169; VercelA2AnTP/Railway66f65398 SUCCESS; CI39498091077 success. Live landing/login/APIhealth200, mobileGoogle start/exchange присутствуют. Backup502c3be в codex/backup-before-macos-2026-10-21 и codex/mobile-app; стартовыйtag сохранён. Ключ сессий ротирован: повторныйвход. Восстановление: docs/RESTORE_AFTER_MACOS_UPDATE.md. Следующее: Xcode+iPhoneQA; подробности SESSION_LOG.md.
+
 21.10: запрошены backup/push/deploy перед macOS update. Проверки: backend354passed/9skipped, mobile17integration+15unit/typecheck/lint, frontend14tests/buildpassed. Production templateSECRET_KEY заменён случайным(skipdeploy); после релиза повторныйlogin. Подготовка удалённогоbackup/release идёт, deployment покаНЕподтверждён. SESSION_LOG.md.
 
 20.10 mobileGoogle: кнопка/systemOAuth+PKCEhandoff готовы; отдельный backendmobile_auth+5minDBattempts, прежнийwebcallback сохранён.15unit+17integration/typecheck/lint/doctor20/exports passed; Google synthetic, реальныйiPhoneGoogle ещёНЕпроверен. Нужныbackenddeployment+developmentbuild(ExpoGoнеподходит). ПриоритетiPhone12ProMax, затемiPadAir; QRprep pending. SESSION_LOG.md,mobile/README.md.
