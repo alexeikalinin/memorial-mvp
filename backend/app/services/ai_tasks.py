@@ -1105,8 +1105,7 @@ async def generate_speech_elevenlabs(text: str, voice_id: Optional[str] = None) 
     # Максимальная длина для большинства моделей - около 5000 символов
     max_text_length = 4000
     if len(text) > max_text_length:
-        text = text[:max_text_length] + "..."
-        print(f"Warning: Text truncated to {max_text_length} characters for ElevenLabs")
+        raise ValueError("Text exceeds the ElevenLabs request limit; use generate_speech for long text")
     
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     headers = {
@@ -1371,8 +1370,7 @@ async def generate_speech_fish_audio(text: str, voice_id: Optional[str] = None, 
 
     max_text_length = 4000
     if len(text) > max_text_length:
-        text = text[:max_text_length] + "..."
-        print(f"Warning: Text truncated to {max_text_length} characters for Fish Audio")
+        raise ValueError("Text exceeds the Fish Audio request limit; use generate_speech for long text")
 
     from app.services.voice_models import resolve_fish_model
 
@@ -1480,9 +1478,17 @@ async def generate_speech(
     # Paragraph boundaries give the synthesizer clearer sentence boundaries.
     text = re.sub(r"([.!?]) +(?=[А-ЯЁA-Z])", r"\1\n\n", text)
     provider = _normalize_tts_provider(provider or settings.TTS_PROVIDER)
-    if provider == "fish_audio":
-        return await generate_speech_fish_audio(text, voice_id=voice_id, speed=speed, **({"model": model} if model else {}))
-    return await generate_speech_elevenlabs(text, voice_id=voice_id)
+    from app.services.long_speech import speech_chunks, join_speech_audio
+    parts = []
+    for chunk in speech_chunks(text):
+        if provider == "fish_audio":
+            audio = await generate_speech_fish_audio(chunk, voice_id=voice_id, speed=speed, **({"model": model} if model else {}))
+        else:
+            audio = await generate_speech_elevenlabs(chunk, voice_id=voice_id)
+        parts.append(audio)
+    if not parts:
+        raise ValueError("Speech text is empty")
+    return parts[0] if len(parts) == 1 else await join_speech_audio(parts)
 
 
 # ========== Vector Database (Pinecone / Qdrant) ==========

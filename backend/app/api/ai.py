@@ -330,8 +330,10 @@ async def _avatar_chat_response(
         )
         return AvatarChatResponse(answer=no_mem_msg, sources=[], suggest_memory=True)
     
+    from app.services.saved_speech import requested_thank_you_speech
+    saved_speech = requested_thank_you_speech(request.question, all_memories)
     overview = is_memory_overview_question(request.question)
-    if not overview:
+    if not overview and saved_speech is None:
         # Проверяем, есть ли воспоминания с embeddings
         # Важно: используем новый запрос к БД, чтобы избежать проблем с кэшем сессии
         # Сначала проверяем через прямой SQL запрос
@@ -438,7 +440,12 @@ async def _avatar_chat_response(
     try:
         has_family_context = False
         similar_memories = []
-        if overview:
+        if saved_speech is not None:
+            context_chunks = [{
+                "text": saved_speech.content, "memory_id": saved_speech.id,
+                "title": saved_speech.title, "source_memorial_id": request.memorial_id,
+            }]
+        elif overview:
             context_chunks = overview_context(all_memories, request.memorial_id)
         else:
             # An unavailable or incomplete index must not hide approved DB memories.
@@ -501,7 +508,7 @@ async def _avatar_chat_response(
         
         # A nonempty result can still be stale: include approved entries omitted
         # by top-k/indexing, including newly moderated memories, within a budget.
-        if not overview:
+        if not overview and saved_speech is None:
             included_ids = {chunk.get("memory_id") for chunk in context_chunks}
             remaining = 18000
             for memory in sorted(all_memories, key=lambda item: item.id, reverse=True):
@@ -587,13 +594,17 @@ async def _avatar_chat_response(
                 persona_prompt = family_note
 
         # Генерация ответа через OpenAI с улучшенным RAG
-        answer, source_ids = await generate_rag_response(
-            question=request.question,
-            context_chunks=context_chunks,
-            memorial_name=memorial.name,
-            system_prompt=persona_prompt,
-            language=request.language,
-        )
+        if saved_speech is not None:
+            answer = saved_speech.content
+            source_ids = [f"memory_{saved_speech.id}"]
+        else:
+            answer, source_ids = await generate_rag_response(
+                question=request.question,
+                context_chunks=context_chunks,
+                memorial_name=memorial.name,
+                system_prompt=persona_prompt,
+                language=request.language,
+            )
         
         # Формируем читаемые источники (язык подписи = язык запроса)
         mem_label = "Memory" if request.language == "en" else "Воспоминание"
