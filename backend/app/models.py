@@ -1,7 +1,7 @@
 """
 SQLAlchemy модели для базы данных.
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint, JSON, Index, LargeBinary
 from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -421,3 +421,15 @@ class MemorialVoice(Base):
     state = Column(String(20), nullable=False, default='pending')
     preview_cache = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class MemoryAudioReply(Base):
+    """Owner-supplied recording used verbatim for a particular saved speech."""
+    __tablename__ = "memory_audio_replies"
+
+    memory_id = Column(Integer, ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
+    audio_data = Column(LargeBinary, nullable=False)
+    file_name = Column(String(255), nullable=False)
+    mime_type = Column(String(100), nullable=False, default="audio/mpeg")
+    sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

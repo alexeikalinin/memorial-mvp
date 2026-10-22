@@ -20,7 +20,7 @@ from app.services.voice_samples import prepare_voice_samples, clean_voice_sample
 from app.limiter import limiter
 from app.db import get_db
 from app.auth import get_current_user, get_optional_user, get_optional_authenticated_user, require_actual_memorial_owner, require_memorial_access
-from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage
+from app.models import Memorial, Media, Memory, MediaType, FamilyRelationship, User, UserRole, MemorialInvite, GuestChatUsage, MemoryAudioReply
 from app.services.billing import (
     check_chat_quota,
     check_animation_quota,
@@ -187,6 +187,7 @@ async def animate_photo(
 @router.post("/avatar/chat", response_model=AvatarChatResponse)
 async def avatar_chat(
     request: AvatarChatRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_authenticated_user),
     invite_token: Optional[str] = Query(None),
@@ -200,6 +201,8 @@ async def avatar_chat(
         if guest and guest.chat_messages >= 5:
             raise HTTPException(status_code=401, detail={"code": "guest_chat_limit", "limit": 5, "registered_limit": 15})
     result = await _avatar_chat_response(request, db, current_user, invite_token)
+    if result.audio_url and result.audio_url.startswith("/api/v1/ai/recorded-reply/"):
+        result.audio_url = str(http_request.base_url).rstrip("/") + result.audio_url
     if current_user:
         from app.models import UserUsage
         usage = _get_or_create_usage(current_user.id, db)
@@ -621,7 +624,11 @@ async def _avatar_chat_response(
         # Опциональная генерация аудио
         audio_url = None
         audio_error = None
-        if request.include_audio:
+        recorded_reply = db.get(MemoryAudioReply, saved_speech.id) if saved_speech is not None else None
+        if request.include_audio and recorded_reply is not None:
+            from app.services.recorded_reply import recorded_reply_url
+            audio_url = recorded_reply_url(recorded_reply.memory_id)
+        elif request.include_audio:
             try:
                 voice_id, voice_provider = _resolve_tts_voice(memorial)
                 if voice_provider == "elevenlabs" and not voice_id:
@@ -663,7 +670,7 @@ async def _avatar_chat_response(
         animation_task_id = None
         animation_provider = None
         avatar_source_id = (memorial.portrait_settings or {}).get("avatar", {}).get("media_id") or memorial.cover_photo_id
-        if audio_url and avatar_source_id:
+        if audio_url and avatar_source_id and recorded_reply is None:
             try:
                 cover_media = db.query(Media).filter(Media.id == avatar_source_id).first()
                 if cover_media:
@@ -734,6 +741,42 @@ async def _avatar_chat_response(
             ),
             detail=detail,
         )
+
+
+@router.get("/recorded-reply/{memory_id}")
+def get_recorded_reply(memory_id: int, request: Request, token: str = Query(...), db: Session = Depends(get_db)):
+    from jose import jwt, JWTError
+    from app.services.recorded_reply import AUDIENCE
+    try:
+        claims = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], audience=AUDIENCE)
+        if claims.get("memory_id") != memory_id:
+            raise HTTPException(403, "Invalid audio link")
+    except JWTError:
+        raise HTTPException(403, "Invalid or expired audio link")
+    memory = db.get(Memory, memory_id)
+    recording = db.get(MemoryAudioReply, memory_id)
+    if memory is None or memory.status != "approved" or recording is None:
+        raise HTTPException(404, "Recording not found")
+    audio = recording.audio_data
+    headers = {"Cache-Control": "private, no-store", "Accept-Ranges": "bytes"}
+    range_header = request.headers.get("range")
+    if range_header:
+        import re
+        match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header)
+        if not match or not any(match.groups()):
+            raise HTTPException(416, "Invalid audio range", headers={"Content-Range": f"bytes */{len(audio)}"})
+        start_text, end_text = match.groups()
+        if start_text:
+            start = int(start_text)
+            end = min(int(end_text), len(audio) - 1) if end_text else len(audio) - 1
+        else:
+            start = max(0, len(audio) - int(end_text))
+            end = len(audio) - 1
+        if start > end or start >= len(audio):
+            raise HTTPException(416, "Invalid audio range", headers={"Content-Range": f"bytes */{len(audio)}"})
+        headers["Content-Range"] = f"bytes {start}-{end}/{len(audio)}"
+        return Response(audio[start:end + 1], status_code=206, media_type=recording.mime_type, headers=headers)
+    return Response(audio, media_type=recording.mime_type, headers=headers)
 
 
 @router.post("/animation/status", response_model=AnimationStatusResponse)

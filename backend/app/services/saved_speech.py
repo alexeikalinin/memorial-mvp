@@ -4,7 +4,7 @@ import re
 
 def requested_thank_you_speech(question, memories):
     question = question.casefold().replace('ё', 'е')
-    if not (re.search(r'\b(скажи|произнеси|прочитай|зачитай|озвучь)\b', question)
+    if not (re.search(r'\b(скажи|расскажи|произнеси|прочитай|зачитай|озвучь)\b', question)
             and re.search(r'\bблагодарственн\w*\s+речь\b', question)):
         return None
     # Summaries, transformations and questions about a speech remain normal chat.
