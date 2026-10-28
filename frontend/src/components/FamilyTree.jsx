@@ -1901,7 +1901,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
           {(selectedNode?.avatar_photo_id || selectedNode?.cover_photo_id) ? <ApiMediaImage mediaId={selectedNode.avatar_photo_id || selectedNode.cover_photo_id} alt={sourceName} thumbnail={null} portrait={{ memorialId: sourceId, kind: 'avatar', version: JSON.stringify(selectedNode.portrait_settings || {}) }} className="ft-person-portrait" /> : <span className="ft-person-initials" aria-hidden="true">{getInitials(sourceName)}</span>}
           <h3>{sourceName}</h3><p className="form-hint">{selectedNode?.birth_year || ''}{selectedNode?.death_year ? ` — ${selectedNode.death_year}` : ''}</p>
           <button type="button" className="btn" onClick={focusSelectedPerson}>{text('Показать в дереве', 'Focus in tree')}</button>
-          <button type="button" className="btn" onClick={() => navigate(`/memorials/${sourceId}`)}>{text('Открыть мемориал', 'Open memorial')}</button>
+          <button type="button" className="btn" onClick={() => navigate(`/memorials/${sourceId}?tab=media`)}>{text('Открыть мемориал', 'Open memorial')}</button>
           <h4>{text('Родственные связи', 'Relationships')}</h4>
           {selectedRelations.length ? [
             { title: text('Родители', 'Parents'), types: ['parent', 'adoptive_parent', 'step_parent'] },
