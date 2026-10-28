@@ -1,3 +1,4 @@
+import YandexAuthCallback from './pages/YandexAuthCallback'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { LanguageProvider } from './contexts/LanguageContext'
 import Layout from './components/Layout'
@@ -38,6 +39,7 @@ function App() {
             {/* Публичные маршруты */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/auth/yandex/callback" element={<YandexAuthCallback />} />
             <Route path="/auth/callback" element={<GoogleAuthCallback />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />

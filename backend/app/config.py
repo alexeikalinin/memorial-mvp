@@ -119,6 +119,8 @@ class Settings(BaseSettings):
         return ""
     
     # Google OAuth
+    YANDEX_CLIENT_ID: str = ""
+    YANDEX_CLIENT_SECRET: str = ""
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     FRONTEND_URL: str = "http://localhost:5173"

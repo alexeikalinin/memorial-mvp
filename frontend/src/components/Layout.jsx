@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
+import YandexAuthButton from './YandexAuthButton'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage, SHOW_EN_LANGUAGE_OPTION } from '../contexts/LanguageContext'
@@ -10,6 +11,7 @@ function Layout({ children }) {
   const [scrolled, setScrolled] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { lang, setLang, t } = useLanguage()
 
   useEffect(() => {
@@ -55,6 +57,7 @@ function Layout({ children }) {
             </div>
             {user ? (
               <div className="nav-auth">
+                <YandexAuthButton link from={location.pathname + location.search} />
                 <span className="nav-user" title={user.email || user.username}>
                   {user.email || user.username}
                 </span>

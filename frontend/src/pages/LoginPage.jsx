@@ -1,3 +1,4 @@
+import YandexAuthButton from '../components/YandexAuthButton'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -67,6 +68,8 @@ export default function LoginPage() {
           </svg>
           {t('auth.continue_google')}
         </a>
+
+        <YandexAuthButton from={from} />
 
         <div className="auth-divider"><span>{t('auth.or_signin_email')}</span></div>
 
