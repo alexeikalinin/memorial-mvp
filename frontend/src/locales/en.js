@@ -714,6 +714,7 @@ export default {
     viral_native_title: 'Memories of {name}',
   },
   common: {
+    optional: 'optional',
     save: 'Save',
     cancel: 'Cancel',
     loading: 'Loading...',
@@ -744,6 +745,9 @@ export default {
     add_relation: '+ Add relation',
     edit_mode: '✎ Edit layout',
     edit_mode_exit: '✓ Done editing',
+    form_nickname: 'How did they address you?',
+    form_nickname_placeholder: 'For example: Alex, sunshine, grandson…',
+    form_nickname_hint: 'The avatar can use this name when talking with you.',
     connect_title: 'Create connection',
     kelly_only_banner:
       'Showing the Kelly family only — other families are hidden until we connect them in the next steps.',

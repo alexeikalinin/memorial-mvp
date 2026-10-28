@@ -715,6 +715,7 @@ export default {
     viral_native_title: 'Мемориал «{name}»',
   },
   common: {
+    optional: 'необязательно',
     save: 'Сохранить',
     cancel: 'Отмена',
     loading: 'Загрузка...',
@@ -745,6 +746,9 @@ export default {
     add_relation: '+ Добавить связь',
     edit_mode: '✎ Редактировать',
     edit_mode_exit: '✓ Готово',
+    form_nickname: 'Как к вам обращались?',
+    form_nickname_placeholder: 'Например: Лёшик, солнышко, внук…',
+    form_nickname_hint: 'Аватар сможет использовать это обращение в разговоре с вами.',
     connect_title: 'Создать связь',
     kelly_only_banner:
       'Сейчас показана только линия Kelly; остальные семьи скрыты до следующего шага объединения.',

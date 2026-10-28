@@ -373,18 +373,6 @@ function marriageBarInGap(pa, pb, nw, nh) {
   return { yBar: yMid, x1: mx - half, x2: mx + half, mx, stubs: [] }
 }
 
-/** Горизонталь в зазоре между двумя карточками (сиблинги и т.п.) */
-function horizontalInGap(pa, pb, nw) {
-  const left = pa.x <= pb.x ? pa : pb
-  const right = pa.x <= pb.x ? pb : pa
-  const x1 = left.x + nw
-  const x2 = right.x
-  const touch = 1.2
-  if (x1 < x2 - 0.5) return { x1: x1 - touch, x2: x2 + touch, mx: (x1 + x2) / 2 }
-  const mx = (pa.cx + pb.cx) / 2
-  return { x1: mx, x2: mx, mx }
-}
-
 /**
  * @param {object} params
  * @param {Array} params.edges — raw graph edges
@@ -624,13 +612,13 @@ export function buildOrthogonalConnectors({
     const pa = positions[a]
     const pb = positions[b]
     if (!pa || !pb) continue
-    const ySib = Math.max(pa.y, pb.y) + nh * 0.35
-    const { x1, x2 } = horizontalInGap(pa, pb, nw)
-    addLine(x1, ySib, x2, ySib, {
-      stroke: 'rgba(196,168,130,0.55)',
-      strokeWidth: 2.2,
-      strokeDasharray: '8 5',
-    })
+    // A bracket above the cards stays attached at both ends, even after a
+    // manual move. Direct horizontal lines can pass through a spouse's avatar.
+    const ySib = Math.min(pa.y, pb.y) - 20
+    const opts = { stroke: 'rgba(196,168,130,0.85)', strokeWidth: 2.2, strokeDasharray: '8 5' }
+    addLine(pa.cx, pa.y, pa.cx, ySib, opts)
+    addLine(pa.cx, ySib, pb.cx, ySib, opts)
+    addLine(pb.cx, ySib, pb.cx, pb.y, opts)
   }
 
   return { lines: finalizeConnectorLines(lines) }

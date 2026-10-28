@@ -17,6 +17,7 @@ import {
 } from '../utils/familyTreeOrthogonalConnectors.js'
 import { filterGraphToScope, getFamilyOfNode, FAMILY_CONFIG } from '../utils/familyTreeScope.js'
 import { getSelectedFamilyNode, getSelectedFamilyRelations } from '../utils/familyTreeSelection.js'
+import { resolveTreePositions } from '../utils/familyTreePositions.js'
 import './FamilyTree.css'
 
 // ── Grid constants ─────────────────────────────────────────────────
@@ -710,7 +711,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   }
   const respondToRequest = async (id, decision) => {
     setRequestBusy(id); setFlowError('')
-    try { if (decision === 'cancel') await familyAPI.cancelRequest(id); else await familyAPI.respondRequest(id, { decision }); await Promise.all([loadRequests(), loadData()]) }
+    try { if (decision === 'cancel') await familyAPI.cancelRequest(id); else await familyAPI.respondRequest(id, { decision }); await Promise.all([loadRequests(), loadData({ background: true })]) }
     catch (err) { setFlowError(err.response?.data?.detail || text('Не удалось обработать запрос.', 'Could not respond to the request.')) }
     finally { setRequestBusy(null) }
   }
@@ -752,13 +753,15 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [snapLines, setSnapLines] = useState([])
   const saveTimerRef = useRef(null)
   const [drawingEdge, setDrawingEdge] = useState(null)  // {fromId, curX, curY}
+  const [pendingEdgeResult, setPendingEdgeResult] = useState(null)
+  const [pendingEdgeError, setPendingEdgeError] = useState('')
   const [pendingEdge, setPendingEdge] = useState(null)  // {fromId, toId}
-  const [pendingEdgeForm, setPendingEdgeForm] = useState({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
+  const [pendingEdgeForm, setPendingEdgeForm] = useState({ relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
 
   // ── Data loading ───────────────────────────────────────────────
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (options = {}) => {
     try {
-      setLoading(true)
+      if (!options.background) setLoading(true)
       const [fullRes, relsRes, memRes] = await Promise.all([
         familyAPI.getFullTree(memorialId, 6),
         familyAPI.getRelationships(memorialId),
@@ -776,13 +779,15 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       const layout = memRes?.data?.tree_layout_json
       if (layout?.nodePositions && typeof layout.nodePositions === 'object') {
         setNodeOverrides(layout.nodePositions)
+      } else {
+        setNodeOverrides({})
       }
     } catch (err) {
       console.error('Error loading family tree:', err)
       setGraphData(null); setRelationships([])
       setFlowError(lang === 'en' ? 'Could not load the family tree. Reload the page to try again.' : 'Не удалось загрузить семейное дерево. Обновите страницу, чтобы повторить.')
     } finally {
-      setLoading(false)
+      if (!options.background) setLoading(false)
     }
   }, [memorialId, setNodeOverrides, lang])
 
@@ -848,23 +853,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
   // Позиции узлов: авто-layout + ручные корректировки пользователя
   const effectivePositions = useMemo(() => {
-    if (!genLayout?.positions) return {}
-    if (!Object.keys(nodeOverrides).length) return genLayout.positions
-    const nw = genLayout.nodeSize?.w ?? 90
-    const nh = genLayout.nodeSize?.h ?? 148
-    const merged = { ...genLayout.positions }
-    for (const [id, ov] of Object.entries(nodeOverrides)) {
-      if (merged[id]) {
-        merged[id] = {
-          ...merged[id],
-          x: ov.x,
-          y: ov.y,
-          cx: ov.x + nw / 2,
-          cy: ov.y + nh / 2,
-        }
-      }
-    }
-    return merged
+    return resolveTreePositions(genLayout, nodeOverrides)
   }, [genLayout, nodeOverrides])
 
   // Refs для использования в mousemove без stale-closure
@@ -1086,8 +1075,9 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   }, [effectivePositions])
 
   const handleCreatePendingEdge = async () => {
-    if (!pendingEdge) return
+    if (!pendingEdge || pendingEdgeResult || !pendingEdgeForm.relationship_type || (pendingEdgeForm.relationship_type === 'custom' && !pendingEdgeForm.custom_label.trim())) return
     setSubmitting(true)
+    setPendingEdgeError('')
     try {
       const response = await familyAPI.createRelationship(pendingEdge.fromId, {
         related_memorial_id: parseInt(pendingEdge.toId),
@@ -1097,13 +1087,14 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         nickname_for_visitor: pendingEdgeForm.nickname_for_visitor || undefined,
         is_public: false,
       })
-      if (response.data?.status === 'pending') setFlowNotice(text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.'))
-      await loadRequests()
-      setPendingEdge(null)
-      setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
-      await loadData()
+      const notice = response.data?.status === 'pending'
+        ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
+        : text('Родственная связь сохранена в обе стороны.', 'Relationship saved in both directions.')
+      setPendingEdgeResult(notice)
+      setFlowNotice(notice)
+      await Promise.all([loadRequests(), loadData({ background: true })])
     } catch (err) {
-      alert(err.response?.data?.detail || t('family.add_error'))
+      setPendingEdgeError(typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
     } finally {
       setSubmitting(false)
     }
@@ -1221,8 +1212,9 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       if (nodeEl) {
         const toId = nodeEl.getAttribute('data-memorial-id')
         if (toId && toId !== drawingEdge.fromId) {
+          setPendingEdgeResult(null); setPendingEdgeError('')
           setPendingEdge({ fromId: drawingEdge.fromId, toId })
-          setPendingEdgeForm({ relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
+          setPendingEdgeForm({ relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
         }
       }
       setDrawingEdge(null)
@@ -1457,18 +1449,22 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
       {/* Pending edge modal — создание связи через визуальное рисование */}
       {pendingEdge && (
-        <div className="ft-pending-edge-overlay" onClick={() => setPendingEdge(null)}>
-          <div className="ft-pending-edge-modal" onClick={e => e.stopPropagation()}>
+        <div className="ft-pending-edge-overlay">
+          <div className="ft-pending-edge-modal" role="dialog" aria-modal="true" aria-label={t('family.connect_title')} onClick={e => e.stopPropagation()}>
             <div className="ft-pending-edge-header">
               <h4>{t('family.connect_title') || 'Connect memorials'}</h4>
-              <button className="ft-pending-edge-close" onClick={() => setPendingEdge(null)}>✕</button>
+              <button type="button" disabled={submitting} className="ft-pending-edge-close" onClick={() => setPendingEdge(null)}>✕</button>
             </div>
+            <p>{nodeMap[pendingEdge.fromId]?.name} ↔ {nodeMap[pendingEdge.toId]?.name}</p>
+            {pendingEdgeResult ? <div role="status"><p>{pendingEdgeResult}</p><button type="button" className="btn btn-primary" onClick={() => setPendingEdge(null)}>{text('Готово', 'Done')}</button></div> : <>
+            {pendingEdgeError && <p className="auth-error" role="alert">{pendingEdgeError}</p>}
             <div className="form-group">
               <label>{t('family.form_type')}</label>
               <select
                 value={pendingEdgeForm.relationship_type}
                 onChange={e => setPendingEdgeForm(f => ({ ...f, relationship_type: e.target.value, custom_label: '' }))}
               >
+                <option value="" disabled>{text('Выберите тип связи', 'Choose relationship type')}</option>
                 <optgroup label={t('family.group_parent_child')}>
                   <option value="parent">{t('family.type_parent_desc')}</option>
                   <option value="child">{t('family.type_child_desc')}</option>
@@ -1515,14 +1511,16 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
               />
               <span className="form-hint">{t('family.form_nickname_hint') || 'The avatar will use this name when chatting with you'}</span>
             </div>
+            <p className="form-hint">{text('Выбранный тип описывает второго человека по отношению к первому.', 'The selected type describes the second person in relation to the first.')}</p>
             <div className="ft-pending-edge-actions">
-              <button className="btn btn-primary" onClick={handleCreatePendingEdge} disabled={submitting}>
+              <button type="button" className="btn btn-primary" onClick={handleCreatePendingEdge} disabled={submitting || !pendingEdgeForm.relationship_type || (pendingEdgeForm.relationship_type === 'custom' && !pendingEdgeForm.custom_label.trim())}>
                 {submitting ? t('common.saving') : t('family.add_submit')}
               </button>
-              <button className="btn" onClick={() => setPendingEdge(null)}>
+              <button type="button" disabled={submitting} className="btn" onClick={() => setPendingEdge(null)}>
                 {t('common.cancel')}
               </button>
             </div>
+            </>}
           </div>
         </div>
       )}

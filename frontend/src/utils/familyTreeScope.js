@@ -65,6 +65,13 @@ export function filterGraphToScope(graph, visibleFamilies) {
       adjacent.get(source).add(target); adjacent.get(target).add(source)
     }
     const opened = [String(graph.root_id), ...visibleFamilies.filter(v => v.startsWith('node:')).map(v => v.slice(5))]
+    // A couple is one starting family: show each partner's immediate relatives.
+    const seeds = new Set(opened)
+    for (const e of familyEdges) {
+      if (!['spouse', 'partner', 'ex_spouse'].includes(String(e.type).toLowerCase())) continue
+      if (seeds.has(String(e.source))) opened.push(String(e.target))
+      if (seeds.has(String(e.target))) opened.push(String(e.source))
+    }
     const fullIds = new Set()
     for (const id of opened) {
       if (!nodeIds.has(id)) continue

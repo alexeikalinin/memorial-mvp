@@ -33,3 +33,12 @@ test('existing demo family unlock behavior is preserved', () => {
   assert.equal(filterGraphToScope(demo, ['Kelly']).nodes.find(n => n.memorial_id === 2)._stub, true)
   assert.ok(filterGraphToScope(demo, ['Kelly', 'Chang']).nodes.every(n => !n._stub))
 })
+
+test('both spouses and each of their siblings are visible from either spouse', () => {
+  const family = {nodes:[1,2,3,4,5].map(id=>({memorial_id:id,name:`Родственник ${id}`})),edges:[{source:1,target:2,type:'spouse'},{source:1,target:3,type:'sibling'},{source:1,target:4,type:'sibling'},{source:2,target:5,type:'sibling'}]}
+  for (const root_id of [1,2]) {
+    const result = filterGraphToScope({...family,root_id},['Other'])
+    assert.equal(result.nodes.length,5)
+    assert.ok(result.nodes.every(n=>!n._stub))
+  }
+})

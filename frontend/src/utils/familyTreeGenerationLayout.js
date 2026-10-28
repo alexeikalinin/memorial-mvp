@@ -599,6 +599,33 @@ function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
  *   All units are placed in one centred column. Use when only one primary family is visible.
  * @returns {{ positions, canvas, lineage, surnameA, surnameB, orderedIds, minGen, maxGen, genBands, labelAreaX, labelAreaW }}
  */
+function orderPersonalCoupleRow(group, edges) {
+  const pairs = group.filter(u => u.type === 'pair')
+  const original = group.flatMap(u => u.ids)
+  if (pairs.length !== 1) return original
+  const [left, right] = pairs[0].ids
+  const siblingBranch = start => {
+    const found = new Set([String(start)])
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const e of edges) {
+        if (!isSiblingEdgeType(e.type)) continue
+        for (const [a,b] of [[e.source,e.target],[e.target,e.source]]) {
+          if (found.has(String(a)) && original.some(id => String(id) === String(b)) && !found.has(String(b))) {
+            found.add(String(b)); changed = true
+          }
+        }
+      }
+    }
+    return found
+  }
+  const l = siblingBranch(left), r = siblingBranch(right)
+  if ([...l].some(id => r.has(id)) || original.some(id => !l.has(String(id)) && !r.has(String(id)))) return original
+  return [...original.filter(id => id !== left && l.has(String(id))), left, right,
+    ...original.filter(id => id !== right && r.has(String(id)))]
+}
+
 export function buildGenerationLayout(graphData, singleFamilyMode = false) {
   const nodesIn = graphData?.nodes || []
   const edgesStripped = stripSiblingConflictingParentEdges(graphData?.edges || [], nodesIn)
@@ -614,7 +641,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
   // In singleFamilyMode, stub nodes from other families may land at wrong depths
   // (e.g. born earlier than visible-family members, placed in an ancestor row).
   // Snap each stub to the average generation of its directly-connected visible neighbors.
-  if (singleFamilyMode) {
+  if (singleFamilyMode && !graphData?._branchScope) {
     const visibleGenIds = new Set(rawNodes.filter((n) => !n._stub).map((n) => sid(n.memorial_id)))
     for (const n of rawNodes) {
       if (!n._stub) continue
@@ -730,6 +757,12 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     }
   } else {
     effectiveLineage = lineage
+  }
+
+  // Personal trees use relationship topology, not demo surname lanes. Keep
+  // spouses and siblings in the same row group, including boundary cards.
+  if (graphData?._branchScope) {
+    effectiveLineage = Object.fromEntries(nodes.map(n => [sid(n.memorial_id), 'A']))
   }
 
   const rowLanes = {}
@@ -880,7 +913,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
         // Reorder so ex-spouse singles appear before the pair they connect to:
         //   [Patricia 💔 Robert ♥ Linda] instead of [Robert ♥ Linda … Patricia]
         const orderedGroup = reorderGroupForExSpouse(group, edges, nodes)
-        const rowIds = orderedGroup.flatMap((u) => u.ids)
+        const rowIds = graphData?._branchScope ? orderPersonalCoupleRow(orderedGroup, edges) : orderedGroup.flatMap((u) => u.ids)
         const x0 = x0ForLine(seg.kind, col, rowIds.length)
         rowIds.forEach((mid, j) => {
           const id = sid(mid)
