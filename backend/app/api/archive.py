@@ -99,7 +99,7 @@ def build_archive(db, user, browser_chats=None):
                     continue
                 if table.name == 'avatar_answer_cache':
                     condition = condition & (cols.owner_id == user.id)
-                if table.name in ('guest_chat_usage', 'yandex_attempts', 'yandex_tickets'):
+                if table.name in ('guest_chat_usage', 'yandex_attempts', 'yandex_tickets', 'google_web_attempts', 'google_web_tickets'):
                     continue
                 rows = []
                 for raw in db.execute(select(table).where(condition)).mappings():

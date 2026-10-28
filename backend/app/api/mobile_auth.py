@@ -11,6 +11,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from jose import jwt, JWTError
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth import create_access_token
@@ -71,20 +72,13 @@ def _google_user(db: Session, info: dict):
         raise HTTPException(400,'Google не подтвердил адрес электронной почты.')
     user = db.query(User).filter(User.google_id == google_id).first()
     if not user:
-        user = db.query(User).filter(User.email == email).first()
-        if user and user.google_id and user.google_id != google_id:
-            raise HTTPException(409,'Этот аккаунт связан с другим профилем Google.')
-        if not user:
-            base = email.split('@')[0][:180]
-            username = base
-            count = 0
-            while db.query(User).filter(User.username == username).first():
-                count += 1
-                username = f'{base}{count}'
-            user = User(email=email,username=username,full_name=info.get('name') or base,is_active=True)
-            db.add(user)
-        user.google_id = google_id
-        user.avatar_url = info.get('picture')
+        email = email.strip().lower()
+        if db.query(User).filter(func.lower(User.email) == email).first():
+            raise HTTPException(409, 'Аккаунт с этой почтой уже есть. Войдите привычным способом и подключите Google в веб-версии.')
+        username = 'google_' + secrets.token_hex(12)
+        user = User(email=email, username=username, full_name=(info.get('name') or '')[:255],
+                    google_id=google_id, is_active=True)
+        db.add(user)
     if not user.is_active:
         raise HTTPException(403,'Аккаунт отключён.')
     user.email_verified = True

@@ -1,3 +1,4 @@
+import GoogleAuthButton from './GoogleAuthButton'
 import YandexAuthButton from './YandexAuthButton'
 import apiClient from '../api/client'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
@@ -78,6 +79,7 @@ function Layout({ children }) {
             </div>
             {user ? (
               <div className="nav-auth">
+                <GoogleAuthButton link from={location.pathname + location.search} />
                 <YandexAuthButton link from={location.pathname + location.search} />
                 <button type="button" className="nav-logout" disabled={exportBusy} onClick={downloadArchive}>{exportBusy ? (lang === 'en' ? 'Preparing archive…' : 'Подготовка архива…') : (lang === 'en' ? 'Download archive' : 'Скачать архив')}</button>
                 <span className="nav-user" title={user.email || user.username}>

@@ -1,3 +1,5 @@
+import OAuthCallback from './pages/OAuthCallback'
+import GoogleWebAuthStart from './pages/GoogleWebAuthStart'
 import YandexAuthCallback from './pages/YandexAuthCallback'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { LanguageProvider } from './contexts/LanguageContext'
@@ -39,6 +41,8 @@ function App() {
             {/* Публичные маршруты */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/auth/google/start" element={<GoogleWebAuthStart />} />
+            <Route path="/auth/google/callback" element={<OAuthCallback provider="google" />} />
             <Route path="/auth/yandex/callback" element={<YandexAuthCallback />} />
             <Route path="/auth/callback" element={<GoogleAuthCallback />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />

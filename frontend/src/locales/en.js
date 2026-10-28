@@ -1,5 +1,6 @@
 export default {
   auth: {
+    link_provider_hint: 'Already have an account? Sign in as usual, then connect another sign-in method in the top menu.',
     login_error: 'Invalid email or password',
     register_error: 'Registration failed. Please try again.',
     generic_error: 'Something went wrong. Please try again.',

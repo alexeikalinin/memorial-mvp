@@ -3,10 +3,8 @@ Authentication endpoints: register, login, me, Google OAuth,
 email verification, password reset.
 """
 import secrets
-import urllib.parse
 from datetime import datetime, timedelta, timezone
 
-import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -27,9 +25,6 @@ from app.services.email_service import send_password_reset_email, send_verificat
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -100,112 +95,19 @@ def get_me(current_user: User = Depends(get_current_user)):
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 
 @router.get("/google")
-def google_login(lang: str = Depends(get_lang)):
-    """Редирект на Google OAuth consent screen."""
-    if not settings.GOOGLE_CLIENT_ID:
-        raise HTTPException(status_code=501, detail=tr(lang, "google_oauth_not_configured"))
-    redirect_uri = f"{settings.API_V1_PREFIX}/auth/google/callback"
-    # Используем PUBLIC_API_URL если задан (prod), иначе localhost
-    base = settings.PUBLIC_API_URL or "http://localhost:8000"
-    params = urllib.parse.urlencode({
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": f"{base}{redirect_uri}",
-        "response_type": "code",
-        "scope": "openid email profile",
-        "access_type": "offline",
-        "prompt": "select_account",
-    })
-    return RedirectResponse(f"{_GOOGLE_AUTH_URL}?{params}")
+def google_login():
+    """Legacy links enter the browser-verifier flow; no unbound OAuth requests."""
+    return RedirectResponse(settings.FRONTEND_URL.rstrip('/') + '/auth/google/start', status_code=302)
 
 
 @router.get("/google/callback")
-async def google_callback(code: str | None = None, state: str | None = None, error: str | None = None, db: Session = Depends(get_db), lang: str = Depends(get_lang)):
-    """Google OAuth callback: обменивает code на токен, создаёт/находит User, возвращает JWT."""
+async def google_callback(request: Request, code: str | None = None, state: str | None = None,
+                          error: str | None = None, db: Session = Depends(get_db)):
     if state and state.startswith('mobile.'):
         from app.api.mobile_auth import complete
         return await complete(code, state, error, db)
-    if not code:
-        raise HTTPException(status_code=400, detail='Google sign-in was not completed')
-    if not settings.GOOGLE_CLIENT_ID:
-        raise HTTPException(status_code=501, detail=tr(lang, "google_oauth_not_configured"))
-
-    base = settings.PUBLIC_API_URL or "http://localhost:8000"
-    redirect_uri = f"{base}{settings.API_V1_PREFIX}/auth/google/callback"
-
-    # 1. Обменять code на access_token
-    async with httpx.AsyncClient() as client:
-        token_resp = await client.post(_GOOGLE_TOKEN_URL, data={
-            "code": code,
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code",
-        })
-        if token_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail=tr(lang, "google_code_exchange_failed"))
-        token_data = token_resp.json()
-        access_token = token_data.get("access_token")
-
-        # 2. Получить профиль пользователя
-        userinfo_resp = await client.get(
-            _GOOGLE_USERINFO_URL,
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        if userinfo_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail=tr(lang, "google_userinfo_failed"))
-        info = userinfo_resp.json()
-
-    google_id = info.get("sub")
-    email = info.get("email")
-    name = info.get("name") or email.split("@")[0]
-    avatar_url = info.get("picture")
-
-    if not google_id or not email:
-        raise HTTPException(status_code=400, detail=tr(lang, "google_incomplete_profile"))
-
-    # 3. Найти или создать пользователя
-    is_new_user = False
-    user = db.query(User).filter(User.google_id == google_id).first()
-    if not user:
-        # Проверить, есть ли юзер с таким email (регистрировался ранее)
-        user = db.query(User).filter(User.email == email).first()
-        if user:
-            # Привязать google_id к существующему аккаунту
-            user.google_id = google_id
-            user.avatar_url = avatar_url
-        else:
-            # Создать нового пользователя
-            is_new_user = True
-            username_base = email.split("@")[0]
-            username = username_base
-            counter = 1
-            while db.query(User).filter(User.username == username).first():
-                username = f"{username_base}{counter}"
-                counter += 1
-            user = User(
-                email=email,
-                username=username,
-                full_name=name,
-                hashed_password=None,
-                google_id=google_id,
-                avatar_url=avatar_url,
-                is_active=True,
-            )
-            db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # 4. Выдать JWT и редиректнуть на фронт
-    jwt_token = create_access_token({"sub": str(user.id)})
-    frontend_url = settings.FRONTEND_URL or "http://localhost:5173"
-    # Google users are considered verified automatically
-    if not user.email_verified:
-        user.email_verified = True
-        db.commit()
-    redirect_url = f"{frontend_url}/auth/callback?token={jwt_token}"
-    if is_new_user:
-        redirect_url += "&new_user=1"
-    return RedirectResponse(redirect_url, status_code=302)
+    from app.api.google_web_auth import complete
+    return await complete(request, code, state, error, db)
 
 
 # ── Email Verification ────────────────────────────────────────────────────────

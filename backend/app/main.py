@@ -12,7 +12,7 @@ from app.config import settings
 from app.db import engine, Base
 from app.limiter import limiter
 from app.api import health, memorials, ai, media, s3, embeddings, family, invites, access as access_router, waitlist, billing as billing_router
-from app.api import yandex_auth
+from app.api import yandex_auth, google_web_auth
 from app.api import auth as auth_router
 from app.api import signs
 from app.api import mobile_auth, archive, featured_answers
@@ -101,6 +101,8 @@ def _add_missing_columns():
 
 
 _add_missing_columns()
+from app.google_web_auth_models import protect_google_web_tables
+protect_google_web_tables(engine)
 
 def _ensure_default_user():
     """Создаёт дефолтного пользователя id=1 для dev-режима (DEBUG=True)."""
@@ -198,6 +200,7 @@ app.include_router(archive.router, prefix=settings.API_V1_PREFIX)
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(yandex_auth.router, prefix=settings.API_V1_PREFIX)
+app.include_router(google_web_auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(mobile_auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(memorials.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
