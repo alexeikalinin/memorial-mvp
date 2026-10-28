@@ -476,7 +476,7 @@ function MemorialDetail() {
           <div className="memorial-hero-info">
             <div className="memorial-hero-text">
               <h1 className="memorial-hero-name">{memorial.name}</h1>
-              {memorial.maiden_name && <p className="memorial-dates">{lang==='en'?'Birth surname: ':'Урождённая: '}{memorial.maiden_name}</p>}
+              {memorial.maiden_name && <p className="memorial-dates">{lang==='en'?'Birth surname: ':'Прежняя фамилия: '}{memorial.maiden_name}</p>}
               {(birthYear || deathYear) && (
                 <p className="memorial-hero-dates">
                   {birthYear && birthYear}
@@ -492,7 +492,7 @@ function MemorialDetail() {
             {canEdit && (
               <button
                 className="btn-edit-header"
-                onClick={() => setEditing(true)}
+                onClick={async () => { await loadMemorial(); setEditing(true) }}
                 title={t('detail.btn_edit')}
               >
                 ✎ {t('detail.btn_edit')}
