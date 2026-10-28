@@ -38,9 +38,10 @@ async def get_audio_file(filename: str, lang: str = Depends(get_lang)):
     Получить аудио-файл по имени файла.
     Используется для обслуживания сгенерированных аудио из чата.
     """
-    audio_path = _resolve_local_path(UPLOAD_DIR / "audio" / filename)
+    from app.services.generated_audio import find_generated_audio
+    audio_path = find_generated_audio(filename, UPLOAD_DIR / "audio")
 
-    if not audio_path.exists():
+    if not audio_path.is_file():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=tr(lang, "audio_file_not_found")

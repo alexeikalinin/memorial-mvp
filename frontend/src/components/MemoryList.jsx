@@ -1,9 +1,10 @@
 import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
 import { buildContributeInviteUrl } from '../utils/inviteUrl'
 import { useLanguage } from '../contexts/LanguageContext'
 import './MemoryList.css'
+import FeaturedAnswers from './FeaturedAnswers'
 
 function formatApiDetail(err) {
   const d = err.response?.data?.detail
@@ -21,6 +22,9 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   const [showPending, setShowPending] = useState(false)
   const [moderating, setModerating] = useState(null)
   const [memories, setMemories] = useState([])
+  const [savedAnswers, setSavedAnswers] = useState([])
+  const [audioMemoryId, setAudioMemoryId] = useState(null)
+  const [syncing, setSyncing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -32,6 +36,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [sharePanel, setSharePanel] = useState(null)
   const [sharingLoading, setSharingLoading] = useState(false)
+  const [inviteChat, setInviteChat] = useState(false)
   const [urlCopied, setUrlCopied] = useState(false)
   const [textCopied, setTextCopied] = useState(false)
 
@@ -52,9 +57,26 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     return () => clearTimeout(timer)
   }, [searchQuery])
 
+  const loadMemories = useCallback(async (q = '') => {
+    try {
+      setLoading(true)
+      setLoadError(null)
+      const response = await memorialsAPI.getMemories(memorialId, q || null)
+      setMemories(Array.isArray(response.data) ? response.data : [])
+    } catch (err) {
+      console.error('Error loading memories:', err)
+      setMemories([])
+      setLoadError(
+        err.response?.data?.detail || err.message || t('memoryList.network_error')
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [memorialId, t])
+
   useEffect(() => {
     loadMemories(debouncedQuery)
-  }, [memorialId, debouncedQuery])
+  }, [debouncedQuery, loadMemories])
 
   useEffect(() => {
     if (composeRequest > 0 && canEdit) setShowForm(true)
@@ -128,11 +150,14 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
   const handleShareInvite = async () => {
     setSharingLoading(true)
     try {
-      const res = await invitesAPI.create(memorialId, {})
+      const permissions = { add_memories: true, chat: inviteChat, view_media: false }
+      const existing = await invitesAPI.list(memorialId)
+      const reusable = existing.data.find(item => (!item.expires_at || new Date(item.expires_at) > new Date()) && item.permissions?.add_memories === true && Boolean(item.permissions?.chat) === inviteChat && !item.permissions?.view_media)
+      const res = reusable ? { data: reusable } : await invitesAPI.create(memorialId, { expires_days: 30, permissions })
       const url = buildContributeInviteUrl(res.data.token) || res.data.invite_url
       const fallbackName = t('memoryList.anonymous_person')
       const text = t('memoryList.invite_sms', { name: memorialName || fallbackName, url })
-      setSharePanel({ url, text })
+      setSharePanel({ url, text, token: res.data.token, expiresAt: res.data.expires_at })
       setUrlCopied(false)
       setTextCopied(false)
     } catch (err) {
@@ -173,23 +198,6 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
     }
   }
 
-  const loadMemories = async (q = '') => {
-    try {
-      setLoading(true)
-      setLoadError(null)
-      const response = await memorialsAPI.getMemories(memorialId, q || null)
-      setMemories(Array.isArray(response.data) ? response.data : [])
-    } catch (err) {
-      console.error('Error loading memories:', err)
-      setMemories([])
-      setLoadError(
-        err.response?.data?.detail || err.message || t('memoryList.network_error')
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -218,14 +226,15 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
           {canModerate && <button className="btn btn-secondary" onClick={() => setShowPending(!showPending)}>
             {t('memoryList.pending_requests')} ({pendingMemories.length})
           </button>}
-          <button
+          {canModerate && <label><input type="checkbox" checked={inviteChat} onChange={e => setInviteChat(e.target.checked)} /> {lang === 'en' ? 'Include 5 chat questions' : 'Пригласить также в чат · 5 вопросов'}</label>}
+          {canModerate && <button
             className="btn btn-share"
             data-tour="memories-invite"
             onClick={handleShareInvite}
             disabled={sharingLoading}
           >
             {sharingLoading ? t('memoryList.invite_loading') : `🔗 ${t('memoryList.invite_friend')}`}
-          </button>
+          </button>}
           {canEdit && (
             <button
               className="btn btn-primary"
@@ -237,6 +246,18 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
           )}
         </div>
       </div>
+
+      {canModerate && <FeaturedAnswers memorialId={memorialId} owner onLoaded={setSavedAnswers} />}
+      {canModerate && <details className="featured-answers"><summary>{lang === 'en' ? 'Family archive tools' : 'Работа с семейным архивом'}</summary>
+        <p>{lang === 'en' ? 'Find references to relatives and add linked memories to their pages where you have editing access.' : 'Найти упоминания родственников и добавить связанные воспоминания на их страницы, где у вас есть право редактирования.'}</p>
+        <button type="button" className="btn btn-secondary" disabled={syncing} onClick={async () => {
+          if (!confirm(t('chat.sync_confirm'))) return
+          setSyncing(true)
+          try { const { data } = await aiAPI.syncFamilyMemories(memorialId); alert(t('chat.sync_done', { created: String(data.created), skipped: String(data.skipped) })); await loadMemories(debouncedQuery); onReload?.() }
+          catch (err) { alert(err.response?.data?.detail || t('chat.sync_error')) }
+          finally { setSyncing(false) }
+        }}>{syncing ? t('chat.syncing') : (lang === 'en' ? 'Link family memories' : 'Связать воспоминания семьи')}</button>
+      </details>}
 
       {canModerate && showPending && <section className="pending-memories" aria-label={t('memoryList.pending_requests')}>
         <p>{t('memoryList.pending_help')}</p>
@@ -270,12 +291,19 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
             </span>
             <button className="share-panel-close" onClick={() => setSharePanel(null)}>✕</button>
           </div>
+          <p>{lang === 'en' ? 'Anyone with this link can contribute. New stories require approval.' : 'По этой ссылке можно добавлять истории без регистрации. Новые воспоминания требуют одобрения.'}</p>
           <div className="share-url-row">
             <span className="share-url-text">{sharePanel.url}</span>
             <button className="btn btn-copy" onClick={handleCopyUrl}>
               {urlCopied ? t('memoryList.copied') : t('memoryList.copy')}
             </button>
           </div>
+          <button type="button" className="btn btn-secondary" disabled={sharingLoading} onClick={async () => {
+            setSharingLoading(true)
+            try { await invitesAPI.revoke(sharePanel.token); setSharePanel(null) }
+            catch (err) { alert(formatApiDetail(err)) }
+            finally { setSharingLoading(false) }
+          }}>{lang === 'en' ? 'Disable invitation link' : 'Отключить эту ссылку'}</button>
           <div className="share-message-section">
             <p className="share-message-label">{t('memoryList.or_ready_message')}</p>
             <p className="share-message-text">«{sharePanel.text}»</p>
@@ -523,6 +551,8 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
               ) : (
                 <>
                   {memory.title && <h3>{memory.title}</h3>}
+                  {canModerate && savedAnswers.some(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)) && <button type="button" className="btn btn-secondary" aria-expanded={audioMemoryId === memory.id} onClick={() => setAudioMemoryId(audioMemoryId === memory.id ? null : memory.id)}>{lang === 'en' ? 'Saved audio answers' : 'Есть озвученные ответы'} · {savedAnswers.filter(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)).length}</button>}
+                  {canModerate && audioMemoryId === memory.id && <FeaturedAnswers memorialId={memorialId} owner memoryId={memory.id} />}
                   <p>{memory.content}</p>
                   {canModerate && memory.contributor_name && (
                     <p className="memory-contributor">{t('memoryList.contributor', { name: memory.contributor_name })}</p>

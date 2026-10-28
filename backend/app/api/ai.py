@@ -184,6 +184,18 @@ async def animate_photo(
             )
 
 
+from app.schemas import AudioPreviewDecision
+
+
+@router.post("/avatar/audio-preview/{cache_id}/{preview_id}")
+def choose_audio_preview(cache_id: int, preview_id: str, decision: AudioPreviewDecision,
+                         db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_optional_authenticated_user)):
+    if current_user is None:
+        raise HTTPException(401, "Authentication required")
+    from app.services.answer_cache import select_preview
+    return select_preview(db, current_user, cache_id, preview_id, decision.accept)
+
+
 @router.post("/avatar/chat", response_model=AvatarChatResponse)
 async def avatar_chat(
     request: AvatarChatRequest,
@@ -203,6 +215,8 @@ async def avatar_chat(
     result = await _avatar_chat_response(request, db, current_user, invite_token)
     if result.audio_url and result.audio_url.startswith("/api/v1/ai/recorded-reply/"):
         result.audio_url = str(http_request.base_url).rstrip("/") + result.audio_url
+    if request.regenerate_audio:
+        return result
     if current_user:
         from app.models import UserUsage
         usage = _get_or_create_usage(current_user.id, db)
@@ -277,12 +291,18 @@ async def _avatar_chat_response(
             owner = True
         except HTTPException:
             pass
+    if not owner and not request.include_family_memories and not request.regenerate_audio:
+        from app.api.featured_answers import repeated_guest_answer
+        saved_example = repeated_guest_answer(db, memorial, request.question, invite_token)
+        if saved_example:
+            return AvatarChatResponse(answer=saved_example['answer'], audio_url=saved_example['audio_url'], sources=[])
     if not owner and (request.include_audio or request.include_family_memories):
         raise HTTPException(status_code=403, detail="Visitors can ask text questions only")
 
     # ── Billing checks (authenticated users only) ──────────────────────────────
     if current_user:
-        check_chat_quota(current_user, request.memorial_id, db)
+        if not request.regenerate_audio:
+            check_chat_quota(current_user, request.memorial_id, db)
         if request.include_family_memories:
             check_family_rag_access(current_user)
         if request.include_audio:
@@ -333,8 +353,19 @@ async def _avatar_chat_response(
         )
         return AvatarChatResponse(answer=no_mem_msg, sources=[], suggest_memory=True)
     
+    from app.services.answer_cache import key_for, cached_response, save_response, speech_text
     from app.services.saved_speech import requested_thank_you_speech
     saved_speech = requested_thank_you_speech(request.question, all_memories)
+    cache_key = None
+    if owner and saved_speech is None and not request.include_family_memories:
+        from app.models import AvatarAnswerCache
+        cache_key = key_for(request, memorial, all_memories, current_user)
+        cached = db.query(AvatarAnswerCache).filter_by(cache_key=cache_key).first()
+        if cached is not None:
+            return await cached_response(cached, request, memorial, db)
+    if request.regenerate_audio:
+        raise HTTPException(409, "Сохранённый ответ устарел или недоступен. Задайте вопрос снова.")
+
     overview = is_memory_overview_question(request.question)
     if not overview and saved_speech is None:
         # Проверяем, есть ли воспоминания с embeddings
@@ -642,12 +673,14 @@ async def _avatar_chat_response(
                     raise ValueError("В backend/.env не задан FISH_AUDIO_API_KEY.")
                 if voice_provider == "elevenlabs" and not settings.ELEVENLABS_API_KEY:
                     raise ValueError("В backend/.env не задан ELEVENLABS_API_KEY.")
-                audio_bytes = await generate_speech(answer, voice_id=voice_id, provider=voice_provider, speed=request.speech_speed, pronunciations=request.pronunciations, model=memorial.voice_tts_model)
+                spoken_text = speech_text(answer, request.speech_style) if voice_provider == "fish_audio" and saved_speech is None else answer
+                audio_bytes = await generate_speech(spoken_text, voice_id=voice_id, provider=voice_provider, speed=request.speech_speed, pronunciations=request.pronunciations, model=memorial.voice_tts_model)
 
                 # Сохранение аудио-файла
-                audio_dir = Path("uploads/audio")
+                from app.services.generated_audio import generated_audio_dir
+                audio_dir = generated_audio_dir()
                 audio_dir.mkdir(exist_ok=True)
-                audio_filename = f"chat_{request.memorial_id}_{hash(request.question)}.mp3"
+                audio_filename = f"chat_{request.memorial_id}_{uuid.uuid4().hex}.mp3"
                 audio_path = audio_dir / audio_filename
 
                 with open(audio_path, "wb") as f:
@@ -696,7 +729,7 @@ async def _avatar_chat_response(
                 # Анимация опциональна — не ломаем чат при ошибке
                 print(f"Warning: could not start animation: {e}")
 
-        return AvatarChatResponse(
+        result = AvatarChatResponse(
             answer=answer,
             audio_url=audio_url,
             audio_error=audio_error,
@@ -705,6 +738,8 @@ async def _avatar_chat_response(
             sources=sources,
             suggest_memory=not bool(source_ids),
         )
+        save_response(db, cache_key, request, memorial, current_user, result, source_ids)
+        return result
     
     except Exception as e:
         logging.exception("avatar_chat failed")

@@ -1,5 +1,5 @@
 """Supported Fish TTS engines and compatibility with retired S1 settings."""
-DEFAULT_FISH_MODEL = 's2-pro'
+DEFAULT_FISH_MODEL = 's2.1-pro'
 
 
 def resolve_fish_model(selected, configured):

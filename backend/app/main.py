@@ -15,10 +15,12 @@ from app.api import health, memorials, ai, media, s3, embeddings, family, invite
 from app.api import yandex_auth
 from app.api import auth as auth_router
 from app.api import signs
-from app.api import mobile_auth
+from app.api import mobile_auth, archive, featured_answers
 
 # Создание таблиц в БД (для dev; в production используйте Alembic миграции)
 Base.metadata.create_all(bind=engine)
+from app.yandex_auth_models import protect_yandex_tables
+protect_yandex_tables(engine)
 
 # Миграция: создаём MemorialAccess(OWNER) для мемориалов, у которых ещё нет записи
 from app.db import SessionLocal
@@ -192,6 +194,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Подключение роутеров
+app.include_router(archive.router, prefix=settings.API_V1_PREFIX)
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(yandex_auth.router, prefix=settings.API_V1_PREFIX)
@@ -203,6 +206,7 @@ app.include_router(s3.router, prefix=settings.API_V1_PREFIX)
 app.include_router(embeddings.router, prefix=settings.API_V1_PREFIX)
 app.include_router(family.router, prefix=settings.API_V1_PREFIX)
 app.include_router(invites.router, prefix=settings.API_V1_PREFIX)
+app.include_router(featured_answers.router, prefix=settings.API_V1_PREFIX)
 app.include_router(access_router.router, prefix=settings.API_V1_PREFIX)
 app.include_router(waitlist.router, prefix=settings.API_V1_PREFIX)
 app.include_router(billing_router.router, prefix=settings.API_V1_PREFIX)

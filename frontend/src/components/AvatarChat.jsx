@@ -1,6 +1,6 @@
 import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { createPortal } from 'react-dom'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useId } from 'react'
 import apiClient, { aiAPI, memorialsAPI } from '../api/client'
 import ApiMediaImage from './ApiMediaImage'
 import ChatAudioPlayer from './ChatAudioPlayer'
@@ -8,6 +8,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import './AvatarChat.css'
+import FeaturedAnswers from './FeaturedAnswers'
 
 // Запись аудио для клона голоса
 function useVoiceRecorder() {
@@ -58,6 +59,7 @@ function useVoiceRecorder() {
 function getPlayableAudioUrl(url) {
   if (!url) return null
   if (url.startsWith('s3://')) return null
+  if (url.startsWith('/api/v1/')) return `${(import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')}${url.slice(7)}`
   if (/^https?:\/\//.test(url) || url.startsWith('/')) return url
   const base = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')
   return `${base}/media/audio/${url}`
@@ -71,6 +73,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const avatarPhotoId = portraitSettings?.avatar?.media_id || coverPhotoId
   const portraitVersion = JSON.stringify(portraitSettings || {})
   const [messages, setMessages] = useState([])
+  const [speechStyle, setSpeechStyle] = useState('natural')
+  const [revoiceBusy, setRevoiceBusy] = useState(false)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [includeAudio, setIncludeAudio] = useState(false)
@@ -79,20 +83,57 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   const monthlyLimitReached = !!user && chatUsage?.chat_messages_limit != null && chatUsage.chat_messages_used >= chatUsage.chat_messages_limit
   const chatBlocked = quotaBlocked || monthlyLimitReached
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showChatSettings, setShowChatSettings] = useState(false)
+  const chatSettingsDialog = useRef(null)
+  const settingsTitleId = useId()
+  useEffect(() => {
+    const dialog = chatSettingsDialog.current
+    if (showChatSettings && dialog && !dialog.open) dialog.showModal()
+    if (!showChatSettings && dialog?.open) dialog.close()
+  }, [showChatSettings])
+  useEffect(() => { setShowChatSettings(false) }, [memorialId])
+
+  const chatContainerRef = useRef(null)
+  useEffect(() => {
+    if (!isFullscreen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusFrame = requestAnimationFrame(() => chatContainerRef.current?.querySelector('.btn-fullscreen')?.focus())
+    const onKeyDown = (event) => {
+      if (document.querySelector('dialog[open]')) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setIsFullscreen(false)
+      }
+      if (event.key === 'Tab') {
+        const controls = [...(chatContainerRef.current?.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href], summary') || [])]
+          .filter(element => element.getClientRects().length)
+        const first = controls[0], last = controls[controls.length - 1]
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      cancelAnimationFrame(focusFrame)
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isFullscreen])
+
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
 
   // Family RAG is a paid feature (Plus / Pro). Free users see a locked toggle.
   const hasFamilyRag = user && (user.is_admin || user.is_demo || ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan))
-  const [syncing, setSyncing] = useState(false)
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [voiceVersions, setVoiceVersions] = useState([])
   const [versionPreviews, setVersionPreviews] = useState({})
   const [versionBusy, setVersionBusy] = useState(null)
-  const refreshVoiceVersions = async () => {
+  const refreshVoiceVersions = useCallback(async () => {
     const generation = sampleGeneration.current
     const response = await aiAPI.listVoiceVersions(memorialId)
     if (generation === sampleGeneration.current) setVoiceVersions(response.data.voices)
-  }
+  }, [memorialId])
   const handleSavedVoice = async (version, select) => {
     const generation = sampleGeneration.current
     setVersionBusy(version.id)
@@ -150,10 +191,11 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     sampleGeneration.current += 1
     setPreparingSample(null)
     setPreviewBusy(null)
+    const urls = sampleUrls.current
     return () => {
       sampleGeneration.current += 1
-      sampleUrls.current.forEach((url) => URL.revokeObjectURL(url))
-      sampleUrls.current.clear()
+      urls.forEach((url) => URL.revokeObjectURL(url))
+      urls.clear()
     }
   }, [memorialId])
   useEffect(() => {
@@ -161,7 +203,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     setVersionBusy(null)
     setVersionPreviews({})
     if (canManageVoice) refreshVoiceVersions().catch(() => {})
-  }, [memorialId, canManageVoice])
+  }, [memorialId, canManageVoice, refreshVoiceVersions])
   const [ttsStatus, setTtsStatus] = useState(null)
   const [elQuota, setElQuota] = useState(null)
   const [elQuotaErr, setElQuotaErr] = useState(null)
@@ -412,6 +454,18 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     }
   }
 
+  const handleChooseAudio = async (message, index, accept) => {
+    if (revoiceBusy || !message.audioPreview) return
+    setRevoiceBusy(true)
+    try {
+      const preview = message.audioPreview
+      const response = await apiClient.post(`/ai/avatar/audio-preview/${preview.cacheId}/${preview.id}`, { accept })
+      setMessages(previous => previous.map((item, i) => i === index ? { ...item,
+        ...(accept ? { audioUrl: response.data.audio_url, audioError: null, audioStyle: preview.style } : {}), audioPreview: null } : item))
+    } catch { alert(localText('Не удалось сохранить выбор. Попробуйте ещё раз.', 'Could not save your choice. Please retry.')) }
+    finally { setRevoiceBusy(false) }
+  }
+
   const handleSend = async (e) => {
     e.preventDefault()
     if (!input.trim() || loading || disabled || chatBlocked) return
@@ -437,6 +491,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         memorial_id: parseInt(memorialId),
         question: userMessage,
         speech_speed: speechSpeed,
+        speech_style: speechStyle,
         pronunciations,
         include_audio: !textOnly && includeAudio,
         include_family_memories: !textOnly && includeFamilyMemories,
@@ -456,8 +511,12 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
       const assistantMessage = {
         role: 'assistant',
+        question: userMessage,
+        familyContext: !textOnly && includeFamilyMemories,
+        pronunciations,
         text: response.data.answer,
         audioUrl,
+        audioStyle: textOnly ? null : speechStyle,
         audioError: response.data.audio_error || null,
         animationTaskId: response.data.animation_task_id || null,
         animationProvider: response.data.animation_provider || null,
@@ -506,22 +565,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
     localStorage.removeItem(storageKey)
   }
 
-  const handleSyncFamily = async () => {
-    if (!confirm(t('chat.sync_confirm'))) return
-    setSyncing(true)
-    try {
-      const res = await aiAPI.syncFamilyMemories(memorialId)
-      const { created, skipped } = res.data
-      alert(t('chat.sync_done', { created: String(created), skipped: String(skipped) }))
-    } catch (err) {
-      alert(err.response?.data?.detail || t('chat.sync_error'))
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  return (
-    <div className={`avatar-chat${isFullscreen ? ' avatar-chat--fullscreen' : ''}`}>
+  const chatContent = (
+    <div ref={chatContainerRef} className={`avatar-chat${isFullscreen ? ' avatar-chat--fullscreen' : ''}`} role={isFullscreen ? 'dialog' : undefined} aria-modal={isFullscreen || undefined} aria-label={isFullscreen ? localText('Чат с аватаром', 'Avatar chat') : undefined}>
       {/* ─── Left: Avatar panel ──────────────────────────────────── */}
       <div className="avatar-panel">
         {avatarPhotoId ? (
@@ -549,7 +594,6 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
             <span></span><span></span><span></span>
           </div>
         )}
-        {onEditPortrait && <button type="button" className="avatar-portrait-edit" onClick={onEditPortrait}>{t('portraits.edit_avatar')}</button>}
         <div className="avatar-panel-footer">
           {memorialName && (
             <div className="avatar-panel-name">{memorialName}</div>
@@ -565,6 +609,59 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
       {/* ─── Right: Chat panel ───────────────────────────────────── */}
       <div className="chat-panel">
+      <div className="chat-header chat-header--minimal">
+        <div className="chat-header-title">
+          <h2 title={memorialName || undefined}>{memorialName || t('chat.title_default')}</h2>
+          <span className="chat-header-subtitle">{localText('Разговор', 'Conversation')}</span>
+        </div>
+        <div className="header-controls">
+          {!textOnly && <label className={`chat-voice-toggle${includeAudio ? ' is-active' : ''}`} data-tour="chat-audio-toggle" title={t('chat.audio_label')}>
+            <input type="checkbox" checked={includeAudio} onChange={e => setIncludeAudio(e.target.checked)} aria-label={t('chat.audio_label')} />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" /><path d={includeAudio ? 'M15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14' : 'm16 9 5 6m0-6-5 6'} /></svg>
+            <span>{localText('Голос', 'Voice')}</span>
+          </label>}
+          <button type="button" className="btn-fullscreen chat-tool-button" onClick={() => setIsFullscreen(value => !value)} title={isFullscreen ? t('chat.exit_fullscreen') : t('chat.fullscreen')} aria-label={isFullscreen ? t('chat.exit_fullscreen') : t('chat.fullscreen')}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d={isFullscreen ? 'M9 3v6H3m12-6v6h6M3 15h6v6m12-6h-6v6' : 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6'} /></svg>
+          </button>
+          <button type="button" className="chat-tool-button chat-settings-toggle" onClick={() => setShowChatSettings(true)} title={localText('Настройки чата', 'Chat settings')} aria-label={localText('Настройки чата', 'Chat settings')} aria-haspopup="dialog" aria-expanded={showChatSettings} data-tour="chat-voice">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></svg>
+          </button>
+        </div>
+      </div>
+
+      {createPortal(<dialog ref={chatSettingsDialog} className="chat-settings-dialog" aria-labelledby={settingsTitleId} onCancel={() => setShowChatSettings(false)} onClose={() => setShowChatSettings(false)} onClick={event => { if (event.target === event.currentTarget) setShowChatSettings(false) }}>
+        <div className="chat-settings-heading"><h3 id={settingsTitleId}>{localText('Настройки разговора', 'Conversation settings')}</h3><button type="button" className="chat-tool-button" onClick={() => setShowChatSettings(false)} aria-label={localText('Закрыть настройки', 'Close settings')}>×</button></div>
+        <div className="chat-settings-body">
+          {!textOnly && (includeAudio || hasCustomVoice) && <section className="speech-settings"><h4>{localText('Эмоции и звучание', 'Emotion and delivery')}</h4>
+
+        {ttsStatus?.provider === 'fish_audio' && <label>{localText('Подача', 'Delivery')} <select value={speechStyle} onChange={e => setSpeechStyle(e.target.value)}><option value="natural">{localText('Естественно', 'Natural')}</option><option value="calm">{localText('Спокойно', 'Calm')}</option><option value="warm">{localText('Тепло', 'Warm')}</option><option value="happy">{localText('Радостно', 'Happy')}</option><option value="sad">{localText('С грустью', 'Sad')}</option><option value="nostalgic">{localText('Ностальгично', 'Nostalgic')}</option></select></label>}
+            <details className="chat-settings-advanced"><summary>{localText('Темп и произношение', 'Speed and pronunciation')}</summary>
+        {ttsStatus?.provider === 'fish_audio' && <label>{localText('Темп голоса', 'Speech speed')} <select value={speechSpeed} onChange={(e) => setSpeechSpeed(Number(e.target.value))}>
+          <option value="0.85">0.85×</option><option value="0.95">0.95×</option><option value="1">1×</option><option value="1.1">1.1×</option>
+        </select></label>}
+        <label>{localText('Произношение: слово = как произнести (до 20 строк)', 'Pronunciation: word = spoken spelling (up to 20 lines)')}
+          <textarea rows="3" maxLength={3300} value={pronunciationText} onChange={(e) => setPronunciationText(e.target.value)} placeholder={localText('Сачко = Сачкó', 'name = phonetic spelling')} />
+        </label>
+        <p>{localText('Новый дубль создаётся платным запросом к сервису озвучки. Повторное прослушивание готовой записи не запускает генерацию.', 'A new take uses a paid speech request. Replaying an existing recording does not generate it again.')}</p>
+        <p>{localText('Меняется только озвучка, текст ответа сохраняется. Ударения зависят от модели: проверьте на коротком ответе. Для спокойной речи попробуйте 0.85× или 0.95×.', 'Only speech changes; the written answer stays unchanged. Stress depends on the model: test a short answer. Try 0.85× or 0.95× for a slower pace.')}</p>
+
+            </details>
+            <p>{localText('Подача применяется к новым дублям. Готовые записи остаются прежними, пока вы не выберете замену.', 'Delivery applies to new takes. Existing audio stays unchanged until you choose a replacement.')}</p>
+
+          </section>}
+          {canManageVoice && <section className="chat-settings-section">
+            <h4>{localText('Голос и портрет', 'Voice and portrait')}</h4>
+            <p>{hasCustomVoice ? localText('Используется сохранённый голос.', 'Using your saved voice.') : localText('Добавьте образец, чтобы настроить голос.', 'Add a sample to set up the voice.')}</p>
+            <div className="chat-settings-actions"><button type="button" onClick={() => { setShowChatSettings(false); setVoiceStep(hasCustomVoice ? 2 : 0); setShowVoicePanel(true) }}>{hasCustomVoice ? localText('Изменить голос', 'Change voice') : localText('Настроить голос', 'Set up voice')}</button>
+            {onEditPortrait && <button type="button" onClick={() => { setShowChatSettings(false); onEditPortrait() }}>{t('portraits.edit_avatar')}</button>}</div>
+          </section>}
+          {!textOnly && <section className="chat-settings-section">
+            <h4>{localText('Семейные воспоминания', 'Family memories')}</h4>
+            <label className="chat-settings-check"><input type="checkbox" checked={includeFamilyMemories} disabled={!hasFamilyRag} onChange={e => setIncludeFamilyMemories(e.target.checked)} />{t('chat.family_label')}</label>
+            <p>{localText('Искать ответы также в воспоминаниях связанных родственников, к которым у вас есть доступ.', 'Also search memories of linked relatives that you can access.')}</p>
+            {!hasFamilyRag && <p>{t('chat.family_locked_tooltip')}</p>}
+          </section>}
+          <section className="chat-settings-section chat-settings-usage"><h4>{localText('Использование', 'Usage')}</h4>
       {ttsStatus?.provider === 'fish_audio' ? (
         !ttsStatus.configured && <p className="chat-tts-quota">{t('chat.tts_fish_off')}</p>
       ) : elQuotaErr ? (
@@ -588,95 +685,11 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
           : (lang === 'en' ? `Remaining: ${Math.max(0, chatUsage.chat_messages_limit - chatUsage.chat_messages_used)} of ${chatUsage.chat_messages_limit} questions this month` : `Осталось ${Math.max(0, chatUsage.chat_messages_limit - chatUsage.chat_messages_used)} из ${chatUsage.chat_messages_limit} вопросов в этом месяце`)}
         {chatUsage.chat_messages_limit != null && chatUsage.chat_messages_used >= chatUsage.chat_messages_limit && <Link to={`/pricing?next=${encodeURIComponent(authReturn)}`}>{lang === 'en' ? 'Choose a plan' : 'Выбрать тариф'}</Link>}
       </p>}
-      <div className="chat-header">
-        <div className="chat-header-title">
-          <h2>
-            {memorialName
-              ? lang === 'en'
-                ? t('chat.title_with', { name: memorialName })
-                : `Чат с ${memorialName}`
-              : t('chat.title_default')}
-          </h2>
+
+          </section>
+          {messages.length > 0 && <button type="button" className="chat-settings-danger" onClick={handleClearHistory}>{t('chat.clear_history')}</button>}
         </div>
-        <div className="header-controls">
-          {!textOnly && <label className="audio-toggle" data-tour="chat-audio-toggle">
-            <input
-              type="checkbox"
-              checked={includeAudio}
-              onChange={(e) => setIncludeAudio(e.target.checked)}
-            />
-            {t('chat.audio_label')}
-          </label>}
-          {!textOnly && <label
-            className={`audio-toggle family-memories-toggle${!hasFamilyRag ? ' feature-locked' : ''}`}
-            title={!hasFamilyRag ? t('chat.family_locked_tooltip') : undefined}
-          >
-            <input
-              type="checkbox"
-              checked={includeFamilyMemories}
-              disabled={!hasFamilyRag}
-              onChange={(e) => {
-                if (!hasFamilyRag) return
-                setIncludeFamilyMemories(e.target.checked)
-              }}
-            />
-            {t('chat.family_label')}
-            {hasFamilyRag ? (
-              <>
-                <span className="info-trigger" title={t('chat.family_tooltip_title')} tabIndex={0}>?</span>
-                <span className="info-tooltip">
-                  {t('chat.family_tooltip_on')}
-                  <br /><br />
-                  {t('chat.family_tooltip_off')}
-                </span>
-              </>
-            ) : (
-              <span className="plan-badge">Plus</span>
-            )}
-          </label>}
-          {canManageVoice && <button
-            className="btn-clear-history"
-            onClick={handleSyncFamily}
-            disabled={syncing}
-            title={t('chat.sync_family')}
-          >
-            {syncing ? `⏳ ${t('chat.syncing')}` : `🔄 ${t('chat.sync_family')}`}
-          </button>}
-          <button
-            className="btn-fullscreen"
-            onClick={() => setIsFullscreen((v) => !v)}
-            title={isFullscreen ? t('chat.exit_fullscreen') : t('chat.fullscreen')}
-          >
-            {isFullscreen ? '⛶' : '⛶'}
-            {isFullscreen ? t('chat.exit_fullscreen') : t('chat.fullscreen')}
-          </button>
-          {messages.length > 0 && (
-            <button className="btn-clear-history" onClick={handleClearHistory} title={t('chat.clear_history')}>
-              {t('chat.clear_history')}
-            </button>
-          )}
-          {canManageVoice && <div className="voice-clone-section" data-tour="chat-voice">
-            {hasCustomVoice ? (
-              <div className="voice-status-row">
-                <span className="voice-status">✅ {t('chat.voice_uploaded')}</span>
-                <button
-                  className="btn-voice-change"
-                  onClick={() => { setVoiceStep(2); setShowVoicePanel(true) }}
-                >
-                  {t('chat.voice_change')}
-                </button>
-              </div>
-            ) : (
-              <button
-                className="btn-voice-clone"
-                onClick={() => { setVoiceStep(0); setShowVoicePanel(true) }}
-              >
-                🎤 {t('chat.voice_clone')}
-              </button>
-            )}
-          </div>}
-        </div>
-      </div>
+      </dialog>, document.body)}
 
       {canManageVoice && showVoicePanel && createPortal(
         <dialog className="voice-wizard" ref={voiceDialog} aria-labelledby="voice-wizard-title" onCancel={(e) => { e.preventDefault(); if (!voiceBusy && !voiceRecorder.isRecording) { setShowVoicePanel(false); voiceRecorder.reset() } }}>
@@ -836,16 +849,6 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         </dialog>, document.body
       )}
 
-      {!textOnly && includeAudio && <details className="speech-settings">
-        <summary>{localText('Настройки озвучивания', 'Speech settings')}</summary>
-        {ttsStatus?.provider === 'fish_audio' && <label>{localText('Темп голоса', 'Speech speed')} <select value={speechSpeed} onChange={(e) => setSpeechSpeed(Number(e.target.value))}>
-          <option value="0.85">0.85×</option><option value="0.95">0.95×</option><option value="1">1×</option><option value="1.1">1.1×</option>
-        </select></label>}
-        <label>{localText('Произношение: слово = как произнести (до 20 строк)', 'Pronunciation: word = spoken spelling (up to 20 lines)')}
-          <textarea rows="3" maxLength={3300} value={pronunciationText} onChange={(e) => setPronunciationText(e.target.value)} placeholder={localText('Сачко = Сачкó', 'name = phonetic spelling')} />
-        </label>
-        <p>{localText('Меняется только озвучка, текст ответа сохраняется. Ударения зависят от модели: проверьте на коротком ответе. Для спокойной речи попробуйте 0.85× или 0.95×.', 'Only speech changes; the written answer stays unchanged. Stress depends on the model: test a short answer. Try 0.85× or 0.95× for a slower pace.')}</p>
-      </details>}
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="welcome-message">
@@ -867,6 +870,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
           </div>
         )}
 
+        {textOnly && <FeaturedAnswers memorialId={memorialId} inviteToken={inviteToken} />}
         {(Array.isArray(messages) ? messages : []).map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}>
             {msg.role === 'assistant' && (
@@ -918,6 +922,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                 </div>
               ) : getPlayableAudioUrl(msg.audioUrl) ? (
                 <div className="audio-container">
+                  {msg.audioStyle && <p className="audio-style-label">{localText('Текущая озвучка: ', 'Current delivery: ')}{({ natural: localText('Естественно', 'Natural'), calm: localText('Спокойно', 'Calm'), warm: localText('Тепло', 'Warm'), happy: localText('Радостно', 'Happy'), sad: localText('С грустью', 'Sad'), nostalgic: localText('Ностальгично', 'Nostalgic') })[msg.audioStyle]}</p>}
                   <ChatAudioPlayer
                     src={getPlayableAudioUrl(msg.audioUrl)}
                     className="audio-player"
@@ -928,6 +933,14 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
                   {t('chat.audio_failed')} {msg.audioError}
                 </div>
               ) : null}
+              {msg.audioPreview && <section className="audio-preview" aria-label={localText('Новый дубль озвучки', 'New audio take')}>
+                <p>{msg.audioPreview.style && <strong>{({ natural: localText('Естественно', 'Natural'), calm: localText('Спокойно', 'Calm'), warm: localText('Тепло', 'Warm'), happy: localText('Радостно', 'Happy'), sad: localText('С грустью', 'Sad'), nostalgic: localText('Ностальгично', 'Nostalgic') })[msg.audioPreview.style]} · </strong>}{localText('Послушайте новый дубль. Прежняя озвучка остаётся активной до вашего выбора.', 'Listen to the new take. Your previous audio stays active until you choose.')}</p>
+                <ChatAudioPlayer src={getPlayableAudioUrl(msg.audioPreview.url)} className="audio-player" />
+                <div className="audio-preview-actions">
+                <button type="button" disabled={revoiceBusy} onClick={() => handleChooseAudio(msg, idx, true)}>{localText('Использовать этот вариант', 'Use this version')}</button>
+                <button type="button" disabled={revoiceBusy} onClick={() => handleChooseAudio(msg, idx, false)}>{localText('Оставить прежний', 'Keep previous')}</button>
+                </div>
+              </section>}
               {Array.isArray(msg.sources) && msg.sources.length > 0 && (
                 <details className="chat-sources-details">
                   <summary className="chat-sources-summary">
@@ -985,6 +998,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       </div>{/* end .chat-panel */}
     </div>
   )
+  return isFullscreen ? createPortal(chatContent, document.body) : chatContent
 }
 
 export default AvatarChat

@@ -1,3 +1,4 @@
+import plans from '../data/planCatalog.json'
 import FamilyNotifications from '../components/FamilyNotifications'
 import BrandVisual from '../components/BrandVisual'
 import { useState, useEffect, useRef } from 'react'
@@ -63,6 +64,34 @@ function Home() {
 
   const nonDemoMemorials = memorials.filter((m) => !m.is_demo_seed)
   const isFirstTimeUser = !loading && nonDemoMemorials.length === 0
+
+  const ru = lang !== 'en'
+  const pricingCards = [
+    {
+      id: 'free', name: ru ? 'Бесплатно' : 'Free', price: '$0',
+      features: [ru ? '1 мемориал · 15 текстовых ответов / месяц' : '1 memorial · 15 text replies / month'],
+      cta: ru ? 'Начать бесплатно' : 'Start free',
+    },
+    ...plans.map(plan => ({
+      id: plan.name, name: plan.name, price: `$${plan.price}`, period: ru ? '/год' : '/year',
+      desc: ru ? 'Заявка без оплаты' : 'Register interest, no payment',
+      features: ru ? [
+        `До ${plan.pages} мемориалов`, `${plan.storage} ГБ хранилища`,
+        `${plan.text} текстовых ответов / месяц`, `До ${plan.clones} клонов голоса`,
+        `Около ${plan.voice} минут озвучки / месяц`,
+      ] : [
+        `${plan.pages} memorials`, `${plan.storage} GB storage`,
+        `${plan.text} text replies / month`, `${plan.clones} voice clones`,
+        `About ${plan.voice} voice minutes / month`,
+      ],
+      cta: ru ? 'Посмотреть тарифы' : 'View plans', highlight: plan.name === 'Family',
+    })),
+    {
+      id: 'lifetime', name: 'Lifetime', price: ru ? 'Индивидуально' : 'Custom',
+      features: [ru ? 'Срок хранения и AI — по соглашению' : 'Storage term and AI agreed separately'],
+      cta: ru ? 'Обсудить тариф' : 'Discuss plan',
+    },
+  ]
 
   const showMemorialsContent = true
   const showDemoRevealStrip = false
@@ -188,7 +217,7 @@ function Home() {
           <h2 className="pricing-title">{t('home.pricing_title')}</h2>
           <p className="pricing-subtitle">{t('home.pricing_subtitle')}</p>
           <div className="pricing-grid">
-            {(t('home.pricing_plans') || []).map((plan) => (
+            {pricingCards.map((plan) => (
               <div
                 key={plan.id}
                 className={`pricing-card${plan.highlight ? ' pricing-card--highlight' : ''}`}
@@ -215,12 +244,12 @@ function Home() {
                     <li key={i}>{f}</li>
                   ))}
                 </ul>
-                <a
-                  href="/memorials/new"
+                <Link
+                  to={plan.id === 'free' ? '/memorials/new' : '/pricing'}
                   className={`btn pricing-plan-cta${plan.highlight ? ' btn-primary' : ' btn-outline'}`}
                 >
                   {plan.cta}
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -263,7 +292,7 @@ function Home() {
                       {t('home.create_first')}
                     </Link>
                     <div className="home-demo-explore-link">
-                      <Link to="/app/demo">{t('home.explore_demo')}</Link>
+                      <Link to="/demo">{t('home.explore_demo')}</Link>
                     </div>
                   </div>
                 ) : (
@@ -273,7 +302,7 @@ function Home() {
 
               {nonDemoMemorials.length > 0 && (
                 <div className="home-demo-explore-link">
-                  <Link to="/app/demo">{t('home.explore_demo')}</Link>
+                  <Link to="/demo">{t('home.explore_demo')}</Link>
                 </div>
               )}
             </>

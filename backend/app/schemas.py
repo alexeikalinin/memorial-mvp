@@ -335,11 +335,15 @@ class AnimationStatusResponse(BaseModel):
 class AvatarChatRequest(BaseModel):
     memorial_id: int
     question: str = Field(..., min_length=1)
+    speech_style: Literal["natural", "calm", "warm", "happy", "sad", "nostalgic"] = "natural"
+    regenerate_audio: bool = False
     speech_speed: float = Field(1.0, ge=0.75, le=1.25)
     pronunciations: Dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_pronunciations(self):
+        if self.regenerate_audio and not self.include_audio:
+            raise ValueError("Regenerating speech requires include_audio=true")
         if len(self.pronunciations) > 20 or any(not k.strip() or not v.strip() or len(k) > 80 or len(v) > 80 for k, v in self.pronunciations.items()):
             raise ValueError("Pronunciation dictionary supports up to 20 short entries")
         return self
@@ -350,7 +354,13 @@ class AvatarChatRequest(BaseModel):
     language: str = "ru"  # "ru" | "en" — язык ответа аватара
 
 
+class AudioPreviewDecision(BaseModel):
+    accept: bool
+
+
 class AvatarChatResponse(BaseModel):
+    audio_preview_id: Optional[str] = None
+    answer_cache_id: Optional[int] = None
     answer: str
     suggest_memory: bool = False
     guest_questions_remaining: Optional[int] = None

@@ -22,7 +22,10 @@ def _make_invite_url(token: str) -> str:
     for attr in ("PUBLIC_FRONTEND_URL", "FRONTEND_URL"):
         raw = getattr(settings, attr, None)
         if isinstance(raw, str) and raw.strip():
-            return f"{raw.strip().rstrip('/')}/contribute/{token}"
+            base = raw.strip().rstrip('/')
+            if base in ('https://vspomin.ai', 'https://www.vspomin.ai'):
+                base += '/app'
+            return f"{base}/contribute/{token}"
     return f"http://localhost:5173/contribute/{token}"
 
 

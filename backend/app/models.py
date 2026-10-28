@@ -113,6 +113,7 @@ class Memorial(Base):
     access_entries = relationship("MemorialAccess", back_populates="memorial", cascade="all, delete-orphan")
     access_requests = relationship("AccessRequest", back_populates="memorial", cascade="all, delete-orphan")
     guest_chat_usage = relationship("GuestChatUsage", cascade="all, delete-orphan")
+    answer_cache = relationship("AvatarAnswerCache", cascade="all, delete-orphan")
 
 
 class Media(Base):
@@ -433,3 +434,41 @@ class MemoryAudioReply(Base):
     mime_type = Column(String(100), nullable=False, default="audio/mpeg")
     sha256 = Column(String(64), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class AvatarAnswerCache(Base):
+    """Owner-scoped generated answers; never used as RAG evidence."""
+    __tablename__ = "avatar_answer_cache"
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    cache_key = Column(String(64), nullable=False, unique=True)
+    question = Column(Text, nullable=False)
+    response = Column(JSON, nullable=False)
+    speech_markup = Column(JSON, nullable=False, default=dict)
+    audio_variants = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# Supabase's HTTP data API must never expose generated private answers.
+from sqlalchemy import event, DDL
+
+event.listen(AvatarAnswerCache.__table__, "after_create", DDL(
+    "ALTER TABLE avatar_answer_cache ENABLE ROW LEVEL SECURITY"
+).execute_if(dialect="postgresql"))
+
+
+class FeaturedAvatarAnswer(Base):
+    """Explicitly owner-published guest examples; private cache stays private."""
+    __tablename__ = "featured_avatar_answers"
+    id = Column(Integer, primary_key=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, index=True)
+    cache_id = Column(Integer, ForeignKey("avatar_answer_cache.id", ondelete="CASCADE"), nullable=False, unique=True)
+    revision = Column(String(64), nullable=False)
+    position = Column(Integer, nullable=False, default=0)
+    audio_variant = Column(String(64), nullable=True)
+
+
+event.listen(FeaturedAvatarAnswer.__table__, "after_create", DDL(
+    "ALTER TABLE featured_avatar_answers ENABLE ROW LEVEL SECURITY"
+).execute_if(dialect="postgresql"))

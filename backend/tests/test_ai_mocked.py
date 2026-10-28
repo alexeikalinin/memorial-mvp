@@ -59,7 +59,7 @@ def test_voice_reply_starts_video_animation(cloned, auth_client, memorial, db_se
 
     voice_status = auth_client.get(f"/api/v1/ai/tts/status?memorial_id={person.id}")
     assert voice_status.status_code == 200
-    assert voice_status.json() == {"provider": "fish_audio", "configured": True, "has_custom_voice": cloned, "model": "s2-pro"}
+    assert voice_status.json() == {"provider": "fish_audio", "configured": True, "has_custom_voice": cloned, "model": "s2.1-pro"}
 
     response = auth_client.post("/api/v1/ai/avatar/chat", json={
         "memorial_id": person.id,

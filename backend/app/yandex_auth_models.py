@@ -28,3 +28,13 @@ class YandexTicket(Base):
     is_new = Column(Boolean, nullable=False, default=False)
     issued_at = Column(DateTime, nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)
+
+
+def protect_yandex_tables(engine):
+    """Keep OAuth transaction metadata out of Supabase's public data API."""
+    if engine.dialect.name != 'postgresql':
+        return
+    from sqlalchemy import text
+    with engine.begin() as conn:
+        for table in ('yandex_identities', 'yandex_attempts', 'yandex_tickets'):
+            conn.execute(text(f'ALTER TABLE {table} ENABLE ROW LEVEL SECURITY'))

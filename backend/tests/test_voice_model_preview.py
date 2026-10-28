@@ -28,7 +28,7 @@ def test_model_comparison_reuses_voice_and_does_not_replace_clone(auth_client, m
     assert auth_client.get('/api/v1/ai/tts/status', params={'memorial_id': m.id}).json()['model'] == 's2.1-pro'
 
 
-@pytest.mark.parametrize("selected,expected", [("s2.1-pro", "s2.1-pro"), ("s1", "s2-pro"), (None, "s2-pro")])
+@pytest.mark.parametrize("selected,expected", [("s2.1-pro", "s2.1-pro"), ("s1", "s2.1-pro"), (None, "s2.1-pro")])
 def test_fish_model_override_preserves_voice_reference(monkeypatch, selected, expected):
     import asyncio
     import httpx
@@ -57,15 +57,15 @@ def test_retired_s1_cannot_be_selected_or_previewed(auth_client, memorial, db_se
     params = {'memorial_id': m.id, 'model': 's1'}
     assert auth_client.post('/api/v1/ai/voice/preview', params=params).status_code == 422
     assert auth_client.patch('/api/v1/ai/voice/model', params=params).status_code == 422
-    assert auth_client.get('/api/v1/ai/tts/status', params={'memorial_id': m.id}).json()['model'] == 's2-pro'
+    assert auth_client.get('/api/v1/ai/tts/status', params={'memorial_id': m.id}).json()['model'] == 's2.1-pro'
     db_session.refresh(m)
     assert m.voice_id == 'existing-clone'
 
 
-def test_legacy_s1_and_missing_selection_resolve_to_s2_pro():
+def test_legacy_s1_and_missing_selection_resolve_to_s2_1_pro():
     from app.services.voice_models import resolve_fish_model
-    assert resolve_fish_model('s1', 's1') == 's2-pro'
-    assert resolve_fish_model(None, 's1') == 's2-pro'
-    assert resolve_fish_model(None, None) == 's2-pro'
+    assert resolve_fish_model('s1', 's1') == 's2.1-pro'
+    assert resolve_fish_model(None, 's1') == 's2.1-pro'
+    assert resolve_fish_model(None, None) == 's2.1-pro'
     assert resolve_fish_model('s2-pro', 's2.1-pro') == 's2-pro'
     assert resolve_fish_model('s2.1-pro', 's1') == 's2.1-pro'
