@@ -1,3 +1,4 @@
+import { selectedKinshipLabels, kinshipName } from '../utils/familyTreeKinship.js'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -243,87 +244,6 @@ function toLibNodes(graphNodes, graphEdges) {
   })
 }
 
-// BFS relationship labels relative to root
-// NOTE: edge types arrive uppercase from the API ('PARENT','CHILD','SPOUSE').
-// We normalise to lowercase before lookup.
-const LABEL_KEYS = {
-  'parent':                 'rel_parent',
-  'child':                  'rel_child',
-  'spouse':                 'rel_spouse',
-  'ex_spouse':              'rel_ex_spouse',
-  'partner':                'rel_spouse',
-  'sibling':                'rel_sibling',
-  'half_sibling':           'rel_sibling',
-  'parent,parent':          'rel_grandparent',
-  'child,child':            'rel_grandchild',
-  'parent,sibling':         'rel_aunt_uncle',
-  'sibling,child':          'rel_niece_nephew',
-  'spouse,parent':          'rel_parent_in_law',
-  'parent,spouse':          'rel_stepparent',
-  'child,spouse':           'rel_child_in_law',
-  'spouse,child':           'rel_stepchild',
-  'ex_spouse,child':        'rel_stepchild',
-  'ex_spouse,parent':       'rel_parent_in_law',
-  'parent,parent,parent':   'rel_great_grandparent',
-  'child,child,child':      'rel_great_grandchild',
-  'parent,parent,sibling':  'rel_great_aunt_uncle',
-  'parent,sibling,child':   'rel_cousin',
-}
-
-/**
- * Generation-difference fallback label when BFS path doesn't match a key.
- * Uses the `generation` field on nodes and root's generation as reference.
- */
-function genDiffLabel(nodeId, rootGeneration, nodeMap, t) {
-  const n = nodeMap[nodeId]
-  if (!n || n.generation == null || rootGeneration == null) return null
-  const diff = Math.round(n.generation - rootGeneration)
-  if (diff === -1) return t('family.rel_parent')
-  if (diff === -2) return t('family.rel_grandparent')
-  if (diff === -3) return t('family.rel_great_grandparent')
-  if (diff === -4) return t('family.rel_great_great_grandparent') || t('family.rel_great_grandparent')
-  if (diff === 1) return t('family.rel_child')
-  if (diff === 2) return t('family.rel_grandchild')
-  if (diff === 3) return t('family.rel_great_grandchild')
-  return null
-}
-
-function buildRelLabels(nodes, edges, rootId, t) {
-  const nodeMap = {}
-  for (const n of nodes) nodeMap[sid(n.memorial_id)] = n
-  const rootNode = nodeMap[sid(rootId)]
-  const rootGen = rootNode?.generation ?? null
-
-  const adj = {}
-  for (const e of edges) {
-    const s = sid(e.source), tg = sid(e.target)
-    if (!adj[s]) adj[s] = []
-    // Normalise to lowercase so LABEL_KEYS matches regardless of DB case
-    adj[s].push({ n: tg, type: String(e.type || '').toLowerCase() })
-  }
-  const visited = { [sid(rootId)]: [] }
-  const queue = [sid(rootId)]
-  const labels = {}
-  while (queue.length) {
-    const cur = queue.shift()
-    for (const { n, type } of (adj[cur] || [])) {
-      if (n in visited) continue
-      const path = [...visited[cur], type]
-      visited[n] = path
-      const key = LABEL_KEYS[path.join(',')]
-      if (key) {
-        labels[n] = t(`family.${key}`)
-      } else {
-        // Fallback: derive from generation difference
-        const genLabel = genDiffLabel(n, rootGen, nodeMap, t)
-        if (genLabel) labels[n] = genLabel
-      }
-      queue.push(n)
-    }
-  }
-  return labels
-}
-
 // ── Node Card ──────────────────────────────────────────────────────
 function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick, isSelected }) {
   const { t } = useLanguage()
@@ -370,7 +290,7 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick, i
       onClick={() => onClick(memorial.memorial_id)}
       role="button" tabIndex={0} aria-pressed={!!isSelected}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(memorial.memorial_id) } }}
-      title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
+      title={[memorial.name, memorial.maiden_name, relLabel].filter(Boolean).join(' — ')}
     >
       <div className="ft-node-avatar-wrap">
         {isDeceased && (
@@ -395,13 +315,13 @@ function NodeCard({ extNode, nodeMap, isRoot, relLabel, clusterStyle, onClick, i
         {isRoot && <div className="ft-node-root-ring" />}
       </div>
       <div className="ft-node-info">
-        <div className="ft-node-name">{memorial.name}</div>
+        <div className="ft-node-name">{memorial.name}{memorial.maiden_name ? ` (${memorial.maiden_name})` : ''}</div>
         {(memorial.birth_year || memorial.death_year) && (
           <div className="ft-node-years">
             {memorial.birth_year || '?'}{memorial.death_year ? ` — ${memorial.death_year}` : ''}
           </div>
         )}
-        {relLabel && !isRoot && (
+        {relLabel && (
           <div className="ft-node-rel-label">{relLabel}</div>
         )}
       </div>
@@ -456,11 +376,11 @@ function GenTreeNodeCard({
       tabIndex={0}
       aria-pressed={!!isSelected}
       onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !editMode) { e.preventDefault(); onClick(memorial.memorial_id) } }}
-      title={[memorial.name, relLabel && !isRoot ? relLabel : null].filter(Boolean).join(' — ')}
+      title={[memorial.name, memorial.maiden_name, relLabel].filter(Boolean).join(' — ')}
     >
       {/* Port handles for drawing connections in edit mode */}
       {editMode && (
-        <div className="ft-node-ports" onClick={e => e.stopPropagation()}>
+        <div className="ft-node-ports" style={{left:avatarOffset,top:4,width:avatarSize,height:avatarSize}} onClick={e => e.stopPropagation()}>
           {['top', 'right', 'bottom', 'left'].map(side => (
             <div
               key={side}
@@ -506,14 +426,14 @@ function GenTreeNodeCard({
       )}
 
       {/* Text below circle */}
-      <div className="ft-circle-info" style={{ top: avatarSize + 8 }}>
+      <div className="ft-circle-info" style={{ top: avatarSize + 18 }}>
         <div className="ft-circle-name">{memorial.name}</div>
         {(memorial.birth_year || memorial.death_year) && (
           <div className="ft-circle-years">
             {memorial.birth_year || '?'}{memorial.death_year ? `–${memorial.death_year}` : ''}
           </div>
         )}
-        {relLabel && !isRoot && (
+        {relLabel && (
           <div className="ft-circle-rel">{relLabel}</div>
         )}
       </div>
@@ -582,7 +502,7 @@ function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
       >
         <span className="ft-stub-lock" aria-hidden="true">{isBranch ? '+' : '🔒'}</span>
       </div>
-      <div className="ft-circle-info" style={{ top: avatarSize + 8 }}>
+      <div className="ft-circle-info" style={{ top: avatarSize + 18 }}>
         <div className="ft-circle-name ft-circle-name--stub">
           {memorial.name.split(' ')[0]}
         </div>
@@ -619,7 +539,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [searchLoading, setSearchLoading] = useState(false)
   const [flowMode, setFlowMode] = useState('existing')
   const [livingConsent, setLivingConsent] = useState(false)
-  const [newPerson, setNewPerson] = useState({ name: '', birth_date: '', death_date: '', living: false })
+  const [newPerson, setNewPerson] = useState({ name: '', birth_date: '', death_date: '', living: false, gender: '' })
   const [createdPerson, setCreatedPerson] = useState(null)
   const [relationPublic, setRelationPublic] = useState(false)
   const [newPersonMatches, setNewPersonMatches] = useState([])
@@ -642,23 +562,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     ['adoptive_parent', 'приёмный родитель', 'adoptive parent'], ['adoptive_child', 'приёмный ребёнок', 'adoptive child'],
     ['step_parent', 'отчим / мачеха', 'stepparent'], ['step_child', 'пасынок / падчерица', 'stepchild'], ['custom', 'другая связь', 'other relationship'],
   ]
-  const relationName = (type, node) => {
-    const gender = node?.voice_gender
-    const gendered = {
-      parent: { male: ['отец', 'father'], female: ['мать', 'mother'] },
-      child: { male: ['сын', 'son'], female: ['дочь', 'daughter'] },
-      sibling: { male: ['брат', 'brother'], female: ['сестра', 'sister'] },
-      spouse: { male: ['супруг', 'husband'], female: ['супруга', 'wife'] },
-      ex_spouse: { male: ['бывший супруг', 'former husband'], female: ['бывшая супруга', 'former wife'] },
-      adoptive_parent: { male: ['приёмный отец', 'adoptive father'], female: ['приёмная мать', 'adoptive mother'] },
-      adoptive_child: { male: ['приёмный сын', 'adopted son'], female: ['приёмная дочь', 'adopted daughter'] },
-      step_parent: { male: ['отчим', 'stepfather'], female: ['мачеха', 'stepmother'] },
-      step_child: { male: ['пасынок', 'stepson'], female: ['падчерица', 'stepdaughter'] },
-    }[type]?.[gender]
-    if (gendered) return text(...gendered)
-    const option = relationOptions.find(o => o[0] === type)
-    return option ? text(option[1], option[2]) : type
-  }
+  const relationName = (type, node) => type === 'custom' ? text('Другая связь', 'Other relationship') : kinshipName(type, node, lang)
   const loadRequests = useCallback(async () => {
     try { const res = await familyAPI.getRequests(); setRequests(Array.isArray(res.data) ? res.data : []) }
     catch { setRequests([]) }
@@ -706,7 +610,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const beginLink = () => {
     setShowAddForm(true); setSharedParentTarget(null); setSearchQuery(''); setAvailableMemorials([]); setCreatedPerson(null)
     setFlowError(''); setFlowNotice(''); setFlowMode('existing'); setRelationPublic(false); setSharedParentSiblingIds([])
-    setNewPerson({ name: '', birth_date: '', death_date: '', living: false }); setLivingConsent(false)
+    setNewPerson({ name: '', birth_date: '', death_date: '', living: false, gender: '' }); setLivingConsent(false)
     setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
   }
   const respondToRequest = async (id, decision) => {
@@ -732,6 +636,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   // ── Edit mode state ────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false)
   // nodeOverrides: позиции узлов, заданные пользователем вручную {memId: {x, y}}
+  const [layoutVersion, setLayoutVersion] = useState(1)
   const [nodeOverrides, _setNodeOverrides] = useState({})
   // Ref для актуального значения без closure-staleness в обработчиках мыши
   const nodeOverridesRef = useRef({})
@@ -777,6 +682,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       setRelationships(Array.isArray(relsRes.data) ? relsRes.data : [])
       // Загрузка сохранённых позиций узлов из БД
       const layout = memRes?.data?.tree_layout_json
+      setLayoutVersion(layout?.version || 1)
       if (layout?.nodePositions && typeof layout.nodePositions === 'object') {
         setNodeOverrides(layout.nodePositions)
       } else {
@@ -833,10 +739,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   }, [displayGraph])
 
   // Relationship labels (BFS from root)
-  const relLabels = useMemo(() => {
-    if (!displayGraph) return {}
-    return buildRelLabels(displayGraph.nodes, displayGraph.edges, displayGraph.root_id, t)
-  }, [displayGraph, t])
+  const relLabels = useMemo(() => selectedKinshipLabels(graphData, sourceId, lang), [graphData, sourceId, lang])
 
   // singleFamilyMode: одна семья видна полностью — центрируем всё в одну колонку
   const singleFamilyMode = visibleFamilies.length === 1
@@ -853,8 +756,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
   // Позиции узлов: авто-layout + ручные корректировки пользователя
   const effectivePositions = useMemo(() => {
-    return resolveTreePositions(genLayout, nodeOverrides)
-  }, [genLayout, nodeOverrides])
+    return resolveTreePositions(genLayout, nodeOverrides, layoutVersion === 2)
+  }, [genLayout, nodeOverrides, layoutVersion])
 
   // Refs для использования в mousemove без stale-closure
   const effectivePositionsRef = useRef(null)
@@ -1026,7 +929,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     saveTimerRef.current = setTimeout(async () => {
       try {
         await memorialsAPI.update(memorialId, {
-          tree_layout_json: { nodePositions: overrides, version: 1 }
+          tree_layout_json: { nodePositions: overrides, version: 2 }
         })
       } catch (err) {
         console.error('Failed to save tree layout:', err)
@@ -1042,7 +945,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         const overrides = nodeOverridesRef.current
         if (Object.keys(overrides).length > 0) {
           memorialsAPI.update(memorialId, {
-            tree_layout_json: { nodePositions: overrides, version: 1 }
+            tree_layout_json: { nodePositions: overrides, version: 2 }
           }).catch(() => {})
         }
       }
@@ -1053,6 +956,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const handleNodeDragStart = useCallback((memId, e) => {
     if (drawingEdge) return  // не начинать drag узла во время рисования связи
     e.preventDefault()
+    setLayoutVersion(2)
+    setNodeOverrides(Object.fromEntries(Object.entries(effectivePositions).map(([id, p]) => [id, {x:p.x,y:p.y}])))
     const pos = effectivePositions[String(memId)]
     if (!pos) return
     nodeDragRef.current = {
@@ -1062,7 +967,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       origX: pos.x,
       origY: pos.y,
     }
-  }, [effectivePositions, drawingEdge])
+  }, [effectivePositions, drawingEdge, setNodeOverrides])
 
   const handlePortDragStart = useCallback((memId) => {
     const pos = effectivePositions[String(memId)]
@@ -1079,6 +984,9 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     setSubmitting(true)
     setPendingEdgeError('')
     try {
+      if (pendingEdgeForm.target_gender && pendingEdgeForm.target_gender !== (nodeMap[pendingEdge.toId]?.gender || nodeMap[pendingEdge.toId]?.voice_gender)) {
+        await memorialsAPI.update(pendingEdge.toId, {gender: pendingEdgeForm.target_gender})
+      }
       const response = await familyAPI.createRelationship(pendingEdge.fromId, {
         related_memorial_id: parseInt(pendingEdge.toId),
         relationship_type: pendingEdgeForm.relationship_type,
@@ -1140,7 +1048,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       // Snap lines: compare center of dragged node with other nodes' centers
       const curPositions = nodeOverridesRef.current
       const allPositions = effectivePositionsRef.current
-      if (allPositions) {
+      if (allPositions && !e.altKey) {
         const nw = genLayoutRef.current?.nodeSize?.w ?? 90
         const nh = genLayoutRef.current?.nodeSize?.h ?? 148
         const dragCX = rawX + nw / 2
@@ -1172,7 +1080,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
           lines.push({ axis: 'x', value: snapX })
         }
         setSnapLines(lines)
-      }
+      } else { setSnapLines([]) }
 
       setNodeOverrides(prev => ({
         ...prev,
@@ -1214,7 +1122,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         if (toId && toId !== drawingEdge.fromId) {
           setPendingEdgeResult(null); setPendingEdgeError('')
           setPendingEdge({ fromId: drawingEdge.fromId, toId })
-          setPendingEdgeForm({ relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
+          setPendingEdgeForm({ relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '', target_gender: nodeMap[toId]?.gender || nodeMap[toId]?.voice_gender || '' })
         }
       }
       setDrawingEdge(null)
@@ -1223,7 +1131,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     // Pan end
     dragRef.current = null
     e.currentTarget.style.cursor = 'grab'
-  }, [drawingEdge, editMode, saveLayout])
+  }, [drawingEdge, editMode, saveLayout, nodeMap])
 
   const onTouchStart = useCallback((e) => {
     if (e.touches.length === 1) {
@@ -1275,7 +1183,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         let person = createdPerson
         if (!person) {
           const res = await memorialsAPI.create({
-            name: newPerson.name.trim(), language: lang, is_public: false,
+            name: newPerson.name.trim(), language: lang, is_public: false, gender: newPerson.gender || null,
             birth_date: newPerson.birth_date ? `${newPerson.birth_date}T00:00:00` : null,
             death_date: !newPerson.living && newPerson.death_date ? `${newPerson.death_date}T00:00:00` : null,
           })
@@ -1398,7 +1306,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
               <p>{t('family.gen_legend_help_lines')}</p>
               <p>
                 {t('family.gen_legend_help_labels', {
-                  rootName: rootDisplayName || t('family.gen_legend_root_fallback'),
+                  rootName: sourceName || rootDisplayName || t('family.gen_legend_root_fallback'),
                 })}
               </p>
               <p>{t('family.gen_legend_help_generation')}</p>
@@ -1417,7 +1325,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       {sourceCanEdit && showAddForm && (
         <form ref={linkFormRef} onSubmit={handleAdd} className="relationship-form ft-link-form">
           <h3>{text('Связать с', 'Link to')} {sourceName}</h3>
-          <div className="form-group"><label htmlFor="ft-relation">{text('Родственник приходится', 'The relative is related to')} {sourceName}</label><select id="ft-relation" disabled={submitting} value={formData.relationship_type} onChange={e => setFormData(f => ({ ...f, relationship_type: e.target.value }))}>{relationOptions.slice(0, 4).map(([value, ru, en]) => <option key={value} value={value}>{text(ru, en)}</option>)}<optgroup label={text('Другие связи', 'Other relationships')}>{relationOptions.slice(4).map(([value, ru, en]) => <option key={value} value={value}>{text(ru, en)}</option>)}</optgroup></select></div>
+          <div className="form-group"><label htmlFor="ft-relation">{text('Родственник приходится', 'The relative is related to')} {sourceName}</label><select id="ft-relation" disabled={submitting} value={formData.relationship_type} onChange={e => setFormData(f => ({ ...f, relationship_type: e.target.value }))}>{relationOptions.slice(0, 4).map(([value]) => <option key={value} value={value}>{relationName(value, flowMode === 'new' ? newPerson : graphData?.nodes?.find(n=>String(n.memorial_id)===String(formData.related_memorial_id)))}</option>)}<optgroup label={text('Другие связи', 'Other relationships')}>{relationOptions.slice(4).map(([value]) => <option key={value} value={value}>{relationName(value, flowMode === 'new' ? newPerson : graphData?.nodes?.find(n=>String(n.memorial_id)===String(formData.related_memorial_id)))}</option>)}</optgroup></select></div>
           <div className="ft-flow-modes">
             <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'existing'} onClick={() => { setFlowMode('existing'); setFlowError('') }}>{text('Найти существующий', 'Find an existing page')}</button>
             <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'new'} onClick={() => { setFlowMode('new'); setFlowError('') }}>{text('Создать родственника', 'Create a relative')}</button>
@@ -1430,6 +1338,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             {!searchLoading && searchQuery && !availableMemorials.length && <span>{text('Не найдено. Можно создать новую страницу родственника.', 'No results. You can create a new relative page.')}</span>}
           </div> : <>
             <div className="form-group"><label htmlFor="ft-person-name">{text('Полное имя', 'Full name')}</label><input id="ft-person-name" required maxLength={255} value={createdPerson?.name || newPerson.name} disabled={submitting || !!createdPerson} onChange={e => setNewPerson(p => ({ ...p, name: e.target.value }))} /></div>
+            <div className="form-group"><label htmlFor="ft-person-gender">{text('Пол для родственных подписей', 'Gender for relationship labels')}</label><select id="ft-person-gender" value={newPerson.gender} onChange={e=>setNewPerson({...newPerson,gender:e.target.value})}><option value="">{text('Не указан', 'Unspecified')}</option><option value="male">{text('Мужской', 'Male')}</option><option value="female">{text('Женский', 'Female')}</option></select></div>
             {newPersonMatches.length > 0 && <div className="ft-search-results"><p>{text('Похожие страницы уже существуют. Проверьте их перед созданием:', 'Similar pages already exist. Check them before creating a page:')}</p>{newPersonMatches.map(m => <button type="button" key={m.id} disabled={submitting} onClick={() => { setFlowMode('existing'); setSearchQuery(m.name); setAvailableMemorials([m]); setFormData(f => ({ ...f, related_memorial_id: m.id })) }}>{m.name} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''} — {text('выбрать существующий', 'use existing page')}</button>)}</div>}
             <div className="ft-date-fields"><div className="form-group"><label htmlFor="ft-birth">{text('Дата рождения (необязательно)', 'Birth date (optional)')}</label><input id="ft-birth" type="date" disabled={submitting || !!createdPerson} value={newPerson.birth_date} onChange={e => setNewPerson(p => ({ ...p, birth_date: e.target.value }))} /></div><div className="form-group"><label htmlFor="ft-death">{text('Дата смерти (необязательно)', 'Death date (optional)')}</label><input id="ft-death" type="date" disabled={submitting || !!createdPerson || newPerson.living} min={newPerson.birth_date || undefined} value={newPerson.living ? '' : newPerson.death_date} onChange={e => setNewPerson(p => ({ ...p, death_date: e.target.value }))} /></div></div>
             <label className="ft-checkbox"><input type="checkbox" checked={newPerson.living} disabled={submitting || !!createdPerson} onChange={e => setNewPerson(p => ({ ...p, living: e.target.checked }))} />{text('Человек жив', 'This person is living')}</label>
@@ -1458,29 +1367,30 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             <p>{nodeMap[pendingEdge.fromId]?.name} ↔ {nodeMap[pendingEdge.toId]?.name}</p>
             {pendingEdgeResult ? <div role="status"><p>{pendingEdgeResult}</p><button type="button" className="btn btn-primary" onClick={() => setPendingEdge(null)}>{text('Готово', 'Done')}</button></div> : <>
             {pendingEdgeError && <p className="auth-error" role="alert">{pendingEdgeError}</p>}
+            <label className="form-group">{text('Пол родственника (для подписи)', 'Relative’s gender (for labels)')}<select aria-label={text('Пол родственника (для подписи)', 'Relative’s gender (for labels)')} value={pendingEdgeForm.target_gender || ''} onChange={e=>setPendingEdgeForm({...pendingEdgeForm,target_gender:e.target.value})}><option value="">{text('Не указан', 'Unspecified')}</option><option value="male">{text('Мужской', 'Male')}</option><option value="female">{text('Женский', 'Female')}</option></select></label>
             <div className="form-group">
-              <label>{t('family.form_type')}</label>
-              <select
+              <label htmlFor="ft-pending-type">{t('family.form_type')}</label>
+              <select id="ft-pending-type"
                 value={pendingEdgeForm.relationship_type}
                 onChange={e => setPendingEdgeForm(f => ({ ...f, relationship_type: e.target.value, custom_label: '' }))}
               >
                 <option value="" disabled>{text('Выберите тип связи', 'Choose relationship type')}</option>
                 <optgroup label={t('family.group_parent_child')}>
-                  <option value="parent">{t('family.type_parent_desc')}</option>
-                  <option value="child">{t('family.type_child_desc')}</option>
-                  <option value="adoptive_parent">{t('family.type_adoptive_parent_desc')}</option>
-                  <option value="adoptive_child">{t('family.type_adoptive_child_desc')}</option>
-                  <option value="step_parent">{t('family.type_step_parent_desc')}</option>
-                  <option value="step_child">{t('family.type_step_child_desc')}</option>
+                  <option value="parent">{relationName('parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="child">{relationName('child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="adoptive_parent">{relationName('adoptive_parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="adoptive_child">{relationName('adoptive_child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="step_parent">{relationName('step_parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="step_child">{relationName('step_child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
                 </optgroup>
                 <optgroup label={t('family.group_partner')}>
-                  <option value="spouse">{t('family.type_spouse_desc')}</option>
-                  <option value="partner">{t('family.type_partner_desc')}</option>
-                  <option value="ex_spouse">{t('family.type_ex_spouse_desc')}</option>
+                  <option value="spouse">{relationName('spouse', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="partner">{relationName('partner', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="ex_spouse">{relationName('ex_spouse', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
                 </optgroup>
                 <optgroup label={t('family.group_sibling')}>
-                  <option value="sibling">{t('family.type_sibling_desc')}</option>
-                  <option value="half_sibling">{t('family.type_half_sibling_desc')}</option>
+                  <option value="sibling">{relationName('sibling', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
+                  <option value="half_sibling">{relationName('half_sibling', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
                 </optgroup>
                 <optgroup label={t('family.group_other')}>
                   <option value="custom">{t('family.type_custom_desc')}</option>
@@ -1732,7 +1642,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                         genLayout.memorialClusterStyle?.[n.memorial_id] ??
                         genLayout.memorialClusterStyle?.[id]
                       }
-                      relLabel={relLabels[id]}
+                      relLabel={String(n.memorial_id) === String(sourceId) ? null : relLabels[id]}
                       isSelected={sid(n.memorial_id) === sid(sourceId)}
                       onClick={selectPerson}
                       editMode={editMode}
@@ -1796,7 +1706,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                       extNode={extNode}
                       nodeMap={nodeMap}
                       isRoot={extNode.id === sid(displayGraph.root_id)}
-                      relLabel={relLabels[extNode.id]}
+                      relLabel={String(extNode.id) === String(sourceId) ? null : relLabels[extNode.id]}
                       clusterStyle={csty}
                       isSelected={sid(mid) === sid(sourceId)}
                       onClick={selectPerson}
@@ -1902,6 +1812,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
           <h3>{sourceName}</h3><p className="form-hint">{selectedNode?.birth_year || ''}{selectedNode?.death_year ? ` — ${selectedNode.death_year}` : ''}</p>
           <button type="button" className="btn" onClick={focusSelectedPerson}>{text('Показать в дереве', 'Focus in tree')}</button>
           <button type="button" className="btn" onClick={() => navigate(`/memorials/${sourceId}?tab=media`)}>{text('Открыть мемориал', 'Open memorial')}</button>
+          {sourceCanEdit && <label className="form-hint">{text('Пол для родственных подписей', 'Gender for relationship labels')}<select aria-label={text('Пол для родственных подписей', 'Gender for relationship labels')} value={selectedNode?.gender || ''} disabled={submitting} onChange={async e => { const gender=e.target.value || null; setSubmitting(true); setFlowNotice(''); try { await memorialsAPI.update(sourceId,{gender}); await loadData({background:true}); setFlowNotice(text('Пол сохранён. Подписи обновлены.', 'Gender saved. Labels updated.')) } catch { setFlowError(text('Не удалось сохранить пол.', 'Could not save gender.')) } finally { setSubmitting(false) } }}><option value="">{text('Не указан', 'Unspecified')}</option><option value="male">{text('Мужской', 'Male')}</option><option value="female">{text('Женский', 'Female')}</option></select></label>}
           <h4>{text('Родственные связи', 'Relationships')}</h4>
           {selectedRelations.length ? [
             { title: text('Родители', 'Parents'), types: ['parent', 'adoptive_parent', 'step_parent'] },
@@ -1926,7 +1837,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                 {rel.related_memorial_name} —{' '}
                 {rel.relationship_type === 'custom' && rel.custom_label
                   ? rel.custom_label
-                  : t(`family.${rel.relationship_type}`)}
+                  : relationName(rel.relationship_type, graphData?.nodes?.find(n=>String(n.memorial_id)===String(rel.related_memorial_id)))}
               </span>
               {canEdit && (
                 <button className="btn btn-sm btn-danger" onClick={() => handleDelete(rel.id)}>

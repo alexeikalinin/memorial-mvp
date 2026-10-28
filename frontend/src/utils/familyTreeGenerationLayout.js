@@ -18,7 +18,7 @@ const sid = (id) => String(id)
 const NODE_W = 90
 /** Node height: avatar (80px) + gap (4px) + name (2 lines ~26px) + years (12px) + rel label (14px) + padding = 148px.
  *  overflow:hidden clips at this boundary so text never enters the INTER_GEN_GAP. */
-const NODE_H = 148
+const NODE_H = 180
 const GAP_X = 40
 /** Разрыв между «полосами» линии A / центр (пересечение) / линия B — больше = семьи визуально дальше */
 const LINEAGE_LANE_GAP = 260

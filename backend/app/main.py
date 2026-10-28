@@ -34,6 +34,10 @@ def _add_missing_columns():
     insp = inspect(engine)
     if insp.has_table("memorials"):
         cols = {c["name"] for c in insp.get_columns("memorials")}
+        for column, size in (("gender", 20), ("maiden_name", 255)):
+            if column not in cols:
+                with engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE memorials ADD COLUMN {column} VARCHAR({size})"))
         if "language" not in cols:
             with engine.begin() as conn:
                 conn.execute(

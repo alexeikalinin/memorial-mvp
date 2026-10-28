@@ -20,6 +20,7 @@ function MemorialCreate() {
     death_date: '',
     is_public: false,
     voice_gender: '',
+    maiden_name: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -90,6 +91,8 @@ function MemorialCreate() {
         birth_date: br.iso ? `${br.iso}T00:00:00Z` : null,
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: formData.voice_gender || null,
+        gender: formData.voice_gender || null,
+        maiden_name: formData.maiden_name.trim() || null,
       }
 
       const page = savedPage || (await memorialsAPI.create(submitData)).data
@@ -155,6 +158,7 @@ function MemorialCreate() {
             />
           </div>
 
+          <div className="form-group"><label htmlFor="maiden_name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="maiden_name" name="maiden_name" maxLength={255} value={formData.maiden_name} onChange={handleChange}/></div>
           <div className="form-group">
             <label htmlFor="voice_gender">{t('memorialCreate.gender_label')}</label>
             <select

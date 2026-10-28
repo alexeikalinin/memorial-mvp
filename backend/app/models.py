@@ -81,6 +81,8 @@ class Memorial(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, index=True)
+    gender = Column(String(20), nullable=True)
+    maiden_name = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     birth_date = Column(DateTime(timezone=True), nullable=True)
     death_date = Column(DateTime(timezone=True), nullable=True)

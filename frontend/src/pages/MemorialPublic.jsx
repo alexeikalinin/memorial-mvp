@@ -227,6 +227,7 @@ function MemorialPublic() {
         </div>
         <div className="public-hero-info">
           <h1 className="public-name">{memorial.name}</h1>
+          {memorial.maiden_name && <p>{lang === 'en' ? 'Birth surname: ' : 'Девичья / прежняя фамилия: '}{memorial.maiden_name}</p>}
           {(birthYear || deathYear) && (
             <p className="public-years">
               {birthYear && <span>{birthYear}</span>}

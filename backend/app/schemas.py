@@ -85,6 +85,8 @@ class PasswordResetConfirm(BaseModel):
 # Memorial Schemas
 class MemorialBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    gender: Optional[Literal["male", "female"]] = None
+    maiden_name: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
@@ -141,6 +143,8 @@ class MemorialAppearance(BaseModel):
 
 class MemorialUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    gender: Optional[Literal["male", "female"]] = None
+    maiden_name: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
     birth_date: Optional[datetime] = None
     death_date: Optional[datetime] = None
@@ -470,6 +474,8 @@ class FullTreeNode(BaseModel):
     cover_photo_id: Optional[int] = None
     avatar_photo_id: Optional[int] = None
     portrait_settings: Optional[dict] = None
+    gender: Optional[str] = None
+    maiden_name: Optional[str] = None
     voice_gender: Optional[str] = None  # для UI (рамка «жена» между семьями)
     generation: int   # 0=root, negative=ancestors, positive=descendants
 

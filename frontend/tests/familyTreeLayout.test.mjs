@@ -48,3 +48,12 @@ test('each partner has their own siblings on the outside of the couple', () => {
     assert.ok(![3,4,5].some(id => p[id].x > Math.min(p[1].x,p[2].x) && p[id].x < Math.max(p[1].x,p[2].x)))
   }
 })
+
+test('explicit version-two manual placement preserves diagonal movement and reload',()=>{
+ const layout=buildGenerationLayout(graph,true)
+ const saved=Object.fromEntries(Object.entries(layout.positions).map(([id,p])=>[id,{x:p.x,y:p.y}]))
+ saved[1]={x:saved[1].x+37,y:saved[1].y+53}
+ const result=resolveTreePositions(layout,saved,true)
+ assert.equal(result[1].x,saved[1].x);assert.equal(result[1].y,saved[1].y)
+ assert.equal(resolveTreePositions(layout,{...saved,1:{x:Infinity,y:1}},true),layout.positions)
+})

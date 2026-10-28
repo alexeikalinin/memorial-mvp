@@ -676,6 +676,8 @@ async def get_full_family_tree(
             avatar_photo_id=((m.portrait_settings or {}).get("avatar") or {}).get("media_id") or m.cover_photo_id,
             portrait_settings=m.portrait_settings,
             voice_gender=m.voice_gender,
+            gender=m.gender,
+            maiden_name=m.maiden_name,
             generation=generation[mid],
         ))
 

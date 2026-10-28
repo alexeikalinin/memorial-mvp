@@ -45,6 +45,8 @@ function MemorialDetail() {
     death_date: '',
     is_public: false,
     voice_gender: '',
+    gender: '',
+    maiden_name: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -152,6 +154,8 @@ function MemorialDetail() {
           : '',
         is_public: response.data.is_public || false,
         voice_gender: response.data.voice_gender || '',
+        gender: response.data.gender || '',
+        maiden_name: response.data.maiden_name || '',
       })
     } catch (err) {
       setError(err.response?.data?.detail || t('detail.error_load'))
@@ -245,6 +249,8 @@ function MemorialDetail() {
         birth_date: br.iso ? `${br.iso}T00:00:00Z` : null,
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: editFormData.voice_gender || null,
+        gender: editFormData.gender || null,
+        maiden_name: editFormData.maiden_name.trim() || null,
       }
       if (!isActualOwner) delete submitData.voice_gender
       await memorialsAPI.update(id, submitData)
@@ -470,6 +476,7 @@ function MemorialDetail() {
           <div className="memorial-hero-info">
             <div className="memorial-hero-text">
               <h1 className="memorial-hero-name">{memorial.name}</h1>
+              {memorial.maiden_name && <p className="memorial-dates">{lang==='en'?'Birth surname: ':'Урождённая: '}{memorial.maiden_name}</p>}
               {(birthYear || deathYear) && (
                 <p className="memorial-hero-dates">
                   {birthYear && birthYear}
@@ -607,6 +614,8 @@ function MemorialDetail() {
                 {t('detail.public_memorial')}
               </label>
             </div>
+            <div className="form-group"><label htmlFor="edit-person-gender">{lang === 'en' ? 'Gender for family relationships' : 'Пол для родственных связей'}</label><select id="edit-person-gender" value={editFormData.gender} onChange={e=>setEditFormData({...editFormData,gender:e.target.value})}><option value="">{lang==='en'?'Unspecified':'Не указан'}</option><option value="male">{lang==='en'?'Male':'Мужской'}</option><option value="female">{lang==='en'?'Female':'Женский'}</option></select></div>
+            <div className="form-group"><label htmlFor="edit-maiden-name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="edit-maiden-name" maxLength={255} value={editFormData.maiden_name} onChange={e=>setEditFormData({...editFormData,maiden_name:e.target.value})}/></div>
             {isActualOwner && (            <div className="form-group">
               <label htmlFor="edit-voice_gender">{t('detail.voice_avatar')}</label>
               <select

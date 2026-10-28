@@ -1,5 +1,5 @@
 /** Reuse manual placement only for the same complete graph and safe geometry. */
-export function resolveTreePositions(layout, overrides = {}) {
+export function resolveTreePositions(layout, overrides = {}, freePlacement = false) {
   const base = layout?.positions || {}
   const ids = Object.keys(base)
   if (!ids.length || !Object.keys(overrides).length) return base
@@ -12,6 +12,7 @@ export function resolveTreePositions(layout, overrides = {}) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return base
     merged[id] = { ...base[id], x, y, cx: x + w / 2, cy: y + h / 2 }
   }
+  if (freePlacement) return merged
   for (let i = 0; i < ids.length; i++) {
     for (let j = i + 1; j < ids.length; j++) {
       const a = merged[ids[i]], b = merged[ids[j]]
