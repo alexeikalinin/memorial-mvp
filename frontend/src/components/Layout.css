@@ -26,7 +26,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  height: auto;
+  min-height: 64px;
+  padding-block: 10px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 /* Logo */
@@ -73,6 +77,8 @@
 
 /* Nav */
 .nav {
+  flex: 1 1 600px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 2rem;
@@ -84,10 +90,14 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  max-width: min(220px, 40vw);
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .nav-auth .nav-user {
+  flex-shrink: 0;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -150,6 +160,8 @@
 }
 
 .nav-logout {
+  flex-shrink: 0;
+  white-space: nowrap;
   background: none;
   border: 1px solid var(--border, rgba(0,0,0,0.12));
   border-radius: 6px;
