@@ -1286,7 +1286,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         <h2>{t('family.title')}</h2>
         <div className="tree-header-actions">
           {graphData?.nodes?.length > 0 && (
-            <span className="tree-layout-label">{t('family.layout_generations')}</span>
+            <span className="tree-layout-label">{displayGraph?._branchScope?text('По поколениям','By generation'):t('family.layout_generations')}</span>
           )}
           {hasTree && (
             <span className="tree-node-count">
@@ -1331,7 +1331,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             ))}
             <span className="ft-leg ft-leg--gold">♥ {text('Супруги','Spouses')}</span>
           </div>
-          <p className="tree-controls-hint ft-gen-hint">{t('family.gen_legend_hint')}</p>
+          <p className="tree-controls-hint ft-gen-hint">{text('Каждый ряд — одно поколение: родители выше детей. Нажмите на человека, чтобы увидеть родственные подписи относительно него.','Each row is a generation: parents are above children. Select a person to see relationships relative to them.')}</p>
           <details className="ft-gen-help">
             <summary className="ft-gen-help-summary">{t('family.gen_legend_expand')}</summary>
             <div className="ft-gen-help-body ft-visual-guide">
