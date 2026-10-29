@@ -1,3 +1,4 @@
+import {GUEST_ANSWERS_ENABLED} from '../config/guestAnswers'
 import {Link,useLocation} from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import apiClient from '../api/client'
@@ -5,7 +6,7 @@ import ChatAudioPlayer from './ChatAudioPlayer'
 import { useLanguage } from '../contexts/LanguageContext'
 import './FeaturedAnswers.css'
 
-export default function FeaturedAnswers({ memorialId, owner = false, inviteToken, question, onLoaded, memoryId }) {
+function FeaturedAnswersContent({ memorialId, owner = false, inviteToken, question, onLoaded, memoryId }) {
   const { lang } = useLanguage()
   const location=useLocation()
   const routeKey=`${location.pathname}${location.search}`
@@ -87,4 +88,8 @@ export default function FeaturedAnswers({ memorialId, owner = false, inviteToken
       {row.featured && <label>{en ? 'Position' : 'Позиция'} <select value={row.position ?? 0} disabled={busy || row.stale} onChange={e => update(row, true, row.audio_variant, Number(e.target.value))}>{[0, 1, 2, 3, 4].map(n => <option key={n} value={n}>{n + 1}</option>)}</select></label>}
     </>}</article>)}
   </details>
+}
+
+export default function FeaturedAnswers(props) {
+  return GUEST_ANSWERS_ENABLED ? <FeaturedAnswersContent {...props}/> : null
 }

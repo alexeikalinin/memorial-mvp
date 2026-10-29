@@ -1,3 +1,4 @@
+import {GUEST_ANSWERS_ENABLED} from '../config/guestAnswers'
 import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { createPortal } from 'react-dom'
 import { useState, useRef, useEffect, useCallback, useId } from 'react'
@@ -122,7 +123,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   }, [isFullscreen])
 
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
-  const prepareForGuests=!textOnly && canManageVoice && new URLSearchParams(location.search).get('prepareGuests')==='1'
+  const prepareForGuests=GUEST_ANSWERS_ENABLED && !textOnly && canManageVoice && new URLSearchParams(location.search).get('prepareGuests')==='1'
 
   // Family RAG is a paid feature (Plus / Pro). Free users see a locked toggle.
   const hasFamilyRag = user && (user.is_admin || user.is_demo || ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan))

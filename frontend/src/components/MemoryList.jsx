@@ -1,3 +1,4 @@
+import {GUEST_ANSWERS_ENABLED} from '../config/guestAnswers'
 import { createAudioRecorder, recordingBlob, recordingFile, releaseRecorder } from '../utils/audioRecording'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { memorialsAPI, aiAPI, invitesAPI } from '../api/client'
@@ -551,7 +552,7 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
               ) : (
                 <>
                   {memory.title && <h3>{memory.title}</h3>}
-                  {canModerate && savedAnswers.some(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)) && <button type="button" className="btn btn-secondary" aria-expanded={audioMemoryId === memory.id} onClick={() => setAudioMemoryId(audioMemoryId === memory.id ? null : memory.id)}>{lang === 'en' ? 'Saved audio answers' : 'Есть озвученные ответы'} · {savedAnswers.filter(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)).length}</button>}
+                  {GUEST_ANSWERS_ENABLED && canModerate && savedAnswers.some(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)) && <button type="button" className="btn btn-secondary" aria-expanded={audioMemoryId === memory.id} onClick={() => setAudioMemoryId(audioMemoryId === memory.id ? null : memory.id)}>{lang === 'en' ? 'Saved audio answers' : 'Есть озвученные ответы'} · {savedAnswers.filter(row => !row.stale && row.audio_variants.length && row.source_memory_ids.includes(memory.id)).length}</button>}
                   {canModerate && audioMemoryId === memory.id && <FeaturedAnswers memorialId={memorialId} owner memoryId={memory.id} />}
                   <p>{memory.content}</p>
                   {canModerate && memory.contributor_name && (
