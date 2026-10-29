@@ -1,3 +1,4 @@
+import {memorialName} from '../utils/memorialName'
 import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom'
@@ -231,8 +232,7 @@ function MemorialPublic() {
         )}
         </div>
         <div className="public-hero-info">
-          <h1 className="public-name">{memorial.name}</h1>
-          {memorial.maiden_name && <p>{lang === 'en' ? 'Birth surname: ' : 'Девичья / прежняя фамилия: '}{memorial.maiden_name}</p>}
+          <h1 className="public-name">{memorialName(memorial)}</h1>
           {(birthYear || deathYear) && (
             <p className="public-years">
               {birthYear && <span>{birthYear}</span>}
@@ -241,7 +241,7 @@ function MemorialPublic() {
             </p>
           )}
         </div>
-        <MemorialComposition name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
+        <MemorialComposition name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
       </div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />

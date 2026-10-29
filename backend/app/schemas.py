@@ -265,6 +265,8 @@ class MemorialDetailResponse(MemorialResponse):
 
 
 class MemorialListItem(BaseModel):
+    gender: Optional[str] = None
+    maiden_name: Optional[str] = None
     """Краткая информация о мемориале для списка."""
     id: int
     name: str

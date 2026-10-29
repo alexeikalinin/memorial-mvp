@@ -246,8 +246,8 @@ def search_memorials(q: str = Query("", max_length=120), current_user: User = De
     query = accessible_memorials(db, current_user)
     for part in q.strip().split():
         part = part.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        query = query.filter(Memorial.name.ilike(f"%{part}%", escape="\\"))
-    return [dict(id=m.id, name=m.name, birth_date=m.birth_date, death_date=m.death_date,
+        query = query.filter(or_(Memorial.name.ilike(f"%{part}%", escape="\\"), Memorial.maiden_name.ilike(f"%{part}%", escape="\\")))
+    return [dict(id=m.id, name=m.name, gender=m.gender, maiden_name=m.maiden_name, birth_date=m.birth_date, death_date=m.death_date,
                  cover_photo_id=m.cover_photo_id, is_public=m.is_public)
             for m in query.order_by(Memorial.name, Memorial.id).limit(30).all()]
 

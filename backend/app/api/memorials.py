@@ -141,6 +141,8 @@ async def list_memorials(
         MemorialListItem(
             id=m.id,
             name=m.name,
+            gender=m.gender,
+            maiden_name=m.maiden_name,
             description=m.description,
             birth_date=m.birth_date,
             death_date=m.death_date,
@@ -198,6 +200,8 @@ async def list_demo_memorials(db: Session = Depends(get_db)):
         MemorialListItem(
             id=m.id,
             name=m.name,
+            gender=m.gender,
+            maiden_name=m.maiden_name,
             description=m.description,
             birth_date=m.birth_date,
             death_date=m.death_date,

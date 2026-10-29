@@ -1,3 +1,4 @@
+import {memorialName} from '../utils/memorialName'
 import RelationshipTypeSelect from '../components/RelationshipTypeSelect'
 import {choiceLabel,prepareRelativeGender} from '../utils/relationshipChoices'
 import { useState, useEffect } from 'react'
@@ -96,7 +97,7 @@ function MemorialCreate() {
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: formData.voice_gender || null,
         gender: formData.voice_gender || null,
-        maiden_name: formData.maiden_name.trim() || null,
+        maiden_name: formData.voice_gender==='female' ? formData.maiden_name.trim() || null : null,
       }
 
       if(linkEnabled&&relative)await prepareRelativeGender(memorialsAPI,relative.id,relativeGender,lang)
@@ -164,7 +165,7 @@ function MemorialCreate() {
             />
           </div>
 
-          <div className="form-group"><label htmlFor="maiden_name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="maiden_name" name="maiden_name" maxLength={255} value={formData.maiden_name} onChange={handleChange}/></div>
+          {formData.voice_gender==='female' && <div className="form-group"><label htmlFor="maiden_name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="maiden_name" name="maiden_name" maxLength={255} value={formData.maiden_name} onChange={handleChange}/></div>}
           <div className="form-group">
             <label htmlFor="voice_gender">{t('memorialCreate.gender_label')}</label>
             <select
@@ -175,10 +176,10 @@ function MemorialCreate() {
               required
             >
               <option value="" disabled>{t('memorialCreate.gender_placeholder')}</option>
-              <option value="male">{t('detail.voice_male')}</option>
-              <option value="female">{t('detail.voice_female')}</option>
+              <option value="male">{lang==='en'?'Male':'Мужской'}</option>
+              <option value="female">{lang==='en'?'Female':'Женский'}</option>
             </select>
-            <span className="form-hint">{t('memorialCreate.gender_hint')}</span>
+            <span className="form-hint">{lang==='en'?'Used for family relationship labels and the default avatar voice.':'Нужен для подписей «мать», «отец», «тётя», «дядя» и голоса аватара по умолчанию.'}</span>
           </div>
 
           <div className="form-group">
@@ -250,14 +251,14 @@ function MemorialCreate() {
           <label className="checkbox-label"><input type="checkbox" checked={living} onChange={e => setLiving(e.target.checked)} /><span>{lang === 'ru' ? 'Человек жив' : 'This person is living'}</span></label>
           {living && <label className="checkbox-label"><input type="checkbox" required checked={livingConsent} onChange={e => setLivingConsent(e.target.checked)} /><span>{lang === 'ru' ? 'У меня есть согласие этого человека на создание его страницы.' : 'I have this person’s consent to create their page.'}</span></label>}
           </fieldset>
-          {similarPages.length > 0 && <section className="form-group"><p>{lang === 'ru' ? 'Найдены похожие страницы. Проверьте, нет ли уже мемориала этого человека:' : 'Similar pages found. Check whether this person already has a memorial:'}</p>{similarPages.map(m => <p key={m.id}><Link to={`/${m.is_public === false ? 'memorials' : 'm'}/${m.id}`} target="_blank" rel="noopener noreferrer">{m.name} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''}{m.death_date ? ` — ${new Date(m.death_date).getFullYear()}` : ''}</Link></p>)}</section>}
+          {similarPages.length > 0 && <section className="form-group"><p>{lang === 'ru' ? 'Найдены похожие страницы. Проверьте, нет ли уже мемориала этого человека:' : 'Similar pages found. Check whether this person already has a memorial:'}</p>{similarPages.map(m => <p key={m.id}><Link to={`/${m.is_public === false ? 'memorials' : 'm'}/${m.id}`} target="_blank" rel="noopener noreferrer">{memorialName(m)} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''}{m.death_date ? ` — ${new Date(m.death_date).getFullYear()}` : ''}</Link></p>)}</section>}
           {savedPage && <p role="status">{lang === 'ru' ? 'Страница уже создана. Повторите только сохранение связи или добавьте её позже.' : 'The page has been created. Retry the relationship or add it later.'} <Link to={`/memorials/${savedPage.id}?tab=family`}>{lang === 'ru' ? 'Открыть дерево' : 'Open tree'}</Link></p>}
           <div className="form-group"><label className="checkbox-label"><input type="checkbox" checked={linkEnabled} disabled={loading} onChange={e => setLinkEnabled(e.target.checked)} /><span>{lang === 'ru' ? 'Связать с родственником сейчас (необязательно)' : 'Link a relative now (optional)'}</span></label></div>
           {linkEnabled && <section className="form-group">
             <label htmlFor="create-relative-search">{lang === 'ru' ? 'Найти существующий мемориал родственника' : 'Find an existing relative memorial'}</label>
             <input id="create-relative-search" value={relativeQuery} disabled={loading} onChange={e => { setRelativeQuery(e.target.value); setRelative(null); setRelatives([]) }} />
             {searchError && <p role="alert">{searchError}</p>}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{relatives.map(m => <button className="btn" type="button" disabled={loading} aria-pressed={relative?.id === m.id} key={m.id} onClick={() => setRelative(m)}>{m.name} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''}</button>)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{relatives.map(m => <button className="btn" type="button" disabled={loading} aria-pressed={relative?.id === m.id} key={m.id} onClick={() => setRelative(m)}>{memorialName(m)} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''}</button>)}</div>
             <label htmlFor="create-relation">{lang === 'ru' ? 'Этот родственник приходится создаваемому человеку' : 'This relative is related to the new person as'}</label>
             <RelationshipTypeSelect id="create-relation" type={relationshipType} gender={relativeGender} disabled={loading} onChange={o=>{setRelationshipType(o.type);setRelativeGender(o.gender||'')}}/>
             {relationshipType==='custom'&&<label>{lang==='en'?'Describe the relationship':'Название связи'}<input required maxLength={100} value={customLabel} onChange={e=>setCustomLabel(e.target.value)}/></label>}

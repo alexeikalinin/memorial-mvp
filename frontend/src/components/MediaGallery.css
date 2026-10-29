@@ -280,3 +280,7 @@
 @keyframes gallery-ember { 0%, 100% { opacity: .7; transform: rotate(-3deg); } 50% { opacity: 1; transform: rotate(3deg); } }
 @media (prefers-reduced-motion: reduce) { .gallery-viewer-candle i { animation: none; } .media-item, .media-item img { animation: none; transition: none; } }
 @media (max-width: 640px) { .gallery-viewer-backdrop { padding: .5rem; } .gallery-viewer { height: calc(100dvh - 1rem); } .gallery-viewer-arrow { width: 40px; height: 48px; } .media-item-placeholder { height: 160px; } .btn-cover { color: var(--accent-dark); } }
+
+/* Preserve the complete photo, including while hovering. */
+.media-item img { object-fit: contain; background: var(--surface-alt, #f3eee7); }
+.media-item:hover img { transform: none; }

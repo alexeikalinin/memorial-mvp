@@ -1,3 +1,4 @@
+import {memorialName} from '../utils/memorialName'
 import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
@@ -254,7 +255,7 @@ function MemorialDetail() {
         death_date: dr.iso ? `${dr.iso}T00:00:00Z` : null,
         voice_gender: editFormData.voice_gender || null,
         gender: editFormData.gender || null,
-        maiden_name: editFormData.maiden_name.trim() || null,
+        maiden_name: editFormData.gender==='female' ? editFormData.maiden_name.trim() || null : null,
       }
       if (!isActualOwner) delete submitData.voice_gender
       await memorialsAPI.update(id, submitData)
@@ -480,8 +481,7 @@ function MemorialDetail() {
         <div className="memorial-hero-main">
           <div className="memorial-hero-info">
             <div className="memorial-hero-text">
-              <h1 className="memorial-hero-name">{memorial.name}</h1>
-              {memorial.maiden_name && <p className="memorial-dates">{lang==='en'?'Birth surname: ':'Прежняя фамилия: '}{memorial.maiden_name}</p>}
+              <h1 className="memorial-hero-name">{memorialName(memorial)}</h1>
               {(birthYear || deathYear) && (
                 <p className="memorial-hero-dates">
                   {birthYear && birthYear}
@@ -550,8 +550,8 @@ function MemorialDetail() {
             </div></details>
           </div>
         </div>
-        {!showAppearance && <MemorialComposition name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
-      {showAppearance && canEdit && <MemorialAppearanceEditor name={memorial.name} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
+        {!showAppearance && <MemorialComposition name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
+      {showAppearance && canEdit && <MemorialAppearanceEditor name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />
       {showSignsJournal && isActualOwner && <MemorialSignsJournal memorialId={id} lang={lang} onClose={() => setShowSignsJournal(false)} />}
@@ -619,8 +619,8 @@ function MemorialDetail() {
                 {t('detail.public_memorial')}
               </label>
             </div>
-            <div className="form-group"><label htmlFor="edit-person-gender">{lang === 'en' ? 'Gender for family relationships' : 'Пол для родственных связей'}</label><select id="edit-person-gender" value={editFormData.gender} onChange={e=>setEditFormData({...editFormData,gender:e.target.value})}><option value="">{lang==='en'?'Unspecified':'Не указан'}</option><option value="male">{lang==='en'?'Male':'Мужской'}</option><option value="female">{lang==='en'?'Female':'Женский'}</option></select></div>
-            <div className="form-group"><label htmlFor="edit-maiden-name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="edit-maiden-name" maxLength={255} value={editFormData.maiden_name} onChange={e=>setEditFormData({...editFormData,maiden_name:e.target.value})}/></div>
+            <div className="form-group"><label htmlFor="edit-person-gender">{lang === 'en' ? 'Gender' : 'Пол человека'}</label><select id="edit-person-gender" value={editFormData.gender} onChange={e=>setEditFormData({...editFormData,gender:e.target.value})}><option value="">{lang==='en'?'Unspecified':'Не указан'}</option><option value="male">{lang==='en'?'Male':'Мужской'}</option><option value="female">{lang==='en'?'Female':'Женский'}</option></select></div>
+            {editFormData.gender==='female' && <div className="form-group"><label htmlFor="edit-maiden-name">{lang==='en'?'Birth surname (optional)':'Девичья / прежняя фамилия (необязательно)'}</label><input id="edit-maiden-name" maxLength={255} value={editFormData.maiden_name} onChange={e=>setEditFormData({...editFormData,maiden_name:e.target.value})}/></div>}
             {isActualOwner && (            <div className="form-group">
               <label htmlFor="edit-voice_gender">{t('detail.voice_avatar')}</label>
               <select

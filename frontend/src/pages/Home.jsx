@@ -1,3 +1,4 @@
+import {memorialName,matchesMemorial} from '../utils/memorialName'
 import plans from '../data/planCatalog.json'
 import FamilyNotifications from '../components/FamilyNotifications'
 import BrandVisual from '../components/BrandVisual'
@@ -34,6 +35,7 @@ async function waitForHeroFonts() {
 
 function Home() {
   const [memorials, setMemorials] = useState([])
+  const [search,setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [heroFontsReady, setHeroFontsReady] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
@@ -132,7 +134,7 @@ function Home() {
           </div>
 
           <div className="card-body">
-            <h3 className="card-name">{memorial.name}</h3>
+            <h3 className="card-name">{memorialName(memorial)}</h3>
             {memorial.description && (
               <p className="card-description">{memorial.description}</p>
             )}
@@ -270,6 +272,8 @@ function Home() {
             )}
           </div>
 
+          <label style={{display:"block",marginBottom:20}}>{ru?'Поиск по имени или девичьей фамилии':'Search by name or birth surname'}<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder={ru?'Например, Светлана Бахар':'Name or birth surname'} /></label>
+          {!loading && search.trim() && !nonDemoMemorials.some(m=>matchesMemorial(m,search)) && <p role="status">{ru?'Ничего не найдено':'No results'}</p>}
           {loading ? (
             <div className="loading" />
           ) : (
@@ -296,7 +300,7 @@ function Home() {
                     </div>
                   </div>
                 ) : (
-                  nonDemoMemorials.map((memorial, i) => renderMemorialCard(memorial, i))
+                  nonDemoMemorials.filter(m=>matchesMemorial(m,search)).map((memorial, i) => renderMemorialCard(memorial, i))
                 )}
               </div>
 

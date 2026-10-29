@@ -10,3 +10,17 @@ def test_identity_fields_are_optional_and_roundtrip_without_changing_voice(auth_
     assert result.status_code==200
     assert result.json()['gender']=='male' and result.json()['maiden_name'] is None
     assert auth_client.patch(f'/api/v1/memorials/{mid}',json={'gender':'invalid'}).status_code==422
+
+
+def test_birth_surname_search_matches_all_tokens_and_respects_access(client, auth_headers, second_user_headers):
+    public=client.post('/api/v1/memorials/',headers=auth_headers,json={'name':'Калинина Светлана','gender':'female','maiden_name':'Бахар','is_public':True}).json()
+    private=client.post('/api/v1/memorials/',headers=auth_headers,json={'name':'Калинина Светлана','gender':'female','maiden_name':'Бахар','is_public':False}).json()
+    result=client.get('/api/v1/family/search',params={'q':'Светлана Бахар'},headers=second_user_headers)
+    assert result.status_code==200
+    assert [m['id'] for m in result.json()]==[public['id']]
+    assert result.json()[0]['maiden_name']=='Бахар'
+    own=client.get('/api/v1/family/search',params={'q':'Бахар Светлана'},headers=auth_headers).json()
+    assert {m['id'] for m in own}=={public['id'],private['id']}
+    assert not client.get('/api/v1/family/search',params={'q':'Светлана Missing'},headers=auth_headers).json()
+    listed=client.get('/api/v1/memorials/',headers=auth_headers).json()
+    assert next(m for m in listed if m['id']==public['id'])['maiden_name']=='Бахар'
