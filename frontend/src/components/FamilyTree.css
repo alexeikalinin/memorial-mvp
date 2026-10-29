@@ -1488,3 +1488,7 @@ p.tree-controls-hint.ft-gen-hint {
 }
 
 @media(max-width:600px){.ft-canvas-action-btn--active .ft-canvas-action-label { position:static; width:auto; height:auto; overflow:visible; clip-path:none; }}
+/* Memorial artwork can use compositor layers; keep it out of the CSS fullscreen view. */
+body:has(.family-tree--fullscreen) .memorial-hero,
+body:has(.family-tree--fullscreen) .public-hero,
+body:has(.family-tree--fullscreen) .memorial-signs { visibility:hidden; }
