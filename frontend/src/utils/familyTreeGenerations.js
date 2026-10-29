@@ -1,3 +1,4 @@
+import {relationshipDepth} from './familyTreeRelationshipDepth.js'
 /**
  * Согласование поля generation для full-tree: дети всегда на один «этаж» ниже родителей,
  * супруги/братья на одном уровне. Дублирует логику backend после BFS (устаревший кэш API).
@@ -363,6 +364,7 @@ export function refineFullTreeGenerations(graphData) {
  */
 export function computeLayoutDepthOldestTop(nodes, edges) {
   if (!nodes?.length) return {}
+  if ((edges || []).some(e => PARENT_TYPES.has(normType(e.type)) || CHILD_TYPES.has(normType(e.type)))) return relationshipDepth(nodes, edges)
   const nodeIds = new Set(nodes.map((n) => sid(n.memorial_id)))
   const parentsOfRaw = buildParentsOf(edges, nodeIds)
   const nodeById = new Map(nodes.map((n) => [sid(n.memorial_id), n]))

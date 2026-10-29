@@ -57,3 +57,20 @@ test('explicit version-two manual placement preserves diagonal movement and relo
  assert.equal(result[1].x,saved[1].x);assert.equal(result[1].y,saved[1].y)
  assert.equal(resolveTreePositions(layout,{...saved,1:{x:Infinity,y:1}},true),layout.positions)
 })
+
+test('adding an undated father keeps both daughters, their spouses and brothers on one row', () => {
+ const nodes=[
+  {memorial_id:1,name:'Николай',birth_year:1956},
+  {memorial_id:2,name:'Светлана',birth_year:1961},
+  {memorial_id:3,name:'Виктор'}, {memorial_id:4,name:'Евгений'},
+  {memorial_id:5,name:'Лариса',birth_year:1962},
+  {memorial_id:6,name:'Михаил'}, {memorial_id:7,name:'Александр',birth_year:1962},
+ ]
+ const edges=[{source:1,target:2,type:'spouse'},{source:1,target:3,type:'sibling'},{source:1,target:4,type:'sibling'},{source:2,target:5,type:'sibling'},{source:5,target:7,type:'spouse'},{source:2,target:6,type:'parent'},{source:5,target:6,type:'parent'}]
+ for(const root of [1,2,5,6])for(const reversed of [false,true]){
+  const graph={root_id:root,_branchScope:true,nodes,edges:reversed?edges.map(e=>e.type==='parent'?{source:e.target,target:e.source,type:'child'}:e):edges}
+  const p=buildGenerationLayout(graph,true).positions
+  assert.equal(new Set([1,2,3,4,5,7].map(id=>p[id].y)).size,1)
+  assert.ok(p[6].y<p[2].y)
+ }
+})
