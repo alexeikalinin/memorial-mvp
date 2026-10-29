@@ -11,7 +11,7 @@ test('selected son sees mother, father, maternal aunt and paternal uncle from in
  assert.equal(selectedKinshipLabels(graph,3)[5],'Племянник')
 })
 test('sex-specific labels preserve half/adoptive/step distinctions and English',()=>{
- assert.equal(kinshipName('half_sibling',{gender:'female'}),'Неполнородная сестра')
+ assert.equal(kinshipName('half_sibling',{gender:'female'}),'Сестра с одним общим родителем')
  assert.equal(kinshipName('adoptive_parent',{gender:'female'}),'Приёмная мать')
  assert.equal(kinshipName('step_parent',{gender:'male'}),'Отчим')
  assert.equal(selectedKinshipLabels(graph,5,'en')[3],'Aunt')

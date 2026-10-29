@@ -1,3 +1,4 @@
+import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { memorialsAPI, invitesAPI, accessAPI } from '../api/client'
@@ -30,6 +31,7 @@ function MemorialDetail() {
   const [memorial, setMemorial] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [accessDenied,setAccessDenied] = useState(false)
   const [activeTab, setActiveTab] = useState('media')
   const [mountedTabs, setMountedTabs] = useState(new Set(['media']))
   const [showTour, setShowTour] = useState(false)
@@ -133,6 +135,7 @@ function MemorialDetail() {
   }, [id, memorial?.owner_id, user?.id])
 
   const loadMemorial = async () => {
+    setError(null);setAccessDenied(false)
     try {
       if (!memorial) setLoading(true)
       const response = await memorialsAPI.get(id)
@@ -158,6 +161,7 @@ function MemorialDetail() {
         maiden_name: response.data.maiden_name || '',
       })
     } catch (err) {
+      setAccessDenied([401,403].includes(err.response?.status))
       setError(err.response?.data?.detail || t('detail.error_load'))
     } finally {
       setLoading(false)
@@ -437,6 +441,7 @@ function MemorialDetail() {
     return <div className="loading">{t('memorial.loading')}</div>
   }
 
+  if (accessDenied) return <PrivateMemorialAccess key={id} memorialId={id}/>
   if (error || !memorial) {
     return <div className="error-message">{error || t('memorial.not_found')}</div>
   }

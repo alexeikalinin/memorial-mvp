@@ -1,7 +1,7 @@
 const inverse = {parent:'child',child:'parent',adoptive_parent:'adoptive_child',adoptive_child:'adoptive_parent',step_parent:'step_child',step_child:'step_parent'}
 const labels = {
  parent:[['Отец','Мать','Родитель'],['Father','Mother','Parent']], child:[['Сын','Дочь','Ребёнок'],['Son','Daughter','Child']],
- sibling:[['Родной брат','Родная сестра','Родственник'],['Brother','Sister','Relative']], half_sibling:[['Неполнородный брат','Неполнородная сестра','Родственник'],['Half-brother','Half-sister','Relative']],
+ sibling:[['Родной брат','Родная сестра','Родственник'],['Brother','Sister','Relative']], half_sibling:[['Брат с одним общим родителем','Сестра с одним общим родителем','Родственник'],['Half-brother','Half-sister','Relative']],
  spouse:[['Супруг','Супруга','Партнёр'],['Husband','Wife','Partner']], partner:[['Партнёр','Партнёрша','Партнёр'],['Partner','Partner','Partner']], ex_spouse:[['Бывший супруг','Бывшая супруга','Бывший партнёр'],['Former husband','Former wife','Former partner']],
  adoptive_parent:[['Приёмный отец','Приёмная мать','Приёмный родитель'],['Adoptive father','Adoptive mother','Adoptive parent']], adoptive_child:[['Приёмный сын','Приёмная дочь','Приёмный ребёнок'],['Adopted son','Adopted daughter','Adopted child']],
  step_parent:[['Отчим','Мачеха','Неродной родитель'],['Stepfather','Stepmother','Stepparent']], step_child:[['Пасынок','Падчерица','Неродной ребёнок'],['Stepson','Stepdaughter','Stepchild']],

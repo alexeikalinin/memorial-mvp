@@ -1,3 +1,5 @@
+import RelationshipTypeSelect from './RelationshipTypeSelect'
+import {choiceLabel,prepareRelativeGender} from '../utils/relationshipChoices'
 import { selectedKinshipLabels, kinshipName } from '../utils/familyTreeKinship.js'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -531,12 +533,13 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [loading,      setLoading]      = useState(true)
 
   const [showAddForm,        setShowAddForm]        = useState(false)
-  const [formData,           setFormData]           = useState({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
+  const [formData,           setFormData]           = useState({ related_memorial_id: '', relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
   const [availableMemorials, setAvailableMemorials] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [selectedEditable, setSelectedEditable] = useState({ id: null, allowed: false })
   const [searchQuery, setSearchQuery] = useState('')
   const [searchLoading, setSearchLoading] = useState(false)
+  const [relationGender, setRelationGender] = useState('')
   const [flowMode, setFlowMode] = useState('existing')
   const [livingConsent, setLivingConsent] = useState(false)
   const [newPerson, setNewPerson] = useState({ name: '', birth_date: '', death_date: '', living: false, gender: '' })
@@ -555,13 +558,6 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const sourceName = selectedNode?.name || graphData?.nodes?.find(n => sid(n.memorial_id) === sid(memorialId))?.name || ''
   const sourceCanEdit = sid(sourceId) === sid(memorialId) ? canEdit : selectedEditable.id === sid(sourceId) && selectedEditable.allowed
   const selectedRelations = useMemo(() => getSelectedFamilyRelations(graphData, sourceId), [graphData, sourceId])
-  const relationOptions = [
-    ['parent', 'родитель', 'parent'], ['child', 'ребёнок', 'child'], ['spouse', 'супруг / супруга', 'spouse'],
-    ['sibling', 'брат / сестра', 'sibling'], ['half_sibling', 'неполнородный брат / сестра', 'half-sibling'],
-    ['partner', 'партнёр', 'partner'], ['ex_spouse', 'бывший супруг / супруга', 'former spouse'],
-    ['adoptive_parent', 'приёмный родитель', 'adoptive parent'], ['adoptive_child', 'приёмный ребёнок', 'adoptive child'],
-    ['step_parent', 'отчим / мачеха', 'stepparent'], ['step_child', 'пасынок / падчерица', 'stepchild'], ['custom', 'другая связь', 'other relationship'],
-  ]
   const relationName = (type, node) => type === 'custom' ? text('Другая связь', 'Other relationship') : kinshipName(type, node, lang)
   const loadRequests = useCallback(async () => {
     try { const res = await familyAPI.getRequests(); setRequests(Array.isArray(res.data) ? res.data : []) }
@@ -609,9 +605,9 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   }
   const beginLink = () => {
     setShowAddForm(true); setSharedParentTarget(null); setSearchQuery(''); setAvailableMemorials([]); setCreatedPerson(null)
-    setFlowError(''); setFlowNotice(''); setFlowMode('existing'); setRelationPublic(false); setSharedParentSiblingIds([])
+    setFlowError(''); setFlowNotice(''); setRelationGender(''); setFlowMode('existing'); setRelationPublic(false); setSharedParentSiblingIds([])
     setNewPerson({ name: '', birth_date: '', death_date: '', living: false, gender: '' }); setLivingConsent(false)
-    setFormData({ related_memorial_id: '', relationship_type: 'parent', custom_label: '', notes: '', nickname_for_visitor: '' })
+    setFormData({ related_memorial_id: '', relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
   }
   const respondToRequest = async (id, decision) => {
     setRequestBusy(id); setFlowError('')
@@ -984,9 +980,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     setSubmitting(true)
     setPendingEdgeError('')
     try {
-      if (pendingEdgeForm.target_gender && pendingEdgeForm.target_gender !== (nodeMap[pendingEdge.toId]?.gender || nodeMap[pendingEdge.toId]?.voice_gender)) {
-        await memorialsAPI.update(pendingEdge.toId, {gender: pendingEdgeForm.target_gender})
-      }
+      await prepareRelativeGender(memorialsAPI,pendingEdge.toId,pendingEdgeForm.target_gender,lang)
       const response = await familyAPI.createRelationship(pendingEdge.fromId, {
         related_memorial_id: parseInt(pendingEdge.toId),
         relationship_type: pendingEdgeForm.relationship_type,
@@ -1002,7 +996,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       setFlowNotice(notice)
       await Promise.all([loadRequests(), loadData({ background: true })])
     } catch (err) {
-      setPendingEdgeError(typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
+      setPendingEdgeError(err.relationshipExplanation ? err.message : typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
     } finally {
       setSubmitting(false)
     }
@@ -1174,7 +1168,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   // ── Form handlers ──────────────────────────────────────────────
   const handleAdd = async (e) => {
     e.preventDefault()
-    if (!sourceCanEdit) return
+    if (!sourceCanEdit || !formData.relationship_type) return
     if (flowMode === 'new' && newPerson.living && !livingConsent) { setFlowError(text('Подтвердите согласие живого человека на создание страницы.', 'Confirm the living person’s consent to creating this page.')); return }
     setSubmitting(true); setFlowError(''); setFlowNotice('')
     try {
@@ -1191,6 +1185,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         }
         targetId = person.id
       }
+      if(flowMode==='existing')await prepareRelativeGender(memorialsAPI,targetId,relationGender,lang)
       const res = await familyAPI.createRelationship(sourceId, { ...formData, related_memorial_id: Number(targetId), is_public: relationPublic })
       setFlowNotice(res.data?.status === 'pending'
         ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
@@ -1205,7 +1200,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       setShowAddForm(false); setCreatedPerson(null)
       await Promise.all([loadData(), loadRequests()])
     } catch (err) {
-      setFlowError(typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
+      setFlowError(err.relationshipExplanation ? err.message : typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
     } finally { setSubmitting(false) }
   }
 
@@ -1325,10 +1320,10 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       {sourceCanEdit && showAddForm && (
         <form ref={linkFormRef} onSubmit={handleAdd} className="relationship-form ft-link-form">
           <h3>{text('Связать с', 'Link to')} {sourceName}</h3>
-          <div className="form-group"><label htmlFor="ft-relation">{text('Родственник приходится', 'The relative is related to')} {sourceName}</label><select id="ft-relation" disabled={submitting} value={formData.relationship_type} onChange={e => setFormData(f => ({ ...f, relationship_type: e.target.value }))}>{relationOptions.slice(0, 4).map(([value]) => <option key={value} value={value}>{relationName(value, flowMode === 'new' ? newPerson : graphData?.nodes?.find(n=>String(n.memorial_id)===String(formData.related_memorial_id)))}</option>)}<optgroup label={text('Другие связи', 'Other relationships')}>{relationOptions.slice(4).map(([value]) => <option key={value} value={value}>{relationName(value, flowMode === 'new' ? newPerson : graphData?.nodes?.find(n=>String(n.memorial_id)===String(formData.related_memorial_id)))}</option>)}</optgroup></select></div>
+          <div className="form-group"><label htmlFor="ft-relation">{text('Родственник приходится', 'The relative is related to')} {sourceName}</label><RelationshipTypeSelect id="ft-relation" disabled={submitting} type={formData.relationship_type} gender={flowMode==='new'?newPerson.gender:relationGender} onChange={o=>{setFormData(f=>({...f,relationship_type:o.type}));setRelationGender(o.gender||'');if(flowMode==='new')setNewPerson(p=>({...p,gender:o.gender||''}))}}/></div>
           <div className="ft-flow-modes">
             <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'existing'} onClick={() => { setFlowMode('existing'); setFlowError('') }}>{text('Найти существующий', 'Find an existing page')}</button>
-            <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'new'} onClick={() => { setFlowMode('new'); setFlowError('') }}>{text('Создать родственника', 'Create a relative')}</button>
+            <button type="button" disabled={submitting || !!createdPerson} aria-pressed={flowMode === 'new'} onClick={() => { setFlowMode('new'); setFlowError('') }}>{text('Создать мемориал родственника', 'Create a relative’s memorial')}</button>
           </div>
           {flowMode === 'existing' ? <div className="form-group">
             <label htmlFor="ft-memorial-search">{text('Имя или фамилия', 'Name or surname')}</label>
@@ -1348,10 +1343,10 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
           {formData.relationship_type === 'custom' && <div className="form-group"><label htmlFor="ft-custom">{t('family.form_custom_label')}</label><input id="ft-custom" required maxLength={100} value={formData.custom_label} onChange={e => setFormData(f => ({ ...f, custom_label: e.target.value }))} /></div>}
           {['sibling', 'half_sibling'].includes(formData.relationship_type) && <p className="form-hint">{text('Эта связь не добавляет общих родителей. Свяжите каждого с известными родителями отдельно.', 'This relationship does not add shared parents. Link each person to their known parents separately.')}</p>}
-          <p className="ft-link-sentence">{flowMode === 'new' ? (createdPerson?.name || newPerson.name || text('Новый родственник', 'New relative')) : (availableMemorials.find(m => sid(m.id) === sid(formData.related_memorial_id))?.name || text('Выбранный человек', 'Selected person'))} — {formData.relationship_type === 'custom' ? formData.custom_label : relationName(formData.relationship_type)} {text('для', 'of')} {sourceName}.</p>
+          <p className="ft-link-sentence">{flowMode === 'new' ? (createdPerson?.name || newPerson.name || text('Новый родственник', 'New relative')) : (availableMemorials.find(m => sid(m.id) === sid(formData.related_memorial_id))?.name || text('Выбранный человек', 'Selected person'))} — {formData.relationship_type === 'custom' ? formData.custom_label : choiceLabel(formData.relationship_type,flowMode==='new'?newPerson.gender:relationGender,lang)} {text('для', 'of')} {sourceName}.</p>
           <label className="ft-checkbox"><input type="checkbox" checked={relationPublic} disabled={submitting} onChange={e => setRelationPublic(e.target.checked)} />{text('Показывать эту связь публично', 'Show this relationship publicly')}</label>
           <p className="form-hint">{text('Если второй мемориал принадлежит другому владельцу, он получит запрос подтверждения.', 'If the other memorial belongs to another owner, they will receive an approval request.')}</p>
-          <div className="ft-flow-modes"><button type="submit" className="btn btn-primary" disabled={submitting || (flowMode === 'existing' ? !formData.related_memorial_id : !newPerson.name.trim() && !createdPerson)}>{submitting ? t('common.saving') : text('Подтвердить связь', 'Confirm relationship')}</button><button type="button" disabled={submitting} onClick={() => setShowAddForm(false)}>{t('common.cancel')}</button></div>
+          <div className="ft-flow-modes"><button type="submit" className="btn btn-primary" disabled={submitting || !formData.relationship_type || (flowMode === 'existing' ? !formData.related_memorial_id : !newPerson.name.trim() && !createdPerson)}>{submitting ? t('common.saving') : text('Подтвердить связь', 'Confirm relationship')}</button><button type="button" disabled={submitting} onClick={() => setShowAddForm(false)}>{t('common.cancel')}</button></div>
         </form>
       )}
       {requests.filter(r => r.status === 'pending').length > 0 && <section className="ft-request-inbox"><h3>{text('Запросы родственных связей', 'Relationship requests')}</h3>{requests.filter(r => r.status === 'pending').map(r => <div key={r.id} className="ft-request-item"><span>{r.related_memorial_name} — {relationName(r.relationship_type)} {text('для', 'of')} {r.memorial_name}. <small>{r.can_respond ? text('Ожидает вашего решения', 'Awaiting your decision') : text('Ожидает подтверждения владельца', 'Awaiting owner approval')}</small></span><small>{r.is_public ? text('Связь будет публичной, если обе страницы публичны.', 'The link will be public if both pages are public.') : text('Связь доступна участникам с доступом к страницам.', 'The link is visible to page participants.')}</small>{r.can_respond ? <div><button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'accept')}>{text('Принять', 'Accept')}</button><button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'reject')}>{text('Отклонить', 'Reject')}</button></div> : <button type="button" disabled={requestBusy === r.id} onClick={() => respondToRequest(r.id, 'cancel')}>{text('Отменить запрос', 'Cancel request')}</button>}</div>)}</section>}
@@ -1367,36 +1362,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             <p>{nodeMap[pendingEdge.fromId]?.name} ↔ {nodeMap[pendingEdge.toId]?.name}</p>
             {pendingEdgeResult ? <div role="status"><p>{pendingEdgeResult}</p><button type="button" className="btn btn-primary" onClick={() => setPendingEdge(null)}>{text('Готово', 'Done')}</button></div> : <>
             {pendingEdgeError && <p className="auth-error" role="alert">{pendingEdgeError}</p>}
-            <label className="form-group">{text('Пол родственника (для подписи)', 'Relative’s gender (for labels)')}<select aria-label={text('Пол родственника (для подписи)', 'Relative’s gender (for labels)')} value={pendingEdgeForm.target_gender || ''} onChange={e=>setPendingEdgeForm({...pendingEdgeForm,target_gender:e.target.value})}><option value="">{text('Не указан', 'Unspecified')}</option><option value="male">{text('Мужской', 'Male')}</option><option value="female">{text('Женский', 'Female')}</option></select></label>
-            <div className="form-group">
-              <label htmlFor="ft-pending-type">{t('family.form_type')}</label>
-              <select id="ft-pending-type"
-                value={pendingEdgeForm.relationship_type}
-                onChange={e => setPendingEdgeForm(f => ({ ...f, relationship_type: e.target.value, custom_label: '' }))}
-              >
-                <option value="" disabled>{text('Выберите тип связи', 'Choose relationship type')}</option>
-                <optgroup label={t('family.group_parent_child')}>
-                  <option value="parent">{relationName('parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="child">{relationName('child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="adoptive_parent">{relationName('adoptive_parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="adoptive_child">{relationName('adoptive_child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="step_parent">{relationName('step_parent', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="step_child">{relationName('step_child', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                </optgroup>
-                <optgroup label={t('family.group_partner')}>
-                  <option value="spouse">{relationName('spouse', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="partner">{relationName('partner', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="ex_spouse">{relationName('ex_spouse', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                </optgroup>
-                <optgroup label={t('family.group_sibling')}>
-                  <option value="sibling">{relationName('sibling', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                  <option value="half_sibling">{relationName('half_sibling', { ...nodeMap[pendingEdge.toId], gender: pendingEdgeForm.target_gender || nodeMap[pendingEdge.toId]?.gender })}</option>
-                </optgroup>
-                <optgroup label={t('family.group_other')}>
-                  <option value="custom">{t('family.type_custom_desc')}</option>
-                </optgroup>
-              </select>
-            </div>
+            <div className="form-group"><label htmlFor="ft-pending-type">{t('family.form_type')}</label><RelationshipTypeSelect id="ft-pending-type" type={pendingEdgeForm.relationship_type} gender={pendingEdgeForm.target_gender} disabled={submitting} onChange={o=>setPendingEdgeForm(f=>({...f,relationship_type:o.type,target_gender:o.gender||'',custom_label:''}))}/></div>
             {pendingEdgeForm.relationship_type === 'custom' && (
               <div className="form-group">
                 <label>{t('family.form_custom_label')} *</label>

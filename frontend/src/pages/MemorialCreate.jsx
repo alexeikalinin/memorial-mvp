@@ -1,3 +1,5 @@
+import RelationshipTypeSelect from '../components/RelationshipTypeSelect'
+import {choiceLabel,prepareRelativeGender} from '../utils/relationshipChoices'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
@@ -29,7 +31,9 @@ function MemorialCreate() {
   const [relativeQuery, setRelativeQuery] = useState('')
   const [relatives, setRelatives] = useState([])
   const [relative, setRelative] = useState(null)
-  const [relationshipType, setRelationshipType] = useState('spouse')
+  const [relationshipType, setRelationshipType] = useState('')
+  const [relativeGender,setRelativeGender] = useState('')
+  const [customLabel,setCustomLabel] = useState('')
   const [linkPublic, setLinkPublic] = useState(false)
   const [similarPages, setSimilarPages] = useState([])
   const [searchError, setSearchError] = useState('')
@@ -95,13 +99,15 @@ function MemorialCreate() {
         maiden_name: formData.maiden_name.trim() || null,
       }
 
+      if(linkEnabled&&relative)await prepareRelativeGender(memorialsAPI,relative.id,relativeGender,lang)
       const page = savedPage || (await memorialsAPI.create(submitData)).data
       setSavedPage(page)
       if (linkEnabled && relative) {
-        const response = await familyAPI.createRelationship(page.id, { related_memorial_id: relative.id, relationship_type: relationshipType, is_public: linkPublic })
+        const response = await familyAPI.createRelationship(page.id, { related_memorial_id: relative.id, relationship_type: relationshipType, custom_label: relationshipType==='custom'?customLabel:undefined, is_public: linkPublic })
         navigate(`/memorials/${page.id}?tab=family`, { state: { justCreated: true, familyRequestPending: response.data?.status === 'pending' } })
       } else navigate(`/memorials/${page.id}`, { state: { justCreated: true } })
     } catch (err) {
+      if(err.relationshipExplanation){setError(err.message);return}
       const errorData = err.response?.data
       if (errorData?.detail) {
         if (Array.isArray(errorData.detail)) {
@@ -253,13 +259,14 @@ function MemorialCreate() {
             {searchError && <p role="alert">{searchError}</p>}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{relatives.map(m => <button className="btn" type="button" disabled={loading} aria-pressed={relative?.id === m.id} key={m.id} onClick={() => setRelative(m)}>{m.name} {m.birth_date ? new Date(m.birth_date).getFullYear() : ''}</button>)}</div>
             <label htmlFor="create-relation">{lang === 'ru' ? 'Этот родственник приходится создаваемому человеку' : 'This relative is related to the new person as'}</label>
-            <select id="create-relation" value={relationshipType} disabled={loading} onChange={e => setRelationshipType(e.target.value)}>{[['parent','Родитель','Parent'],['child','Ребёнок','Child'],['spouse','Супруг / супруга','Spouse'],['sibling','Брат / сестра','Sibling'],['ex_spouse','Бывший супруг / супруга','Former spouse'],['half_sibling','Неполнородный брат / сестра','Half-sibling'],['partner','Партнёр','Partner'],['adoptive_parent','Приёмный родитель','Adoptive parent'],['adoptive_child','Приёмный ребёнок','Adoptive child'],['step_parent','Отчим / мачеха','Stepparent'],['step_child','Пасынок / падчерица','Stepchild']].map(([value,ru,en]) => <option key={value} value={value}>{lang === 'ru' ? ru : en}</option>)}</select>
-            {relative && <p>{relative.name} — {({ parent: lang === 'ru' ? 'родитель' : 'parent', child: lang === 'ru' ? 'ребёнок' : 'child', spouse: lang === 'ru' ? 'супруг / супруга' : 'spouse', sibling: lang === 'ru' ? 'брат / сестра' : 'sibling', ex_spouse: lang === 'ru' ? 'бывший супруг / супруга' : 'former spouse', half_sibling: lang === 'ru' ? 'неполнородный брат / сестра' : 'half-sibling', partner: lang === 'ru' ? 'партнёр' : 'partner', adoptive_parent: lang === 'ru' ? 'приёмный родитель' : 'adoptive parent', adoptive_child: lang === 'ru' ? 'приёмный ребёнок' : 'adoptive child', step_parent: lang === 'ru' ? 'отчим / мачеха' : 'stepparent', step_child: lang === 'ru' ? 'пасынок / падчерица' : 'stepchild' })[relationshipType]} {lang === 'ru' ? 'для' : 'of'} {formData.name}.</p>}
+            <RelationshipTypeSelect id="create-relation" type={relationshipType} gender={relativeGender} disabled={loading} onChange={o=>{setRelationshipType(o.type);setRelativeGender(o.gender||'')}}/>
+            {relationshipType==='custom'&&<label>{lang==='en'?'Describe the relationship':'Название связи'}<input required maxLength={100} value={customLabel} onChange={e=>setCustomLabel(e.target.value)}/></label>}
+            {relative&&<p>{relative.name} — {relationshipType==='custom'?customLabel:choiceLabel(relationshipType,relativeGender,lang)} {lang==='en'?'of':'для'} {formData.name}.</p>}
             <label className="checkbox-label"><input type="checkbox" checked={linkPublic} disabled={loading} onChange={e => setLinkPublic(e.target.checked)} /><span>{lang === 'ru' ? 'Показывать связь публично' : 'Show relationship publicly'}</span></label>
             <p className="form-hint">{lang === 'ru' ? 'Другой владелец должен подтвердить связь. Это не выдаёт права редактирования. Можно пропустить этот шаг.' : 'A different owner must approve the link. It does not grant editing rights. You can skip this step.'}</p>
           </section>}
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading || (linkEnabled && !relative)}>
+            <button type="submit" className="btn btn-primary" disabled={loading || (linkEnabled && (!relative || !relationshipType || (relationshipType==='custom'&&!customLabel.trim())))}>
               {loading ? t('memorialCreate.creating') : t('memorialCreate.submit')}
             </button>
             <button

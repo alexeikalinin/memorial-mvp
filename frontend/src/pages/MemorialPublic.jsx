@@ -1,3 +1,4 @@
+import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom'
 import { memorialsAPI, accessAPI } from '../api/client'
@@ -28,6 +29,7 @@ function MemorialPublic() {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [accessDenied,setAccessDenied] = useState(false)
   const [activeSection, setActiveSection] = useState('chat')
   const [showQR, setShowQR] = useState(false)
   const [qrBlobUrl, setQrBlobUrl] = useState(null)
@@ -91,6 +93,7 @@ function MemorialPublic() {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setAccessDenied(false)
     const loadData = async () => {
       try {
         const [memRes, memoriesRes, mediaRes] = await Promise.all([
@@ -103,6 +106,7 @@ function MemorialPublic() {
         setMemories(Array.isArray(memoriesRes.data) ? memoriesRes.data : [])
         setPhotos(Array.isArray(mediaRes.data) ? mediaRes.data.filter((m) => m.media_type === 'photo') : [])
       } catch (err) {
+        if (!cancelled) setAccessDenied([401,403].includes(err.response?.status))
         if (!cancelled) setError([401, 403].includes(err.response?.status) ? t('public.private_memorial') : err.response?.data?.detail || t('public.not_found'))
       } finally {
         if (!cancelled) setLoading(false)
@@ -187,6 +191,7 @@ function MemorialPublic() {
   }
 
   if (loading) return <div className="loading">{t('public.loading')}</div>
+  if (accessDenied) return <PrivateMemorialAccess key={id} memorialId={id}/>
   if (error || !memorial) return <div className="error-message">{error || t('public.not_found')}</div>
 
   const publicChatUrl = `${window.location.origin}${import.meta.env.BASE_URL}m/${id}#chat`
