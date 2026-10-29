@@ -326,7 +326,7 @@ function MemorialPublic() {
                 memorialId={id}
                 coverPhotoId={memorial.cover_photo_id}
                 portraitSettings={memorial.portrait_settings}
-                memorialName={memorial.name}
+                memorialName={memorialName(memorial)}
                 onMessageSent={handleAnonChatMessage}
             />
           </>

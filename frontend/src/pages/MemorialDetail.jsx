@@ -692,7 +692,7 @@ function MemorialDetail() {
         )}
         {mountedTabs.has('memories') && (
           <div style={{ display: activeTab === 'memories' ? 'block' : 'none' }}>
-            <MemoryList memorialId={id} memorialName={memorial.name} onReload={loadMemorial} canEdit={canEdit} canModerate={isActualOwner} pendingMemories={pendingMemories} pendingLoading={pendingMemoriesLoading} onApprove={handleApproveMemory} onReject={handleRejectMemory} composeRequest={memoryComposeRequest} />
+            <MemoryList memorialId={id} memorialName={memorialName(memorial)} onReload={loadMemorial} canEdit={canEdit} canModerate={isActualOwner} pendingMemories={pendingMemories} pendingLoading={pendingMemoriesLoading} onApprove={handleApproveMemory} onReject={handleRejectMemory} composeRequest={memoryComposeRequest} />
           </div>
         )}
         {mountedTabs.has('chat') && (
@@ -700,7 +700,7 @@ function MemorialDetail() {
             <AvatarChat
               memorialId={id}
               coverPhotoId={memorial.cover_photo_id}
-              memorialName={memorial.name}
+              memorialName={memorialName(memorial)}
               onAddMemory={canEdit ? () => { handleTabClick('memories'); setMemoryComposeRequest(n => n + 1) } : undefined}
               canManageVoice={isActualOwner}
               textOnly={!isActualOwner}
