@@ -61,7 +61,7 @@ function fitInnerInViewport(canvasEl, innerW, innerH) {
   const scale = snapTreeScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(sx, sy))))
   const cx = innerW / 2
   const cy = innerH / 2
-  return { x: cw / 2 - cx * scale, y: usableHeight / 2 - cy * scale, scale }
+  return { x: cw / 2 - cx * scale, y: ch / 2 - cy * scale, scale }
 }
 
 /**
