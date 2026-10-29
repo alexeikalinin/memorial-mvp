@@ -78,6 +78,12 @@ export function filterGraphToScope(graph, visibleFamilies) {
       fullIds.add(id)
       for (const neighbor of adjacent.get(id)) fullIds.add(neighbor)
     }
+    // Partners of visible siblings/children belong to the same visible family.
+    for (const e of familyEdges) {
+      if (!['spouse', 'partner', 'ex_spouse'].includes(String(e.type).toLowerCase())) continue
+      if (fullIds.has(String(e.source))) fullIds.add(String(e.target))
+      if (fullIds.has(String(e.target))) fullIds.add(String(e.source))
+    }
     const boundary = new Set()
     for (const id of fullIds) for (const neighbor of adjacent.get(id)) {
       if (!fullIds.has(neighbor)) boundary.add(neighbor)

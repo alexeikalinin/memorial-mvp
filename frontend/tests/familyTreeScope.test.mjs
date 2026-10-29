@@ -42,3 +42,8 @@ test('both spouses and each of their siblings are visible from either spouse', (
     assert.ok(result.nodes.every(n=>!n._stub))
   }
 })
+
+test('the spouse of a visible sister is shown as a person, not a hidden branch',()=>{
+ const g={root_id:1,nodes:[{memorial_id:1,name:'Калинина Светлана'},{memorial_id:2,name:'Сачко Лариса'},{memorial_id:3,name:'Сачко Александр'}],edges:[{source:1,target:2,type:'sibling'},{source:2,target:3,type:'spouse'}]}
+ const result=filterGraphToScope(g,['Other']);assert.equal(result.nodes.length,3);assert.ok(result.nodes.every(n=>!n._stub))
+})

@@ -549,6 +549,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [newPersonMatches, setNewPersonMatches] = useState([])
   const [sharedParentSiblingIds, setSharedParentSiblingIds] = useState([])
   const [sharedParentTarget, setSharedParentTarget] = useState(null)
+  const [coParentSuggestion,setCoParentSuggestion] = useState(null)
+  const skippedCoParents=useRef(new Set())
   const linkFormRef = useRef(null)
   const [flowError, setFlowError] = useState('')
   const [flowNotice, setFlowNotice] = useState('')
@@ -602,10 +604,10 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     return () => { active = false; clearTimeout(timer) }
   }, [newPerson.name, showAddForm, flowMode, createdPerson, sourceId])
   const selectPerson = id => {
-    setSelectedId(id); setSharedParentTarget(null); setShowAddForm(false); setFlowError(''); setFlowNotice('')
+    setSelectedId(id); setCoParentSuggestion(null); setSharedParentTarget(null); setShowAddForm(false); setFlowError(''); setFlowNotice('')
   }
   const beginLink = () => {
-    setShowAddForm(true); setSharedParentTarget(null); setSearchQuery(''); setAvailableMemorials([]); setCreatedPerson(null)
+    setShowAddForm(true); setCoParentSuggestion(null); setSharedParentTarget(null); setSearchQuery(''); setAvailableMemorials([]); setCreatedPerson(null)
     setFlowError(''); setFlowNotice(''); setRelationGender(''); setFlowMode('existing'); setRelationPublic(false); setSharedParentSiblingIds([])
     setNewPerson({ name: '', birth_date: '', death_date: '', living: false, gender: '' }); setLivingConsent(false)
     setFormData({ related_memorial_id: '', relationship_type: '', custom_label: '', notes: '', nickname_for_visitor: '' })
@@ -1192,6 +1194,16 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
         : text('Родственная связь сохранена в обе стороны.', 'Relationship saved in both directions.'))
       if (formData.relationship_type === 'parent') {
+        if (res.data?.status !== 'pending') {
+          const otherParents = (graphData?.edges || []).flatMap(e => {
+            const type=String(e.type).toLowerCase()
+            if(type==='parent' && sid(e.source)===sid(sourceId))return [e.target]
+            if(type==='child' && sid(e.target)===sid(sourceId))return [e.source]
+            return []
+          }).filter(other => sid(other)!==sid(targetId) && !(graphData?.edges||[]).some(e=>['spouse','partner','ex_spouse'].includes(e.type)&&((sid(e.source)===sid(targetId)&&sid(e.target)===sid(other))||(sid(e.target)===sid(targetId)&&sid(e.source)===sid(other)))))
+          const candidates=[...new Set(otherParents.map(sid))].map(other=>(graphData?.nodes||[]).find(n=>sid(n.memorial_id)===other)).filter(Boolean)
+          if(candidates.length)setCoParentSuggestion({id:Number(targetId),gender:relationGender,name:flowMode==='new'?newPerson.name:availableMemorials.find(m=>sid(m.id)===sid(targetId))?.name,candidates})
+        }
         const siblings = selectedRelations.filter(r => ['sibling', 'half_sibling'].includes(r.type))
         if (siblings.length) setSharedParentTarget({
           id: Number(targetId), gender: relationGender || null, is_public: relationPublic, siblings, pending: res.data?.status === 'pending',
@@ -1224,6 +1236,31 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     if (!failedIds.length) setSharedParentTarget(null)
     await Promise.all([loadData(), loadRequests()])
     setSubmitting(false)
+  }
+
+  useEffect(()=>{
+    if(!sourceCanEdit || showAddForm || sharedParentTarget || coParentSuggestion)return
+    const parents=[...new Set((graphData?.edges||[]).flatMap(e=>e.type==='parent'&&sid(e.source)===sid(sourceId)?[sid(e.target)]:e.type==='child'&&sid(e.target)===sid(sourceId)?[sid(e.source)]:[]))]
+    for(let i=0;i<parents.length;i++)for(let j=i+1;j<parents.length;j++){
+      const a=parents[i],b=parents[j],key=[a,b].sort().join(':')
+      if(skippedCoParents.current.has(key))continue
+      if((graphData.edges||[]).some(e=>['spouse','partner','ex_spouse'].includes(e.type)&&[a,b].includes(sid(e.source))&&[a,b].includes(sid(e.target))))continue
+      const person=graphData.nodes.find(n=>sid(n.memorial_id)===b),other=graphData.nodes.find(n=>sid(n.memorial_id)===a)
+      if(person&&other){setCoParentSuggestion({id:person.memorial_id,name:person.name,gender:person.gender||person.voice_gender,candidates:[other]});return}
+    }
+  },[graphData,sourceId,sourceCanEdit,showAddForm,sharedParentTarget,coParentSuggestion])
+  const skipCoParents=()=>{
+    for(const node of coParentSuggestion?.candidates||[])skippedCoParents.current.add([sid(coParentSuggestion.id),sid(node.memorial_id)].sort().join(':'))
+    setCoParentSuggestion(null)
+  }
+
+  const connectCoParents = async otherId => {
+    setSubmitting(true);setFlowError('')
+    try {
+      const res=await familyAPI.createRelationship(coParentSuggestion.id,{related_memorial_id:otherId,relationship_type:'spouse',is_public:false})
+      setFlowNotice(res.data?.status==='pending'?text('Запрос о браке отправлен владельцу второй страницы.','Marriage request sent to the other owner.'):text('Связь супругов сохранена.','Spouse relationship saved.'))
+      skipCoParents();await Promise.all([loadData(),loadRequests()])
+    }catch(err){setFlowError(typeof err.response?.data?.detail==='string'?err.response.data.detail:text('Не удалось сохранить связь супругов. Попробуйте ещё раз.','Could not save the spouse relationship. Please retry.'))}finally{setSubmitting(false)}
   }
 
   const handleDelete = async (relId) => {
@@ -1292,20 +1329,18 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
                 {c.key === genLayout.otherSurnameKey ? t('family.cluster_other') : c.key}
               </span>
             ))}
-            <span className="ft-leg ft-leg--gold">∞ {t('family.legend_cross_family_short')}</span>
+            <span className="ft-leg ft-leg--gold">♥ {text('Супруги','Spouses')}</span>
           </div>
           <p className="tree-controls-hint ft-gen-hint">{t('family.gen_legend_hint')}</p>
           <details className="ft-gen-help">
             <summary className="ft-gen-help-summary">{t('family.gen_legend_expand')}</summary>
-            <div className="ft-gen-help-body">
-              <p>{t('family.gen_legend_help_borders')}</p>
-              <p>{t('family.gen_legend_help_lines')}</p>
-              <p>
-                {t('family.gen_legend_help_labels', {
-                  rootName: sourceName || rootDisplayName || t('family.gen_legend_root_fallback'),
-                })}
-              </p>
-              <p>{t('family.gen_legend_help_generation')}</p>
+            <div className="ft-gen-help-body ft-visual-guide">
+              <div><span aria-hidden="true">👤</span><p>{text('Круг — человек. Нажмите, чтобы увидеть его связи.','A circle is a person. Select it to see relationships.')}</p></div>
+              <div><span aria-hidden="true">♥ ─</span><p>{text('Линия с сердцем соединяет супругов. Общие дети сами по себе не означают брак.','A heart connects spouses. Shared children alone do not imply marriage.')}</p></div>
+              <div><span aria-hidden="true">┬<br/>│ ↓</span><p>{text('Линия сверху вниз: родители → дети. Старшее поколение выше.','A downward line connects parents to children. Older generations are above.')}</p></div>
+              <div><span aria-hidden="true">┌─┐</span><p>{text('Скобка соединяет братьев и сестёр одного поколения.','A bracket connects siblings in the same generation.')}</p></div>
+              <div><span aria-hidden="true">◎</span><p>{text('Двойное кольцо — выбранный человек. Подписи «мать», «дядя» и другие относятся к нему.','A double ring marks the selected person. Relationship labels are relative to them.')}</p></div>
+              <div><span aria-hidden="true">● ●</span><p>{text('Цвет ободка соответствует фамилии в легенде. Разные фамилии не меняют уровень поколения.','Ring colors correspond to surnames in the legend, not generation levels.')}</p></div>
             </div>
           </details>
         </>
@@ -1317,6 +1352,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       {/* Add form (editor/owner only) */}
       {flowError && <div className="ft-flow-error" role="alert">{flowError}{createdPerson && <span> {text('Страница уже создана. Повторите сохранение связи или откройте её:', 'The page has been created. Retry saving the relationship or open it:')} <button type="button" onClick={() => navigate(`/memorials/${createdPerson.id}`)}>{createdPerson.name}</button></span>}</div>}
       {flowNotice && <p className="ft-flow-notice" role="status">{flowNotice}</p>}
+      {coParentSuggestion && !sharedParentTarget && <section className="ft-request-inbox"><h3>{text('Уточните связь между родителями','Confirm the parents’ relationship')}</h3><p>{text('Общие дети не означают, что родители состояли в браке. Подтвердите только известную вам связь или пропустите.','Shared children do not imply marriage. Confirm only what you know or skip.')}</p>{coParentSuggestion.candidates.map(node=><div key={node.memorial_id}><p>{coParentSuggestion.name} — {kinshipName('spouse',coParentSuggestion,lang).toLowerCase()} {memorialName(node)}?</p><button type="button" className="btn btn-primary" disabled={submitting} onClick={()=>connectCoParents(node.memorial_id)}>{text('Да, связать как супругов','Yes, connect as spouses')}</button></div>)}<button type="button" className="btn" disabled={submitting} onClick={skipCoParents}>{text('Пропустить','Skip')}</button></section>}
       {sharedParentTarget && <section className="ft-request-inbox"><h3>{sharedParentTarget.pending ? text('Запрос отправлен. Уточните связь с братьями и сёстрами.', 'Request sent. Confirm relationships with siblings.') : `${text('Связь сохранена:', 'Relationship saved:')} ${kinshipName('parent', sharedParentTarget, lang).toLowerCase()}. ${text('Уточните связь с братьями и сёстрами.', 'Confirm relationships with siblings.')}`}</h3><p className="form-hint">{text('Отметьте только известные вам связи. Выбор не означает, что у этих людей оба родителя общие.', 'Select only relationships you know. This does not imply both parents are shared.')}</p>{sharedParentTarget.siblings.map(({ node }) => <label className="ft-checkbox" key={node.memorial_id}><input type="checkbox" disabled={submitting} checked={sharedParentSiblingIds.includes(node.memorial_id)} onChange={e => setSharedParentSiblingIds(ids => e.target.checked ? [...ids, node.memorial_id] : ids.filter(id => id !== node.memorial_id))} />{sharedParentTarget.name} — {`${text('также', 'also a')} ${kinshipName('parent',sharedParentTarget,lang).toLowerCase()}`} {node.name}?</label>)}<div className="ft-flow-modes"><button type="button" disabled={submitting || !sharedParentSiblingIds.length} onClick={shareSavedParent}>{submitting ? t('common.saving') : text('Связать выбранных', 'Link selected people')}</button><button type="button" disabled={submitting} onClick={() => setSharedParentTarget(null)}>{text('Пропустить', 'Skip')}</button></div></section>}
       {sourceCanEdit && showAddForm && (
         <form ref={linkFormRef} onSubmit={handleAdd} className="relationship-form ft-link-form">

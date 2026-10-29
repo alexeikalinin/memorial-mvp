@@ -74,3 +74,16 @@ test('adding an undated father keeps both daughters, their spouses and brothers 
   assert.ok(p[6].y<p[2].y)
  }
 })
+
+test('two undated parents are adjacent, centered over daughters and stable across input order',()=>{
+ const nodes=[{memorial_id:1,name:'Бахар Михаил'},{memorial_id:2,name:'Бахар Инна'},{memorial_id:3,name:'Калинина Светлана',birth_year:1961},{memorial_id:4,name:'Сачко Лариса',birth_year:1962},{memorial_id:5,name:'Калинин Николай Иванович',birth_year:1956},{memorial_id:6,name:'Сачко Александр Антонович'}]
+ const edges=[{source:3,target:1,type:'parent'},{source:4,target:1,type:'parent'},{source:3,target:2,type:'parent'},{source:4,target:2,type:'parent'},{source:3,target:5,type:'spouse'},{source:4,target:6,type:'spouse'}]
+ for(const e of [edges,[...edges,{source:1,target:2,type:'spouse'}]]){
+  const p=buildGenerationLayout({root_id:3,_branchScope:true,nodes,edges:e},true).positions
+  assert.equal(p[1].y,p[2].y);assert.ok(p[1].y<p[3].y);assert.equal(new Set([3,4,5,6].map(id=>p[id].y)).size,1)
+  assert.equal(Math.abs(p[1].x-p[2].x),130)
+  assert.equal(Math.abs(p[3].x-p[4].x),130)
+  assert.ok(Math.abs((p[1].cx+p[2].cx)/2-(p[3].cx+p[4].cx)/2)<1)
+  for(const pair of [[3,5],[4,6]])assert.equal(Math.abs(p[pair[0]].x-p[pair[1]].x),130)
+ }
+})

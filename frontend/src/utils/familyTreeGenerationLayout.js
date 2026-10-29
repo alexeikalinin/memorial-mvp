@@ -1,3 +1,4 @@
+import {alignParentGroups} from './familyTreeParentAlignment.js'
 /**
  * Раскладка полного графа по горизонтальным «этажам» поколений + эвристика двух линий (фамилии).
  * Использует поля generation / edges из GET /family/memorials/:id/full-tree
@@ -41,7 +42,7 @@ export function surnameOf(name) {
     .split(/\s+/)
     .filter(Boolean)
   if (!parts.length) return ''
-  const last = parts[parts.length - 1]
+  const last = /[А-Яа-яЁё]/.test(parts[0]) ? (parts.length > 1 ? parts[0] : '') : parts[parts.length - 1]
   return /^[A-Za-zА-Яа-яёЁ\-']+$/.test(last) ? last : ''
 }
 
@@ -138,7 +139,7 @@ export function buildSurnameClusterStyles(nodes) {
   orderedKeys.forEach((k, i) => {
     keyToIdx[k] = i
   })
-  const pick = (i) => CLUSTER_BORDER_PALETTE[i % CLUSTER_BORDER_PALETTE.length]
+  const pick = (i) => { const key=orderedKeys[i] || ''; let hash=0; for(const char of key)hash=(hash*31+char.charCodeAt(0))>>>0; return CLUSTER_BORDER_PALETTE[hash % CLUSTER_BORDER_PALETTE.length] }
 
   const clusterLegend = orderedKeys.map((key, i) => {
     const p = pick(i)
@@ -365,7 +366,8 @@ function countUnitsCards(units) {
  *   - shared parent (half-siblings from different marriages → same row, no crossing lines)
  * Returns an array of "row groups", each group being an array of units.
  */
-function groupUnitsByRow(units, edgeList) {
+function groupUnitsByRow(units, edgeList, oneRow = false) {
+  if (oneRow && units.length) return [units]
   if (!units.length) return []
   // Map each node id → unit index
   const idToUnit = new Map()
@@ -602,6 +604,26 @@ function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
 function orderPersonalCoupleRow(group, edges) {
   const pairs = group.filter(u => u.type === 'pair')
   const original = group.flatMap(u => u.ids)
+  if(pairs.length>1){
+    const parentPairs=new Map()
+    for(const e of edges){const t=String(e.type).toLowerCase();let child,parent
+      if(['parent','adoptive_parent','step_parent'].includes(t)){child=e.source;parent=e.target}
+      if(['child','adoptive_child','step_child'].includes(t)){child=e.target;parent=e.source}
+      const unit=pairs.find(p=>p.ids.some(id=>sid(id)===sid(child)))
+      if(!unit)continue
+      if(!parentPairs.has(sid(parent)))parentPairs.set(sid(parent),new Map())
+      parentPairs.get(sid(parent)).set(unit,{unit,child})
+    }
+    const family=[...parentPairs.values()].sort((a,b)=>b.size-a.size)[0]
+    if(family?.size>1){
+      const related=[...family.values()].sort((a,b)=>Number(a.child)-Number(b.child))
+      const selected=new Set(related.map(x=>x.unit))
+      return [...group.filter(u=>!selected.has(u)).flatMap(u=>u.ids),...related.flatMap(({unit,child},index)=>{
+        const partner=unit.ids.find(id=>sid(id)!==sid(child))
+        return index===0?[partner,Number(child)]:[Number(child),partner]
+      })]
+    }
+  }
   if (pairs.length !== 1) return original
   const [left, right] = pairs[0].ids
   const siblingBranch = start => {
@@ -797,11 +819,11 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     if (right.length) hasAnyRight = true
     if (farRight.length) hasAnyFarRight = true
     if (extraRight.length) hasAnyExtraRight = true
-    maxLeftW = Math.max(maxLeftW, rowGroupsWidth(groupUnitsByRow(left, edges)))
-    maxCenterW = Math.max(maxCenterW, rowGroupsWidth(groupUnitsByRow(center, edges)))
-    maxRightW = Math.max(maxRightW, rowGroupsWidth(groupUnitsByRow(right, edges)))
-    maxFarRightW = Math.max(maxFarRightW, rowGroupsWidth(groupUnitsByRow(farRight, edges)))
-    maxExtraRightW = Math.max(maxExtraRightW, rowGroupsWidth(groupUnitsByRow(extraRight, edges)))
+    maxLeftW = Math.max(maxLeftW, rowGroupsWidth(groupUnitsByRow(left, edges, graphData?._branchScope)))
+    maxCenterW = Math.max(maxCenterW, rowGroupsWidth(groupUnitsByRow(center, edges, graphData?._branchScope)))
+    maxRightW = Math.max(maxRightW, rowGroupsWidth(groupUnitsByRow(right, edges, graphData?._branchScope)))
+    maxFarRightW = Math.max(maxFarRightW, rowGroupsWidth(groupUnitsByRow(farRight, edges, graphData?._branchScope)))
+    maxExtraRightW = Math.max(maxExtraRightW, rowGroupsWidth(groupUnitsByRow(extraRight, edges, graphData?._branchScope)))
   }
 
   // singleFamilyMode: small gap — stubs just to the right of main family column
@@ -844,7 +866,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     const { left, center, right, farRight, extraRight } = rowLanes[g]
     const laneGroups = [left, center, right, farRight, extraRight]
       .filter((arr) => arr.length > 0)
-      .map((arr) => groupUnitsByRow(arr, edges))
+      .map((arr) => groupUnitsByRow(arr, edges, graphData?._branchScope))
     const maxLines = laneGroups.length
       ? Math.max(1, ...laneGroups.map((gs) => gs.length))
       : 1
@@ -906,7 +928,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     for (const seg of segments) {
       const col = columnLayout.find((c) => c.kind === seg.kind)
       // Group sibling units onto the same sub-row
-      const groups = groupUnitsByRow(seg.units, edges)
+      const groups = groupUnitsByRow(seg.units, edges, graphData?._branchScope)
       let subY = baseY
       for (const group of groups) {
         // All units in this group share the same Y (siblings side-by-side)
@@ -930,9 +952,10 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     }
   }
 
+  const finalPositions=graphData?._branchScope ? alignParentGroups(positions,edges,NODE_W,GAP_X,PAD+LABEL_W) : positions
   return {
-    positions,
-    canvas: { width: canvasW, height: canvasH },
+    positions: finalPositions,
+    canvas: { width: Math.max(canvasW,...Object.values(finalPositions).map(p=>p.x+NODE_W+PAD)), height: canvasH },
     lineage,
     surnameA,
     surnameB,
