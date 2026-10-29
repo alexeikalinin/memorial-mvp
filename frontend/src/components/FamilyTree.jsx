@@ -61,7 +61,7 @@ function fitInnerInViewport(canvasEl, innerW, innerH) {
   const scale = snapTreeScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(sx, sy))))
   const cx = innerW / 2
   const cy = innerH / 2
-  return { x: cw / 2 - cx * scale, y: ch / 2 - cy * scale, scale }
+  return { x: cw / 2 - cx * scale, y: usableHeight / 2 - cy * scale, scale }
 }
 
 /**
@@ -88,11 +88,12 @@ function fitNodesBoundingBox(canvasEl, positions, nodeSize, pad) {
   const contentW = maxX - minX
   const contentH = maxY - minY
   const sx = (cw - 2 * _pad) / contentW
-  const sy = (ch - 2 * _pad) / contentH
+  const usableHeight = Math.max(160, ch - 80)
+  const sy = (usableHeight - 2 * _pad) / contentH
   const scale = snapTreeScale(Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(sx, sy))))
   const cx = (minX + maxX) / 2
   const cy = (minY + maxY) / 2
-  return { x: cw / 2 - cx * scale, y: ch / 2 - cy * scale, scale }
+  return { x: cw / 2 - cx * scale, y: usableHeight / 2 - cy * scale, scale }
 }
 
 function centerRootInViewport(canvasEl, rootNode) {
