@@ -1461,3 +1461,30 @@ p.tree-controls-hint.ft-gen-hint {
 .ft-canvas-nav-btn{width:42px;height:42px;}
 @media(max-width:600px){.ft-canvas-actions{left:8px}.ft-canvas-nav{right:8px}.ft-canvas-action-btn{padding-inline:8px;font-size:12px}}
 @media(max-width:600px){.ft-canvas-action-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
+
+/* Fullscreen reserves an actual viewport-sized canvas and toolbar area. */
+.family-tree--fullscreen { position:fixed; inset:0; height:100dvh; min-height:0; overflow:hidden; z-index:1000; }
+.family-tree--fullscreen .ft-gen-legend,
+.family-tree--fullscreen .ft-gen-hint,
+.family-tree--fullscreen .ft-gen-help,
+.family-tree--fullscreen .relations-list { display:none; }
+.family-tree--fullscreen .ft-tree-and-panel { flex:1; min-height:0; grid-template-rows:minmax(0,1fr); align-items:stretch; }
+.family-tree--fullscreen .ft-canvas-wrap { min-height:0; }
+.family-tree--fullscreen .tree-canvas { min-height:0; height:auto; flex:1 1 0; }
+.family-tree--fullscreen .ft-person-panel { min-height:0; max-height:100%; overflow:auto; }
+.family-tree--fullscreen .ft-canvas-actions,
+.family-tree--fullscreen .ft-canvas-nav { position:absolute; bottom:12px; z-index:10; margin:0; }
+.family-tree--fullscreen .ft-canvas-action-label { position:static; width:auto; height:auto; overflow:visible; clip-path:none; }
+.family-tree--fullscreen > .ft-link-form,
+.family-tree--fullscreen > .ft-request-inbox { flex:0 1 auto; max-height:35dvh; overflow:auto; }
+.ft-auto-layout { position:absolute; top:12px; left:12px; z-index:10; background:rgba(20,16,12,.85); color:#f5ead7; border:1px solid rgba(200,169,126,.4); }
+@media(max-width:900px){
+  .family-tree--fullscreen .ft-tree-and-panel { grid-template-rows:minmax(200px,1fr) minmax(0,160px); }
+  .family-tree--fullscreen .ft-person-panel { max-height:160px; }
+}
+@media(max-width:600px){
+  .family-tree--fullscreen .ft-canvas-action-label { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .family-tree--fullscreen .ft-canvas-action-btn--active .ft-canvas-action-label { position:static; width:auto; height:auto; overflow:visible; clip-path:none; }
+}
+
+@media(max-width:600px){.ft-canvas-action-btn--active .ft-canvas-action-label { position:static; width:auto; height:auto; overflow:visible; clip-path:none; }}

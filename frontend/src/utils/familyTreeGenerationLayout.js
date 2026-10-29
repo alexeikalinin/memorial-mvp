@@ -1,4 +1,5 @@
-import {alignParentGroups} from './familyTreeParentAlignment.js'
+import { orderFamilyRow } from './familyTreeBranchOrder.js'
+import {arrangeFamilyBlocks} from './familyTreeBlockLayout.js'
 /**
  * Раскладка полного графа по горизонтальным «этажам» поколений + эвристика двух линий (фамилии).
  * Использует поля generation / edges из GET /family/memorials/:id/full-tree
@@ -26,7 +27,7 @@ const LINEAGE_LANE_GAP = 260
 /** Базовая высота «этажа» (для совместимости с коннекторами); фактическая высота поколения может быть больше при переносе пар */
 export const ROW_H = 148
 /** На одной горизонтали в сегменте — максимум карточек подряд; сиблинги и одиночки всегда в одну строку */
-const MAX_CARDS_PER_HORIZONTAL = 8
+
 /** Между подстроками внутри одного поколения (перенос пар/сиблингов) */
 const SUB_ROW_GAP = 32
 /** Между этажами поколений (родители → дети): ≥50px чтобы коннекторы не перекрывались с именами. */
@@ -352,11 +353,7 @@ function rowWidthForIds(count) {
   return count * NODE_W + Math.max(0, count - 1) * GAP_X
 }
 
-function countUnitsCards(units) {
-  let n = 0
-  for (const u of units) n += u.ids.length
-  return n
-}
+
 
 /**
  * Group units within a lane segment into sub-rows.
@@ -450,7 +447,7 @@ function buildAutoExSet(edgeList, allNodes) {
   // Count spouses per person
   const spousePartnersOf = {}
   for (const [a, b] of spousePairsArr) {
-    ;(spousePartnersOf[a] = spousePartnersOf[a] || []).push(b)
+    (spousePartnersOf[a] = spousePartnersOf[a] || []).push(b)
     ;(spousePartnersOf[b] = spousePartnersOf[b] || []).push(a)
   }
   const autoExSet = new Set()
@@ -577,13 +574,7 @@ function clusterUnitsIntoLanes(units, lineageMap, hasAInRow, hasBInRow, hasCInRo
 }
 
 /** Ширина колонки: не больше двух карточек в ряд — ширина сегмента по самой широкой линии */
-function segmentWidthUnits(units) {
-  if (!units.length) return 0
-  // Width = widest single unit in the segment (siblings all on one row)
-  let maxW = 0
-  for (const u of units) maxW = Math.max(maxW, rowWidthForIds(u.ids.length))
-  return maxW
-}
+
 
 /** То же с меткой колонки для фиксированной раскладки (A слева, B справа). */
 function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
@@ -601,53 +592,6 @@ function nonEmptyLanesTagged(left, center, right, farRight, extraRight) {
  *   All units are placed in one centred column. Use when only one primary family is visible.
  * @returns {{ positions, canvas, lineage, surnameA, surnameB, orderedIds, minGen, maxGen, genBands, labelAreaX, labelAreaW }}
  */
-function orderPersonalCoupleRow(group, edges) {
-  const pairs = group.filter(u => u.type === 'pair')
-  const original = group.flatMap(u => u.ids)
-  if(pairs.length>1){
-    const parentPairs=new Map()
-    for(const e of edges){const t=String(e.type).toLowerCase();let child,parent
-      if(['parent','adoptive_parent','step_parent'].includes(t)){child=e.source;parent=e.target}
-      if(['child','adoptive_child','step_child'].includes(t)){child=e.target;parent=e.source}
-      const unit=pairs.find(p=>p.ids.some(id=>sid(id)===sid(child)))
-      if(!unit)continue
-      if(!parentPairs.has(sid(parent)))parentPairs.set(sid(parent),new Map())
-      parentPairs.get(sid(parent)).set(unit,{unit,child})
-    }
-    const family=[...parentPairs.values()].sort((a,b)=>b.size-a.size)[0]
-    if(family?.size>1){
-      const related=[...family.values()].sort((a,b)=>Number(a.child)-Number(b.child))
-      const selected=new Set(related.map(x=>x.unit))
-      return [...group.filter(u=>!selected.has(u)).flatMap(u=>u.ids),...related.flatMap(({unit,child},index)=>{
-        const partner=unit.ids.find(id=>sid(id)!==sid(child))
-        return index===0?[partner,Number(child)]:[Number(child),partner]
-      })]
-    }
-  }
-  if (pairs.length !== 1) return original
-  const [left, right] = pairs[0].ids
-  const siblingBranch = start => {
-    const found = new Set([String(start)])
-    let changed = true
-    while (changed) {
-      changed = false
-      for (const e of edges) {
-        if (!isSiblingEdgeType(e.type)) continue
-        for (const [a,b] of [[e.source,e.target],[e.target,e.source]]) {
-          if (found.has(String(a)) && original.some(id => String(id) === String(b)) && !found.has(String(b))) {
-            found.add(String(b)); changed = true
-          }
-        }
-      }
-    }
-    return found
-  }
-  const l = siblingBranch(left), r = siblingBranch(right)
-  if ([...l].some(id => r.has(id)) || original.some(id => !l.has(String(id)) && !r.has(String(id)))) return original
-  return [...original.filter(id => id !== left && l.has(String(id))), left, right,
-    ...original.filter(id => id !== right && r.has(String(id)))]
-}
-
 export function buildGenerationLayout(graphData, singleFamilyMode = false) {
   const nodesIn = graphData?.nodes || []
   const edgesStripped = stripSiblingConflictingParentEdges(graphData?.edges || [], nodesIn)
@@ -935,7 +879,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
         // Reorder so ex-spouse singles appear before the pair they connect to:
         //   [Patricia 💔 Robert ♥ Linda] instead of [Robert ♥ Linda … Patricia]
         const orderedGroup = reorderGroupForExSpouse(group, edges, nodes)
-        const rowIds = graphData?._branchScope ? orderPersonalCoupleRow(orderedGroup, edges) : orderedGroup.flatMap((u) => u.ids)
+        const rowIds = graphData?._branchScope ? orderFamilyRow(orderedGroup, edges, graphData.root_id, positions) : orderedGroup.flatMap((u) => u.ids)
         const x0 = x0ForLine(seg.kind, col, rowIds.length)
         rowIds.forEach((mid, j) => {
           const id = sid(mid)
@@ -952,7 +896,7 @@ export function buildGenerationLayout(graphData, singleFamilyMode = false) {
     }
   }
 
-  const finalPositions=graphData?._branchScope ? alignParentGroups(positions,edges,NODE_W,GAP_X,PAD+LABEL_W) : positions
+  const finalPositions=graphData?._branchScope ? arrangeFamilyBlocks(positions,edges,NODE_W,GAP_X,PAD+LABEL_W) : positions
   return {
     positions: finalPositions,
     canvas: { width: Math.max(canvasW,...Object.values(finalPositions).map(p=>p.x+NODE_W+PAD)), height: canvasH },

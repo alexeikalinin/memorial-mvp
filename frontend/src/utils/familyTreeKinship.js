@@ -6,7 +6,7 @@ const labels = {
  adoptive_parent:[['Приёмный отец','Приёмная мать','Приёмный родитель'],['Adoptive father','Adoptive mother','Adoptive parent']], adoptive_child:[['Приёмный сын','Приёмная дочь','Приёмный ребёнок'],['Adopted son','Adopted daughter','Adopted child']],
  step_parent:[['Отчим','Мачеха','Неродной родитель'],['Stepfather','Stepmother','Stepparent']], step_child:[['Пасынок','Падчерица','Неродной ребёнок'],['Stepson','Stepdaughter','Stepchild']],
  'child,spouse':[['Зять','Невестка','Родственник по браку'],['Son-in-law','Daughter-in-law','In-law']],
- 'parent,spouse':[['Отчим','Мачеха','Неродной родитель'],['Stepfather','Stepmother','Stepparent']],
+ 'parent,spouse':[['Отец','Мать','Родитель'],['Father','Mother','Parent']],
  'spouse,child':[['Пасынок','Падчерица','Неродной ребёнок'],['Stepson','Stepdaughter','Stepchild']],
  'parent,parent':[['Дедушка','Бабушка','Прародитель'],['Grandfather','Grandmother','Grandparent']],
  'child,child':[['Внук','Внучка','Потомок'],['Grandson','Granddaughter','Grandchild']],

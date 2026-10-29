@@ -12,8 +12,6 @@ import {
   buildGenerationLayout,
   buildSurnameClusterStyles,
   isCrossFamilySpouseEdge,
-  neutralSurnameRingStroke,
-  surnameOf,
 } from '../utils/familyTreeGenerationLayout.js'
 import {
   buildOrthogonalConnectors,
@@ -44,7 +42,7 @@ const MIN_SCALE = 0.05
 const MAX_SCALE = 3
 const VIEW_PAD = 24
 /** Показывать иконку брака между супругами при достаточном приближении */
-const MIN_SCALE_MARRIAGE_RINGS = 0.82
+
 
 /** Дробный CSS scale() растягивает текст по субпикселям — округляем масштаб. */
 function snapTreeScale(s) {
@@ -113,89 +111,29 @@ function getInitials(name) {
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }
 
-function surnameTokens(name) {
-  if (!name || typeof name !== 'string') return []
-  return name
-    .replace(/\(.*?\)/g, '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-}
 
-function previousSurname(name) {
-  const tokens = surnameTokens(name)
-  if (tokens.length < 2) return ''
-  const prev = tokens[tokens.length - 2]
-  return /^[A-Za-zА-Яа-яёЁ\-']+$/.test(prev) ? prev : ''
-}
+
+
 
 /** Цвет рамки кластера по фамилии (любой мемориал с этой последней/единственной фамилией в графе). */
-function borderColorForSurname(nodes, memorialClusterStyle, surname) {
-  if (!surname || !nodes?.length || !memorialClusterStyle) return null
-  for (const n of nodes) {
-    if (surnameOf(n.name) === surname) {
-      const st =
-        memorialClusterStyle[n.memorial_id] ??
-        memorialClusterStyle[sid(n.memorial_id)]
-      if (st?.borderColor) return st.borderColor
-    }
-  }
-  return null
-}
+
 
 /**
  * Двухцветная рамка 50/50 (девичья фамилия | фамилия в браке), без border-image — стабильно в Chrome/Safari.
  * Сторона цвета привязана к положению веток (см. oldOnRight ниже по графу).
  */
-function buildSplitGenCardBorder({ leftColor, rightColor, clusterStyle, isBridge }) {
-  const CARD_BG = 'rgba(20, 20, 28, 0.92)'
-  const bw = 3
-  let boxShadow = clusterStyle?.boxShadow
-  if (isBridge && clusterStyle?.boxShadow) {
-    boxShadow = `${clusterStyle.boxShadow}, 0 0 0 2px rgba(220, 175, 95, 0.72), 0 0 22px rgba(220, 175, 95, 0.26)`
-  } else if (isBridge) {
-    boxShadow = `0 0 0 2px rgba(220, 175, 95, 0.72), 0 0 22px rgba(220, 175, 95, 0.26)`
-  }
-  return {
-    border: `${bw}px solid transparent`,
-    borderRadius: 8,
-    background: `linear-gradient(${CARD_BG}, ${CARD_BG}) padding-box, linear-gradient(to right, ${leftColor} 0%, ${leftColor} 50%, ${rightColor} 50%, ${rightColor} 100%) border-box`,
-    backgroundOrigin: 'border-box',
-    backgroundClip: 'padding-box, border-box',
-    boxShadow,
-  }
-}
 
-function _edgeTypeLower(t) {
-  return String(t || '').toLowerCase()
-}
 
-function isSpouseLikeGraphEdge(t) {
-  const u = _edgeTypeLower(t)
-  return u === 'spouse' || u === 'partner' || u === 'ex_spouse'
-}
+
+
+
 
 /**
  * В дереве есть «своя» линия девичьей фамилии: ребро не супружеское к мемориалу,
  * у которого последняя фамилия = maidenSurname (родитель, ребёнок, брат/сестра и т.д.).
  * Только тогда — рамка 50/50 девичья|мужа. Иначе одна рамка по последней фамилии (семья мужа).
  */
-function hasMaidenFamilyLinkInGraph(graph, memorialId, maidenSurname) {
-  if (!maidenSurname || !graph?.edges?.length) return false
-  const sidId = sid(memorialId)
-  for (const e of graph.edges) {
-    if (isSpouseLikeGraphEdge(e.type)) continue
-    if (_edgeTypeLower(e.type) === 'custom') continue
-    const s = sid(e.source)
-    const t = sid(e.target)
-    if (s !== sidId && t !== sidId) continue
-    const other = s === sidId ? t : s
-    const node = graph.nodes.find((x) => sid(x.memorial_id) === other)
-    if (!node) continue
-    if (surnameOf(node.name) === maidenSurname) return true
-  }
-  return false
-}
+
 
 // Convert backend graph (nodes + edges) → relatives-tree format
 function toLibNodes(graphNodes, graphEdges) {
@@ -446,28 +384,7 @@ function GenTreeNodeCard({
 }
 
 // ── Connected-families mini card ───────────────────────────────────
-function ConnectedFamilyCard({ member, bridgeLabel, onClick }) {
-  const isDeceased = !!member.death_year
-  return (
-    <div
-      className={`ft-cf-card ${isDeceased ? 'ft-cf-card--deceased' : ''}`}
-      onClick={() => onClick(member.memorial_id)}
-      title={bridgeLabel}
-    >
-      <div className="ft-cf-avatar">
-        {(member.avatar_photo_id || member.cover_photo_id) ? (
-          <ApiMediaImage mediaId={(member.avatar_photo_id || member.cover_photo_id)} thumbnail={null} portrait={{ memorialId: member.memorial_id, kind: 'avatar', version: JSON.stringify(member.portrait_settings || {}) }} alt={member.name} className="ft-cf-img" />
-        ) : (
-          <span className="ft-cf-initials">{member.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}</span>
-        )}
-      </div>
-      <div className="ft-cf-name">{member.name.split(' ')[0]}</div>
-      {(member.birth_year || member.death_year) && (
-        <div className="ft-cf-years">{member.birth_year || '?'}{member.death_year ? `–${member.death_year}` : ''}</div>
-      )}
-    </div>
-  )
-}
+
 
 // ── Stub Node Card (locked family member) — GOT-style circle ──────
 function StubNodeCard({ memorial, left, top, nodeW, nodeH, onUnlock }) {
@@ -550,6 +467,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const [newPersonMatches, setNewPersonMatches] = useState([])
   const [sharedParentSiblingIds, setSharedParentSiblingIds] = useState([])
   const [sharedParentTarget, setSharedParentTarget] = useState(null)
+  const [siblingParentSuggestions, setSiblingParentSuggestions] = useState([])
   const [coParentSuggestion,setCoParentSuggestion] = useState(null)
   const skippedCoParents=useRef(new Set())
   const linkFormRef = useRef(null)
@@ -624,7 +542,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 })
   /** generations = ряды поколений + две линии (демо); pedigree = relatives-tree */
-  const [layoutMode, setLayoutMode] = useState('generations')
+  const [layoutMode] = useState('generations')
   /** Какие семьи сейчас видны в дереве (по фамилии корневого мемориала). Задаётся после загрузки данных. */
   const [visibleFamilies, setVisibleFamilies] = useState([])
   const scopeInitializedForRef = useRef(null)
@@ -683,21 +601,21 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       // Загрузка сохранённых позиций узлов из БД
       const layout = memRes?.data?.tree_layout_json
       setLayoutVersion(layout?.version || 1)
-      if (layout?.nodePositions && typeof layout.nodePositions === 'object') {
+      if (layout?.version === 3 && layout?.algorithm === 'family-blocks-v1' && layout?.nodePositions && typeof layout.nodePositions === 'object') {
         setNodeOverrides(layout.nodePositions)
       } else {
         setNodeOverrides({})
       }
     } catch (err) {
       console.error('Error loading family tree:', err)
-      setGraphData(null); setRelationships([])
+      if (!options.background) { setGraphData(null); setRelationships([]) }
       setFlowError(lang === 'en' ? 'Could not load the family tree. Reload the page to try again.' : 'Не удалось загрузить семейное дерево. Обновите страницу, чтобы повторить.')
     } finally {
       if (!options.background) setLoading(false)
     }
   }, [memorialId, setNodeOverrides, lang])
 
-  useEffect(() => { loadData() }, [loadData, refreshKey])
+  useEffect(() => { loadData({ background: scopeInitializedForRef.current === memorialId }) }, [loadData, refreshKey, memorialId])
 
   /** Граф, отфильтрованный по visibleFamilies. Чужие узлы на границе — stubs. */
   const displayGraph = useMemo(() => {
@@ -717,11 +635,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     [displayGraph?.nodes]
   )
 
-  const rootDisplayName = useMemo(() => {
-    if (!displayGraph?.nodes || displayGraph.root_id == null) return ''
-    const n = displayGraph.nodes.find((x) => x.memorial_id === displayGraph.root_id)
-    return n?.name || ''
-  }, [displayGraph])
+
 
   // relatives-tree layout
   const treeData = useMemo(() => {
@@ -756,7 +670,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
 
   // Позиции узлов: авто-layout + ручные корректировки пользователя
   const effectivePositions = useMemo(() => {
-    return resolveTreePositions(genLayout, nodeOverrides, layoutVersion === 2)
+    return resolveTreePositions(genLayout, nodeOverrides, layoutVersion >= 2)
   }, [genLayout, nodeOverrides, layoutVersion])
 
   // Refs для использования в mousemove без stale-closure
@@ -820,13 +734,26 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const toggleTreeFullscreen = useCallback(async () => {
     const el = familyTreeRootRef.current
     if (!el) return
-    try {
-      if (!document.fullscreenElement) await el.requestFullscreen()
-      else await document.exitFullscreen()
-    } catch (err) {
-      console.warn('Fullscreen:', err)
+    if (treeFullscreen) {
+      if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen()
+      else setTreeFullscreen(false)
+      return
     }
-  }, [])
+    if (!el.requestFullscreen) { setTreeFullscreen(true); return }
+    try { await el.requestFullscreen() }
+    catch { setTreeFullscreen(true) }
+  }, [treeFullscreen])
+
+  useEffect(() => {
+    if (!treeFullscreen) return undefined
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = event => {
+      if (event.key === 'Escape' && !document.fullscreenElement) setTreeFullscreen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', onKey) }
+  }, [treeFullscreen])
 
   // Re-fit tree when entering/exiting fullscreen — use bounding-box fit for accuracy
   useEffect(() => {
@@ -929,7 +856,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     saveTimerRef.current = setTimeout(async () => {
       try {
         await memorialsAPI.update(memorialId, {
-          tree_layout_json: { nodePositions: overrides, version: 2 }
+          tree_layout_json: { nodePositions: overrides, version: 3, algorithm: 'family-blocks-v1' }
         })
       } catch (err) {
         console.error('Failed to save tree layout:', err)
@@ -945,7 +872,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
         const overrides = nodeOverridesRef.current
         if (Object.keys(overrides).length > 0) {
           memorialsAPI.update(memorialId, {
-            tree_layout_json: { nodePositions: overrides, version: 2 }
+            tree_layout_json: { nodePositions: overrides, version: 3, algorithm: 'family-blocks-v1' }
           }).catch(() => {})
         }
       }
@@ -956,7 +883,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const handleNodeDragStart = useCallback((memId, e) => {
     if (drawingEdge) return  // не начинать drag узла во время рисования связи
     e.preventDefault()
-    setLayoutVersion(2)
+    setLayoutVersion(3)
     setNodeOverrides(Object.fromEntries(Object.entries(effectivePositions).map(([id, p]) => [id, {x:p.x,y:p.y}])))
     const pos = effectivePositions[String(memId)]
     if (!pos) return
@@ -979,6 +906,34 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     })
   }, [effectivePositions])
 
+  const suggestFamilyLinks = (fromId, toId, type, gender, name, pending, isPublic) => {
+    if (type === 'child') {
+      const parent = graphData?.nodes?.find(n => sid(n.memorial_id) === sid(fromId))
+      suggestFamilyLinks(toId, fromId, 'parent', parent?.gender, parent?.name, pending, isPublic)
+      return
+    }
+    const fromRelations = getSelectedFamilyRelations(graphData, fromId)
+    const toRelations = getSelectedFamilyRelations(graphData, toId)
+    if (type === 'parent') {
+      if (!pending) {
+        const candidates = fromRelations.filter(r => r.type === 'parent' && sid(r.node.memorial_id) !== sid(toId) && !toRelations.some(other => ['spouse','partner','ex_spouse'].includes(other.type) && sid(other.node.memorial_id) === sid(r.node.memorial_id))).map(r => r.node)
+        if (candidates.length) setCoParentSuggestion({ id: Number(toId), gender, name, candidates })
+      }
+      const siblings = fromRelations.filter(r => ['sibling','half_sibling'].includes(r.type) && !getSelectedFamilyRelations(graphData,r.node.memorial_id).some(p => p.type === 'parent' && sid(p.node.memorial_id) === sid(toId)))
+      setSharedParentSiblingIds([])
+      if (siblings.length) setSharedParentTarget({ id:Number(toId), gender, name, is_public:isPublic, siblings, pending })
+    }
+    if (type === 'sibling' && !pending) {
+      const knownParents = fromRelations.filter(r => r.type === 'parent')
+      const targetParents = toRelations.filter(r => r.type === 'parent')
+      const source = graphData?.nodes?.find(n => sid(n.memorial_id) === sid(fromId))
+      setSiblingParentSuggestions([
+        ...knownParents.filter(r => !targetParents.some(p => sid(p.node.memorial_id) === sid(r.node.memorial_id))).map(r => ({ parent:r.node, childId:Number(toId), childName:name, is_public:isPublic })),
+        ...targetParents.filter(r => !knownParents.some(p => sid(p.node.memorial_id) === sid(r.node.memorial_id))).map(r => ({ parent:r.node, childId:Number(fromId), childName:source?.name, is_public:isPublic })),
+      ])
+    }
+  }
+
   const handleCreatePendingEdge = async () => {
     if (!pendingEdge || pendingEdgeResult || !pendingEdgeForm.relationship_type || (pendingEdgeForm.relationship_type === 'custom' && !pendingEdgeForm.custom_label.trim())) return
     setSubmitting(true)
@@ -996,6 +951,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       const notice = response.data?.status === 'pending'
         ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
         : text('Родственная связь сохранена в обе стороны.', 'Relationship saved in both directions.')
+      suggestFamilyLinks(pendingEdge.fromId, pendingEdge.toId, pendingEdgeForm.relationship_type, pendingEdgeForm.target_gender, nodeMap[pendingEdge.toId]?.name, response.data?.status === 'pending', false)
       setPendingEdgeResult(notice)
       setFlowNotice(notice)
       await Promise.all([loadRequests(), loadData({ background: true })])
@@ -1044,7 +1000,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       let rawY = origY + dy
 
       // Snap lines: compare center of dragged node with other nodes' centers
-      const curPositions = nodeOverridesRef.current
+
       const allPositions = effectivePositionsRef.current
       if (allPositions && !e.altKey) {
         const nw = genLayoutRef.current?.nodeSize?.w ?? 90
@@ -1194,29 +1150,32 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       setFlowNotice(res.data?.status === 'pending'
         ? text('Запрос отправлен владельцу второй страницы. Связь появится после подтверждения.', 'Request sent to the other page owner. The relationship will appear after approval.')
         : text('Родственная связь сохранена в обе стороны.', 'Relationship saved in both directions.'))
-      if (formData.relationship_type === 'parent') {
-        if (res.data?.status !== 'pending') {
-          const otherParents = (graphData?.edges || []).flatMap(e => {
-            const type=String(e.type).toLowerCase()
-            if(type==='parent' && sid(e.source)===sid(sourceId))return [e.target]
-            if(type==='child' && sid(e.target)===sid(sourceId))return [e.source]
-            return []
-          }).filter(other => sid(other)!==sid(targetId) && !(graphData?.edges||[]).some(e=>['spouse','partner','ex_spouse'].includes(e.type)&&((sid(e.source)===sid(targetId)&&sid(e.target)===sid(other))||(sid(e.target)===sid(targetId)&&sid(e.source)===sid(other)))))
-          const candidates=[...new Set(otherParents.map(sid))].map(other=>(graphData?.nodes||[]).find(n=>sid(n.memorial_id)===other)).filter(Boolean)
-          if(candidates.length)setCoParentSuggestion({id:Number(targetId),gender:relationGender,name:flowMode==='new'?newPerson.name:availableMemorials.find(m=>sid(m.id)===sid(targetId))?.name,candidates})
-        }
-        const siblings = selectedRelations.filter(r => ['sibling', 'half_sibling'].includes(r.type))
-        if (siblings.length) setSharedParentTarget({
-          id: Number(targetId), gender: relationGender || null, is_public: relationPublic, siblings, pending: res.data?.status === 'pending',
-          name: flowMode === 'new' ? (createdPerson?.name || newPerson.name) : availableMemorials.find(m => sid(m.id) === sid(targetId))?.name,
-        })
-      }
+      suggestFamilyLinks(sourceId, targetId, formData.relationship_type, relationGender,
+        flowMode === 'new' ? newPerson.name : availableMemorials.find(m => sid(m.id) === sid(targetId))?.name,
+        res.data?.status === 'pending', relationPublic)
       setShowAddForm(false); setCreatedPerson(null)
-      await Promise.all([loadData(), loadRequests()])
+      await Promise.all([loadData({ background: true }), loadRequests()])
     } catch (err) {
       setFlowError(err.relationshipExplanation ? err.message : typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error'))
     } finally { setSubmitting(false) }
   }
+
+  const connectSiblingParent = async proposal => {
+    setSubmitting(true); setFlowError('')
+    try {
+      const res = await familyAPI.createRelationship(proposal.childId, { related_memorial_id: proposal.parent.memorial_id, relationship_type: 'parent', is_public: proposal.is_public })
+      setSiblingParentSuggestions(items => items.filter(item => item !== proposal))
+      setFlowNotice(res.data?.status === 'pending' ? text('Запрос отправлен владельцу страницы.', 'Request sent to the page owner.') : text('Связь с родителем сохранена.', 'Parent relationship saved.'))
+      await Promise.all([loadData({ background: true }), loadRequests()])
+    } catch (err) { setFlowError(typeof err.response?.data?.detail === 'string' ? err.response.data.detail : t('family.add_error')) }
+    finally { setSubmitting(false) }
+  }
+
+  useEffect(() => {
+    if (coParentSuggestion || sharedParentTarget || siblingParentSuggestions.length) {
+      familyTreeRootRef.current?.querySelector('.ft-request-inbox')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [coParentSuggestion, sharedParentTarget, siblingParentSuggestions])
 
   const shareSavedParent = async () => {
     if (!sharedParentTarget || !sharedParentSiblingIds.length) return
@@ -1235,12 +1194,12 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     setFlowNotice(text(`Для выбранных братьев/сестёр: сохранено ${saved}, ждёт подтверждения ${pending}, не удалось связать ${failedIds.length}. Исходная связь сохранена.`, `For selected siblings: saved ${saved}, awaiting approval ${pending}, could not link ${failedIds.length}. The original relationship is saved.`))
     setSharedParentSiblingIds(failedIds)
     if (!failedIds.length) setSharedParentTarget(null)
-    await Promise.all([loadData(), loadRequests()])
+    await Promise.all([loadData({ background: true }), loadRequests()])
     setSubmitting(false)
   }
 
   useEffect(()=>{
-    if(!sourceCanEdit || showAddForm || sharedParentTarget || coParentSuggestion)return
+    if(!sourceCanEdit || showAddForm || sharedParentTarget || coParentSuggestion || siblingParentSuggestions.length)return
     const parents=[...new Set((graphData?.edges||[]).flatMap(e=>e.type==='parent'&&sid(e.source)===sid(sourceId)?[sid(e.target)]:e.type==='child'&&sid(e.target)===sid(sourceId)?[sid(e.source)]:[]))]
     for(let i=0;i<parents.length;i++)for(let j=i+1;j<parents.length;j++){
       const a=parents[i],b=parents[j],key=[a,b].sort().join(':')
@@ -1249,7 +1208,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       const person=graphData.nodes.find(n=>sid(n.memorial_id)===b),other=graphData.nodes.find(n=>sid(n.memorial_id)===a)
       if(person&&other){setCoParentSuggestion({id:person.memorial_id,name:person.name,gender:person.gender||person.voice_gender,candidates:[other]});return}
     }
-  },[graphData,sourceId,sourceCanEdit,showAddForm,sharedParentTarget,coParentSuggestion])
+  },[graphData,sourceId,sourceCanEdit,showAddForm,sharedParentTarget,coParentSuggestion,siblingParentSuggestions])
   const skipCoParents=()=>{
     for(const node of coParentSuggestion?.candidates||[])skippedCoParents.current.add([sid(coParentSuggestion.id),sid(node.memorial_id)].sort().join(':'))
     setCoParentSuggestion(null)
@@ -1260,13 +1219,13 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
     try {
       const res=await familyAPI.createRelationship(coParentSuggestion.id,{related_memorial_id:otherId,relationship_type:'spouse',is_public:false})
       setFlowNotice(res.data?.status==='pending'?text('Запрос о браке отправлен владельцу второй страницы.','Marriage request sent to the other owner.'):text('Связь супругов сохранена.','Spouse relationship saved.'))
-      skipCoParents();await Promise.all([loadData(),loadRequests()])
+      skipCoParents();await Promise.all([loadData({ background: true }),loadRequests()])
     }catch(err){setFlowError(typeof err.response?.data?.detail==='string'?err.response.data.detail:text('Не удалось сохранить связь супругов. Попробуйте ещё раз.','Could not save the spouse relationship. Please retry.'))}finally{setSubmitting(false)}
   }
 
   const handleDelete = async (relId) => {
     if (!confirm(t('family.delete_confirm'))) return
-    try { await familyAPI.deleteRelationship(relId); await loadData() }
+    try { await familyAPI.deleteRelationship(relId); await loadData({ background: true }) }
     catch (err) { alert(err.response?.data?.detail || t('family.error')) }
   }
 
@@ -1274,7 +1233,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   if (loading) return <div className="loading">{t('family.loading')}</div>
 
   const showGenerations = !!genLayout
-  const showPedigree = false
+
   const hasTree = !!displayGraph?.nodes?.length && showGenerations
 
   return (
@@ -1353,7 +1312,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
       {/* Add form (editor/owner only) */}
       {flowError && <div className="ft-flow-error" role="alert">{flowError}{createdPerson && <span> {text('Страница уже создана. Повторите сохранение связи или откройте её:', 'The page has been created. Retry saving the relationship or open it:')} <button type="button" onClick={() => navigate(`/memorials/${createdPerson.id}`)}>{createdPerson.name}</button></span>}</div>}
       {flowNotice && <p className="ft-flow-notice" role="status">{flowNotice}</p>}
-      {coParentSuggestion && !sharedParentTarget && <section className="ft-request-inbox"><h3>{text('Уточните связь между родителями','Confirm the parents’ relationship')}</h3><p>{text('Общие дети не означают, что родители состояли в браке. Подтвердите только известную вам связь или пропустите.','Shared children do not imply marriage. Confirm only what you know or skip.')}</p>{coParentSuggestion.candidates.map(node=><div key={node.memorial_id}><p>{coParentSuggestion.name} — {kinshipName('spouse',coParentSuggestion,lang).toLowerCase()} {memorialName(node)}?</p><button type="button" className="btn btn-primary" disabled={submitting} onClick={()=>connectCoParents(node.memorial_id)}>{text('Да, связать как супругов','Yes, connect as spouses')}</button></div>)}<button type="button" className="btn" disabled={submitting} onClick={skipCoParents}>{text('Пропустить','Skip')}</button></section>}
+      {siblingParentSuggestions.length > 0 && <section className="ft-request-inbox" role="status"><h3>{text('Связать с теми же родителями?', 'Connect to the same parents?')}</h3>{siblingParentSuggestions.map(proposal => <div key={`${proposal.childId}:${proposal.parent.memorial_id}`}><p>{proposal.parent.name} — {text('также', 'also')} {kinshipName('parent', proposal.parent, lang).toLowerCase()} {proposal.childName}?</p><button type="button" className="btn btn-primary" disabled={submitting} onClick={() => connectSiblingParent(proposal)}>{text('Да, связать', 'Yes, connect')}</button></div>)}<button type="button" className="btn" disabled={submitting} onClick={() => setSiblingParentSuggestions([])}>{text('Пропустить', 'Skip')}</button></section>}
+      {coParentSuggestion && !sharedParentTarget && !siblingParentSuggestions.length && <section className="ft-request-inbox"><h3>{text('Уточните связь между родителями','Confirm the parents’ relationship')}</h3><p>{text('Общие дети не означают, что родители состояли в браке. Подтвердите только известную вам связь или пропустите.','Shared children do not imply marriage. Confirm only what you know or skip.')}</p>{coParentSuggestion.candidates.map(node=><div key={node.memorial_id}><p>{coParentSuggestion.name} — {kinshipName('spouse',coParentSuggestion,lang).toLowerCase()} {memorialName(node)}?</p><button type="button" className="btn btn-primary" disabled={submitting} onClick={()=>connectCoParents(node.memorial_id)}>{text('Да, связать как супругов','Yes, connect as spouses')}</button></div>)}<button type="button" className="btn" disabled={submitting} onClick={skipCoParents}>{text('Пропустить','Skip')}</button></section>}
       {sharedParentTarget && <section className="ft-request-inbox"><h3>{sharedParentTarget.pending ? text('Запрос отправлен. Уточните связь с братьями и сёстрами.', 'Request sent. Confirm relationships with siblings.') : `${text('Связь сохранена:', 'Relationship saved:')} ${kinshipName('parent', sharedParentTarget, lang).toLowerCase()}. ${text('Уточните связь с братьями и сёстрами.', 'Confirm relationships with siblings.')}`}</h3><p className="form-hint">{text('Отметьте только известные вам связи. Выбор не означает, что у этих людей оба родителя общие.', 'Select only relationships you know. This does not imply both parents are shared.')}</p>{sharedParentTarget.siblings.map(({ node }) => <label className="ft-checkbox" key={node.memorial_id}><input type="checkbox" disabled={submitting} checked={sharedParentSiblingIds.includes(node.memorial_id)} onChange={e => setSharedParentSiblingIds(ids => e.target.checked ? [...ids, node.memorial_id] : ids.filter(id => id !== node.memorial_id))} />{sharedParentTarget.name} — {`${text('также', 'also a')} ${kinshipName('parent',sharedParentTarget,lang).toLowerCase()}`} {node.name}?</label>)}<div className="ft-flow-modes"><button type="button" disabled={submitting || !sharedParentSiblingIds.length} onClick={shareSavedParent}>{submitting ? t('common.saving') : text('Связать выбранных', 'Link selected people')}</button><button type="button" disabled={submitting} onClick={() => setSharedParentTarget(null)}>{text('Пропустить', 'Skip')}</button></div></section>}
       {sourceCanEdit && showAddForm && (
         <form ref={linkFormRef} onSubmit={handleAdd} className="relationship-form ft-link-form">
@@ -1784,6 +1744,8 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             )}
           </div>
         )}
+
+        {canEdit && editMode && <button type="button" className="ft-auto-layout btn" onClick={() => { setNodeOverrides({}); saveLayout({}) }}>{text('Упорядочить дерево', 'Arrange tree')}</button>}
 
         {/* Nav controls — bottom-right, always visible during zoom */}
         <div className="ft-canvas-nav">

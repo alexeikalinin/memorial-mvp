@@ -87,3 +87,33 @@ test('two undated parents are adjacent, centered over daughters and stable acros
   for(const pair of [[3,5],[4,6]])assert.equal(Math.abs(p[pair[0]].x-p[pair[1]].x),130)
  }
 })
+
+test('expanded married sibling branches stay on their own side when every couple has children', () => {
+ const nodes=Array.from({length:14},(_,i)=>({memorial_id:i+1,name:`Person ${i+1}`}))
+ const edges=[
+  {source:1,target:2,type:'spouse'}, {source:1,target:3,type:'sibling'}, {source:3,target:4,type:'spouse'},
+  {source:2,target:5,type:'sibling'}, {source:5,target:6,type:'spouse'},
+  ...[1,3].map(source=>({source,target:7,type:'parent'})), ...[1,3].map(source=>({source,target:8,type:'parent'})),
+  ...[2,5].map(source=>({source,target:9,type:'parent'})), ...[2,5].map(source=>({source,target:10,type:'parent'})),
+  ...[1,2].map(source=>({source,target:11,type:'child'})), ...[3,4].map(source=>({source,target:12,type:'child'})),
+  ...[5,6].map(source=>({source,target:13,type:'child'})), {source:13,target:14,type:'sibling'},
+ ]
+ for(const ordered of [edges,[...edges].reverse()]){
+  const {positions:p}=buildGenerationLayout({root_id:1,_branchScope:true,nodes,edges:ordered},true)
+  assert.equal(Math.abs(p[1].x-p[2].x),130)
+  const left=p[1].x<p[2].x
+  assert.ok(left?p[3].x<p[1].x:p[3].x>p[1].x)
+  assert.ok(left?p[5].x>p[2].x:p[5].x<p[2].x)
+  assert.equal(Math.abs(p[3].x-p[4].x),130)
+  assert.equal(Math.abs(p[5].x-p[6].x),130)
+ }
+})
+
+test('overlapping child rails for unrelated families use separate lanes and retain family identity',()=>{
+ const positions={1:{x:0,y:0,cx:45},2:{x:130,y:0,cx:175},3:{x:260,y:0,cx:305},4:{x:390,y:0,cx:435},5:{x:0,y:236,cx:45},6:{x:390,y:236,cx:435},7:{x:130,y:236,cx:175},8:{x:260,y:236,cx:305}}
+ const edges=[{source:1,target:2,type:'spouse'},{source:3,target:4,type:'spouse'},...[1,2].flatMap(source=>[5,6].map(target=>({source,target,type:'child'}))),...[3,4].flatMap(source=>[7,8].map(target=>({source,target,type:'child'})))]
+ const {lines}=buildOrthogonalConnectors({positions,nodeSize:{w:90,h:180},edges,nodes:[]})
+ const rails=lines.filter(l=>l.y1===l.y2&&l.y1>180&&l.y1<236)
+ assert.equal(new Set(rails.map(l=>l.familyKey)).size,2)
+ assert.equal(new Set(rails.map(l=>l.y1)).size,2)
+})

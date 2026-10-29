@@ -22,3 +22,10 @@ test('case, duplicate inverse records, cycles and unrelated orphan nodes are saf
  const result=selectedKinshipLabels({...graph,edges:[...graph.edges,{source:1,target:5,type:'CHILD'},{source:9,target:5,type:'parent'}]},5)
  assert.equal(result[1],'Мать');assert.equal(result[9],undefined);assert.equal(result[5],undefined)
 })
+
+test('a parent’s spouse defaults to mother/father; explicit step links keep their meaning',()=>{
+ const graph={nodes:[{memorial_id:1},{memorial_id:2,gender:'male'},{memorial_id:3,gender:'female'}],edges:[{source:1,target:2,type:'parent'},{source:2,target:3,type:'spouse'}]}
+ assert.equal(selectedKinshipLabels(graph,1)[3],'Мать')
+ graph.edges.push({source:1,target:3,type:'step_parent'})
+ assert.equal(selectedKinshipLabels(graph,1)[3],'Мачеха')
+})

@@ -1,3 +1,5 @@
+30.10 family release prepared: familyblocks/background/followups/defaultmother/fullscreen+mobilefallback/version3 migration;37front+build+treeLint passed, mobile17tests/typecheck/lintpassed. Private28snapshot excluded. Deploy/liveQA pending. SESSION_LOG.md.
+
 21.10: запрошены backup/push/deploy перед macOS update. Проверки: backend354passed/9skipped, mobile17integration+15unit/typecheck/lint, frontend14tests/buildpassed. Production templateSECRET_KEY заменён случайным(skipdeploy); после релиза повторныйlogin. Подготовка удалённогоbackup/release идёт, deployment покаНЕподтверждён. SESSION_LOG.md.
 
 20.10 mobileGoogle: кнопка/systemOAuth+PKCEhandoff готовы; отдельный backendmobile_auth+5minDBattempts, прежнийwebcallback сохранён.15unit+17integration/typecheck/lint/doctor20/exports passed; Google synthetic, реальныйiPhoneGoogle ещёНЕпроверен. Нужныbackenddeployment+developmentbuild(ExpoGoнеподходит). ПриоритетiPhone12ProMax, затемiPadAir; QRprep pending. SESSION_LOG.md,mobile/README.md.

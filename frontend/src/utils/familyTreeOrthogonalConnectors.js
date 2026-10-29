@@ -29,7 +29,7 @@ function normalizedSegmentKey(ln) {
   const y2 = Math.round(ln.y2 * 10) / 10
   const p1 = `${x1},${y1}`
   const p2 = `${x2},${y2}`
-  return p1 < p2 ? `${p1}|${p2}` : `${p2}|${p1}`
+  return p1 < p2 ? `${ln.familyKey || ""}:${p1}|${p2}` : `${ln.familyKey || ""}:${p2}|${p1}`
 }
 
 /** Один отрезок на геометрию (без учёта stroke — убирает полные дубли от прошлых правок). */
@@ -76,8 +76,9 @@ function mergeVerticalCollinear(lines) {
 
   const byX = new Map()
   for (const it of items) {
-    if (!byX.has(it.xb)) byX.set(it.xb, [])
-    byX.get(it.xb).push(it)
+    const key = `${it.ln.familyKey || ""}:${it.xb}`
+    if (!byX.has(key)) byX.set(key, [])
+    byX.get(key).push(it)
   }
 
   const merged = []
@@ -135,8 +136,9 @@ function mergeHorizontalCollinear(lines) {
 
   const byY = new Map()
   for (const it of items) {
-    if (!byY.has(it.yb)) byY.set(it.yb, [])
-    byY.get(it.yb).push(it)
+    const key = `${it.ln.familyKey || ""}:${it.yb}`
+    if (!byY.has(key)) byY.set(key, [])
+    byY.get(key).push(it)
   }
 
   const merged = []
@@ -341,7 +343,7 @@ function marriageBarY(nodeY, nw) {
  * Если у супругов разный y (разные подстроки/колонки), раньше y брался только у нижней карточки — линия «висела».
  * Теперь: общая горизонталь на средней высоте между «уровнями» брака на каждой карточке + короткие вертикали к ней.
  */
-function marriageBarInGap(pa, pb, nw, nh) {
+function marriageBarInGap(pa, pb, nw) {
   const left = pa.x <= pb.x ? pa : pb
   const right = pa.x <= pb.x ? pb : pa
   const yMarL = marriageBarY(left.y, nw)
@@ -416,7 +418,7 @@ export function buildOrthogonalConnectors({
   }
   const _spousePartnersOf = {}
   for (const [a, b] of spousePairs) {
-    ;(_spousePartnersOf[a] = _spousePartnersOf[a] || []).push(b)
+    (_spousePartnersOf[a] = _spousePartnersOf[a] || []).push(b)
     ;(_spousePartnersOf[b] = _spousePartnersOf[b] || []).push(a)
   }
   const autoExSet = new Set()
@@ -446,10 +448,27 @@ export function buildOrthogonalConnectors({
 
   const lines = []
   let lineKey = 0
+  let familyKey = ''
+  const rails = new Map()
+  // Reserve a separate horizontal lane for each family in the same gap.
+  const reserveRail = (key, parentBottom, childTop, preferred) => {
+    if (rails.has(key)) return rails.get(key)
+    let y = preferred
+    const low = parentBottom + 4, high = childTop - 4
+    if (high > low) {
+      const occupied = [...rails.values()]
+      const candidates = [preferred]
+      for (let step=1; step<=Math.ceil((high-low)/6); step++) candidates.push(preferred-step*6,preferred+step*6)
+      y = candidates.find(candidate => candidate >= low && candidate <= high && occupied.every(other => Math.abs(other-candidate) >= 5)) ?? preferred
+    }
+    rails.set(key,y)
+    return y
+  }
   const addLine = (x1, y1, x2, y2, opts = {}) => {
     if (Math.abs(x1 - x2) < 0.5 && Math.abs(y1 - y2) < 0.5) return
     lines.push({
       key: `ol-${lineKey++}`,
+      familyKey,
       x1,
       y1,
       x2,
@@ -476,6 +495,7 @@ export function buildOrthogonalConnectors({
 
   // ── 1) Горизонталь между супругами — только в зазоре между карточками (не через центры)
   for (const [a, b] of spousePairs) {
+    familyKey = `couple:${[a,b].sort().join(":")}`
     const pa = positions[a]
     const pb = positions[b]
     if (!pa || !pb) continue
@@ -505,6 +525,7 @@ export function buildOrthogonalConnectors({
   // ── 2) Пары родителей — общий ствол к общим детям
   // ex-spouse pairs get a slightly reddish line so lines from different marriages are visually distinct
   for (const [p1, p2, edgeTypePair] of spousePairs) {
+    familyKey = `couple:${[p1,p2].sort().join(":")}`
     const set1 = childrenOf[p1]
     const set2 = childrenOf[p2]
     if (!set1 || !set2) continue
@@ -540,10 +561,7 @@ export function buildOrthogonalConnectors({
       Math.max(10, gapParentsToChildren > 4 ? gapParentsToChildren * 0.38 : (ROW_H - nh) * 0.42)
     )
     const yForkCandidate = minChildY - forkMargin
-    const yFork =
-      yForkCandidate > ySpouse + 2
-        ? yForkCandidate
-        : (ySpouse + minChildY) / 2
+    const yFork = reserveRail(familyKey, parentBottom, minChildY, yForkCandidate > ySpouse + 2 ? yForkCandidate : (ySpouse + minChildY) / 2)
 
     shared.forEach((c) => coveredPc.add(`${p1}|${c}`))
     shared.forEach((c) => coveredPc.add(`${p2}|${c}`))
@@ -571,6 +589,7 @@ export function buildOrthogonalConnectors({
 
   // ── 3) Оставшиеся parent → child (один родитель в данных, пасынок и т.д.)
   for (const { parent, child } of parentEdges) {
+    familyKey = `parent:${parent}`
     const key = `${parent}|${child}`
     if (coveredPc.has(key)) continue
     const pp = positions[parent]
@@ -588,8 +607,7 @@ export function buildOrthogonalConnectors({
       14,
       Math.max(3, verticalGap > 2 ? verticalGap * 0.14 : (ROW_H - nh) * 0.12)
     )
-    const yH =
-      y1 > y0 + gapBelowParent ? Math.min(y0 + gapBelowParent, y1 - 0.5) : (y0 + y1) / 2
+    const yH = reserveRail(familyKey, y0, y1, y1 > y0 + gapBelowParent ? Math.min(y0 + gapBelowParent, y1 - 0.5) : (y0 + y1) / 2)
 
     if (Math.abs(x0 - x1) < 3) {
       addLine(x0, y0, x1, y1, { stroke: 'rgba(196,168,130,0.45)', strokeWidth: 1.35 })
@@ -614,7 +632,8 @@ export function buildOrthogonalConnectors({
     if (!pa || !pb) continue
     // A bracket above the cards stays attached at both ends, even after a
     // manual move. Direct horizontal lines can pass through a spouse's avatar.
-    const ySib = Math.min(pa.y, pb.y) - 20
+    familyKey = `siblings:${[a,b].sort().join(':')}`
+    const ySib = reserveRail(familyKey, Math.min(pa.y,pb.y)-48, Math.min(pa.y,pb.y), Math.min(pa.y, pb.y) - 20)
     const opts = { stroke: 'rgba(196,168,130,0.85)', strokeWidth: 2.2, strokeDasharray: '8 5' }
     addLine(pa.cx, pa.y, pa.cx, ySib, opts)
     addLine(pa.cx, ySib, pb.cx, ySib, opts)
@@ -658,7 +677,7 @@ export function getSpouseMarriageMarkers({
   for (const n of nodes || []) idToDeathYear.set(String(n.memorial_id), n.death_year || null)
   const spousePartnersOf = {}  // id → [partner ids]
   for (const [a, b] of spousePairs) {
-    ;(spousePartnersOf[a] = spousePartnersOf[a] || []).push(b)
+    (spousePartnersOf[a] = spousePartnersOf[a] || []).push(b)
     ;(spousePartnersOf[b] = spousePartnersOf[b] || []).push(a)
   }
   const autoExSet = new Set()  // "min|max" keys for pairs that get 💔

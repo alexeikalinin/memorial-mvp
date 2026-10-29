@@ -1,3 +1,5 @@
+- 30.10: выпуск исправлений семейного дерева подготовлен отдельно:37tests/build/targetlintpassed; переход со старых координат и fullscreen390fallback проверены. Публикация/liveQA в процессе. Нативное приложение остаётся development-stage,17mobiletests/typecheck/lintpassed, physical device QA/store release pending. SESSION_LOG.md.
+
 # Roadmap — vspomin.ai → Product
 
 > Обновлено: 2026-04-20  
