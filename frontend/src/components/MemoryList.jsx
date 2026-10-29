@@ -248,15 +248,15 @@ function MemoryList({ memorialId, memorialName, onReload, canEdit = true, canMod
       </div>
 
       {canModerate && <FeaturedAnswers memorialId={memorialId} owner onLoaded={setSavedAnswers} />}
-      {canModerate && <details className="featured-answers"><summary>{lang === 'en' ? 'Family archive tools' : 'Работа с семейным архивом'}</summary>
-        <p>{lang === 'en' ? 'Find references to relatives and add linked memories to their pages where you have editing access.' : 'Найти упоминания родственников и добавить связанные воспоминания на их страницы, где у вас есть право редактирования.'}</p>
+      {canModerate && <details className="featured-answers"><summary>{lang === 'en' ? 'Linked family memories' : 'Связанные воспоминания семьи'}</summary>
+        <p>{lang === 'en' ? 'This is an archive operation, separate from the conversation’s family search. It analyses this memorial’s memories, finds mentions of linked relatives and creates related entries on their pages where you can edit. It changes the archive only after confirmation.' : 'Это работа с архивом, а не переключатель поиска в чате. Операция анализирует воспоминания этого мемориала, находит упоминания связанных родственников и создаёт связанные записи на их страницах, где вы можете редактировать. Записи создаются после подтверждения.'}</p>
         <button type="button" className="btn btn-secondary" disabled={syncing} onClick={async () => {
           if (!confirm(t('chat.sync_confirm'))) return
           setSyncing(true)
           try { const { data } = await aiAPI.syncFamilyMemories(memorialId); alert(t('chat.sync_done', { created: String(data.created), skipped: String(data.skipped) })); await loadMemories(debouncedQuery); onReload?.() }
           catch (err) { alert(err.response?.data?.detail || t('chat.sync_error')) }
           finally { setSyncing(false) }
-        }}>{syncing ? t('chat.syncing') : (lang === 'en' ? 'Link family memories' : 'Связать воспоминания семьи')}</button>
+        }}>{syncing ? t('chat.syncing') : (lang === 'en' ? 'Find and create linked memories' : 'Найти и создать связанные воспоминания')}</button>
       </details>}
 
       {canModerate && showPending && <section className="pending-memories" aria-label={t('memoryList.pending_requests')}>

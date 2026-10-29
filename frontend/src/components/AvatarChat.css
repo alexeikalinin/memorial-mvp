@@ -1499,3 +1499,6 @@
 .avatar-chat > .avatar-panel .avatar-panel-footer { position: static; flex: 0 0 auto; padding: 12px 16px; background: #ede4d8; }
 .avatar-chat > .avatar-panel .avatar-panel-name { color: #443b32; white-space: normal; }
 .avatar-chat > .avatar-panel .avatar-status-text { color: #776758; }
+
+.chat-guest-preparation{flex-shrink:0;padding:12px 18px;background:#f2e8d9;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5;}
+.chat-guest-preparation p{margin:5px 0}.chat-guest-preparation a{display:inline-block;margin-right:16px;color:var(--accent-dark,#805535);}

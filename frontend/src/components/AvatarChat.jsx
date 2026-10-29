@@ -122,9 +122,12 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
   }, [isFullscreen])
 
   const [includeFamilyMemories, setIncludeFamilyMemories] = useState(false)
+  const prepareForGuests=!textOnly && canManageVoice && new URLSearchParams(location.search).get('prepareGuests')==='1'
 
   // Family RAG is a paid feature (Plus / Pro). Free users see a locked toggle.
   const hasFamilyRag = user && (user.is_admin || user.is_demo || ['plus', 'pro', 'lifetime_pro'].includes(user.subscription_plan))
+  useEffect(()=>{setIncludeFamilyMemories(Boolean(hasFamilyRag))},[hasFamilyRag,user?.id])
+  const useFamilySearch=!textOnly && Boolean(hasFamilyRag) && includeFamilyMemories && !prepareForGuests
   const [uploadingVoice, setUploadingVoice] = useState(false)
   const [voiceVersions, setVoiceVersions] = useState([])
   const [versionPreviews, setVersionPreviews] = useState({})
@@ -444,7 +447,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       const detail = err.response?.data?.detail || t('chat.voice_clone_error')
       const guestLimit = status === 401 && detail?.code === 'guest_chat_limit'
       if (status === 402 || status === 429 || guestLimit) {
-        if (!includeFamilyMemories) setQuotaBlocked(true)
+        if (!useFamilySearch) setQuotaBlocked(true)
         alert(`⚠️ ${detail}`)
       } else {
         alert(detail)
@@ -494,7 +497,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
         speech_style: speechStyle,
         pronunciations,
         include_audio: !textOnly && includeAudio,
-        include_family_memories: !textOnly && includeFamilyMemories,
+        include_family_memories: useFamilySearch,
         invite_token: inviteToken || undefined,
         language: lang,
       })
@@ -512,7 +515,7 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       const assistantMessage = {
         role: 'assistant',
         question: userMessage,
-        familyContext: !textOnly && includeFamilyMemories,
+        familyContext: useFamilySearch,
         pronunciations,
         text: response.data.answer,
         audioUrl,
@@ -537,8 +540,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
       // 402 = paid feature — show upgrade prompt, not a generic error
       const guestLimit = status === 401 && detail?.code === 'guest_chat_limit'
       if (status === 402 || status === 429 || guestLimit) {
-        if (!includeFamilyMemories) setQuotaBlocked(true)
-        if (includeFamilyMemories) {
+        if (!useFamilySearch) setQuotaBlocked(true)
+        if (useFamilySearch) {
           setIncludeFamilyMemories(false)
         }
         const errorMessage = {
@@ -607,6 +610,8 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
 
       {/* ─── Right: Chat panel ───────────────────────────────────── */}
       <div className="chat-panel">
+      {prepareForGuests && <aside className="chat-guest-preparation" aria-label={localText('Подготовка ответа для гостей','Prepare a guest answer')}><strong>{localText('Подготовка ответа для гостей','Preparing a guest answer')}</strong><p>{localText('Задайте вопрос. Для аудио включите «Голос» перед отправкой. Здесь используются только воспоминания этого мемориала; ответ ещё не опубликован.', 'Ask a question. Turn on Voice before sending if you want audio. Only this memorial’s memories are used; nothing is published yet.')}</p><Link to={`/memorials/${memorialId}?tab=memories`}>{localText('Выбрать сохранённые ответы для гостей','Choose saved answers for guests')}</Link><Link to={`/memorials/${memorialId}?tab=chat`}>{localText('Вернуться к обычному разговору','Return to a normal conversation')}</Link></aside>}
+
       <div className="chat-header chat-header--minimal">
         <div className="chat-header-title">
           <h2 title={memorialName || undefined}>{memorialName || t('chat.title_default')}</h2>
@@ -655,8 +660,10 @@ function AvatarChat({ memorialId, coverPhotoId, memorialName, onMessageSent, por
           </section>}
           {!textOnly && <section className="chat-settings-section">
             <h4>{localText('Семейные воспоминания', 'Family memories')}</h4>
-            <label className="chat-settings-check"><input type="checkbox" checked={includeFamilyMemories} disabled={!hasFamilyRag} onChange={e => setIncludeFamilyMemories(e.target.checked)} />{t('chat.family_label')}</label>
+            <label className="chat-settings-check"><input type="checkbox" checked={useFamilySearch} disabled={!hasFamilyRag || prepareForGuests} onChange={e => setIncludeFamilyMemories(e.target.checked)} />{t('chat.family_label')}</label>
             <p>{localText('Искать ответы также в воспоминаниях связанных родственников, к которым у вас есть доступ.', 'Also search memories of linked relatives that you can access.')}</p>
+            <p>{localText('Это поиск для текущего разговора: он не копирует воспоминания на другие страницы.', 'This searches the current conversation context; it does not copy memories to other pages.')}</p>
+            {prepareForGuests && <p>{localText('В режиме подготовки для гостей используются только воспоминания этого мемориала.', 'Guest preparation uses only this memorial’s memories.')}</p>}
             {!hasFamilyRag && <p>{t('chat.family_locked_tooltip')}</p>}
           </section>}
           <section className="chat-settings-section chat-settings-usage"><h4>{localText('Использование', 'Usage')}</h4>
