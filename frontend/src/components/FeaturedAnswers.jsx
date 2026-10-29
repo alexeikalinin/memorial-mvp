@@ -1,4 +1,4 @@
-import {Link} from 'react-router-dom'
+import {Link,useLocation} from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import apiClient from '../api/client'
 import ChatAudioPlayer from './ChatAudioPlayer'
@@ -7,6 +7,8 @@ import './FeaturedAnswers.css'
 
 export default function FeaturedAnswers({ memorialId, owner = false, inviteToken, question, onLoaded, memoryId }) {
   const { lang } = useLanguage()
+  const location=useLocation()
+  const routeKey=`${location.pathname}${location.search}`
   const en = lang === 'en'
   const [rows, setRows] = useState([])
   const [open, setOpen] = useState(Boolean(memoryId))
@@ -45,7 +47,7 @@ export default function FeaturedAnswers({ memorialId, owner = false, inviteToken
       .then(r => { if (active) { setRows(r.data); onLoaded?.(r.data) } })
       .catch(e => { if (active && owner) setError(e.response?.data?.detail || (en ? 'Could not load saved answers' : 'Не удалось загрузить сохранённые ответы')) })
     return () => { active = false }
-  }, [memorialId, owner, inviteToken, question, en, onLoaded])
+  }, [memorialId, owner, inviteToken, question, en, onLoaded, routeKey])
   const update = async (row, publish, variant = row.audio_variant, position = row.position ?? rows.filter(r => r.featured).length) => {
     setBusy(true); setError('')
     try {
