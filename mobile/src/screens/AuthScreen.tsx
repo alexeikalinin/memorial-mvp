@@ -125,8 +125,8 @@ export function AuthScreen({
       <Text style={s.small}>Восстановить пароль можно на сайте.</Text>
       <Button
         secondary
-        label="Открыть сайт"
-        onPress={() => void Linking.openURL(api.websiteUrl("/login"))}
+        label="Восстановить пароль на сайте"
+        onPress={() => void Linking.openURL(api.websiteUrl("/forgot-password"))}
       />
       {__DEV__ && (
         <Button

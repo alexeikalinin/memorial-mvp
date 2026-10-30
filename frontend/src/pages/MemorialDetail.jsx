@@ -1,3 +1,4 @@
+import { fullMemorialDate } from '../utils/memorialDates'
 import {memorialName} from '../utils/memorialName'
 import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect } from 'react'
@@ -447,9 +448,8 @@ function MemorialDetail() {
     return <div className="error-message">{error || t('memorial.not_found')}</div>
   }
 
-  const formatYear = (d) => d ? new Date(d).getFullYear() : null
-  const birthYear = formatYear(memorial.birth_date)
-  const deathYear = formatYear(memorial.death_date)
+    const birthDateLabel = fullMemorialDate(memorial.birth_date)
+  const deathDateLabel = fullMemorialDate(memorial.death_date)
 
   const role = memorial.current_user_role  // 'owner' | 'editor' | 'viewer' | null
   const isOwner = role === 'owner'
@@ -482,11 +482,11 @@ function MemorialDetail() {
           <div className="memorial-hero-info">
             <div className="memorial-hero-text">
               <h1 className="memorial-hero-name">{memorialName(memorial)}</h1>
-              {(birthYear || deathYear) && (
+              {(birthDateLabel || deathDateLabel) && (
                 <p className="memorial-hero-dates">
-                  {birthYear && birthYear}
-                  {birthYear && deathYear && ' — '}
-                  {deathYear && deathYear}
+                  {birthDateLabel && birthDateLabel}
+                  {birthDateLabel && deathDateLabel && ' — '}
+                  {deathDateLabel && deathDateLabel}
                 </p>
               )}
             </div>
@@ -550,8 +550,8 @@ function MemorialDetail() {
             </div></details>
           </div>
         </div>
-        {!showAppearance && <MemorialComposition name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
-      {showAppearance && canEdit && <MemorialAppearanceEditor name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
+        {!showAppearance && <MemorialComposition name={memorialName(memorial)} dates={[birthDateLabel, deathDateLabel].filter(Boolean).join('\n')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />}
+      {showAppearance && canEdit && <MemorialAppearanceEditor name={memorialName(memorial)} dates={[birthDateLabel, deathDateLabel].filter(Boolean).join('\n')} settings={memorial.appearance_settings} lang={lang} onClose={() => setShowAppearance(false)} onSave={async appearance_settings => { const response = await memorialsAPI.update(id, { appearance_settings }); setMemorial(previous => ({ ...previous, appearance_settings: response.data.appearance_settings })) }} />}</div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />
       {showSignsJournal && isActualOwner && <MemorialSignsJournal memorialId={id} lang={lang} onClose={() => setShowSignsJournal(false)} />}

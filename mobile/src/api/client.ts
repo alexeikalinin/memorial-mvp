@@ -7,6 +7,8 @@ export interface User {
   full_name?: string | null;
   email_verified?: boolean;
   subscription_plan?: string;
+  is_admin?: boolean;
+  is_demo?: boolean;
 }
 export interface Memory {
   id: number;
@@ -30,6 +32,8 @@ export interface Memorial {
   id: number;
   name: string;
   description?: string | null;
+  gender?: "male" | "female" | null;
+  maiden_name?: string | null;
   birth_date?: string | null;
   death_date?: string | null;
   owner_id?: number;
@@ -310,6 +314,8 @@ export class MobileApi {
   createMemorial(data: {
     name: string;
     description?: string;
+    maiden_name?: string | null;
+    gender?: "male" | "female" | null;
     birth_date?: string | null;
     death_date?: string | null;
     is_public?: boolean;
@@ -324,7 +330,7 @@ export class MobileApi {
     data: Partial<
       Pick<
         Memorial,
-        "name" | "description" | "is_public" | "birth_date" | "death_date"
+        "name" | "description" | "is_public" | "birth_date" | "death_date" | "maiden_name" | "gender"
       >
     >,
   ) {
@@ -344,6 +350,12 @@ export class MobileApi {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+  updateMemory(id:number, memoryId:number, data:{title?:string;content:string;event_date?:string|null}) {
+    return this.request<Memory>(`/memorials/${id}/memories/${memoryId}`,{method:"PATCH",body:JSON.stringify(data)});
+  }
+  deleteMemory(id:number,memoryId:number) {
+    return this.request<void>(`/memorials/${id}/memories/${memoryId}`,{method:"DELETE"});
   }
   submitPublicMemory(
     id: number,
@@ -393,19 +405,31 @@ export class MobileApi {
       method: "POST",
     });
   }
-  invite(id: number) {
-    return this.request<{ invite_url: string; token: string }>(
-      `/invites/memorials/${id}/create`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          expires_days: 30,
-          permissions: { add_memories: true, chat: true, view_media: true },
-        }),
-      },
-    );
+  savedAnswers(id: number) {
+    return this.request<SavedAnswer[]>(`/featured-answers/memorials/${id}/saved`);
   }
-  chat(id: number, question: string, includeAudio = false) {
+  guestAnswers(id: number) {
+    return this.request<GuestAnswer[]>(`/featured-answers/memorials/${id}/guest`);
+  }
+  revoiceAnswer(id: number, row: SavedAnswer) {
+    return this.request<ChatResponse & {audio_preview_id?: string; answer_cache_id?: number}>(`/ai/avatar/chat`, {method: "POST", body: JSON.stringify({...(row.audio_variants.find(v => v.key === row.audio_variant)?.generation_settings || row.generation_settings), memorial_id: id, question: row.question, include_audio: true, regenerate_audio: true, include_family_memories: false})});
+  }
+  chooseAudio(cacheId: number, previewId: string, accept: boolean) {
+    return this.request(`/ai/avatar/audio-preview/${cacheId}/${previewId}`, {method: "POST", body: JSON.stringify({accept})});
+  }
+  selectAnswer(cacheId: number, publish: boolean, audioVariant: string | null, position: number) {
+    return this.request(`/featured-answers/saved/${cacheId}`, {method: "PUT", body: JSON.stringify({publish_to_guests: publish, audio_variant: audioVariant, position})});
+  }
+  revokeInvite(token: string) {
+    return this.request<void>(`/invites/${encodeURIComponent(token)}`, {method: "DELETE"});
+  }
+  async invite(id: number, chat = false) {
+    type Invite = {invite_url: string; token: string; expires_at?: string | null; permissions: {add_memories?: boolean; chat?: boolean; view_media?: boolean}};
+    const current = await this.request<Invite[]>(`/invites/memorials/${id}/list`);
+    const existing = current.find(item => (!item.expires_at || new Date(item.expires_at) > new Date()) && item.permissions.add_memories === true && Boolean(item.permissions.chat) === chat && !item.permissions.view_media);
+    return existing || this.request<Invite>(`/invites/memorials/${id}/create`, {method: "POST", body: JSON.stringify({expires_days: 30, permissions: {add_memories: true, chat, view_media: false}})});
+  }
+  chat(id: number, question: string, includeAudio = false, includeFamily = false) {
     return this.request<ChatResponse>(
       `/ai/avatar/chat?guest_id=${this.guestId}`,
       {
@@ -414,6 +438,7 @@ export class MobileApi {
           memorial_id: id,
           question,
           include_audio: includeAudio,
+          include_family_memories: includeFamily,
           use_persona: true,
           language: "ru",
         }),
@@ -435,9 +460,14 @@ export class MobileApi {
     return this.websiteUrl(`/m/${id}`);
   }
   websiteUrl(path = "") {
-    return `${(process.env.EXPO_PUBLIC_WEB_URL || "https://vspomin.ai/app").replace(/\/$/, "")}${path}`;
+    let base = (process.env.EXPO_PUBLIC_WEB_URL || "https://vspomin.ai/app").replace(/\/$/, "");
+    if (base === "https://vspomin.ai" || base === "https://www.vspomin.ai") base += "/app";
+    return `${base}${path}`;
   }
   resolveMediaUrl(url: string) {
     return new URL(url, this.baseUrl + "/").toString();
   }
 }
+
+export interface GuestAnswer { id: number; question: string; answer: string; audio_url: string | null }
+export interface SavedAnswer { generation_settings: Record<string, unknown>; cache_id: number; question: string; answer: string; sources: string[]; source_memory_ids: number[]; audio_variants: {key: string; audio_url: string; generation_settings?: Record<string, unknown>}[]; featured: boolean; stale: boolean; audio_variant: string | null; position: number | null }

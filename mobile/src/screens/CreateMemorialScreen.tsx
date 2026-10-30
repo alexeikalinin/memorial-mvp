@@ -1,3 +1,5 @@
+import { personDates } from "../utils/personDates";
+import { GenderSelect } from "../components/GenderSelect";
 import React, { useState } from "react";
 import { Switch, Text, View } from "react-native";
 import type { MobileApi } from "../api/client";
@@ -13,7 +15,9 @@ export function CreateMemorialScreen({
   onBack: () => void;
 }) {
   const [name, setName] = useState(""),
+    [gender, setGender] = useState<"male"|"female"|null>(null),
     [description, setDescription] = useState(""),
+    [maiden, setMaiden] = useState(""),
     [birth, setBirth] = useState(""),
     [death, setDeath] = useState(""),
     [isPublic, setPublic] = useState(false),
@@ -23,21 +27,12 @@ export function CreateMemorialScreen({
     setError("");
     setBusy(true);
     try {
-      for (const date of [birth, death])
-        if (
-          date &&
-          (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-            Number.isNaN(Date.parse(date)) ||
-            new Date(date).toISOString().slice(0, 10) !== date)
-        )
-          throw Error("Укажите существующую дату в формате ГГГГ-ММ-ДД.");
-      if (birth && death && birth > death)
-        throw Error("Дата ухода не может быть раньше даты рождения.");
       const person = await api.createMemorial({
         name: name.trim(),
         description: description.trim() || undefined,
-        birth_date: birth ? `${birth}T00:00:00` : undefined,
-        death_date: death ? `${death}T00:00:00` : undefined,
+        gender,
+        maiden_name: gender === "female" ? maiden.trim() || null : null,
+        ...personDates(birth, death),
         is_public: isPublic,
       });
       onCreated(person.id);
@@ -54,6 +49,8 @@ export function CreateMemorialScreen({
         Достаточно имени. Фотографии и воспоминания можно добавить позже.
       </Text>
       <Field label="Имя и фамилия" value={name} onChangeText={setName} />
+      <GenderSelect value={gender} onChange={setGender} />
+      {gender === "female" ? <Field label="Девичья фамилия · необязательно" value={maiden} onChangeText={setMaiden} /> : null}
       <Field
         label="О человеке"
         multiline
@@ -72,6 +69,7 @@ export function CreateMemorialScreen({
         value={death}
         onChangeText={setDeath}
       />
+      <Text style={s.small}>Для живого человека оставьте дату ухода пустой.</Text>
       <View style={[s.card, s.row]}>
         <View style={s.grow}>
           <Text style={s.text}>Публичная страница</Text>

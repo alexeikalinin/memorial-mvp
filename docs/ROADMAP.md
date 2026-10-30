@@ -1,3 +1,5 @@
+- 30.10 — **Локально проверено, публикация готовится**: шапка без разрыва слов, полные даты под портретом, treeCSSzoom; мобильные даты/фамилия/редактирование воспоминаний/familydefault/refresh+Expo58patch. Front39/build, mobile20/typecheck/lint, doctor20/20, iOS/Android code exports Node24, synthetic RNWeb scenarios passed. Device/Xcode/signing/stores не готовы; mobile/TEST_ON_MAC.md, docs/MOBILE_READINESS_2026-10-30.md.
+
 - 30.10: выпуск исправлений семейного дерева подготовлен отдельно:37tests/build/targetlintpassed; переход со старых координат и fullscreen390fallback проверены. Публикация/liveQA в процессе. Нативное приложение остаётся development-stage,17mobiletests/typecheck/lintpassed, physical device QA/store release pending. SESSION_LOG.md.
 
 # Roadmap — vspomin.ai → Product

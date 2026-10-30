@@ -1,16 +1,23 @@
+import { useSession } from "../auth/session";
 import React, { useState } from "react";
 import { Switch, Text, View } from "react-native";
 import type { MobileApi } from "../api/client";
 import { Button, ErrorText, Field, message } from "./UI";
+import { FeaturedAnswers } from "./FeaturedAnswers";
 import { AudioPlayer } from "./MediaPlayers";
 import { styles as s, colors } from "../theme";
 type Entry = {
   role: "question" | "answer";
   text: string;
+  question?: string;
   sources?: string[];
   audio?: string | null;
 };
-export function ChatPanel({ api, id }: { api: MobileApi; id: number }) {
+export function ChatPanel({ api, id, owner = false }: { api: MobileApi; id: number; owner?: boolean }) {
+  const {user} = useSession();
+  const familyAvailable = Boolean(user && (user.is_admin || user.is_demo || ["plus","pro","lifetime_pro"].includes(user.subscription_plan || "")));
+  const [familyChoice, setFamily] = useState<boolean|null>(null);
+  const family = familyChoice ?? familyAvailable;
   const [question, setQuestion] = useState(""),
     [entries, setEntries] = useState<Entry[]>([]),
     [busy, setBusy] = useState(false),
@@ -24,12 +31,13 @@ export function ChatPanel({ api, id }: { api: MobileApi; id: number }) {
     setEntries((old) => [...old, { role: "question", text }]);
     setQuestion("");
     try {
-      const result = await api.chat(id, text, audio);
+      const result = await api.chat(id, text, audio, familyAvailable && family);
       setEntries((old) => [
         ...old,
         {
           role: "answer",
           text: result.answer,
+          question: text,
           sources: result.sources,
           audio: result.audio_url
             ? api.resolveMediaUrl(result.audio_url)
@@ -52,7 +60,8 @@ export function ChatPanel({ api, id }: { api: MobileApi; id: number }) {
         AI отвечает по сохранённым воспоминаниям. Это не сам человек; ответы
         можно сверять с источниками.
       </Text>
-      <View style={[s.card, s.row]}>
+      {!owner ? <FeaturedAnswers api={api} id={id} /> : null}
+      {owner ? <View style={[s.card, s.row]}>
         <Text style={[s.text, s.grow]}>Озвучивать ответы</Text>
         <Switch
           value={audio}
@@ -60,7 +69,8 @@ export function ChatPanel({ api, id }: { api: MobileApi; id: number }) {
           accessibilityLabel="Озвучивать ответы"
           trackColor={{ true: colors.primary }}
         />
-      </View>
+      </View> : null}
+      {familyAvailable ? <View style={[s.card,s.row]}><Text style={[s.text,s.grow]}>Искать в семейных воспоминаниях</Text><Switch accessibilityLabel="Искать в семейных воспоминаниях" value={family} onValueChange={setFamily} trackColor={{true:colors.primary}} /></View> : null}
       {entries.map((entry, index) => (
         <View
           key={index}
@@ -78,7 +88,7 @@ export function ChatPanel({ api, id }: { api: MobileApi; id: number }) {
           <Text selectable style={s.text}>
             {entry.text}
           </Text>
-          {entry.audio && <AudioPlayer source={{ uri: entry.audio }} />}
+          {entry.audio ? <AudioPlayer source={{ uri: entry.audio }} /> : null}
           {!!entry.sources?.length && (
             <View style={{ gap: 8 }}>
               <Text style={[s.small, { fontWeight: "600" }]}>Источники</Text>

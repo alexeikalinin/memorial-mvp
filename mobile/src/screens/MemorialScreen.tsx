@@ -1,3 +1,5 @@
+import { personDates, fullLifeDates } from "../utils/personDates";
+import { GenderSelect } from "../components/GenderSelect";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AppState,
@@ -9,6 +11,7 @@ import {
   Switch,
   BackHandler,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -19,6 +22,7 @@ import type {
   Memory,
   Relationship,
   TimelineItem,
+  SavedAnswer,
 } from "../api/client";
 import {
   Button,
@@ -28,11 +32,11 @@ import {
   Row,
   Screen,
   message,
-  years,
 } from "../components/UI";
 import { MemoryComposer } from "../components/MemoryComposer";
 import { PublicMemoryComposer } from "../components/PublicMemoryComposer";
 import { MediaItem } from "../components/MediaPlayers";
+import { FeaturedAnswers } from "../components/FeaturedAnswers";
 import { ChatPanel } from "../components/ChatPanel";
 import { styles as s, colors } from "../theme";
 type Section =
@@ -85,14 +89,26 @@ function MemorialContent({
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [compose, setCompose] = useState(false),
+    [editingMemory, setEditingMemory] = useState<Memory|null>(null),
+    [deleteMemoryId, setDeleteMemoryId] = useState<number|null>(null),
+    [sectionLoading, setSectionLoading] = useState(false),
     [uploading, setUploading] = useState(false),
     [relatives, setRelatives] = useState<Relationship[]>([]),
     [timeline, setTimeline] = useState<TimelineItem[]>([]),
     [pending, setPending] = useState<Memory[]>([]),
     [editName, setEditName] = useState(""),
     [editDescription, setEditDescription] = useState(""),
-    [saving, setSaving] = useState(false);
+    [editBirth, setEditBirth] = useState(""),
+    [editDeath, setEditDeath] = useState(""),
+    [editGender, setEditGender] = useState<"male"|"female"|null>(null),
+    [editMaiden, setEditMaiden] = useState(""),
+    [saving, setSaving] = useState(false),
+    [inviteChat, setInviteChat] = useState(false),
+    [lastInvite, setLastInvite] = useState<{token: string; url: string} | null>(null),
+    [savedAnswers, setSavedAnswers] = useState<SavedAnswer[]>([]),
+    [audioMemoryId, setAudioMemoryId] = useState<number | null>(null);
   const generation = useRef(0);
+  const sectionRequest = useRef(0);
   const editDirty = useRef(false);
   const load = useCallback(async () => {
     const request = ++generation.current;
@@ -104,6 +120,10 @@ function MemorialContent({
       if (!editDirty.current) {
         setEditName(result.name);
         setEditDescription(result.description || "");
+        setEditBirth(result.birth_date?.slice(0,10) || "");
+        setEditDeath(result.death_date?.slice(0,10) || "");
+        setEditGender(result.gender || null);
+        setEditMaiden(result.maiden_name || "");
       }
       setError("");
     } catch (e) {
@@ -138,16 +158,14 @@ function MemorialContent({
     return () => sub.remove();
   }, [back, section, compose]);
   const open = async (next: Section) => {
-    setSection(next);
-    setError("");
+    const request=++sectionRequest.current;
+    setSection(next);setError("");setSectionLoading(true);
     try {
-      if (next === "relatives") setRelatives(await api.getRelationships(id));
-      if (next === "timeline") setTimeline(await api.getTimeline(id));
-      if (next === "manage" && person?.current_user_role === "owner")
-        setPending(await api.getPendingMemories(id));
-    } catch (e) {
-      setError(message(e));
-    }
+      if(next==="relatives"){const data=await api.getRelationships(id);if(request===sectionRequest.current)setRelatives(data)}
+      if(next==="timeline"){const data=await api.getTimeline(id);if(request===sectionRequest.current)setTimeline(data)}
+      if((next==="manage"||next==="memories")&&person?.current_user_role==="owner"){const data=await api.getPendingMemories(id);if(request===sectionRequest.current)setPending(data)}
+    }catch(e){if(request===sectionRequest.current)setError(message(e))}
+    finally{if(request===sectionRequest.current)setSectionLoading(false)}
   };
   const upload = async (kind: "photos" | "file") => {
     setError("");
@@ -209,6 +227,9 @@ function MemorialContent({
       await api.updateMemorial(id, {
         name: editName.trim(),
         description: editDescription.trim(),
+        gender: editGender,
+        maiden_name: editGender === "female" ? editMaiden.trim() || null : null,
+        ...personDates(editBirth, editDeath),
       });
       editDirty.current = false;
       await load();
@@ -234,8 +255,10 @@ function MemorialContent({
   const invite = async () => {
     try {
       setSaving(true);
-      const result = await api.invite(id);
-      await Share.share({ message: result.invite_url });
+      const result = await api.invite(id, inviteChat);
+      const url = api.websiteUrl(`/contribute/${result.token}`);
+      setLastInvite({token: result.token, url});
+      await Share.share({ message: url });
     } catch (e) {
       setError(message(e));
     } finally {
@@ -249,16 +272,17 @@ function MemorialContent({
       }
       onBack={back}
       refreshing={loading}
-      onRefresh={() => void load()}
+      onRefresh={() => void load().then(()=>open(section))}
     >
       <ErrorText error={error} />
+      {(sectionLoading || (!person && loading)) ? <ActivityIndicator accessibilityLabel="Загрузка страницы" color={colors.primary} /> : null}
       {!person && !loading && (
         <Button
           secondary
           label="Повторить загрузку"
           onPress={() => void load()}
         />
-      )}{" "}
+      )}
       {person && (
         <>
           {section === "overview" && (
@@ -283,16 +307,16 @@ function MemorialContent({
                   </View>
                 )}
                 <Text style={[s.title, { textAlign: "center" }]}>
-                  {person.name}
+                  {person.name}{person.maiden_name ? ` (${person.maiden_name})` : ""}
                 </Text>
-                <Text style={s.subtitle}>{years(person)}</Text>
+                <Text style={s.subtitle}>{fullLifeDates(person)}</Text>
                 <Text style={s.small}>
                   {person.is_public
                     ? "Публичная страница"
                     : "Семейная страница · доступ ограничен"}
                 </Text>
               </View>
-              {person.description && (
+              {Boolean(person.description) && (
                 <Text selectable style={s.text}>
                   {person.description}
                 </Text>
@@ -301,6 +325,7 @@ function MemorialContent({
                 <Button
                   label="+ Добавить воспоминание"
                   onPress={() => {
+                    setEditingMemory(null);
                     setCompose(true);
                     setSection("memories");
                   }}
@@ -348,7 +373,7 @@ function MemorialContent({
                     void Share.share({ message: api.publicPageUrl(id) })
                   }
                 />
-              )}{" "}
+              )}
               {canEdit && (
                 <Button
                   secondary
@@ -360,17 +385,30 @@ function MemorialContent({
           )}
           {section === "memories" && (
             <>
+              {person.current_user_role === "owner" ? <>
+                <View style={[s.card, s.row]}><Text style={[s.text, s.grow]}>Пригласить также в чат · 5 вопросов</Text><Switch value={inviteChat} onValueChange={setInviteChat} accessibilityLabel="Чат по приглашению" /></View>
+                <Button secondary label="Пригласить поделиться воспоминаниями" busy={saving} onPress={() => void invite()} />
+                <Text style={s.small}>По ссылке можно добавлять истории без регистрации. Новые воспоминания требуют одобрения.</Text>
+                {lastInvite ? <View style={s.card}><Text selectable style={s.small}>{lastInvite.url}</Text><Button secondary label="Отключить эту ссылку" disabled={saving} onPress={() => {
+                  setSaving(true); void api.revokeInvite(lastInvite.token).then(() => setLastInvite(null)).catch(e => setError(message(e))).finally(() => setSaving(false));
+                }} /></View> : null}
+                <Button secondary label={`На рассмотрении · ${pending.length}`} onPress={() => void open("manage")} />
+                <FeaturedAnswers api={api} id={id} owner onLoaded={setSavedAnswers} />
+              </> : null}
               <Text style={s.title}>Воспоминания</Text>
               {compose ? (
                 canEdit ? (
                   <MemoryComposer
+                    key={editingMemory?.id || "new"}
                     api={api}
                     id={id}
+                    initialMemory={editingMemory || undefined}
                     onSaved={() => {
+                      setEditingMemory(null);
                       setCompose(false);
                       void load();
                     }}
-                    onCancel={() => setCompose(false)}
+                    onCancel={() => {setCompose(false);setEditingMemory(null)}}
                   />
                 ) : (
                   <PublicMemoryComposer
@@ -390,10 +428,10 @@ function MemorialContent({
                 (canEdit || person.is_public) && (
                   <Button
                     label="+ Сохранить историю"
-                    onPress={() => setCompose(true)}
+                    onPress={() => {setEditingMemory(null);setCompose(true)}}
                   />
                 )
-              )}{" "}
+              )}
               {canRead && !person.memories?.length && (
                 <Empty
                   title="История начинается с малого"
@@ -403,10 +441,17 @@ function MemorialContent({
               {canRead &&
                 person.memories?.map((memory) => (
                   <View key={memory.id} style={s.card}>
-                    {memory.title && <Text style={s.h2}>{memory.title}</Text>}
+                    {Boolean(memory.title) && <Text style={s.h2}>{memory.title}</Text>}
+                    {person.current_user_role === "owner" && savedAnswers.some(row => !row.stale && row.audio_variants.length > 0 && row.source_memory_ids.includes(memory.id)) ? <Button secondary label={`Есть озвученные ответы · ${savedAnswers.filter(row => !row.stale && row.audio_variants.length > 0 && row.source_memory_ids.includes(memory.id)).length}`} onPress={() => setAudioMemoryId(audioMemoryId === memory.id ? null : memory.id)} /> : null}
+                    {person.current_user_role === "owner" && audioMemoryId === memory.id ? <FeaturedAnswers api={api} id={id} owner memoryId={memory.id} /> : null}
                     <Text selectable style={s.text}>
                       {memory.content}
                     </Text>
+                    {canEdit ? <>
+                      <Button secondary label="Редактировать воспоминание" onPress={() => {setEditingMemory(memory);setCompose(true)}} />
+                      <Button secondary label="Удалить воспоминание" onPress={() => setDeleteMemoryId(memory.id)} />
+                      {deleteMemoryId === memory.id ? <View style={s.card}><Text style={s.text}>Удалить эту историю окончательно? Восстановить её через приложение нельзя.</Text><Button label="Подтвердить удаление" busy={saving} onPress={() => {setSaving(true);void api.deleteMemory(id,memory.id).then(()=>{setDeleteMemoryId(null);return load()}).catch(e=>setError(message(e))).finally(()=>setSaving(false))}} /><Button secondary label="Оставить воспоминание" disabled={saving} onPress={()=>setDeleteMemoryId(null)} /></View> : null}
+                    </> : null}
                     <Text style={s.small}>
                       {memory.contributor_name || "Семейное воспоминание"}
                       {memory.event_date
@@ -446,7 +491,7 @@ function MemorialContent({
               ))}
             </>
           )}
-          {section === "chat" && <ChatPanel api={api} id={id} />}
+          {section === "chat" && <ChatPanel api={api} id={id} owner={person.current_user_role === "owner"} />}
           {section === "relatives" && canRead && (
             <>
               <Text style={s.title}>Родные</Text>
@@ -454,7 +499,7 @@ function MemorialContent({
                 Ближайшие связи без сложной схемы. Выберите человека, чтобы
                 открыть его страницу.
               </Text>
-              {!relatives.length && (
+              {!sectionLoading && !relatives.length && (
                 <Empty
                   title="Семейные связи"
                   body="Связи, добавленные на сайте, появятся здесь. Управление деревом пока доступно в веб-версии."
@@ -474,6 +519,8 @@ function MemorialContent({
                   onPress={() => onOpen(relative.related_memorial_id)}
                 />
               ))}
+              <Button secondary label="Открыть семейное дерево на сайте" onPress={() => void Linking.openURL(api.websiteUrl(`/memorials/${id}?tab=family`))} />
+              <Text style={s.small}>Полная схема и редактирование дерева доступны на сайте. В браузере может потребоваться вход.</Text>
               <Text style={s.small}>
                 Родственная связь не открывает доступ к закрытым материалам.
               </Text>
@@ -482,7 +529,7 @@ function MemorialContent({
           {section === "timeline" && canRead && (
             <>
               <Text style={s.title}>История жизни</Text>
-              {!timeline.length && (
+              {!sectionLoading && !timeline.length && (
                 <Empty
                   title="События жизни"
                   body="Добавьте дату события к воспоминанию — оно появится в хронологии."
@@ -497,7 +544,7 @@ function MemorialContent({
                   ]}
                 >
                   <Text style={s.small}>{event.date_label || event.year}</Text>
-                  {event.title && <Text style={s.h2}>{event.title}</Text>}
+                  {Boolean(event.title) && <Text style={s.h2}>{event.title}</Text>}
                   <Text selectable style={s.text}>
                     {event.content}
                   </Text>
@@ -525,6 +572,11 @@ function MemorialContent({
                   setEditDescription(value);
                 }}
               />
+              <GenderSelect value={editGender} onChange={value => {editDirty.current=true;setEditGender(value)}} />
+              {editGender === "female" ? <Field label="Девичья фамилия · необязательно" value={editMaiden} onChangeText={value => {editDirty.current=true;setEditMaiden(value)}} /> : null}
+              <Field label="Дата рождения · необязательно" placeholder="ГГГГ-ММ-ДД" value={editBirth} onChangeText={value => {editDirty.current=true;setEditBirth(value)}} />
+              <Field label="Дата ухода · если применимо" placeholder="ГГГГ-ММ-ДД" value={editDeath} onChangeText={value => {editDirty.current=true;setEditDeath(value)}} />
+              <Text style={s.small}>Для живого человека оставьте дату ухода пустой. Чтобы убрать неверную дату, очистите поле.</Text>
               <Button
                 label="Сохранить изменения"
                 busy={saving}

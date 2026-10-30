@@ -1,3 +1,15 @@
+## 30.10.2026 — шапка, zoom и готовность мобильного клиента (локально проверено, выпуск готовится)
+
+Запрос: убрать разрывы слов имени, полные даты под портретом, увеличить панель; улучшить чёткость дерева и проверить RN-приложение перед запуском на обновлённом Mac.
+
+Веб: calendar-safe DD.MM.YYYY, даты закреплены по центру портрета; ширина/кегль имени рассчитываются по длиннейшему слову, без overflow-wrap:anywhere; резерв места для имени/дат, слоган/цветы ниже, панель растёт. Безопасные сохранённые позиции декора сохранены; позиция даты намеренно обязательная. Исправлен отдельный legacy media-query на 768px. Tree: CSS zoom с fallback transform, удалены постоянные GPU-layer hints, pan округлён к device pixel. Фото по-прежнему ограничены исходником; headless before/after не доказывает численное улучшение резкости.
+
+Мобильное: production API default, maiden/token search, gender/maiden/full dates create/edit, calendar/order validation, clear dates, memory edit/delete with confirmation, family context default for eligible users, tree website link, refresh current section, loaders, password reset website link, guest-selection flag hidden; tablet max width. Совместимые патчи Expo58/RN0.88.1. Инструкция mobile/TEST_ON_MAC.md, подробности docs/MOBILE_READINESS_2026-10-30.md.
+
+Проверено: frontend39 tests и production build; target lint0errors (11existingwarnings). Mobile20 tests/typecheck/lint; Expo doctor20/20; Hermes exports iOS/Android на Node24.22.0. Synthetic readiness API temporaryDB (без prod/paidAI): browser-smoke полностью прошёл, создание/синхронизация воспоминаний в обе стороны, uploadphoto→web, chat/logout/320px. Readiness screens320/390/430/768; owner/public hero320/390/430/768/1280. Actions: invaliddates, PATCHdates/maiden, moderation, memoryedit/canceldelete, audio/video play, family request flag. Tree28 zoom0.464→0.51/pan/fit/editDone passed. Screens artifacts/mobile-readiness-2026-10-30 and family-tree-zoom-2026-10-30.
+
+Ограничения: нет полногоXcode — нативная компиляция/установка/permissions/GoogleOAuth/QR/SecureStore на устройстве НЕ подтверждены. Экспорт не IPA/APK. Store/signing/EAS отсутствуют. npm audit upstreamCLI zod3/deepmerge advisories, auto fix предлагает несовместимый Expo51, не применён. Полная схема родных открывается на сайте. Релиз готовится из /tmp/vspomin-family-release-20261030, rootdirty целиком не пушить, private28snapshot не публиковать.
+
 30.10 live follow-up:418008d Vercel/RailwaySUCCESS, APIhealth200. Live319 все28позиции совпали с локальным эталоном; Edit/Done/fullscreendesktop и сохранение+reload прошли. Mobile390×844 все28, canvas542px, Done/nav вviewport, overflowнет. Обнаружены compositor-артефакты оформления исходного мемориала поверх CSSfullscreen; добавлено скрытие фоновогоhero/signs только на время fullscreen. Buildpassed; follow-up публикация/liveQA выполняются.
 
 ## 30.10.2026 — выпуск семейного дерева: семейные блоки и фоновое сохранение

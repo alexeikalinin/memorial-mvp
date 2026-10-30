@@ -1,3 +1,4 @@
+import { treeViewportStyle } from '../utils/familyTreeViewport.js'
 import {memorialName} from '../utils/memorialName'
 import RelationshipTypeSelect from './RelationshipTypeSelect'
 import {choiceLabel,prepareRelativeGender} from '../utils/relationshipChoices'
@@ -44,7 +45,7 @@ const VIEW_PAD = 24
 /** Показывать иконку брака между супругами при достаточном приближении */
 
 
-/** Дробный CSS scale() растягивает текст по субпикселям — округляем масштаб. */
+/** Bound wheel/pinch scale and avoid accumulating floating-point noise. */
 function snapTreeScale(s) {
   const clamped = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s))
   return Math.round(clamped * 1000) / 1000
@@ -446,6 +447,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
   const { t, lang } = useLanguage()
   const text = (ru, en) => lang === 'en' ? en : ru
   const canvasRef = useRef(null)
+  const [layoutZoom] = useState(() => typeof CSS !== 'undefined' && CSS.supports('zoom', '1'))
 
   const [graphData,    setGraphData]    = useState(null)
   const [relationships, setRelationships] = useState([])
@@ -1425,8 +1427,7 @@ export default function FamilyTree({ memorialId, canEdit = false, refreshKey }) 
             style={{
               width: canvasW,
               height: canvasH,
-              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) translateZ(0)`,
-              transformOrigin: '0 0',
+              ...treeViewportStyle(transform, layoutZoom, window.devicePixelRatio),
             }}
           >
             {/* Connectors — library gives us axis-aligned segments as [x1,y1,x2,y2] grid coords */}

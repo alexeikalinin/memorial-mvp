@@ -35,7 +35,7 @@ export function Screen({
         style={s.grow}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {(title || onBack || right) && (
+        {Boolean(title || onBack || right) && (
           <View
             style={[
               s.row,
@@ -177,7 +177,7 @@ export function Row({
     >
       <View style={s.grow}>
         <Text style={[s.text, { fontWeight: "600" }]}>{title}</Text>
-        {body && <Text style={s.small}>{body}</Text>}
+        {body ? <Text style={s.small}>{body}</Text> : null}
       </View>
       <Text style={{ fontSize: 24, color: colors.primary }}>{icon}</Text>
     </Pressable>

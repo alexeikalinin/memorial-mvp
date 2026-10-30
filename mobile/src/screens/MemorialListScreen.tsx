@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import {
   AppState,
+  ActivityIndicator,
   Image,
   Pressable,
   Text,
@@ -94,20 +95,21 @@ export function MemorialListScreen({
       </Text>
       <Button label="+ Создать страницу" onPress={onCreate} />
       <TextInput
-        accessibilityLabel="Поиск по имени"
+        accessibilityLabel="Поиск по имени или девичьей фамилии"
         style={s.input}
-        placeholder="Найти близкого по имени"
+        placeholder="Имя или девичья фамилия"
         value={search}
         onChangeText={setSearch}
       />
       <ErrorText error={error} />
-      {error && (
+      {loading && !items.length ? <ActivityIndicator accessibilityLabel="Загрузка страниц" color={colors.primary} /> : null}
+      {Boolean(error) && (
         <Button
           secondary
           label="Повторить загрузку"
           onPress={() => void load()}
         />
-      )}{" "}
+      )}
       {!loading && !error && !items.length && (
         <Empty
           title="Первая семейная история"
@@ -116,7 +118,7 @@ export function MemorialListScreen({
       )}
       {items
         .filter((item) =>
-          item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+          search.trim().toLocaleLowerCase().split(/\s+/).every(token => `${item.name} ${item.maiden_name || ""}`.toLocaleLowerCase().includes(token)),
         )
         .map((item) => (
           <Pressable
@@ -147,7 +149,7 @@ export function MemorialListScreen({
               </View>
             )}
             <View style={s.grow}>
-              <Text style={[s.h2, { fontSize: 23 }]}>{item.name}</Text>
+              <Text style={[s.h2, { fontSize: 23 }]}>{item.name}{item.maiden_name ? ` (${item.maiden_name})` : ""}</Text>
               <Text style={s.small}>{years(item)}</Text>
               <Text style={s.small}>{item.current_user_role === 'owner' ? 'Владелец' : item.current_user_role === 'editor' ? 'Редактор' : 'Просмотр'}</Text>
               <Text numberOfLines={2} style={s.small}>

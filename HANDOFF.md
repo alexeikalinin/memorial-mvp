@@ -1,3 +1,5 @@
+30.10 LOCAL readiness: hero full dates under portrait/no midword wraps/responsive decoration; tree CSS zoom; mobile date/maiden/editMemory/family/refresh fixes+Expo patch. Front39/build, mobile20/typecheck/lint, doctor20/20, Node24 iOS/Android exports, synthetic browser flows/screens/actions passed. Native Xcode/device/signing pending. mobile/TEST_ON_MAC.md + docs/MOBILE_READINESS_2026-10-30.md. Release preparing isolated /tmp/vspomin-family-release-20261030; private28fixture MUST NOT publish; rootdirty do not push wholesale. See SESSION_LOG.md.
+
 30.10 family release prepared: familyblocks/background/followups/defaultmother/fullscreen+mobilefallback/version3 migration;37front+build+treeLint passed, mobile17tests/typecheck/lintpassed. Private28snapshot excluded. Deploy/liveQA pending. SESSION_LOG.md.
 
 21.10: запрошены backup/push/deploy перед macOS update. Проверки: backend354passed/9skipped, mobile17integration+15unit/typecheck/lint, frontend14tests/buildpassed. Production templateSECRET_KEY заменён случайным(skipdeploy); после релиза повторныйlogin. Подготовка удалённогоbackup/release идёт, deployment покаНЕподтверждён. SESSION_LOG.md.

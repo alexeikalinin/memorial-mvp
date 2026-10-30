@@ -474,7 +474,6 @@ p.tree-controls-hint.ft-gen-hint {
   position: absolute;
   top: 0;
   left: 0;
-  will-change: transform;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -614,11 +613,9 @@ p.tree-controls-hint.ft-gen-hint {
   display: block;
 }
 
-/* Крупная миниатюра + слой GPU — меньше «мыла» при зуме canvas */
+/* Keep image resampling at its current rendered size, without a forced GPU layer. */
 .ft-node-img--hidpi {
   image-rendering: auto;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
 }
 
 .ft-node-initials {

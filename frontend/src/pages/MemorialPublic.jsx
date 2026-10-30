@@ -1,3 +1,4 @@
+import { fullMemorialDate } from '../utils/memorialDates'
 import {memorialName} from '../utils/memorialName'
 import PrivateMemorialAccess from '../components/PrivateMemorialAccess'
 import { useState, useEffect, useRef } from 'react'
@@ -197,8 +198,8 @@ function MemorialPublic() {
 
   const publicChatUrl = `${window.location.origin}${import.meta.env.BASE_URL}m/${id}#chat`
 
-  const birthYear = memorial.birth_date ? new Date(memorial.birth_date).getFullYear() : null
-  const deathYear = memorial.death_date ? new Date(memorial.death_date).getFullYear() : null
+  const birthDateLabel = fullMemorialDate(memorial.birth_date)
+  const deathDateLabel = fullMemorialDate(memorial.death_date)
 
   const chatLimitReached = !user && anonCount >= ANON_CHAT_LIMIT
 
@@ -233,15 +234,15 @@ function MemorialPublic() {
         </div>
         <div className="public-hero-info">
           <h1 className="public-name">{memorialName(memorial)}</h1>
-          {(birthYear || deathYear) && (
+          {(birthDateLabel || deathDateLabel) && (
             <p className="public-years">
-              {birthYear && <span>{birthYear}</span>}
-              {birthYear && deathYear && <span className="years-dash"> — </span>}
-              {deathYear && <span>{deathYear}</span>}
+              {birthDateLabel && <span>{birthDateLabel}</span>}
+              {birthDateLabel && deathDateLabel && <span className="years-dash"> — </span>}
+              {deathDateLabel && <span>{deathDateLabel}</span>}
             </p>
           )}
         </div>
-        <MemorialComposition name={memorialName(memorial)} dates={[birthYear, deathYear].filter(Boolean).join(' — ')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
+        <MemorialComposition name={memorialName(memorial)} dates={[birthDateLabel, deathDateLabel].filter(Boolean).join('\n')} settings={memorial.appearance_settings} lang={lang} candleLit={!!signs?.candle_lit} contributors={signs?.items?.filter(e => e.kind === 'candle') || []} />
       </div>
 
       <MemorialSigns memorialId={id} lang={lang} onChange={setSigns} />

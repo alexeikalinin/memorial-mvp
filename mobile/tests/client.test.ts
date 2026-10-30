@@ -169,3 +169,28 @@ test("late request after logout cannot return previous account private data", as
   resolve(json({ name: "Private old data" }));
   await assert.rejects(request, (e: ApiError) => e.status === 401);
 });
+
+test("contribution invites default to add-only and reuse a valid matching link", async () => {
+  const calls: {url: string; init: RequestInit}[] = [];
+  const existing = {token: "existing", invite_url: "https://vspomin.ai/app/contribute/existing", permissions: {add_memories: true, chat: false, view_media: false}};
+  const {api} = harness((url, init) => {calls.push({url,init});return url.endsWith('/list') ? json([existing]) : json({token: 'new', ...JSON.parse(String(init.body))});});
+  assert.equal((await api.invite(7)).token, 'existing');
+  assert.equal(calls.length, 1);
+  await api.invite(7, true);
+  const create = calls.find(call => call.url.endsWith('/create'))!;
+  assert.deepEqual(JSON.parse(String(create.init.body)), {expires_days: 30, permissions: {add_memories: true, chat: true, view_media: false}});
+});
+
+test('memory edits/deletion and family chat use existing server contracts',async()=>{
+ const calls:{url:string;init:RequestInit}[]=[];
+ const {api}=harness((url,init)=>{calls.push({url,init});return json({id:12})});
+ await api.updateMemory(7,12,{content:'Исправленная история',event_date:null});
+ await api.deleteMemory(7,12);
+ await api.chat(7,'Кто был в семье?',true,true);
+ assert.equal(calls[0].init.method,'PATCH');
+ assert.equal(calls[0].url,'https://api.example/api/v1/memorials/7/memories/12');
+ assert.equal(JSON.parse(calls[0].init.body as string).event_date,null);
+ assert.equal(calls[1].init.method,'DELETE');
+ const body=JSON.parse(calls[2].init.body as string);
+ assert.equal(body.include_family_memories,true);assert.equal(body.include_audio,true);
+});

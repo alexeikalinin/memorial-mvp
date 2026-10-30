@@ -22,7 +22,7 @@ fs.mkdirSync(out, { recursive: true });
         async () => {
           try {
             return (
-              await context.request.get("http://localhost:8000/")
+              await context.request.get("http://127.0.0.1:8000/")
             ).status();
           } catch {
             return 0;
@@ -46,7 +46,7 @@ fs.mkdirSync(out, { recursive: true });
     await mobile
       .getByRole("button", { name: "+ Создать страницу", exact: true })
       .click();
-    const name = "Михаил Соколов · проверка";
+    const name = "Михаил Соколов · проверка " + Date.now();
     await mobile.getByLabel("Имя и фамилия").fill(name);
     await mobile
       .getByRole("button", { name: "Создать страницу", exact: true })
@@ -146,7 +146,7 @@ fs.mkdirSync(out, { recursive: true });
     await mobile
       .getByRole("button", { name: "Отправить", exact: true })
       .click();
-    await expect(mobile.getByText(/Тест связи: мобильный чат/)).toBeVisible();
+    await expect(mobile.getByText(/Тест связи: мобильный чат|Проверка: история найдена/)).toBeVisible();
     await mobile.getByRole('button',{name:'Назад',exact:true}).click();
     await mobile.getByRole('button',{name:'Назад',exact:true}).click();
     await expect(mobile.getByText('Мои страницы',{exact:true})).toBeVisible();

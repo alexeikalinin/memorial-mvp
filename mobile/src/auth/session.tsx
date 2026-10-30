@@ -3,9 +3,11 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { MobileApi, User, ApiError } from "../api/client";
 
+import { DEFAULT_API_URL } from "../config";
+
 const sessionKey = "vspomin.mobile.session";
 const endpoint =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
 // Browser preview uses memory only; native builds use Keychain/Keystore.
 let webToken: string | null = null;
 export const api: MobileApi = new MobileApi(endpoint, {

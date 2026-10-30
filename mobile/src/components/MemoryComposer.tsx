@@ -7,7 +7,7 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from "expo-audio";
-import type { MobileApi } from "../api/client";
+import type { MobileApi, Memory } from "../api/client";
 import { Button, ErrorText, Field, message } from "./UI";
 import { AudioPlayer } from "./MediaPlayers";
 import { recordingToWav } from "../media/recording";
@@ -16,16 +16,18 @@ export function MemoryComposer({
   api,
   id,
   onSaved,
+  initialMemory,
   onCancel,
 }: {
   api: MobileApi;
   id: number;
   onSaved: () => void;
+  initialMemory?: Memory;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useState(""),
-    [content, setContent] = useState(""),
-    [date, setDate] = useState(""),
+  const [title, setTitle] = useState(initialMemory?.title || ""),
+    [content, setContent] = useState(initialMemory?.content || ""),
+    [date, setDate] = useState(initialMemory?.event_date?.slice(0,10) || ""),
     [uri, setUri] = useState<string | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -81,11 +83,13 @@ export function MemoryComposer({
         setUri(null);
       }
       if (content.trim()) {
-        await api.createMemory(id, {
+        const data = {
           title: title.trim() || undefined,
           content: content.trim(),
-          event_date: date ? `${date}T00:00:00` : undefined,
-        });
+          event_date: date ? `${date}T00:00:00` : null,
+        };
+        if(initialMemory)await api.updateMemory(id,initialMemory.id,data);
+        else await api.createMemory(id,{...data,event_date:data.event_date || undefined});
       }
       onSaved();
     } catch (e) {
@@ -96,7 +100,7 @@ export function MemoryComposer({
   };
   return (
     <View style={s.card}>
-      <Text style={s.h2}>Сохранить историю</Text>
+      <Text style={s.h2}>{initialMemory ? "Редактировать историю" : "Сохранить историю"}</Text>
       <Field
         label="Название · необязательно"
         value={title}
@@ -124,7 +128,7 @@ export function MemoryComposer({
         onPress={() => void toggleRecord()}
         disabled={busy}
       />
-      {uri && (
+      {uri ? (
         <>
           <Text style={s.small}>
             Запись сохранится в «Материалах». Текстовое воспоминание сохраняется
@@ -137,7 +141,7 @@ export function MemoryComposer({
             onPress={() => setUri(null)}
           />
         </>
-      )}
+      ) : null}
       <ErrorText error={error} />
       <Button
         label="Сохранить"

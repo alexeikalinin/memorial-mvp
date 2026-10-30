@@ -18,7 +18,7 @@ export const serif = Platform.select({
 });
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 22, gap: 18, paddingBottom: 44 },
+  content: { padding: 22, gap: 18, paddingBottom: 44, width:"100%", maxWidth:760, alignSelf:"center" },
   title: {
     fontFamily: serif,
     fontSize: 32,
@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  grow: { flex: 1 },
+  grow: { flex: 1, minWidth:0 },
   input: {
     borderWidth: 1,
     borderColor: colors.border,

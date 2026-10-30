@@ -62,3 +62,17 @@
 .appearance-edit-item:not(.selected) textarea{background:transparent}
 
 .appearance-stage{z-index:4}.appearance-item-candle{z-index:3}
+
+/* Identity takes precedence over movable decoration, including saved old layouts. */
+.appearance-display-name,.appearance-editor-name,.memorial-hero-name,.public-name{overflow-wrap:normal;word-break:normal;hyphens:none}
+.appearance-item-name,.appearance-edit-name,.appearance-mobile .appearance-item-name,.appearance-mobile .appearance-edit-name{width:var(--identity-width,285px)}
+.appearance-display-name,.appearance-editor-name,.appearance-mobile .appearance-display-name,.appearance-mobile .appearance-editor-name{font-size:var(--identity-font,48px)!important}
+.appearance-item-dates,.appearance-edit-dates,.appearance-mobile .appearance-item-dates,.appearance-mobile .appearance-edit-dates{width:var(--identity-width,200px);text-align:center}
+.appearance-display-dates,.appearance-editor-dates{white-space:pre-line;overflow-wrap:normal;font-size:14px!important;line-height:1.4}
+.memorial-hero:has(.appearance-stage),.memorial-hero:has(.appearance-inline-editor),.public-hero:has(.appearance-stage){min-height:390px;align-items:flex-start}
+.hero:has(.appearance-mobile),.memorial-hero:has(.appearance-mobile),.public-hero:has(.appearance-mobile){height:440px;min-height:440px}
+
+.appearance-item-quote,.appearance-edit-quote,.appearance-mobile .appearance-item-quote,.appearance-mobile .appearance-edit-quote{width:var(--quote-width,245px)}
+.appearance-edit-name,.appearance-edit-dates{box-sizing:content-box}
+
+.appearance-stage:not(.appearance-mobile) .appearance-item{left:var(--item-x);top:var(--item-y);transform:translate(-50%,-50%) scale(var(--item-scale))}
